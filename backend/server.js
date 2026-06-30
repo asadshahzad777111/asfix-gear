@@ -20,8 +20,8 @@ app.set('trust proxy', 1);
 app.disable('x-powered-by');
 
 app.use(securityHeaders);
-app.use(cors(getCorsOptions()));
 app.use(express.json({ limit: '256kb' }));
+app.use('/api', cors(getCorsOptions()));
 app.use('/api', apiLimiter);
 
 app.get('/api/health', (_req, res) => {

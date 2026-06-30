@@ -109,7 +109,7 @@ Agar aapke paas Hostinger ya koi Pakistani hosting hai:
 | Phone / Email | Same file — already set |
 | Custom domain | Render → Settings → Custom Domains — full guide: [DOMAIN-SETUP.md](./DOMAIN-SETUP.md) |
 | SSL (HTTPS) | Free — Render automatic (DNS verify ke baad) |
-| Production CORS | Render Environment → `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com` |
+| Production CORS | Render Environment → `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com` (Render `.onrender.com` URL is auto-allowed via `RENDER_EXTERNAL_URL`) |
 
 ---
 
@@ -127,7 +127,7 @@ Short version (Render — single Web Service):
    - **A** record `@` → `216.24.57.1` (ya **ALIAS** → `your-service.onrender.com`)
    - **CNAME** `www` → `your-service.onrender.com`
    - Remove any **AAAA** records
-4. Render **Environment** → `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com`
+4. Render **Environment** → `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com` (your `*.onrender.com` URL works automatically — no need to add it)
 5. SSL automatic — wait for DNS verify, then open `https://asfixgear.com`
 
 > Single-server Render deploy (Option 1): API same origin hai — `VITE_API_URL` change ki zaroorat nahi. Split Vercel+Render ke liye DOMAIN-SETUP.md dekhein.

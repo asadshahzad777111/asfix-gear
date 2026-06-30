@@ -13,15 +13,21 @@ export function securityHeaders(_req, res, next) {
   next();
 }
 
-export function getCorsOptions() {
-  const allowed = (process.env.CORS_ORIGIN || '')
+function getAllowedOrigins() {
+  const fromEnv = (process.env.CORS_ORIGIN || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
+  const renderUrl = process.env.RENDER_EXTERNAL_URL?.trim();
+  return [...new Set([...fromEnv, renderUrl].filter(Boolean))];
+}
 
+export function getCorsOptions() {
   if (process.env.NODE_ENV !== 'production') {
     return { origin: true, credentials: true };
   }
+
+  const allowed = getAllowedOrigins();
 
   return {
     origin(origin, callback) {
