@@ -6,7 +6,7 @@ import { useTranslation } from '../context/LanguageContext';
 import OtpInput from './OtpInput';
 
 export default function CustomerLoginModal({ open, onClose }) {
-  const { login, isCustomer, isStaff, user, completeSession } = useAuth();
+  const { login, isCustomer, isStaff, user, completeSession, logout } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -102,6 +102,12 @@ export default function CustomerLoginModal({ open, onClose }) {
   };
 
   if (user && isCustomer) {
+    const handleLogout = async () => {
+      handleClose();
+      await logout();
+      navigate('/');
+    };
+
     return (
       <div className="modal-overlay" onClick={handleClose} role="presentation">
         <div
@@ -122,6 +128,9 @@ export default function CustomerLoginModal({ open, onClose }) {
           <Link to="/account/settings" className="btn btn-ghost btn-block" onClick={handleClose}>
             {t('nav.settings')}
           </Link>
+          <button type="button" className="btn btn-ghost btn-block settings-logout" onClick={handleLogout}>
+            {t('account.logout')}
+          </button>
         </div>
       </div>
     );

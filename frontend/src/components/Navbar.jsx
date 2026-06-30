@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { generalWhatsAppMessage } from '../config/shop';
 import { useAuth } from '../context/AuthContext';
 import useNavDrawerThumb from '../hooks/useNavDrawerThumb';
@@ -21,13 +21,20 @@ import {
 import { useTranslation } from '../context/LanguageContext';
 
 export default function Navbar() {
-  const { isStaff, isCustomer } = useAuth();
+  const { isStaff, isCustomer, logout } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
+
+  const handleLogout = async () => {
+    closeMenu();
+    await logout();
+    navigate('/');
+  };
 
   useNavDrawerThumb(menuOpen);
 
@@ -81,20 +88,26 @@ export default function Navbar() {
               <NavDrawerLink to="/repair" icon="🔧" label={t('nav.repair')} onClick={closeMenu} />
               <NavDrawerLink to="/track" icon="📦" label={t('nav.track')} onClick={closeMenu} />
               <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />
+            </div>
+
+            <span className="nav-drawer-section-label">{t('nav.accountSection')}</span>
+            <div className="nav-links-account">
               {isCustomer ? (
                 <>
                   <NavDrawerLink to="/account" icon="👤" label={t('nav.myAccount')} onClick={closeMenu} />
                   <NavDrawerLink to="/account/settings" icon="⚙️" label={t('nav.settings')} onClick={closeMenu} />
+                  <NavDrawerButton
+                    icon="🚪"
+                    label={t('account.logout')}
+                    className="nav-drawer-logout"
+                    onClick={handleLogout}
+                  />
                 </>
               ) : (
-                <NavDrawerButton
-                  icon="👤"
-                  label={t('nav.accountLogin')}
-                  onClick={() => {
-                    setLoginOpen(true);
-                    closeMenu();
-                  }}
-                />
+                <>
+                  <NavDrawerLink to="/account/login" icon="🔑" label={t('nav.signIn')} onClick={closeMenu} />
+                  <NavDrawerLink to="/account/register" icon="✨" label={t('nav.signUp')} onClick={closeMenu} />
+                </>
               )}
             </div>
 
@@ -129,7 +142,22 @@ export default function Navbar() {
 
           <div className="navbar-aside">
             <OpenBadge compact />
-            {isCustomer && <AccountMenu className="account-menu--toolbar" />}
+            {isCustomer ? (
+              <AccountMenu className="account-menu--toolbar" />
+            ) : (
+              <div className="nav-auth-buttons nav-auth-buttons--toolbar">
+                <button
+                  type="button"
+                  className="btn btn-ghost btn-sm nav-auth-btn"
+                  onClick={() => setLoginOpen(true)}
+                >
+                  {t('nav.signIn')}
+                </button>
+                <Link to="/account/register" className="btn btn-primary btn-sm nav-auth-btn">
+                  {t('nav.signUp')}
+                </Link>
+              </div>
+            )}
             <LanguageToggle className="lang-toggle--toolbar" />
             <ThemeToggle className="theme-toggle--nav" />
             <button

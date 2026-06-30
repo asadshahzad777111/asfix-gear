@@ -3248,6 +3248,24 @@ img { max-width: 100%; height: auto; display: block; }
   position: relative;
 }
 
+.nav-auth-buttons {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.nav-auth-btn {
+  white-space: nowrap;
+}
+
+.nav-links-account {
+  display: contents;
+}
+
+.nav-drawer-logout {
+  color: #f87171;
+}
+
 .account-menu-trigger {
   display: flex;
   align-items: center;
@@ -3486,6 +3504,10 @@ img { max-width: 100%; height: auto; display: block; }
 
 @media (max-width: 640px) {
   .account-menu--toolbar {
+    display: none;
+  }
+
+  .nav-auth-buttons--toolbar {
     display: none;
   }
 
