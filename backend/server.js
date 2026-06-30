@@ -10,7 +10,7 @@ import authRouter from './routes/auth.js';
 import ordersRouter from './routes/orders.js';
 import shopRouter from './routes/shop.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
-import { apiLimiter, authLimiter, writeLimiter } from './middleware/rateLimit.js';
+import { apiLimiter, authLimiter, writeLimiter, otpLimiter } from './middleware/rateLimit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -34,6 +34,10 @@ app.get('/api/stats', (_req, res) => {
 
 app.use('/api/auth/login', authLimiter);
 app.use('/api/auth/register', authLimiter);
+app.use('/api/auth/register/start', otpLimiter);
+app.use('/api/auth/register/verify', authLimiter);
+app.use('/api/auth/login/otp/start', otpLimiter);
+app.use('/api/auth/login/otp/verify', authLimiter);
 app.use('/api/auth', authRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/repairs', writeLimiter, repairsRouter);

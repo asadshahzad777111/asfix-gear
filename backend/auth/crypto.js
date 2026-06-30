@@ -47,3 +47,5 @@ export function isValidStaffGmail(email) {
   const key = String(email || '').trim().toLowerCase();
   return /^[^\s@]+@gmail\.com$/.test(key);
 }
+
+export { generateOtpCode, hashOtp, verifyOtp, otpExpiry } from './otp.js';

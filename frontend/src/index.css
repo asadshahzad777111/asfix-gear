@@ -3243,6 +3243,264 @@ img { max-width: 100%; height: auto; display: block; }
   color: var(--accent);
 }
 
+/* Account menu */
+.account-menu {
+  position: relative;
+}
+
+.account-menu-trigger {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text);
+  cursor: pointer;
+}
+
+.account-menu-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--accent);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.account-menu-icon {
+  font-size: 0.9rem;
+  opacity: 0.85;
+}
+
+.account-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  right: 0;
+  min-width: 220px;
+  padding: 0.5rem;
+  border-radius: 14px;
+  border: 1px solid var(--glass-edge);
+  background: var(--surface, rgba(20, 20, 30, 0.98));
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  z-index: 200;
+}
+
+.account-menu-head {
+  padding: 0.65rem 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--glass-edge);
+  margin-bottom: 0.35rem;
+}
+
+.account-menu-head strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.account-menu-head span {
+  display: block;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.15rem;
+}
+
+.account-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text);
+  text-decoration: none;
+  font-size: 0.92rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.account-menu-item:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.account-menu-logout {
+  color: #f87171;
+  margin-top: 0.25rem;
+  border-top: 1px solid var(--glass-edge);
+  border-radius: 0 0 10px 10px;
+  padding-top: 0.75rem;
+}
+
+/* Guest welcome banner */
+.guest-welcome-banner {
+  position: sticky;
+  top: 0;
+  z-index: 90;
+  background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), rgba(34, 197, 94, 0.1));
+  border-bottom: 1px solid var(--glass-edge);
+  backdrop-filter: blur(8px);
+}
+
+.guest-welcome-inner {
+  max-width: var(--container, 1100px);
+  margin: 0 auto;
+  padding: 0.75rem 1rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.guest-welcome-text strong {
+  display: block;
+  font-size: 0.95rem;
+}
+
+.guest-welcome-text p {
+  margin: 0.15rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.guest-welcome-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.guest-welcome-dismiss {
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.35rem 0.5rem;
+  font-size: 1rem;
+}
+
+.btn-sm {
+  padding: 0.45rem 0.85rem;
+  font-size: 0.85rem;
+}
+
+/* Login tabs & OTP */
+.login-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+  max-width: 420px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.login-tabs button {
+  flex: 1;
+  padding: 0.6rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.login-tabs button.active {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+.login-tabs--modal {
+  max-width: none;
+  margin-bottom: 1rem;
+}
+
+.otp-input-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+}
+
+.otp-digit {
+  width: 2.75rem;
+  height: 3rem;
+  text-align: center;
+  font-size: 1.25rem;
+  font-weight: 700;
+  border-radius: 10px;
+  border: 1px solid var(--glass-edge);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text);
+}
+
+.otp-dev-code {
+  text-align: center;
+}
+
+.alert-info {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+}
+
+/* Settings page */
+.settings-wrap {
+  max-width: 560px;
+}
+
+.settings-card {
+  padding: 1.5rem;
+}
+
+.settings-section h2 {
+  margin: 0 0 1rem;
+  font-size: 1.1rem;
+}
+
+.settings-divider {
+  height: 1px;
+  background: var(--glass-edge);
+  margin: 1.5rem 0;
+}
+
+.settings-actions {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.settings-logout {
+  color: #f87171;
+}
+
+.input-readonly {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+@media (max-width: 640px) {
+  .account-menu--toolbar {
+    display: none;
+  }
+
+  .guest-welcome-inner {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .otp-digit {
+    width: 2.4rem;
+    height: 2.75rem;
+    font-size: 1.1rem;
+  }
+}
+
 /* Admin management */
 .admin-management {
   display: grid;

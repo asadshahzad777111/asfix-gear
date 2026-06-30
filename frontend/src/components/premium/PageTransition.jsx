@@ -11,6 +11,7 @@ import OrderTrack from '../../pages/OrderTrack';
 import Account from '../../pages/Account';
 import AccountLogin from '../../pages/AccountLogin';
 import AccountRegister from '../../pages/AccountRegister';
+import AccountSettings from '../../pages/AccountSettings';
 import NotFound from '../../pages/NotFound';
 import ProtectedRoute from '../ProtectedRoute';
 import CustomerRoute from '../CustomerRoute';
@@ -36,6 +37,14 @@ export default function PageTransition() {
           element={
             <CustomerRoute>
               <Account />
+            </CustomerRoute>
+          }
+        />
+        <Route
+          path="/account/settings"
+          element={
+            <CustomerRoute>
+              <AccountSettings />
             </CustomerRoute>
           }
         />

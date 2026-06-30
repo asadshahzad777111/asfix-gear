@@ -1,8 +1,8 @@
 import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { sanitizeUser } from '../auth/crypto.js';
-
+import { sanitizeUser, generateOtpCode, hashOtp, verifyOtp, otpExpiry } from '../auth/crypto.js';
+import { deliverEmailOtp, deliverPhoneOtp } from '../services/otpDelivery.js';
 const router = Router();
 const SUPER_ADMIN = ['super_admin'];
 
@@ -125,6 +125,275 @@ router.post('/register', (req, res) => {
   }
 });
 
+function buildOtpDevResponse(delivery) {
+  const payload = {
+    message: delivery.sent ? 'Verification code sent' : 'Verification code generated',
+    channel: delivery.channel,
+    method: delivery.method || delivery.channel,
+  };
+  if (delivery.whatsappLink) payload.whatsappLink = delivery.whatsappLink;
+  if (process.env.NODE_ENV !== 'production' && delivery.devCode) {
+    payload.devCode = delivery.devCode;
+    payload.devMode = true;
+  }
+  return payload;
+}
+
+router.post('/register/start', async (req, res) => {
+  const parsed = parseCustomerRegistration(req.body);
+  if (parsed.error) return res.status(400).json({ error: parsed.error });
+
+  const email = parsed.email;
+  const phone = parsed.phone ? String(parsed.phone).replace(/\D/g, '') : '';
+
+  if (email) {
+    const existing = store.findUserByLogin(email);
+    if (existing) return res.status(400).json({ error: 'Gmail already registered' });
+  }
+  if (phone) {
+    const existing = store.findUserByLogin(phone);
+    if (existing) return res.status(400).json({ error: 'Phone number already registered' });
+  }
+
+  const existingUser = store.findUserByLogin(parsed.username);
+  if (existingUser) return res.status(400).json({ error: 'Username already taken' });
+
+  const code = generateOtpCode();
+  const codeHash = hashOtp(code);
+  const expiresAt = otpExpiry(10);
+
+  const payload = {
+    name: parsed.name,
+    email: parsed.email,
+    phone: parsed.phone,
+    username: parsed.username,
+    password: parsed.password,
+  };
+
+  try {
+    let delivery;
+    if (email) {
+      delivery = await deliverEmailOtp(email, code, 'register');
+      store.createVerificationCode({
+        purpose: 'register',
+        channel: 'email',
+        target: email,
+        payload,
+        codeHash,
+        expiresAt,
+      });
+    } else if (phone) {
+      delivery = await deliverPhoneOtp(phone, code, 'register');
+      store.createVerificationCode({
+        purpose: 'register',
+        channel: 'phone',
+        target: phone,
+        payload,
+        codeHash,
+        expiresAt,
+      });
+    } else {
+      return res.status(400).json({ error: 'Gmail or phone number is required' });
+    }
+
+    res.json(buildOtpDevResponse(delivery));
+  } catch (err) {
+    console.error('[register/start]', err);
+    res.status(500).json({ error: 'Could not send verification code. Try again later.' });
+  }
+});
+
+router.post('/register/verify', (req, res) => {
+  const { code, email, phone } = req.body;
+  if (!code || String(code).length !== 6) {
+    return res.status(400).json({ error: '6-digit verification code is required' });
+  }
+
+  const emailKey = String(email || '').trim().toLowerCase();
+  const phoneKey = String(phone || '').replace(/\D/g, '');
+  const target = emailKey || phoneKey;
+  if (!target) {
+    return res.status(400).json({ error: 'Email or phone is required' });
+  }
+
+  const result = store.verifyAndConsumeCode({
+    purpose: 'register',
+    target,
+    code: String(code).trim(),
+    verifyFn: verifyOtp,
+  });
+
+  if (!result.ok) {
+    const messages = {
+      not_found: 'No pending registration found. Start again.',
+      expired: 'Code expired. Request a new one.',
+      too_many_attempts: 'Too many attempts. Request a new code.',
+      invalid: 'Invalid verification code',
+    };
+    return res.status(400).json({ error: messages[result.reason] || 'Verification failed' });
+  }
+
+  try {
+    const user = store.createCustomer(result.payload);
+    store.recordLastLogin(user.id);
+    const session = store.createSession(user.id);
+    res.status(201).json({
+      token: session.token,
+      expires_at: session.expires_at,
+      user: sanitizeUser(user),
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.post('/login/otp/start', async (req, res) => {
+  const login = String(req.body.login || '').trim();
+  if (!login) return res.status(400).json({ error: 'Gmail or phone is required' });
+
+  const user = store.findUserByLogin(login);
+  if (!user) return res.status(404).json({ error: 'No account found with this Gmail or phone' });
+  if (user.role !== 'customer') {
+    return res.status(403).json({ error: 'Staff accounts must use the admin login page.' });
+  }
+  if (store.isUserBlocked(user)) {
+    return res.status(403).json({ error: 'Your account is blocked. Contact the shop owner.' });
+  }
+
+  const code = generateOtpCode();
+  const codeHash = hashOtp(code);
+  const expiresAt = otpExpiry(10);
+
+  const emailKey = String(user.email || '').trim().toLowerCase();
+  const phoneKey = String(user.phone || '').replace(/\D/g, '');
+  const loginKey = login.toLowerCase();
+  const loginPhone = login.replace(/\D/g, '');
+
+  const useEmail =
+    emailKey &&
+    (loginKey === emailKey || loginKey === user.username || (!phoneKey && !loginPhone));
+  const target = useEmail ? emailKey : phoneKey || loginPhone;
+
+  if (!target) {
+    return res.status(400).json({ error: 'Account has no Gmail or phone for OTP login' });
+  }
+
+  try {
+    let delivery;
+    if (useEmail) {
+      delivery = await deliverEmailOtp(emailKey, code, 'login');
+      store.createVerificationCode({
+        purpose: 'login',
+        channel: 'email',
+        target: emailKey,
+        payload: { user_id: user.id },
+        codeHash,
+        expiresAt,
+      });
+    } else {
+      delivery = await deliverPhoneOtp(phoneKey || loginPhone, code, 'login');
+      store.createVerificationCode({
+        purpose: 'login',
+        channel: 'phone',
+        target: phoneKey || loginPhone,
+        payload: { user_id: user.id },
+        codeHash,
+        expiresAt,
+      });
+    }
+
+    res.json(buildOtpDevResponse(delivery));
+  } catch (err) {
+    console.error('[login/otp/start]', err);
+    res.status(500).json({ error: 'Could not send verification code. Try again later.' });
+  }
+});
+
+router.post('/login/otp/verify', (req, res) => {
+  const { code, login } = req.body;
+  if (!login?.trim()) return res.status(400).json({ error: 'Gmail or phone is required' });
+  if (!code || String(code).length !== 6) {
+    return res.status(400).json({ error: '6-digit verification code is required' });
+  }
+
+  const loginKey = login.trim().toLowerCase();
+  const loginPhone = login.replace(/\D/g, '');
+  const user = store.findUserByLogin(login.trim());
+  if (!user) return res.status(404).json({ error: 'No account found' });
+
+  const emailKey = String(user.email || '').trim().toLowerCase();
+  const phoneKey = String(user.phone || '').replace(/\D/g, '');
+  const useEmail =
+    emailKey &&
+    (loginKey === emailKey || loginKey === user.username || (!phoneKey && !loginPhone));
+  const target = useEmail ? emailKey : phoneKey || loginPhone;
+
+  const result = store.verifyAndConsumeCode({
+    purpose: 'login',
+    target,
+    code: String(code).trim(),
+    verifyFn: verifyOtp,
+  });
+
+  if (!result.ok) {
+    const messages = {
+      not_found: 'No pending login found. Request a new code.',
+      expired: 'Code expired. Request a new one.',
+      too_many_attempts: 'Too many attempts. Request a new code.',
+      invalid: 'Invalid verification code',
+    };
+    return res.status(400).json({ error: messages[result.reason] || 'Verification failed' });
+  }
+
+  const verifiedUser = store.getUserById(result.payload.user_id);
+  if (!verifiedUser || verifiedUser.role !== 'customer') {
+    return res.status(403).json({ error: 'Invalid account' });
+  }
+  if (store.isUserBlocked(verifiedUser)) {
+    return res.status(403).json({ error: 'Your account is blocked.' });
+  }
+
+  store.recordLastLogin(verifiedUser.id);
+  const session = store.createSession(verifiedUser.id);
+  res.json({
+    token: session.token,
+    expires_at: session.expires_at,
+    user: sanitizeUser(verifiedUser),
+  });
+});
+
+router.patch('/profile', requireAuth, requireRole('customer'), (req, res) => {
+  const { name } = req.body;
+  try {
+    const updated = store.updateCustomerProfile(req.auth.user.id, { name });
+    if (!updated) return res.status(404).json({ error: 'Account not found' });
+    res.json({ user: sanitizeUser(updated) });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.patch('/change-password', requireAuth, requireRole('customer'), (req, res) => {
+  const { currentPassword, newPassword, confirmPassword } = req.body;
+  const pwErr = validatePassword(newPassword);
+  if (pwErr) return res.status(400).json({ error: pwErr });
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ error: 'Passwords do not match' });
+  }
+  if (!currentPassword) {
+    return res.status(400).json({ error: 'Current password is required' });
+  }
+
+  const result = store.changeCustomerPassword(req.auth.user.id, currentPassword, newPassword);
+  if (!result.ok) {
+    if (result.reason === 'invalid_password') {
+      return res.status(400).json({ error: 'Current password is incorrect' });
+    }
+    return res.status(403).json({ error: 'Cannot change password' });
+  }
+
+  res.json({ message: 'Password updated', user: sanitizeUser(result.user) });
+});
 router.get('/my-orders', requireAuth, requireRole('customer'), (req, res) => {
   res.json(store.getOrdersByCustomerId(req.auth.user.id));
 });

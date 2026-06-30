@@ -23,6 +23,7 @@ const DEFAULT_DATA = {
   repair_bookings: [],
   contact_messages: [],
   orders: [],
+  verification_codes: [],
   settings: {
     shop: {
       manual_override: null,
@@ -41,6 +42,7 @@ function migrateData(data) {
   data.repair_bookings = data.repair_bookings || [];
   data.contact_messages = data.contact_messages || [];
   data.orders = data.orders || [];
+  data.verification_codes = data.verification_codes || [];
   data.settings = data.settings || {};
   data.settings.shop = data.settings.shop || {
     manual_override: null,
@@ -49,6 +51,7 @@ function migrateData(data) {
   };
   if (!data.meta.nextUserId) data.meta.nextUserId = 1;
   if (!data.meta.nextOrderId) data.meta.nextOrderId = 1;
+  if (!data.meta.nextVerificationCodeId) data.meta.nextVerificationCodeId = 1;
 
   for (const msg of data.contact_messages) {
     if (msg.staff_reply == null) msg.staff_reply = '';
@@ -103,6 +106,7 @@ function migrateData(data) {
   }
 
   data.sessions = data.sessions.filter((s) => s.expires_at > nowIso);
+  data.verification_codes = (data.verification_codes || []).filter((c) => c.expires_at > nowIso);
   return data;
 }
 
@@ -856,6 +860,108 @@ export function deleteUser(id) {
 
 export function deactivateUser(id) {
   return toggleUserBlock(id, true);
+}
+
+/* ── Verification codes ── */
+
+export function createVerificationCode({ purpose, channel, target, payload, codeHash, expiresAt }) {
+  return withData((data) => {
+    const targetKey = String(target).trim().toLowerCase();
+    data.verification_codes = (data.verification_codes || []).filter(
+      (c) => !(c.purpose === purpose && c.target === targetKey)
+    );
+
+    const id = data.meta.nextVerificationCodeId || 1;
+    data.meta.nextVerificationCodeId = id + 1;
+
+    const entry = {
+      id,
+      purpose,
+      channel,
+      target: targetKey,
+      code_hash: codeHash,
+      payload: payload || {},
+      attempts: 0,
+      created_at: now(),
+      expires_at: expiresAt,
+    };
+    data.verification_codes.push(entry);
+    return entry;
+  });
+}
+
+export function verifyAndConsumeCode({ purpose, target, code, verifyFn }) {
+  return withData((data) => {
+    const targetKey = String(target).trim().toLowerCase();
+    const phoneKey = normalizePhone(target);
+    const index = (data.verification_codes || []).findIndex((c) => {
+      if (c.purpose !== purpose) return false;
+      if (c.target === targetKey) return true;
+      if (phoneKey && normalizePhone(c.target) === phoneKey) return true;
+      return false;
+    });
+
+    if (index === -1) return { ok: false, reason: 'not_found' };
+
+    const entry = data.verification_codes[index];
+    if (entry.expires_at <= now()) {
+      data.verification_codes.splice(index, 1);
+      return { ok: false, reason: 'expired' };
+    }
+
+    if (entry.attempts >= 5) {
+      data.verification_codes.splice(index, 1);
+      return { ok: false, reason: 'too_many_attempts' };
+    }
+
+    entry.attempts += 1;
+
+    if (!verifyFn(code, entry.code_hash)) {
+      return { ok: false, reason: 'invalid' };
+    }
+
+    const payload = { ...entry.payload };
+    data.verification_codes.splice(index, 1);
+    return { ok: true, payload, channel: entry.channel };
+  });
+}
+
+export function updateCustomerProfile(userId, { name }) {
+  return withData((data) => {
+    const index = data.users.findIndex((u) => u.id === Number(userId));
+    if (index === -1) return null;
+
+    const user = data.users[index];
+    if (user.role !== 'customer') return null;
+
+    if (name != null) {
+      const trimmed = String(name).trim();
+      if (!trimmed || trimmed.length > 120) {
+        throw new Error('Name is required (max 120 characters)');
+      }
+      user.name = trimmed;
+    }
+
+    data.users[index] = user;
+    return user;
+  });
+}
+
+export function changeCustomerPassword(userId, currentPassword, newPassword) {
+  return withData((data) => {
+    const index = data.users.findIndex((u) => u.id === Number(userId));
+    if (index === -1) return { ok: false, reason: 'not_found' };
+
+    const user = data.users[index];
+    if (user.role !== 'customer') return { ok: false, reason: 'forbidden' };
+    if (!verifyPassword(currentPassword, user.password_hash)) {
+      return { ok: false, reason: 'invalid_password' };
+    }
+
+    user.password_hash = hashPassword(newPassword);
+    data.users[index] = user;
+    return { ok: true, user };
+  });
 }
 
 /* ── Shop status ── */

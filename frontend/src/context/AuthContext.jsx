@@ -61,6 +61,12 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  const completeSession = useCallback(async (data) => {
+    setAuthToken(data.token);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   const value = useMemo(
     () => ({
       user,
@@ -71,8 +77,9 @@ export function AuthProvider({ children }) {
       register,
       logout,
       refreshUser,
+      completeSession,
     }),
-    [user, loading, login, register, logout, refreshUser]
+    [user, loading, login, register, logout, refreshUser, completeSession]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -60,6 +60,9 @@ export default function Account() {
               <button type="button" className="btn btn-ghost" onClick={handleLogout}>
                 {t('account.logout')}
               </button>
+              <Link to="/account/settings" className="btn btn-ghost">
+                {t('nav.settings')}
+              </Link>
             </div>
 
             <div className="account-tabs">

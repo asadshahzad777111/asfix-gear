@@ -6,6 +6,7 @@ import useNavDrawerThumb from '../hooks/useNavDrawerThumb';
 import OpenBadge from './OpenBadge';
 import Logo from './Logo';
 import AddProductModal from './AddProductModal';
+import AccountMenu from './AccountMenu';
 import CustomerLoginModal from './CustomerLoginModal';
 import GamingModeButton from './gaming/GamingModeButton';
 import ShopModeButton from './gaming/ShopModeButton';
@@ -81,7 +82,10 @@ export default function Navbar() {
               <NavDrawerLink to="/track" icon="📦" label={t('nav.track')} onClick={closeMenu} />
               <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />
               {isCustomer ? (
-                <NavDrawerLink to="/account" icon="👤" label={t('nav.myAccount')} onClick={closeMenu} />
+                <>
+                  <NavDrawerLink to="/account" icon="👤" label={t('nav.myAccount')} onClick={closeMenu} />
+                  <NavDrawerLink to="/account/settings" icon="⚙️" label={t('nav.settings')} onClick={closeMenu} />
+                </>
               ) : (
                 <NavDrawerButton
                   icon="👤"
@@ -125,6 +129,7 @@ export default function Navbar() {
 
           <div className="navbar-aside">
             <OpenBadge compact />
+            {isCustomer && <AccountMenu className="account-menu--toolbar" />}
             <LanguageToggle className="lang-toggle--toolbar" />
             <ThemeToggle className="theme-toggle--nav" />
             <button

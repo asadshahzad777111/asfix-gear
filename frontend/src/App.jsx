@@ -11,6 +11,7 @@ import StaffAccessPanel from './components/StaffAccessPanel';
 import StaffToolbar from './components/StaffToolbar';
 import FloatingCart from './components/premium/FloatingCart';
 import FlyToCart from './components/premium/FlyToCart';
+import GuestWelcomeBanner from './components/GuestWelcomeBanner';
 import PageTransition from './components/premium/PageTransition';
 import { useLocation } from 'react-router-dom';
 import { useGaming } from './context/GamingContext';
@@ -31,6 +32,7 @@ function AppContent() {
     <div className={`app ${isGamingPage ? 'app--gaming' : ''}`}>
       {!isGamingPage && <AmbientBackground />}
       <Navbar />
+      <GuestWelcomeBanner />
       <main className="app-main">
         <PageTransition />
       </main>

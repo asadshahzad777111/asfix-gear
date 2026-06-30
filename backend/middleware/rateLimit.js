@@ -43,3 +43,9 @@ export const apiLimiter = rateLimit({
   windowMs: 60_000,
   max: 120,
 });
+
+export const otpLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 5,
+  message: 'Too many verification codes requested. Wait a few minutes.',
+});
