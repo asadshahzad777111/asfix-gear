@@ -1,6 +1,6 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api, getAuthToken, setAuthToken } from '../api/client';
-import { isStaff } from '../config/permissions';
+import { isStaff, isCustomer } from '../config/permissions';
 
 const AuthContext = createContext(null);
 
@@ -43,6 +43,13 @@ export function AuthProvider({ children }) {
     return data.user;
   }, []);
 
+  const register = useCallback(async (body) => {
+    const data = await api.register(body);
+    setAuthToken(data.token);
+    setUser(data.user);
+    return data.user;
+  }, []);
+
   const logout = useCallback(async () => {
     try {
       if (getAuthToken()) await api.logout();
@@ -59,11 +66,13 @@ export function AuthProvider({ children }) {
       user,
       loading,
       isStaff: isStaff(user),
+      isCustomer: isCustomer(user),
       login,
+      register,
       logout,
       refreshUser,
     }),
-    [user, loading, login, logout, refreshUser]
+    [user, loading, login, register, logout, refreshUser]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

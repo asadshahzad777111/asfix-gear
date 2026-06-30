@@ -3,13 +3,13 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import PageHeader from '../components/PageHeader';
-import { isStaff as checkStaff, isCustomer as checkCustomer } from '../config/permissions';
-export default function Login() {
-  const { login, isStaff, user, loading } = useAuth();
+
+export default function AccountLogin() {
+  const { login, isCustomer, isStaff, user, loading } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from || '/admin';
+  const from = location.state?.from || '/account';
 
   const [loginValue, setLoginValue] = useState('');
   const [password, setPassword] = useState('');
@@ -20,12 +20,12 @@ export default function Login() {
     return <div className="loading container">{t('common.loading')}</div>;
   }
 
-  if (user && isStaff) {
+  if (user && isCustomer) {
     return <Navigate to={from} replace />;
   }
 
-  if (user && checkCustomer(user)) {
-    return <Navigate to="/account" replace />;
+  if (user && isStaff) {
+    return <Navigate to="/admin" replace />;
   }
 
   const handleSubmit = async (e) => {
@@ -35,15 +35,13 @@ export default function Login() {
 
     try {
       const loggedIn = await login(loginValue.trim(), password);
-      if (checkStaff(loggedIn)) {
+      if (loggedIn.role === 'customer') {
         navigate(from, { replace: true });
-      } else if (checkCustomer(loggedIn)) {
-        navigate('/account', { replace: true });
       } else {
-        navigate(from, { replace: true });
+        setError(t('account.staffUseAdminLogin'));
       }
     } catch (err) {
-      setError(err.message || t('login.loginFailed'));
+      setError(err.message || t('account.loginFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -52,9 +50,9 @@ export default function Login() {
   return (
     <>
       <PageHeader
-        eyebrow={t('login.eyebrow')}
-        title={t('login.title')}
-        subtitle={t('login.subtitle')}
+        eyebrow={t('account.loginEyebrow')}
+        title={t('account.loginTitle')}
+        subtitle={t('account.loginSubtitle')}
       />
 
       <section className="section" style={{ paddingTop: 0 }}>
@@ -63,14 +61,13 @@ export default function Login() {
             {error && <div className="alert alert-error">{error}</div>}
 
             <div className="form-group">
-              <label htmlFor="login">{t('team.gmail')}</label>
+              <label htmlFor="login">{t('account.loginField')}</label>
               <input
                 id="login"
                 type="text"
-                inputMode="email"
                 value={loginValue}
                 onChange={(e) => setLoginValue(e.target.value)}
-                placeholder="staff@gmail.com"
+                placeholder={t('account.loginPlaceholder')}
                 autoComplete="username"
                 required
                 autoFocus
@@ -91,11 +88,12 @@ export default function Login() {
             </div>
 
             <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
-              {submitting ? t('login.signingIn') : t('login.signIn')}
+              {submitting ? t('account.signingIn') : t('account.signIn')}
             </button>
 
             <p className="login-foot">
-              <Link to="/account/login">{t('nav.accountLogin')}</Link>
+              {t('account.noAccount')}{' '}
+              <Link to="/account/register">{t('account.createAccount')}</Link>
             </p>
             <p className="login-foot">
               <Link to="/">{t('login.backToStore')}</Link>

@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as store from '../store.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
@@ -21,7 +21,7 @@ router.get('/track', (req, res) => {
   res.json(order);
 });
 
-router.post('/', (req, res) => {
+router.post('/', optionalAuth, (req, res) => {
   const { customer_name, phone, city, payment_mode, items, notes } = req.body;
 
   if (!customer_name?.trim() || !phone?.trim()) {
@@ -37,6 +37,9 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'Order must include 1–20 items' });
   }
 
+  const customerUserId =
+    req.auth?.user?.role === 'customer' ? req.auth.user.id : null;
+
   const order = store.createOrder({
     customer_name: customer_name.trim(),
     phone: phone.trim(),
@@ -44,6 +47,7 @@ router.post('/', (req, res) => {
     payment_mode: payment_mode || 'cod',
     items,
     notes: notes?.trim() || '',
+    customer_user_id: customerUserId,
   });
 
   res.status(201).json({ message: 'Order placed successfully', order });

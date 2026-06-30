@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import LocationSection from '../components/LocationSection';
 import { SHOP, generalWhatsAppMessage } from '../config/shop';
@@ -7,9 +8,20 @@ import { useTranslation } from '../context/LanguageContext';
 
 export default function Contact() {
   const { t } = useTranslation();
+  const { user, isCustomer } = useAuth();
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
+
+  useEffect(() => {
+    if (!isCustomer || !user) return;
+    setForm((prev) => ({
+      ...prev,
+      name: user.name || prev.name,
+      email: user.email || prev.email,
+      phone: user.phone || prev.phone,
+    }));
+  }, [isCustomer, user]);
 
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));

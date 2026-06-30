@@ -87,10 +87,19 @@ function migrateData(data) {
 
   for (const user of data.users) {
     if (user.name == null) user.name = user.username || String(user.email || '').split('@')[0] || '';
+    if (user.phone == null) user.phone = '';
     if (user.blocked == null) user.blocked = user.active === false;
     user.active = !user.blocked;
     if (user.last_login == null) user.last_login = null;
     if (user.created_by == null) user.created_by = null;
+  }
+
+  for (const order of data.orders) {
+    if (order.customer_user_id == null) order.customer_user_id = null;
+  }
+
+  for (const msg of data.contact_messages) {
+    if (msg.customer_user_id == null) msg.customer_user_id = null;
   }
 
   data.sessions = data.sessions.filter((s) => s.expires_at > nowIso);
@@ -423,6 +432,7 @@ export function createContactMessage(input) {
       email: input.email,
       phone: input.phone || '',
       message: input.message,
+      customer_user_id: input.customer_user_id ?? null,
       created_at: now(),
     };
     data.contact_messages.push(message);
@@ -467,6 +477,7 @@ export function createOrder(input) {
       shipping_status: 'pending',
       gmail: '',
       notes: input.notes || '',
+      customer_user_id: input.customer_user_id ?? null,
       status_history: [{ status: 'pending', at: createdAt, by: null }],
       activity_log: [],
       updated_at: createdAt,
@@ -618,8 +629,12 @@ export function getUserById(id) {
 
 export function findUserByLogin(login) {
   const key = String(login).trim().toLowerCase();
+  const phoneKey = normalizePhone(login);
   return readData().users.find(
-    (u) => u.email === key || u.username === key
+    (u) =>
+      u.email === key ||
+      u.username === key ||
+      (phoneKey && normalizePhone(u.phone) === phoneKey)
   ) || null;
 }
 
@@ -677,6 +692,61 @@ export function listUsers() {
   return readData()
     .users.map(({ password_hash, ...rest }) => rest)
     .sort((a, b) => a.id - b.id);
+}
+
+export function createCustomer({ name, email, phone, password }) {
+  return withData((data) => {
+    const emailKey = String(email || '').trim().toLowerCase();
+    const phoneKey = normalizePhone(phone);
+
+    if (!emailKey && !phoneKey) {
+      throw new Error('Gmail or phone number is required');
+    }
+    if (emailKey && !emailKey.endsWith('@gmail.com')) {
+      throw new Error('Please use a @gmail.com address');
+    }
+    if (emailKey && data.users.some((u) => u.email === emailKey)) {
+      throw new Error('Gmail already registered');
+    }
+    if (phoneKey && data.users.some((u) => normalizePhone(u.phone) === phoneKey)) {
+      throw new Error('Phone number already registered');
+    }
+
+    const baseUsername = emailKey ? emailKey.split('@')[0] : `p${phoneKey.slice(-10)}`;
+    let uniqueUsername = baseUsername;
+    let suffix = 1;
+    while (data.users.some((u) => u.username === uniqueUsername)) {
+      uniqueUsername = `${baseUsername}${suffix++}`;
+    }
+
+    const id = data.meta.nextUserId++;
+    const user = {
+      id,
+      name: String(name).trim(),
+      email: emailKey,
+      phone: phoneKey,
+      username: uniqueUsername,
+      password_hash: hashPassword(password),
+      role: 'customer',
+      active: true,
+      blocked: false,
+      created_at: now(),
+      last_login: null,
+      created_by: null,
+    };
+    data.users.push(user);
+    return user;
+  });
+}
+
+export function getOrdersByCustomerId(customerId) {
+  const id = Number(customerId);
+  return getOrders().filter((o) => o.customer_user_id === id);
+}
+
+export function getContactMessagesByCustomerId(customerId) {
+  const id = Number(customerId);
+  return getContactMessages().filter((m) => m.customer_user_id === id);
 }
 
 export function createUser({ email, name, username, password, role, createdBy }) {

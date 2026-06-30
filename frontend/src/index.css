@@ -3132,6 +3132,97 @@ img { max-width: 100%; height: auto; display: block; }
   font-size: 0.9rem;
 }
 
+.account-panel {
+  padding: 1.5rem;
+  max-width: 720px;
+  margin: 0 auto;
+}
+
+.account-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 1rem;
+  margin-bottom: 1.25rem;
+}
+
+.account-panel-head p {
+  margin: 0.25rem 0 0;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.account-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.account-tabs button {
+  flex: 1;
+  padding: 0.65rem 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  background: transparent;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.account-tabs button.active {
+  background: var(--accent);
+  border-color: transparent;
+  color: #fff;
+}
+
+.account-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.account-list-item {
+  padding: 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--glass-edge);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.account-list-item div {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.account-list-meta {
+  margin: 0.35rem 0 0;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
+.account-reply {
+  margin: 0.75rem 0 0;
+  padding: 0.75rem;
+  border-left: 3px solid var(--mint);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.account-empty {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.account-empty p {
+  margin-bottom: 1rem;
+}
+
+.form-hint {
+  margin: -0.5rem 0 1rem;
+  font-size: 0.85rem;
+  color: var(--text-muted);
+}
+
 .login-foot a {
   color: var(--accent);
 }

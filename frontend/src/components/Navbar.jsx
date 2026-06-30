@@ -19,7 +19,7 @@ import {
 import { useTranslation } from '../context/LanguageContext';
 
 export default function Navbar() {
-  const { isStaff } = useAuth();
+  const { isStaff, isCustomer } = useAuth();
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
@@ -78,6 +78,12 @@ export default function Navbar() {
               <NavDrawerLink to="/repair" icon="🔧" label={t('nav.repair')} onClick={closeMenu} />
               <NavDrawerLink to="/track" icon="📦" label={t('nav.track')} onClick={closeMenu} />
               <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />
+              <NavDrawerLink
+                to={isCustomer ? '/account' : '/account/login'}
+                icon="👤"
+                label={isCustomer ? t('nav.myAccount') : t('nav.accountLogin')}
+                onClick={closeMenu}
+              />
             </div>
 
             {isStaff && (

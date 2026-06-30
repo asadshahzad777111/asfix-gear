@@ -33,6 +33,7 @@ app.get('/api/stats', (_req, res) => {
 });
 
 app.use('/api/auth/login', authLimiter);
+app.use('/api/auth/register', authLimiter);
 app.use('/api/auth', authRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/repairs', writeLimiter, repairsRouter);

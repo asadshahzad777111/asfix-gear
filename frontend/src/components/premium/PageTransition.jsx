@@ -8,8 +8,12 @@ import Admin from '../../pages/Admin';
 import Login from '../../pages/Login';
 import Gaming from '../../pages/Gaming';
 import OrderTrack from '../../pages/OrderTrack';
+import Account from '../../pages/Account';
+import AccountLogin from '../../pages/AccountLogin';
+import AccountRegister from '../../pages/AccountRegister';
 import NotFound from '../../pages/NotFound';
 import ProtectedRoute from '../ProtectedRoute';
+import CustomerRoute from '../CustomerRoute';
 
 export default function PageTransition() {
   const location = useLocation();
@@ -24,6 +28,16 @@ export default function PageTransition() {
         <Route path="/repair" element={<Repair />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/track" element={<OrderTrack />} />
+        <Route path="/account/login" element={<AccountLogin />} />
+        <Route path="/account/register" element={<AccountRegister />} />
+        <Route
+          path="/account"
+          element={
+            <CustomerRoute>
+              <Account />
+            </CustomerRoute>
+          }
+        />
         <Route path="/login" element={<Login />} />
         <Route
           path="/admin"

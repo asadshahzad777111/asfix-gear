@@ -60,8 +60,11 @@ async function request(path, options = {}) {
 
 export const api = {
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   logout: () => request('/auth/logout', { method: 'POST' }),
   me: () => request('/auth/me'),
+  getMyOrders: () => request('/auth/my-orders'),
+  getMyMessages: () => request('/auth/my-messages'),
   getAdmins: () => request('/auth/users'),
   getTeam: () => request('/auth/users'),
   createAdmin: (body) => request('/auth/users', { method: 'POST', body: JSON.stringify(body) }),

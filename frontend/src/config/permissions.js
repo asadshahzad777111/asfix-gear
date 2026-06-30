@@ -1,5 +1,9 @@
 export const STAFF_ROLES = ['super_admin', 'admin', 'editor'];
 
+export function isCustomer(user) {
+  return Boolean(user?.active && !user?.blocked && user.role === 'customer');
+}
+
 export function isSuperAdmin(user) {
   return Boolean(user?.active && !user?.blocked && user.role === 'super_admin');
 }

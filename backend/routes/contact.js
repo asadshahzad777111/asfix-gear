@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as store from '../store.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
@@ -9,7 +9,7 @@ const MAX_EMAIL = 160;
 const MAX_PHONE = 30;
 const MAX_MESSAGE = 2000;
 
-router.post('/', (req, res) => {
+router.post('/', optionalAuth, (req, res) => {
   const { name, email, phone, message } = req.body;
   if (!name?.trim() || !message?.trim()) {
     return res.status(400).json({ error: 'Name and message are required' });
@@ -24,11 +24,15 @@ router.post('/', (req, res) => {
     return res.status(400).json({ error: 'Phone too long' });
   }
 
+  const customerUserId =
+    req.auth?.user?.role === 'customer' ? req.auth.user.id : null;
+
   const saved = store.createContactMessage({
     name: name.trim(),
     email: email?.trim() || '',
     phone: phone?.trim() || '',
     message: message.trim(),
+    customer_user_id: customerUserId,
   });
 
   res.status(201).json({

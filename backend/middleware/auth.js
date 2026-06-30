@@ -22,6 +22,30 @@ export function requireAuth(req, res, next) {
   next();
 }
 
+export function optionalAuth(req, res, next) {
+  const header = req.headers.authorization || '';
+  const token = header.startsWith('Bearer ') ? header.slice(7).trim() : null;
+  if (!token) {
+    req.auth = null;
+    return next();
+  }
+
+  const session = store.getSessionByToken(token);
+  if (!session) {
+    req.auth = null;
+    return next();
+  }
+
+  const user = store.getUserById(session.user_id);
+  if (!user || store.isUserBlocked(user)) {
+    req.auth = null;
+    return next();
+  }
+
+  req.auth = { token, user: sanitizeUser(user) };
+  next();
+}
+
 export function requireRole(...roles) {
   return (req, res, next) => {
     if (!req.auth?.user) {

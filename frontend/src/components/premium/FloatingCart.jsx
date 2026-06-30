@@ -5,6 +5,7 @@ import { ProductPrice } from '../DiscountPicker';
 import { api, formatPrice } from '../../api/client';
 import { getSalePrice } from '../../utils/pricing';
 import { useTranslation } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
 import { SHOP } from '../../config/shop';
 import OrderSuccessPanel from '../OrderSuccessPanel';
 
@@ -25,6 +26,7 @@ function isLahoreCity(city) {
 
 export default function FloatingCart() {
   const { t } = useTranslation();
+  const { user, isCustomer } = useAuth();
   const { items, count, open, setOpen, removeItem, updateQty, clearCart } = useCart();
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [checkoutStep, setCheckoutStep] = useState(0);
@@ -43,6 +45,15 @@ export default function FloatingCart() {
   const total = items.reduce((sum, i) => sum + getSalePrice(i) * i.qty, 0);
   const lahore = isLahoreCity(form.city);
   const itemCount = items.reduce((sum, i) => sum + i.qty, 0);
+
+  useEffect(() => {
+    if (!isCustomer || !user) return;
+    setForm((prev) => ({
+      ...prev,
+      customer_name: user.name || prev.customer_name,
+      phone: user.phone || prev.phone,
+    }));
+  }, [isCustomer, user]);
 
   const waHref =
     items.length > 0

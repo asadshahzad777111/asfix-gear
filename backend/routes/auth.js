@@ -47,7 +47,7 @@ function validateStaffPayload(body, requirePassword = true) {
 router.post('/login', (req, res) => {
   const { login, password } = req.body;
   if (!login?.trim() || !password) {
-    return res.status(400).json({ error: 'Gmail and password are required' });
+    return res.status(400).json({ error: 'Login and password are required' });
   }
 
   const result = store.authenticateUser(login.trim(), password);
@@ -57,7 +57,7 @@ router.post('/login', (req, res) => {
         error: 'Your account is blocked. Contact the shop owner (Super Admin).',
       });
     }
-    return res.status(401).json({ error: 'Invalid Gmail or password' });
+    return res.status(401).json({ error: 'Invalid login or password' });
   }
 
   store.recordLastLogin(result.user.id);
@@ -67,6 +67,56 @@ router.post('/login', (req, res) => {
     expires_at: session.expires_at,
     user: sanitizeUser(result.user),
   });
+});
+
+function parseCustomerRegistration(body) {
+  const name = String(body.name || '').trim();
+  const email = String(body.email || '').trim().toLowerCase();
+  const phone = String(body.phone || '').trim();
+  const { password, confirmPassword } = body;
+
+  if (!name || name.length > 120) {
+    return { error: 'Name is required (max 120 characters)' };
+  }
+  if (!email && !phone) {
+    return { error: 'Gmail or phone number is required' };
+  }
+  if (email && !email.endsWith('@gmail.com')) {
+    return { error: 'Please use a @gmail.com address' };
+  }
+  const pwErr = validatePassword(password);
+  if (pwErr) return { error: pwErr };
+  if (password !== confirmPassword) {
+    return { error: 'Passwords do not match' };
+  }
+
+  return { name, email, phone, password };
+}
+
+router.post('/register', (req, res) => {
+  const parsed = parseCustomerRegistration(req.body);
+  if (parsed.error) return res.status(400).json({ error: parsed.error });
+
+  try {
+    const user = store.createCustomer(parsed);
+    store.recordLastLogin(user.id);
+    const session = store.createSession(user.id);
+    res.status(201).json({
+      token: session.token,
+      expires_at: session.expires_at,
+      user: sanitizeUser(user),
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.get('/my-orders', requireAuth, requireRole('customer'), (req, res) => {
+  res.json(store.getOrdersByCustomerId(req.auth.user.id));
+});
+
+router.get('/my-messages', requireAuth, requireRole('customer'), (req, res) => {
+  res.json(store.getContactMessagesByCustomerId(req.auth.user.id));
 });
 
 router.post('/logout', requireAuth, (req, res) => {

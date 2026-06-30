@@ -32,6 +32,7 @@ export function sanitizeUser(user) {
     id: user.id,
     name: user.name || user.username || '',
     email: user.email,
+    phone: user.phone || '',
     username: user.username,
     role: user.role,
     active: !blocked,
