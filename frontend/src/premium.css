@@ -877,11 +877,6 @@ body.custom-cursor-active {
   line-height: 1.45;
 }
 
-.checkout-city-banner--lahore {
-  background: rgba(0, 245, 212, 0.08);
-  border: 1px solid rgba(0, 245, 212, 0.25);
-}
-
 .checkout-city-banner--advance {
   background: rgba(255, 107, 44, 0.08);
   border: 1px solid rgba(255, 107, 44, 0.25);
@@ -950,24 +945,6 @@ body.custom-cursor-active {
   font-size: 0.72rem;
   font-weight: 700;
   line-height: 1.25;
-}
-
-.checkout-payment-badge {
-  position: absolute;
-  top: 0.35rem;
-  right: 0.35rem;
-  font-size: 0.55rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  padding: 0.12rem 0.35rem;
-  border-radius: 999px;
-  background: var(--primary);
-  color: #fff;
-}
-
-.checkout-payment-muted {
-  font-size: 0.6rem;
-  color: var(--text-muted);
 }
 
 .checkout-payment-desc {
