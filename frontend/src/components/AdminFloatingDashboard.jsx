@@ -21,7 +21,7 @@ import ShopStatusControl from './ShopStatusControl';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import { useTranslation } from '../context/LanguageContext';
 
-
+const POLL_MS = 60_000;
 
 const ORDER_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 
