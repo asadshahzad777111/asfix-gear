@@ -2,16 +2,18 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { canDeleteProducts, canManageTeam, canManageShopSettings, roleLabel } from '../config/permissions';
+import { canDeleteProducts, canManageTeam, canManageShopSettings, canViewSalesReport, roleLabel } from '../config/permissions';
 import PageHeader from '../components/PageHeader';
 import AddProductForm from '../components/AddProductForm';
 import AdminDiscountPanel from '../components/AdminDiscountPanel';
 import AdminManagement from '../components/AdminManagement';
 import AdminChatInbox from '../components/AdminChatInbox';
+import AdminSalesReport from '../components/AdminSalesReport';
 import ShopStatusControl from '../components/ShopStatusControl';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
 import { hasDiscount } from '../utils/pricing';
+import { getStockStatus } from '../utils/stock';
 
 export default function Admin() {
   const { user, logout } = useAuth();
@@ -24,6 +26,7 @@ export default function Admin() {
   const [editingProduct, setEditingProduct] = useState(null);
 
   const showAdminMgmt = canManageTeam(user);
+  const showSales = canViewSalesReport(user);
   const allowDelete = canDeleteProducts(user);
   const showShopControl = canManageShopSettings(user);
 
@@ -110,6 +113,11 @@ export default function Admin() {
             <button type="button" className={`admin-tab ${tab === 'messages' ? 'active' : ''}`} onClick={() => setTab('messages')}>
               {t('admin.messages')}
             </button>
+            {showSales && (
+              <button type="button" className={`admin-tab ${tab === 'sales' ? 'active' : ''}`} onClick={() => setTab('sales')}>
+                {t('sales.tab')}
+              </button>
+            )}
             {showAdminMgmt && (
               <button type="button" className={`admin-tab ${tab === 'admins' ? 'active' : ''}`} onClick={() => setTab('admins')}>
                 {t('team.manageTeam')}
@@ -117,10 +125,12 @@ export default function Admin() {
             )}
           </div>
 
-          {loading && !['add', 'admins', 'messages'].includes(tab) ? (
+          {loading && !['add', 'admins', 'messages', 'sales'].includes(tab) ? (
             <div className="loading">{t('common.loading')}</div>
           ) : tab === 'messages' ? (
             <AdminChatInbox />
+          ) : tab === 'sales' && showSales ? (
+            <AdminSalesReport />
           ) : tab === 'add' ? (
             <div className="glass-card admin-add-wrap">
               {editingProduct && (
@@ -154,12 +164,25 @@ export default function Admin() {
                       <div className="admin-product-img-wrap">
                         <img src={p.image} alt={p.name} />
                         {hasDiscount(p) && <span className="admin-sale-tag">-{p.discount_percent}%</span>}
+                        {getStockStatus(p.stock) === 'out' && (
+                          <span className="admin-stock-badge admin-stock-badge--out">{t('admin.outOfStock')}</span>
+                        )}
+                        {getStockStatus(p.stock) === 'low' && (
+                          <span className="admin-stock-badge admin-stock-badge--low">{t('admin.lowStock')}: {p.stock}</span>
+                        )}
                       </div>
                       <div className="admin-product-info">
                         <span className="preview-cat">{p.category}</span>
                         <h3>{p.name}</h3>
                         <ProductPrice product={p} size="sm" />
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Stock: {p.stock}</p>
+                        {p.cost_price > 0 && (
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
+                            {t('sales.costPrice')}: Rs. {Number(p.cost_price).toLocaleString('en-PK')}
+                          </p>
+                        )}
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
+                          {t('admin.stockLabel', { count: p.stock })}
+                        </p>
                         {p.warranty ? <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>🛡️ {p.warranty}</p> : null}
                         {p.featured ? <span className="featured-tag">⭐ Featured</span> : null}
                         <AdminDiscountPanel

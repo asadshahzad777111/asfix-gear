@@ -15,19 +15,51 @@ function deliveryLine(city, paymentMode) {
   return `${city || 'Other City'} — ${mode}`;
 }
 
-export function buildOrderReceipt(order) {
-  const itemsLine = (order.items || [])
-    .map((i) => `${i.name} x${i.qty}`)
-    .join(', ');
+function formatItemLine(item, showCost) {
+  const qty = Number(item.qty) || 1;
+  const unitSale = Number(item.price) || 0;
+  const lineSale = unitSale * qty;
+  const unitCost = Number(item.cost_price) || 0;
+  const lineCost = unitCost * qty;
+
+  let line = `• ${item.name} ×${qty} — ${formatAmount(lineSale)}`;
+  if (showCost && unitCost > 0) {
+    line += ` (cost ${formatAmount(lineCost)})`;
+  }
+  return line;
+}
+
+export function buildOrderReceipt(order, { showCost = false } = {}) {
+  const items = (order.items || []).map((i) => formatItemLine(i, showCost)).join('\n');
+  const costNote =
+    showCost && Array.isArray(order.items)
+      ? (() => {
+          const costTotal = order.items.reduce(
+            (sum, i) => sum + (Number(i.cost_price) || 0) * (Number(i.qty) || 1),
+            0
+          );
+          const profit = Number(order.total_amount) - costTotal;
+          return costTotal > 0
+            ? `\n📊 *Cost Total:* ${formatAmount(costTotal)}\n💹 *Profit:* ${formatAmount(profit)}`
+            : '';
+        })()
+      : '';
 
   const text = [
-    '📦 *ASFIX GEAR - ORDER CONFIRMED!*',
+    '📦 *ASFIX GEAR — ORDER RECEIPT*',
+    '─────────────────────',
     `📋 *Order ID:* #${order.order_id}`,
-    `👤 *Customer:* ${order.customer_name} (${order.phone})`,
-    `📍 *Delivery City:* ${deliveryLine(order.city, order.payment_mode)}`,
-    `🛒 *Items Ordered:* ${itemsLine}`,
-    `💰 *Total Amount:* ${formatAmount(order.total_amount)}`,
-    '🚚 *Status:* Pending Verification (Our team will dispatch via Bykea/Yango shortly).',
+    `📅 *Date:* ${order.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '—'}`,
+    `👤 *Customer:* ${order.customer_name}`,
+    `📞 *Phone:* ${order.phone}`,
+    `📍 *Delivery:* ${deliveryLine(order.city, order.payment_mode)}`,
+    '─────────────────────',
+    '*Items*',
+    items || '—',
+    '─────────────────────',
+    `💰 *Sale Total:* ${formatAmount(order.total_amount)}${costNote}`,
+    `🚚 *Status:* ${order.shipping_status || 'Pending Verification'}`,
+    `🏪 ${SHOP.name}`,
   ].join('\n');
 
   return { text, waUrl: whatsappLink(text) };

@@ -1,28 +1,38 @@
 import { Router } from 'express';
 import * as store from '../store.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
 const CAN_DELETE = ['super_admin', 'admin'];
 
-router.get('/', (req, res) => {
+function isStaffUser(user) {
+  return Boolean(user && STAFF.includes(user.role));
+}
+
+function mapProductsForRequest(products, user) {
+  if (isStaffUser(user)) return products;
+  return products.map((p) => store.stripProductCost(p));
+}
+
+router.get('/', optionalAuth, (req, res) => {
   const products = store.getProducts(req.query);
-  res.json(products);
+  res.json(mapProductsForRequest(products, req.auth?.user));
 });
 
 router.get('/categories', (_req, res) => {
   res.json(store.getProductCategories());
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', optionalAuth, (req, res) => {
   const product = store.getProductById(req.params.id);
   if (!product) return res.status(404).json({ error: 'Product not found' });
-  res.json(product);
+  res.json(isStaffUser(req.auth?.user) ? product : store.stripProductCost(product));
 });
 
 router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
-  const { name, category, price, description, image, stock, featured, discount_percent, warranty } = req.body;
+  const { name, category, price, cost_price, description, image, stock, featured, discount_percent, warranty } =
+    req.body;
   if (!name || !category || price == null || !description) {
     return res.status(400).json({ error: 'Missing required fields' });
   }
@@ -31,6 +41,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
     name,
     category,
     price,
+    cost_price,
     description,
     image,
     stock,

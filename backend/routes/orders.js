@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import * as store from '../store.js';
-import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
+import { requireAuth, requireRole } from '../middleware/auth.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
@@ -22,9 +22,13 @@ router.get('/track', (req, res) => {
   res.json(order);
 });
 
-router.post('/', optionalAuth, (req, res) => {
-  const { customer_name, phone, city, payment_mode, items, notes } = req.body;
+router.post('/', requireAuth, (req, res) => {
+  const user = req.auth.user;
+  if (user.role !== 'customer' || !user.active || user.blocked) {
+    return res.status(403).json({ error: 'Please sign in as a customer to place an order' });
+  }
 
+  const { customer_name, phone, city, payment_mode, items, notes } = req.body;
   if (!customer_name?.trim() || !phone?.trim()) {
     return res.status(400).json({ error: 'Name and phone are required' });
   }
@@ -43,20 +47,25 @@ router.post('/', optionalAuth, (req, res) => {
     return res.status(400).json({ error: 'Invalid payment method' });
   }
 
-  const customerUserId =
-    req.auth?.user?.role === 'customer' ? req.auth.user.id : null;
+  const customerUserId = user.id;
 
-  const order = store.createOrder({
-    customer_name: customer_name.trim(),
-    phone: phone.trim(),
-    city: city?.trim() || '',
-    payment_mode: mode,
-    items,
-    notes: notes?.trim() || '',
-    customer_user_id: customerUserId,
-  });
-
-  res.status(201).json({ message: 'Order placed successfully', order });
+  try {
+    const order = store.createOrder({
+      customer_name: customer_name.trim(),
+      phone: phone.trim(),
+      city: city?.trim() || '',
+      payment_mode: mode,
+      items,
+      notes: notes?.trim() || '',
+      customer_user_id: customerUserId,
+    });
+    res.status(201).json({ message: 'Order placed successfully', order });
+  } catch (err) {
+    if (err instanceof store.StockError) {
+      return res.status(409).json({ error: err.message, details: err.details });
+    }
+    throw err;
+  }
 });
 
 router.get('/', requireAuth, requireRole(...STAFF), (_req, res) => {

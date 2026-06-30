@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 import { api, formatPrice } from '../api/client';
 
-import { canManageTeam, roleLabel, canManageShopSettings } from '../config/permissions';
+import { canManageTeam, roleLabel, canManageShopSettings, canViewSalesReport } from '../config/permissions';
 
 import AddProductModal from './AddProductModal';
 
@@ -16,10 +16,13 @@ import AdminChatInbox from './AdminChatInbox';
 
 import AdminManagement from './AdminManagement';
 
+import AdminSalesReport from './AdminSalesReport';
+
 import ShopStatusControl from './ShopStatusControl';
 
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import { useTranslation } from '../context/LanguageContext';
+import { buildOrderReceipt } from '../utils/receipts';
 
 const POLL_MS = 60_000;
 
@@ -77,6 +80,8 @@ export default function AdminFloatingDashboard() {
 
 
   const showTeam = canManageTeam(user);
+
+  const showSales = canViewSalesReport(user);
 
   const showShopControl = canManageShopSettings(user);
 
@@ -294,6 +299,16 @@ export default function AdminFloatingDashboard() {
 
                 </button>
 
+                {showSales && (
+
+                  <button type="button" className={tab === 'sales' ? 'active' : ''} onClick={() => setTab('sales')}>
+
+                    {t('sales.tab')}
+
+                  </button>
+
+                )}
+
                 {showTeam && (
 
                   <button type="button" className={tab === 'team' ? 'active' : ''} onClick={() => setTab('team')}>
@@ -310,7 +325,7 @@ export default function AdminFloatingDashboard() {
 
               <div className="admin-float-body">
 
-                {loading && tab !== 'chat' && tab !== 'team' ? (
+                {loading && tab !== 'chat' && tab !== 'team' && tab !== 'sales' ? (
 
                   <div className="loading">Syncing...</div>
 
@@ -342,11 +357,35 @@ export default function AdminFloatingDashboard() {
 
                           {o.items.map((item, idx) => (
 
-                            <li key={idx}>{item.name} ×{item.qty}</li>
+                            <li key={idx}>
+                              {item.name} ×{item.qty}
+                              {item.price != null && (
+                                <span className="admin-float-item-price"> — {formatPrice(Number(item.price) * Number(item.qty || 1))}</span>
+                              )}
+                            </li>
 
                           ))}
 
                         </ul>
+
+                        <div className="admin-float-receipt-actions">
+                          <a
+                            href={buildOrderReceipt(o, { showCost: false }).waUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-outline btn-sm"
+                          >
+                            {t('sales.receiptCustomer')}
+                          </a>
+                          <a
+                            href={buildOrderReceipt(o, { showCost: true }).waUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="btn btn-outline btn-sm"
+                          >
+                            {t('sales.receiptStaff')}
+                          </a>
+                        </div>
 
                         <div className="admin-order-actions">
 
@@ -471,6 +510,10 @@ export default function AdminFloatingDashboard() {
                 ) : tab === 'chat' ? (
 
                   <AdminChatInbox compact onUnreadChange={setUnreadChat} />
+
+                ) : tab === 'sales' && showSales ? (
+
+                  <AdminSalesReport compact />
 
                 ) : tab === 'team' && showTeam ? (
 

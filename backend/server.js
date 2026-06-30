@@ -9,6 +9,7 @@ import contactRouter from './routes/contact.js';
 import authRouter from './routes/auth.js';
 import ordersRouter from './routes/orders.js';
 import shopRouter from './routes/shop.js';
+import adminRouter from './routes/admin.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
 import { apiLimiter, authLimiter, writeLimiter, otpLimiter } from './middleware/rateLimit.js';
 
@@ -44,6 +45,7 @@ app.use('/api/repairs', writeLimiter, repairsRouter);
 app.use('/api/contact', writeLimiter, contactRouter);
 app.use('/api/orders', writeLimiter, ordersRouter);
 app.use('/api/shop', shopRouter);
+app.use('/api/admin', adminRouter);
 
 if (process.env.NODE_ENV === 'production') {
   const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');

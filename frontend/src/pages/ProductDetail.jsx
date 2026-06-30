@@ -5,11 +5,15 @@ import { api, formatPrice } from '../api/client';
 import { orderProductOnWhatsApp } from '../config/shop';
 import { useCart } from '../context/CartContext';
 import { useTranslation } from '../context/LanguageContext';
+import { useShopGate } from '../hooks/useShopGate';
+import ShopLoginPrompt from '../components/ShopLoginPrompt';
+import CustomerLoginModal from '../components/CustomerLoginModal';
 import { getProductAnimKind } from '../utils/productAnimation';
 import CasePreviewer from '../components/premium/CasePreviewer';
 import PremiumButton, { PremiumLink, PremiumAnchor } from '../components/premium/PremiumButton';
 import { DiscountRibbon, ProductPrice } from '../components/DiscountPicker';
 import { getSavings, hasDiscount } from '../utils/pricing';
+import { getStockStatus } from '../utils/stock';
 
 export default function ProductDetail() {
   const { t } = useTranslation();
@@ -18,6 +22,14 @@ export default function ProductDetail() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { addItem } = useCart();
+  const {
+    requireCustomer,
+    promptOpen,
+    closePrompt,
+    openLoginFromPrompt,
+    loginOpen,
+    setLoginOpen,
+  } = useShopGate();
 
   useEffect(() => {
     api.getProduct(id).then(setProduct).catch((err) => setError(err.message)).finally(() => setLoading(false));
@@ -37,14 +49,24 @@ export default function ProductDetail() {
   const onSale = hasDiscount(product);
   const animKind = getProductAnimKind(product.category);
   const showCasePreview = animKind === 'case';
+  const stockStatus = getStockStatus(product.stock);
+  const stockMessage =
+    stockStatus === 'out'
+      ? t('product.outOfStock')
+      : stockStatus === 'low'
+        ? t('product.onlyLeft', { count: product.stock })
+        : t('product.inStock', { count: product.stock });
 
   const handleAdd = (e) => {
     const btn = e.currentTarget;
-    const rect = btn.getBoundingClientRect();
-    addItem(product, rect);
+    requireCustomer(() => {
+      const rect = btn.getBoundingClientRect();
+      addItem(product, rect);
+    });
   };
 
   return (
+    <>
     <motion.section
       className="product-detail"
       initial={{ opacity: 0, y: 16 }}
@@ -84,10 +106,8 @@ export default function ProductDetail() {
             {product.warranty ? (
               <p className="product-warranty-line">🛡️ {t('product.warranty', { text: product.warranty })}</p>
             ) : null}
-            <p style={{ marginBottom: '1.5rem', color: product.stock > 0 ? '#86efac' : '#fca5a5' }}>
-              {product.stock > 0
-                ? t('product.inStock', { count: product.stock })
-                : t('product.outOfStock')}
+            <p style={{ marginBottom: '1.5rem', color: stockStatus === 'out' ? '#fca5a5' : stockStatus === 'low' ? '#fcd34d' : '#86efac' }}>
+              {stockMessage}
             </p>
             <div className="product-actions">
               <PremiumButton
@@ -107,5 +127,8 @@ export default function ProductDetail() {
         </div>
       </div>
     </motion.section>
+    <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
+    <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+    </>
   );
 }

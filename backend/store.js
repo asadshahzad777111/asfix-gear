@@ -7,6 +7,16 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_DIR = path.join(__dirname, 'data');
 const DATA_FILE = path.join(DATA_DIR, 'data.json');
 
+export const LOW_STOCK_THRESHOLD = 5;
+
+export class StockError extends Error {
+  constructor(message, details = {}) {
+    super(message);
+    this.name = 'StockError';
+    this.details = details;
+  }
+}
+
 const DEFAULT_DATA = {
   meta: {
     nextProductId: 1,
@@ -60,6 +70,7 @@ function migrateData(data) {
 
   for (const product of data.products) {
     if (product.warranty == null) product.warranty = '';
+    if (product.cost_price == null) product.cost_price = 0;
   }
 
   const nowIso = new Date().toISOString();
@@ -99,6 +110,12 @@ function migrateData(data) {
 
   for (const order of data.orders) {
     if (order.customer_user_id == null) order.customer_user_id = null;
+    if (order.stock_deducted == null) order.stock_deducted = false;
+    if (Array.isArray(order.items)) {
+      for (const item of order.items) {
+        if (item.cost_price == null) item.cost_price = 0;
+      }
+    }
   }
 
   for (const msg of data.contact_messages) {
@@ -231,6 +248,7 @@ export function createProduct(input) {
       name: input.name,
       category: input.category,
       price: Number(input.price),
+      cost_price: Math.max(0, Number(input.cost_price) || 0),
       description: input.description,
       image: input.image || '',
       stock: Number(input.stock) || 0,
@@ -261,6 +279,8 @@ export function updateProduct(id, input) {
       name: input.name ?? existing.name,
       category: input.category ?? existing.category,
       price: input.price != null ? Number(input.price) : existing.price,
+      cost_price:
+        input.cost_price != null ? Math.max(0, Number(input.cost_price) || 0) : existing.cost_price ?? 0,
       description: input.description ?? existing.description,
       image: input.image ?? existing.image,
       stock: input.stock != null ? Number(input.stock) : existing.stock,
@@ -313,6 +333,7 @@ export function insertProducts(items) {
         name: item.name,
         category: item.category,
         price: Number(item.price),
+        cost_price: Math.max(0, Number(item.cost_price) || 0),
         description: item.description,
         image: item.image || '',
         stock: Number(item.stock) || 0,
@@ -323,6 +344,164 @@ export function insertProducts(items) {
       });
     }
   });
+}
+
+export function stripProductCost(product) {
+  if (!product) return product;
+  const { cost_price: _omit, ...rest } = product;
+  return rest;
+}
+
+function restoreOrderStock(data, order) {
+  for (const item of order.items || []) {
+    const productId = Number(item.product_id);
+    const qty = Math.max(1, Number(item.qty || 1));
+    if (!productId) continue;
+    const index = data.products.findIndex((p) => p.id === productId);
+    if (index >= 0) {
+      data.products[index].stock = Math.max(0, Number(data.products[index].stock || 0) + qty);
+    }
+  }
+}
+
+function prepareOrderItems(rawItems, products) {
+  const normalized = [];
+  for (const item of rawItems) {
+    const productId = Number(item.product_id);
+    const qty = Math.max(1, Math.min(99, Number(item.qty || 1)));
+    if (!productId) {
+      throw new StockError('Invalid product in order');
+    }
+    const product = products.find((p) => p.id === productId);
+    if (!product) {
+      throw new StockError(`Product not found: ${String(item.name || productId).trim()}`);
+    }
+    if (Number(product.stock || 0) < qty) {
+      throw new StockError(
+        `Insufficient stock for "${product.name}" — only ${product.stock} left`,
+        {
+          product_id: product.id,
+          name: product.name,
+          available: product.stock,
+          requested: qty,
+        }
+      );
+    }
+    normalized.push({
+      product_id: productId,
+      name: String(item.name || product.name).trim(),
+      qty,
+      price: Number(item.price) || 0,
+      cost_price: Math.max(0, Number(product.cost_price) || 0),
+    });
+  }
+  return normalized;
+}
+
+function deductOrderStock(products, items) {
+  for (const item of items) {
+    const index = products.findIndex((p) => p.id === item.product_id);
+    if (index >= 0) {
+      products[index].stock = Math.max(0, Number(products[index].stock || 0) - item.qty);
+    }
+  }
+}
+
+function startOfDay(date) {
+  const d = new Date(date);
+  d.setHours(0, 0, 0, 0);
+  return d;
+}
+
+function endOfDay(date) {
+  const d = new Date(date);
+  d.setHours(23, 59, 59, 999);
+  return d;
+}
+
+function getReportDateRange(period, fromStr, toStr) {
+  const now = new Date();
+  if (period === 'day') {
+    return { start: startOfDay(now), end: endOfDay(now), label: 'today' };
+  }
+  if (period === 'week') {
+    const start = startOfDay(now);
+    const day = start.getDay();
+    const mondayOffset = day === 0 ? 6 : day - 1;
+    start.setDate(start.getDate() - mondayOffset);
+    return { start, end: endOfDay(now), label: 'this_week' };
+  }
+  if (period === 'range' && fromStr && toStr) {
+    const start = startOfDay(new Date(fromStr));
+    const end = endOfDay(new Date(toStr));
+    if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || start > end) {
+      return null;
+    }
+    return { start, end, label: 'custom' };
+  }
+  return { start: startOfDay(now), end: endOfDay(now), label: 'today' };
+}
+
+function summarizeOrderFinancials(items) {
+  const sale_total = items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 1), 0);
+  const cost_total = items.reduce((sum, i) => sum + Number(i.cost_price || 0) * Number(i.qty || 1), 0);
+  return { sale_total, cost_total, profit: sale_total - cost_total };
+}
+
+export function getSalesReport({ period = 'day', from, to } = {}) {
+  const range = getReportDateRange(period, from, to);
+  if (!range) {
+    return { error: 'Invalid date range' };
+  }
+
+  const orders = getOrders().filter((o) => {
+    if (o.shipping_status === 'cancelled') return false;
+    const created = new Date(o.created_at);
+    return created >= range.start && created <= range.end;
+  });
+
+  const rows = orders.map((order) => {
+    const items = Array.isArray(order.items) ? order.items : [];
+    const totals = summarizeOrderFinancials(items);
+    return {
+      id: order.id,
+      order_id: order.order_id,
+      customer_name: order.customer_name,
+      phone: order.phone,
+      created_at: order.created_at,
+      shipping_status: order.shipping_status,
+      items: items.map((i) => ({
+        name: i.name,
+        qty: Number(i.qty) || 1,
+        price: Number(i.price) || 0,
+        cost_price: Number(i.cost_price) || 0,
+        sale_line: Number(i.price || 0) * Number(i.qty || 1),
+        cost_line: Number(i.cost_price || 0) * Number(i.qty || 1),
+      })),
+      ...totals,
+    };
+  });
+
+  const summary = rows.reduce(
+    (acc, row) => ({
+      order_count: acc.order_count + 1,
+      sale_total: acc.sale_total + row.sale_total,
+      cost_total: acc.cost_total + row.cost_total,
+      profit: acc.profit + row.profit,
+    }),
+    { order_count: 0, sale_total: 0, cost_total: 0, profit: 0 }
+  );
+
+  return {
+    period,
+    range: {
+      from: range.start.toISOString(),
+      to: range.end.toISOString(),
+      label: range.label,
+    },
+    summary,
+    orders: rows,
+  };
 }
 
 export function getRepairServices() {
@@ -465,8 +644,11 @@ export function replyContactMessage(id, staff_reply) {
 
 export function createOrder(input) {
   return withData((data) => {
+    const rawItems = Array.isArray(input.items) ? input.items : [];
+    const items = prepareOrderItems(rawItems, data.products);
+    deductOrderStock(data.products, items);
+
     const id = data.meta.nextOrderId++;
-    const items = Array.isArray(input.items) ? input.items : [];
     const total = items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 1), 0);
     const createdAt = now();
     const order = {
@@ -482,6 +664,7 @@ export function createOrder(input) {
       gmail: '',
       notes: input.notes || '',
       customer_user_id: input.customer_user_id ?? null,
+      stock_deducted: true,
       status_history: [{ status: 'pending', at: createdAt, by: null }],
       activity_log: [],
       updated_at: createdAt,
@@ -507,15 +690,28 @@ export function updateOrderStatus(id, shipping_status, updatedBy = null) {
     if (existing.shipping_status === shipping_status) return existing;
 
     const at = now();
+    const wasCancelled = existing.shipping_status === 'cancelled';
+    const isCancelled = shipping_status === 'cancelled';
+    let stockDeducted = Boolean(existing.stock_deducted);
+
+    if (!wasCancelled && isCancelled && stockDeducted) {
+      restoreOrderStock(data, existing);
+      stockDeducted = false;
+    }
+
     const history = [
       ...(existing.status_history || []),
       { status: shipping_status, at, by: updatedBy?.id ?? null },
     ];
     const activity_log = [...(existing.activity_log || [])];
     if (updatedBy?.username) {
+      let message = `Status updated to ${statusLabel(shipping_status)} by Staff: ${updatedBy.username}`;
+      if (!wasCancelled && isCancelled && existing.stock_deducted) {
+        message += ' — stock restored';
+      }
       activity_log.push({
         at,
-        message: `Status updated to ${statusLabel(shipping_status)} by Staff: ${updatedBy.username}`,
+        message,
         by: updatedBy.id,
       });
     }
@@ -523,6 +719,7 @@ export function updateOrderStatus(id, shipping_status, updatedBy = null) {
     data.orders[index] = {
       ...existing,
       shipping_status,
+      stock_deducted: stockDeducted,
       status_history: history,
       activity_log,
       updated_at: at,
@@ -546,6 +743,72 @@ export function updateOrderGmail(id, gmail, phone) {
     };
     return data.orders[index];
   });
+}
+
+const PROFIT_STATUSES = new Set([
+  'pending',
+  'payment_verified',
+  'shipped',
+  'out_for_delivery',
+  'delivered',
+]);
+
+export function getProfitReport() {
+  const data = readData();
+  let revenue = 0;
+  let cost = 0;
+  let orderCount = 0;
+  const byProduct = new Map();
+
+  for (const order of data.orders) {
+    if (!PROFIT_STATUSES.has(order.shipping_status)) continue;
+    orderCount += 1;
+    for (const item of order.items || []) {
+      const qty = Math.max(1, Number(item.qty || 1));
+      const salePrice = Number(item.price || 0);
+      const unitCost = Number(item.cost_price) || 0;
+      const lineRevenue = salePrice * qty;
+      const lineCost = unitCost * qty;
+      revenue += lineRevenue;
+      cost += lineCost;
+
+      const key = Number(item.product_id) || String(item.name || 'unknown');
+      const row = byProduct.get(key) || {
+        product_id: item.product_id ?? null,
+        name: item.name || 'Unknown',
+        qty: 0,
+        revenue: 0,
+        cost: 0,
+      };
+      row.qty += qty;
+      row.revenue += lineRevenue;
+      row.cost += lineCost;
+      byProduct.set(key, row);
+    }
+  }
+
+  const products = [...byProduct.values()]
+    .map((row) => ({
+      ...row,
+      profit: row.revenue - row.cost,
+    }))
+    .sort((a, b) => b.revenue - a.revenue);
+
+  const lowStock = data.products
+    .filter((p) => Number(p.stock) > 0 && Number(p.stock) <= LOW_STOCK_THRESHOLD)
+    .map((p) => ({ id: p.id, name: p.name, stock: p.stock }))
+    .sort((a, b) => a.stock - b.stock);
+
+  return {
+    order_count: orderCount,
+    revenue,
+    cost,
+    profit: revenue - cost,
+    margin_percent: revenue > 0 ? Math.round(((revenue - cost) / revenue) * 100) : 0,
+    products,
+    low_stock: lowStock,
+    out_of_stock_count: data.products.filter((p) => Number(p.stock) <= 0).length,
+  };
 }
 
 export function trackOrder(orderId, phone) {

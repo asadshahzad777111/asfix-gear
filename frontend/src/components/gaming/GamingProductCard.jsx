@@ -6,13 +6,27 @@ import { useCart } from '../../context/CartContext';
 import { playProductJump } from '../../utils/gamingSound';
 import { DiscountRibbon, ProductPrice } from '../DiscountPicker';
 import { hasDiscount } from '../../utils/pricing';
+import { useShopGate } from '../../hooks/useShopGate';
+import ShopLoginPrompt from '../ShopLoginPrompt';
+import CustomerLoginModal from '../CustomerLoginModal';
+import { useTranslation } from '../../context/LanguageContext';
+import { getStockStatus } from '../../utils/stock';
 
 export default function GamingProductCard({ product, index }) {
+  const { t } = useTranslation();
   const ref = useRef(null);
   const addRef = useRef(null);
   const waLink = orderProductOnWhatsApp(product);
   const onSale = hasDiscount(product);
   const { addItem } = useCart();
+  const {
+    requireCustomer,
+    promptOpen,
+    closePrompt,
+    openLoginFromPrompt,
+    loginOpen,
+    setLoginOpen,
+  } = useShopGate();
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
@@ -36,14 +50,25 @@ export default function GamingProductCard({ product, index }) {
     return () => observer.disconnect();
   }, [index]);
 
+  const stockStatus = getStockStatus(product.stock);
+  const cartLabel =
+    stockStatus === 'out'
+      ? t('product.soldOut')
+      : stockStatus === 'low'
+        ? t('product.onlyLeft', { count: product.stock })
+        : '+ CART';
+
   const handleAdd = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const rect = addRef.current?.getBoundingClientRect();
-    if (rect) addItem(product, rect);
+    requireCustomer(() => {
+      const rect = addRef.current?.getBoundingClientRect();
+      if (rect) addItem(product, rect);
+    });
   };
 
   return (
+    <>
     <motion.article
       ref={ref}
       className={`gaming-product-card premium-gaming-card ${onSale ? 'on-sale' : ''} ${hovered ? 'is-hovered' : ''}`}
@@ -77,11 +102,14 @@ export default function GamingProductCard({ product, index }) {
         onClick={handleAdd}
         disabled={product.stock <= 0}
       >
-        {product.stock > 0 ? '+ CART' : 'SOLD OUT'}
+        {cartLabel}
       </button>
       <a href={waLink} target="_blank" rel="noopener noreferrer" className="gaming-product-order gaming-product-wa">
         ⚡ ORDER
       </a>
     </motion.article>
+    <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
+    <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+    </>
   );
 }

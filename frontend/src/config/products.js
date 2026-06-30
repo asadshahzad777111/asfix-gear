@@ -24,6 +24,7 @@ export const EMPTY_PRODUCT = {
   name: '',
   category: 'Cases',
   price: '',
+  cost_price: '',
   description: '',
   image: DEFAULT_IMAGES.Cases,
   stock: '10',

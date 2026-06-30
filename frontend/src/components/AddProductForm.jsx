@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import DiscountPicker, { DiscountRibbon, ProductPrice } from './DiscountPicker';
 import { CATEGORIES, EMPTY_PRODUCT, DEFAULT_IMAGES, getDefaultImage } from '../config/products';
+import { useTranslation } from '../context/LanguageContext';
 
 const isDefaultImage = (url) => Object.values(DEFAULT_IMAGES).includes(url);
 
@@ -11,6 +12,7 @@ function productToForm(editProduct) {
     name: editProduct.name || '',
     category: editProduct.category || 'Cases',
     price: String(editProduct.price ?? ''),
+    cost_price: String(editProduct.cost_price ?? ''),
     description: editProduct.description || '',
     image: editProduct.image || getDefaultImage(editProduct.category),
     stock: String(editProduct.stock ?? 0),
@@ -22,6 +24,7 @@ function productToForm(editProduct) {
 }
 
 export default function AddProductForm({ onSuccess, onCancel, compact = false, editProduct = null }) {
+  const { t } = useTranslation();
   const isEdit = Boolean(editProduct?.id);
   const [product, setProduct] = useState(() => productToForm(editProduct));
   const [submitting, setSubmitting] = useState(false);
@@ -69,6 +72,7 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
     name: product.name.trim(),
     category: product.category,
     price: Number(product.price),
+    cost_price: Number(product.cost_price) || 0,
     description: product.description.trim(),
     image: product.image.trim() || getDefaultImage(product.category),
     stock: Number(product.stock) || 0,
@@ -162,7 +166,7 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
 
           <div className="form-row-2">
             <div className="form-group">
-              <label>Price (Rs.) *</label>
+              <label>{t('sales.salePrice')} *</label>
               <div className="input-with-prefix">
                 <span>Rs.</span>
                 <input
@@ -174,20 +178,36 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
                   required
                 />
               </div>
+              <p className="field-hint">{t('sales.salePriceHint')}</p>
             </div>
             <div className="form-group">
-              <label>Stock *</label>
-              <div className="stock-stepper">
-                <button type="button" onClick={() => setField('stock', String(Math.max(0, Number(product.stock || 0) - 1)))}>−</button>
+              <label>{t('sales.costPrice')}</label>
+              <div className="input-with-prefix">
+                <span>Rs.</span>
                 <input
                   type="number"
                   min="0"
-                  value={product.stock}
-                  onChange={(e) => setField('stock', e.target.value)}
-                  required
+                  value={product.cost_price}
+                  onChange={(e) => setField('cost_price', e.target.value)}
+                  placeholder="700"
                 />
-                <button type="button" onClick={() => setField('stock', String(Number(product.stock || 0) + 1))}>+</button>
               </div>
+              <p className="field-hint">{t('sales.costPriceHint')}</p>
+            </div>
+          </div>
+
+          <div className="form-group">
+            <label>{t('sales.stock')} *</label>
+            <div className="stock-stepper">
+              <button type="button" onClick={() => setField('stock', String(Math.max(0, Number(product.stock || 0) - 1)))}>−</button>
+              <input
+                type="number"
+                min="0"
+                value={product.stock}
+                onChange={(e) => setField('stock', e.target.value)}
+                required
+              />
+              <button type="button" onClick={() => setField('stock', String(Number(product.stock || 0) + 1))}>+</button>
             </div>
           </div>
 
@@ -269,6 +289,11 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
             }}
             size="lg"
           />
+          {Number(product.cost_price) > 0 && (
+            <p className="preview-cost">
+              {t('sales.costPrice')}: Rs. {Number(product.cost_price).toLocaleString('en-PK')}
+            </p>
+          )}
           <span className="preview-stock">{product.stock || 0} in stock</span>
         </aside>
       </div>

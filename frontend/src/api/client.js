@@ -127,6 +127,11 @@ export const api = {
   getContactMessages: () => request('/contact'),
   replyContactMessage: (id, reply) =>
     request(`/contact/${id}/reply`, { method: 'PATCH', body: JSON.stringify({ reply }) }),
+  getSalesReport: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/admin/sales-report${query ? `?${query}` : ''}`);
+  },
+
   getStats: () => request('/stats'),
   getShopStatus: () => request('/shop/status'),
   setShopStatus: (manual_override) =>

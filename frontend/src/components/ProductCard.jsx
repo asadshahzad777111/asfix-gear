@@ -138,24 +138,32 @@ export default function ProductCard({ product, inGrid = false }) {
 
   if (inGrid) {
     return (
-      <article
-        className={cardClass}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
-      >
-        {inner}
-      </article>
+      <>
+        <article
+          className={cardClass}
+          onMouseEnter={() => setHovered(true)}
+          onMouseLeave={() => setHovered(false)}
+        >
+          {inner}
+        </article>
+        <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
+        <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      </>
     );
   }
 
   return (
-    <motion.article
-      className={cardClass}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
-      data-magnetic
-    >
-      {inner}
-    </motion.article>
+    <>
+      <motion.article
+        className={cardClass}
+        onMouseEnter={() => setHovered(true)}
+        onMouseLeave={() => setHovered(false)}
+        data-magnetic
+      >
+        {inner}
+      </motion.article>
+      <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
+      <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+    </>
   );
 }

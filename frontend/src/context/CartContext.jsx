@@ -1,4 +1,5 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { maxCartQty } from '../utils/stock';
 
 const CartContext = createContext(null);
 
@@ -8,7 +9,7 @@ export function CartProvider({ children }) {
   const [fly, setFly] = useState(null);
 
   const addItem = useCallback((product, fromRect) => {
-    if (!product) return;
+    if (!product || Number(product.stock) <= 0) return;
     setFly({
       product,
       fromRect,
@@ -17,11 +18,16 @@ export function CartProvider({ children }) {
   }, []);
 
   const completeFly = useCallback((product) => {
+    const limit = maxCartQty(product);
+    if (limit <= 0) {
+      setFly(null);
+      return;
+    }
     setItems((prev) => {
       const idx = prev.findIndex((i) => i.id === product.id);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = { ...next[idx], qty: next[idx].qty + 1 };
+        next[idx] = { ...next[idx], qty: Math.min(next[idx].qty + 1, limit), stock: product.stock };
         return next;
       }
       return [...prev, { ...product, qty: 1 }];
@@ -39,7 +45,13 @@ export function CartProvider({ children }) {
       setItems((prev) => prev.filter((i) => i.id !== id));
       return;
     }
-    setItems((prev) => prev.map((i) => (i.id === id ? { ...i, qty } : i)));
+    setItems((prev) =>
+      prev.map((i) => {
+        if (i.id !== id) return i;
+        const limit = maxCartQty(i);
+        return { ...i, qty: Math.min(qty, limit || qty) };
+      })
+    );
   }, []);
 
   const clearCart = useCallback(() => setItems([]), []);

@@ -12,6 +12,10 @@ export function isStaff(user) {
   return Boolean(user?.active && !user?.blocked && STAFF_ROLES.includes(user.role));
 }
 
+export function canViewSalesReport(user) {
+  return isStaff(user);
+}
+
 export function canManageTeam(user) {
   return isSuperAdmin(user);
 }
