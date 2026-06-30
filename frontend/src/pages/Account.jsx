@@ -53,6 +53,7 @@ export default function Account() {
             <div className="account-panel-head">
               <div>
                 <strong>{user?.name}</strong>
+                {user?.username && <p>@{user.username}</p>}
                 {user?.email && <p>{user.email}</p>}
                 {user?.phone && <p>{user.phone}</p>}
               </div>

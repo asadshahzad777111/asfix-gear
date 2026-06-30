@@ -13,6 +13,18 @@ function validatePassword(password) {
   return null;
 }
 
+function validateUsername(username) {
+  const key = String(username || '').trim().toLowerCase();
+  if (!key) return { error: 'Username is required' };
+  if (key.length < 3 || key.length > 30) {
+    return { error: 'Username must be 3–30 characters' };
+  }
+  if (!/^[a-z0-9_]+$/.test(key)) {
+    return { error: 'Username may only use letters, numbers, and underscores' };
+  }
+  return { username: key };
+}
+
 function validateStaffPayload(body, requirePassword = true) {
   const { email, name, username, password, role, confirmPassword } = body;
   const displayName = String(name || username || '').trim();
@@ -74,6 +86,8 @@ function parseCustomerRegistration(body) {
   const email = String(body.email || '').trim().toLowerCase();
   const phone = String(body.phone || '').trim();
   const { password, confirmPassword } = body;
+  const usernameResult = validateUsername(body.username);
+  if (usernameResult.error) return usernameResult;
 
   if (!name || name.length > 120) {
     return { error: 'Name is required (max 120 characters)' };
@@ -90,7 +104,7 @@ function parseCustomerRegistration(body) {
     return { error: 'Passwords do not match' };
   }
 
-  return { name, email, phone, password };
+  return { name, email, phone, username: usernameResult.username, password };
 }
 
 router.post('/register', (req, res) => {

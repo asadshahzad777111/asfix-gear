@@ -11,6 +11,7 @@ export default function AccountRegister() {
 
   const [form, setForm] = useState({
     name: '',
+    username: '',
     email: '',
     phone: '',
     password: '',
@@ -34,6 +35,12 @@ export default function AccountRegister() {
     setSubmitting(true);
     setError('');
 
+    if (!form.username.trim()) {
+      setError(t('account.usernameRequired'));
+      setSubmitting(false);
+      return;
+    }
+
     if (!form.email.trim() && !form.phone.trim()) {
       setError(t('account.emailOrPhoneRequired'));
       setSubmitting(false);
@@ -43,6 +50,7 @@ export default function AccountRegister() {
     try {
       await register({
         name: form.name.trim(),
+        username: form.username.trim(),
         email: form.email.trim(),
         phone: form.phone.trim(),
         password: form.password,
@@ -78,6 +86,22 @@ export default function AccountRegister() {
                 required
                 autoFocus
               />
+            </div>
+
+            <div className="form-group">
+              <label htmlFor="username">{t('account.username')} *</label>
+              <input
+                id="username"
+                value={form.username}
+                onChange={(e) => setField('username', e.target.value.toLowerCase())}
+                placeholder={t('account.usernamePlaceholder')}
+                autoComplete="username"
+                minLength={3}
+                maxLength={30}
+                pattern="[a-z0-9_]+"
+                required
+              />
+              <p className="form-hint">{t('account.usernameHint')}</p>
             </div>
 
             <div className="form-group">

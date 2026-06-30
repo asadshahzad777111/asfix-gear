@@ -6,6 +6,7 @@ import useNavDrawerThumb from '../hooks/useNavDrawerThumb';
 import OpenBadge from './OpenBadge';
 import Logo from './Logo';
 import AddProductModal from './AddProductModal';
+import CustomerLoginModal from './CustomerLoginModal';
 import GamingModeButton from './gaming/GamingModeButton';
 import ShopModeButton from './gaming/ShopModeButton';
 import ThemeToggle from './ThemeToggle';
@@ -23,6 +24,7 @@ export default function Navbar() {
   const { t } = useTranslation();
   const [menuOpen, setMenuOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
+  const [loginOpen, setLoginOpen] = useState(false);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -78,12 +80,18 @@ export default function Navbar() {
               <NavDrawerLink to="/repair" icon="🔧" label={t('nav.repair')} onClick={closeMenu} />
               <NavDrawerLink to="/track" icon="📦" label={t('nav.track')} onClick={closeMenu} />
               <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />
-              <NavDrawerLink
-                to={isCustomer ? '/account' : '/account/login'}
-                icon="👤"
-                label={isCustomer ? t('nav.myAccount') : t('nav.accountLogin')}
-                onClick={closeMenu}
-              />
+              {isCustomer ? (
+                <NavDrawerLink to="/account" icon="👤" label={t('nav.myAccount')} onClick={closeMenu} />
+              ) : (
+                <NavDrawerButton
+                  icon="👤"
+                  label={t('nav.accountLogin')}
+                  onClick={() => {
+                    setLoginOpen(true);
+                    closeMenu();
+                  }}
+                />
+              )}
             </div>
 
             {isStaff && (
@@ -142,6 +150,7 @@ export default function Navbar() {
       </header>
 
       {isStaff && <AddProductModal open={addOpen} onClose={() => setAddOpen(false)} />}
+      <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>
   );
 }

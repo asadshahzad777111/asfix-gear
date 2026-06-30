@@ -694,16 +694,23 @@ export function listUsers() {
     .sort((a, b) => a.id - b.id);
 }
 
-export function createCustomer({ name, email, phone, password }) {
+export function createCustomer({ name, email, phone, username, password }) {
   return withData((data) => {
     const emailKey = String(email || '').trim().toLowerCase();
     const phoneKey = normalizePhone(phone);
+    const userKey = String(username || '').trim().toLowerCase();
 
+    if (!userKey) {
+      throw new Error('Username is required');
+    }
     if (!emailKey && !phoneKey) {
       throw new Error('Gmail or phone number is required');
     }
     if (emailKey && !emailKey.endsWith('@gmail.com')) {
       throw new Error('Please use a @gmail.com address');
+    }
+    if (data.users.some((u) => u.username === userKey)) {
+      throw new Error('Username already taken');
     }
     if (emailKey && data.users.some((u) => u.email === emailKey)) {
       throw new Error('Gmail already registered');
@@ -712,20 +719,13 @@ export function createCustomer({ name, email, phone, password }) {
       throw new Error('Phone number already registered');
     }
 
-    const baseUsername = emailKey ? emailKey.split('@')[0] : `p${phoneKey.slice(-10)}`;
-    let uniqueUsername = baseUsername;
-    let suffix = 1;
-    while (data.users.some((u) => u.username === uniqueUsername)) {
-      uniqueUsername = `${baseUsername}${suffix++}`;
-    }
-
     const id = data.meta.nextUserId++;
     const user = {
       id,
       name: String(name).trim(),
       email: emailKey,
       phone: phoneKey,
-      username: uniqueUsername,
+      username: userKey,
       password_hash: hashPassword(password),
       role: 'customer',
       active: true,

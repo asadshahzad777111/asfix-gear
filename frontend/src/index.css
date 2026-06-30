@@ -3126,6 +3126,22 @@ img { max-width: 100%; height: auto; display: block; }
   margin-top: 0.5rem;
 }
 
+.customer-login-modal h2 {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+}
+
+.customer-login-modal-sub {
+  margin: 0 0 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+}
+
+.customer-login-modal .btn-block {
+  width: 100%;
+  margin-top: 0.5rem;
+}
+
 .login-foot {
   margin-top: 1.25rem;
   text-align: center;

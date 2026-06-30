@@ -1,4 +1,4 @@
-import { useLocation, Routes, Route } from 'react-router-dom';
+import { useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import Home from '../../pages/Home';
 import Shop from '../../pages/Shop';
 import ProductDetail from '../../pages/ProductDetail';
@@ -30,6 +30,7 @@ export default function PageTransition() {
         <Route path="/track" element={<OrderTrack />} />
         <Route path="/account/login" element={<AccountLogin />} />
         <Route path="/account/register" element={<AccountRegister />} />
+        <Route path="/register" element={<Navigate to="/account/register" replace />} />
         <Route
           path="/account"
           element={
