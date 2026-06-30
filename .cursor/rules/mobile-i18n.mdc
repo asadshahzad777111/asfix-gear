@@ -1,0 +1,30 @@
+---
+description: Mobile UX and 3-language i18n (en, roman, ur) for AsFix & Gear
+globs: frontend/src/**/*
+alwaysApply: false
+---
+
+# Mobile & i18n rules
+
+## Languages (exactly 3)
+
+- Supported langs: `en`, `roman`, `ur` — defined in `frontend/src/locales/translations.js`.
+- Every new UI string must be added to **all three** language blocks with the same nested key path.
+- Run `node scripts/check-i18n.js` after editing translations.
+
+## Translation usage
+
+- Use `useTranslation()` and `t('key.path')` — no hardcoded English in shared components.
+- Urdu text: prefer RTL-friendly layout; test nav drawer and forms in `ur` mode.
+
+## Mobile performance
+
+- Keep bundle lean: no extra language packs or heavy libraries without reason.
+- Touch targets ≥ 44px; mobile nav drawer must work with one thumb (see `NavDrawer`, focus bar).
+- Use `startVisibilityPoll` from `frontend/src/utils/visibilityPoll.js` for polling — pauses when tab hidden.
+- Prefer CSS transforms over layout thrashing for animations; respect `prefers-reduced-motion` where present.
+
+## Shop / gaming modes
+
+- Gaming and shop transitions should feel snappy on mid-range phones (< 1.5s total).
+- Test mode switch buttons on 375px viewport before merge.

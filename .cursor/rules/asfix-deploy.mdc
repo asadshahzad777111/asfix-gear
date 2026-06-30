@@ -1,0 +1,39 @@
+---
+description: Deploy and production config for AsFix & Gear
+globs: DEPLOY.md,package.json,backend/server.js,.env.example
+alwaysApply: false
+---
+
+# AsFix Deploy Rules
+
+Follow `DEPLOY.md` for Render/Vercel steps.
+
+## Production env
+```
+NODE_ENV=production
+PORT=5000
+CORS_ORIGIN=https://your-domain.com
+```
+
+## Build commands
+- Full install: `npm run install:all`
+- Seed (first run): `npm run seed`
+- Dev: `npm run dev` (frontend :5173 + backend :5000)
+- Prod: `npm run start:prod` or Render start command from DEPLOY.md
+
+## Before deploy
+1. Run `npm run build --prefix frontend` — must pass
+2. Update shop address/phone in `frontend/src/config/shop.js`
+3. Set `CORS_ORIGIN` to live domain
+4. Run `npm run reset-admin` locally if default password was used
+
+## Domain (budget)
+- Free start: `*.onrender.com`
+- Pakistan: `asfixgear.com.pk` (~Rs 2–3.5k/yr)
+- International: `asfixgear.com` (~$10–12/yr)
+- Point DNS CNAME to Render custom domain; SSL is automatic
+
+## Do not
+- Force push to main
+- Commit `.env` or `backend/data/data.json`
+- Deploy without setting production CORS when frontend is on a different origin

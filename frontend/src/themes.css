@@ -1,0 +1,356 @@
+/* ═══════════════════════════════════════════════════════════
+   AsFix & Gear — iOS Glass Theme System
+   Light · Dark · Auto (system)
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --glass-blur: blur(20px) saturate(180%);
+  --radius: 18px;
+  --radius-lg: 28px;
+  --font: 'Outfit', system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-display: 'Syne', 'Outfit', sans-serif;
+  --font-price: 'Outfit', system-ui, sans-serif;
+  --touch-min: 2.75rem;
+  --container-inline: clamp(1rem, 4vw, 1.5rem);
+  --bp-tablet: 1024px;
+  --bp-mobile: 768px;
+  --bp-phone: 480px;
+
+  --primary: #ff6b2c;
+  --primary-glow: rgba(255, 107, 44, 0.45);
+  --violet: #7c3aed;
+  --violet-glow: rgba(124, 58, 237, 0.35);
+  --mint: #00f5d4;
+  --mint-glow: rgba(0, 245, 212, 0.25);
+  --mint-focus: rgba(0, 245, 212, 0.12);
+}
+
+/* ── Dark Mode (Premium midnight) ── */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --bg: #0c0c12;
+  --bg-gradient: linear-gradient(165deg, #08080e 0%, #12121c 42%, #0a0a10 100%);
+  --bg-card: rgba(255, 255, 255, 0.06);
+  --bg-elevated: rgba(28, 28, 38, 0.72);
+  --nav-glass: rgba(18, 18, 26, 0.72);
+  --drawer-bg: rgba(16, 16, 24, 0.92);
+  --cart-panel-bg: rgba(14, 14, 22, 0.94);
+  --glass: rgba(255, 255, 255, 0.05);
+  --glass-edge: rgba(255, 255, 255, 0.15);
+  --border: rgba(255, 255, 255, 0.1);
+  --text: #f5f5f7;
+  --text-muted: #9898a8;
+  --pill-bg: rgba(12, 12, 18, 0.78);
+  --overlay: rgba(0, 0, 0, 0.55);
+  --input-bg: rgba(255, 255, 255, 0.06);
+  --input-border: rgba(255, 255, 255, 0.12);
+  --nav-hover: rgba(255, 255, 255, 0.08);
+  --section-tint: rgba(255, 255, 255, 0.02);
+  --grid-line: rgba(255, 255, 255, 0.025);
+  --orb-strength: 1;
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.45), 0 2px 8px rgba(0, 0, 0, 0.28);
+  --shadow-nav: 0 4px 24px rgba(0, 0, 0, 0.35);
+  --shadow-hover: 0 24px 60px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.06);
+  --shadow-modal: 0 40px 80px rgba(0, 0, 0, 0.55);
+  --theme-toggle-glow: rgba(0, 245, 212, 0.2);
+  --price-color: #00f5d4;
+  --price-sale-color: #34d399;
+}
+
+/* ── Light Mode (iOS soft minimal) ── */
+[data-theme='light'] {
+  color-scheme: light;
+
+  --bg: #f2f2f7;
+  --bg-gradient: linear-gradient(165deg, #e5e5ea 0%, #f2f2f7 38%, #fafafa 100%);
+  --bg-card: rgba(255, 255, 255, 0.72);
+  --bg-elevated: rgba(255, 255, 255, 0.88);
+  --nav-glass: rgba(255, 255, 255, 0.72);
+  --drawer-bg: rgba(255, 255, 255, 0.94);
+  --cart-panel-bg: rgba(255, 255, 255, 0.96);
+  --glass: rgba(255, 255, 255, 0.55);
+  --glass-edge: rgba(255, 255, 255, 0.85);
+  --border: rgba(0, 0, 0, 0.06);
+  --text: #1c1c1e;
+  --text-muted: #636366;
+  --pill-bg: rgba(255, 255, 255, 0.88);
+  --overlay: rgba(0, 0, 0, 0.22);
+  --input-bg: rgba(255, 255, 255, 0.92);
+  --input-border: rgba(0, 0, 0, 0.08);
+  --nav-hover: rgba(0, 0, 0, 0.04);
+  --section-tint: rgba(255, 255, 255, 0.65);
+  --grid-line: rgba(0, 0, 0, 0.04);
+  --orb-strength: 0.38;
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-nav: 0 4px 24px rgba(0, 0, 0, 0.06);
+  --shadow-hover: 0 20px 50px rgba(0, 0, 0, 0.12), 0 0 0 1px rgba(255, 255, 255, 0.9);
+  --shadow-modal: 0 32px 64px rgba(0, 0, 0, 0.14);
+  --theme-toggle-glow: rgba(255, 107, 44, 0.18);
+  --primary-glow: rgba(255, 107, 44, 0.28);
+  --violet-glow: rgba(124, 58, 237, 0.2);
+  --mint: #00a896;
+  --mint-glow: rgba(0, 168, 150, 0.2);
+  --mint-focus: rgba(0, 168, 150, 0.14);
+  --price-color: #ea580c;
+  --price-sale-color: #059669;
+}
+
+/* ── Theme Toggle (navbar) ── */
+.theme-toggle {
+  position: relative;
+  flex-shrink: 0;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 50%;
+  border: 1px solid var(--glass-edge);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-elevated);
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  transition:
+    transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.35s ease,
+    border-color 0.35s ease;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.08);
+  box-shadow: var(--shadow-hover);
+}
+
+.theme-toggle:active {
+  transform: scale(0.94);
+  transition-duration: 0.1s;
+}
+
+.theme-toggle-glow {
+  position: absolute;
+  inset: -30%;
+  background: radial-gradient(circle, var(--theme-toggle-glow) 0%, transparent 70%);
+  opacity: 0.85;
+  pointer-events: none;
+}
+
+.theme-toggle-ring {
+  position: absolute;
+  inset: 3px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  pointer-events: none;
+}
+
+[data-theme='light'] .theme-toggle-ring {
+  border-color: rgba(255, 255, 255, 0.65);
+}
+
+.theme-toggle-icon {
+  position: absolute;
+  width: 1.15rem;
+  height: 1.15rem;
+  opacity: 0;
+  transform: rotate(-120deg) scale(0.4);
+  transition:
+    opacity 0.45s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1);
+  pointer-events: none;
+}
+
+.theme-toggle-icon svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.theme-toggle-icon.is-active {
+  opacity: 1;
+  transform: rotate(0deg) scale(1);
+}
+
+.theme-toggle-icon[data-mode='light'].is-active {
+  color: #f59e0b;
+}
+
+.theme-toggle-icon[data-mode='dark'].is-active {
+  color: #a78bfa;
+}
+
+.theme-toggle-icon[data-mode='auto'].is-active {
+  color: var(--mint);
+}
+
+.theme-toggle--nav {
+  flex-shrink: 0;
+  z-index: 102;
+}
+
+@media (min-width: 769px) {
+  .navbar-inner {
+    gap: 0.65rem;
+  }
+}
+
+/* Light mode readability tweaks */
+[data-theme='light'] .stock-dot.in {
+  background: rgba(34, 197, 94, 0.14);
+  color: #15803d;
+}
+
+[data-theme='light'] .stock-dot.out {
+  background: rgba(239, 68, 68, 0.12);
+  color: #b91c1c;
+}
+
+[data-theme='light'] .open-badge.is-open {
+  color: #15803d;
+}
+
+[data-theme='light'] .open-badge.is-closed {
+  color: #b91c1c;
+}
+
+[data-theme='light'] .nav-whatsapp {
+  color: #15803d !important;
+}
+
+[data-theme='light'] .login-form {
+  box-shadow: var(--shadow-modal);
+}
+
+/* Smooth global theme transition */
+html.theme-transitioning,
+html.theme-transitioning *,
+html.theme-transitioning *::before,
+html.theme-transitioning *::after {
+  transition:
+    background-color 0.45s ease,
+    border-color 0.45s ease,
+    color 0.35s ease,
+    box-shadow 0.45s ease !important;
+}
+
+/* ── Language toggle ── */
+.lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.12rem;
+  padding: 0.18rem 0.22rem 0.18rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  background: var(--glass);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  flex-shrink: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.lang-toggle-globe {
+  font-size: 0.72rem;
+  line-height: 1;
+  opacity: 0.85;
+  margin-right: 0.05rem;
+}
+
+.lang-toggle-btn {
+  min-width: 2.35rem;
+  padding: 0.35rem 0.45rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.22s ease, color 0.22s ease, transform 0.2s ease;
+}
+
+.lang-toggle-btn.active {
+  background: var(--primary);
+  color: #fff;
+  transform: translateY(-1px);
+}
+
+.lang-toggle--nav,
+.lang-toggle--nav-mobile {
+  display: none !important;
+}
+
+.lang-toggle--toolbar {
+  display: none;
+}
+
+.lang-toggle--drawer {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .lang-toggle--toolbar {
+    display: inline-flex;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-drawer.open .lang-toggle--drawer,
+  .nav-links.open .lang-toggle--drawer {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    margin: 0.25rem 0 0.65rem;
+  }
+}
+
+/* RTL — proper Urdu */
+html[dir='rtl'] body {
+  font-family: 'Outfit', 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', system-ui, sans-serif;
+}
+
+html[dir='rtl'] .navbar-inner,
+html[dir='rtl'] .footer-grid,
+html[dir='rtl'] .hero-actions,
+html[dir='rtl'] .admin-float-card-head,
+html[dir='rtl'] .shop-status-control-head {
+  direction: rtl;
+}
+
+html[dir='rtl'] .logo {
+  margin-right: 0;
+  margin-left: 0;
+}
+
+html[dir='rtl'] .navbar-aside {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+html[dir='rtl'] .nav-links {
+  margin-left: 0;
+  margin-right: 0;
+  justify-content: flex-start;
+}
+
+html[dir='rtl'] .admin-float-tab {
+  border-left: 1px solid var(--glass-edge);
+  border-right: none;
+  border-radius: var(--radius) 0 0 var(--radius);
+}
+
+html[dir='rtl'] .admin-float-desk {
+  left: auto;
+  right: 0;
+}
+
+html[dir='rtl'] .lang-toggle-globe {
+  margin-right: 0;
+  margin-left: 0.05rem;
+}
+
+html[dir='rtl'] .admin-float-panel {
+  margin-left: 0;
+  margin-right: 0.35rem;
+}

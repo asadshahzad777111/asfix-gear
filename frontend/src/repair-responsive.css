@@ -1,0 +1,291 @@
+/* Repair page — all breakpoints */
+
+.repair-page {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+.repair-page-block {
+  padding-top: 0;
+  padding-bottom: clamp(1.5rem, 4vw, 2.75rem);
+  position: relative;
+  isolation: isolate;
+}
+
+.repair-page-block--intake {
+  padding-bottom: clamp(1.25rem, 3vw, 2rem);
+}
+
+.repair-page-block--models {
+  padding-bottom: clamp(2rem, 5vw, 3rem);
+}
+
+.repair-page-block--services {
+  padding-top: clamp(0.75rem, 2vw, 1.25rem);
+  border-top: 1px solid var(--glass-edge);
+}
+
+.repair-steps-section {
+  overflow: hidden;
+  padding-bottom: clamp(0.75rem, 2vw, 1.25rem);
+}
+
+.repair-steps-section + .repair-intake-section-wrap {
+  padding-top: 0.25rem;
+}
+
+.repair-intake-section-wrap {
+  overflow-x: clip;
+}
+
+.repair-intake-section-wrap .container {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.repair-intake-form {
+  width: 100%;
+  max-width: 920px;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-inline: auto;
+}
+
+.repair-intake-section {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  margin-inline: 0;
+}
+
+.repair-intake-section-title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: clamp(0.95rem, 2.5vw, 1.05rem);
+  font-weight: 700;
+  color: var(--primary);
+  margin: 0 0 0.75rem;
+  padding: 0;
+}
+
+.repair-intake-form .form-row-2 {
+  grid-template-columns: 1fr;
+  gap: 0.75rem;
+}
+
+.repair-intake-form .form-row-2 > .form-group {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  margin-bottom: 0;
+}
+
+.repair-intake-form .form-group {
+  width: 100%;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.repair-intake-form input:not([type='checkbox']):not([type='radio']),
+.repair-intake-form select,
+.repair-intake-form textarea {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.repair-issue-grid {
+  width: 100%;
+  min-width: 0;
+}
+
+.repair-issue-chip {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.repair-issue-chip input[type='checkbox'] {
+  width: 1.15rem !important;
+  min-width: 1.15rem !important;
+  max-width: 1.15rem !important;
+  height: 1.15rem !important;
+  flex: 0 0 1.15rem;
+}
+
+.repair-issue-chip span {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.repair-policy-notice,
+.repair-estimate-notice {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+/* Models panel */
+.repair-models-panel {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.repair-models-grid {
+  width: 100%;
+  min-width: 0;
+}
+
+.repair-model-group {
+  min-width: 0;
+}
+
+.repair-model-chips {
+  max-width: 100%;
+}
+
+.repair-model-chip {
+  max-width: 100%;
+  box-sizing: border-box;
+  word-break: break-word;
+  text-align: center;
+  line-height: 1.35;
+}
+
+.repair-models-panel > .btn-block {
+  margin-top: 0.5rem;
+  position: relative;
+  z-index: 1;
+}
+
+/* Screen quality (standalone section on repair page) */
+.repair-page-block--screen .screen-quality-panel:not(.compact) {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.repair-page-block--screen .screen-quality-grid {
+  width: 100%;
+  min-width: 0;
+}
+
+@media (min-width: 769px) {
+  .repair-intake-form .repair-issue-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 640px) {
+  .repair-intake-form .form-row-2 {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .repair-intake-section-wrap {
+    padding-bottom: calc(var(--float-dock-row, 4.75rem) + 0.5rem);
+  }
+
+  .repair-intake-form {
+    padding: 1rem;
+    border-radius: calc(var(--radius) - 2px);
+  }
+
+  .repair-intake-section {
+    padding: 0 0 1.1rem;
+    margin-bottom: 1.1rem;
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    border-bottom: 1px solid var(--glass-edge);
+    border-radius: 0;
+  }
+
+  .repair-intake-section:last-of-type,
+  .repair-intake-section.repair-intake-confirm {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+  }
+
+  .repair-issue-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .repair-issue-chip {
+    width: 100%;
+  }
+
+  .repair-intake-screen-quality .screen-quality-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .repair-models-panel {
+    padding: 1rem;
+  }
+
+  .repair-models-grid {
+    grid-template-columns: 1fr;
+    gap: 1.1rem;
+  }
+
+  .repair-model-chip {
+    font-size: 0.72rem;
+    padding: 0.45rem 0.65rem;
+    white-space: normal;
+  }
+
+  .repair-page-block--models {
+    padding-bottom: 2.25rem;
+  }
+
+  .repair-page-block--services {
+    padding-top: 1.5rem;
+    margin-top: 0.25rem;
+  }
+
+  .repair-page-block--screen .screen-quality-panel:not(.compact) {
+    padding: 1rem;
+  }
+
+  .repair-page-block--screen .screen-quality-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1024px) {
+  .repair-models-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .repair-page-block--screen .screen-quality-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1600px) {
+  .repair-intake-form {
+    max-width: 980px;
+  }
+
+  .repair-models-panel {
+    padding: 2.25rem;
+  }
+}

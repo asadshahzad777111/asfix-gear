@@ -1,0 +1,52 @@
+# Manual deploy reminder — does NOT deploy by itself.
+# Connect Render deploy hook URL as a repository secret when ready:
+#   RENDER_DEPLOY_HOOK=https://api.render.com/deploy/srv-...
+name: Deploy hint (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      target:
+        description: 'Deploy target'
+        required: true
+        default: render
+        type: choice
+        options:
+          - render
+          - vercel-frontend-only
+          - railway
+
+jobs:
+  deploy-checklist:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Pre-deploy checklist
+        run: |
+          echo "=== AsFix & Gear — Pre-deploy checklist ==="
+          echo "1. npm run install:all && npm run seed && npm run build (local)"
+          echo "2. Render build: npm run install:all && npm run seed && npm run build --prefix frontend"
+          echo "3. Render start: NODE_ENV=production node backend/server.js"
+          echo "4. Update shop address/phone in frontend/src/config/shop.js if needed"
+          echo "5. Custom domain: Render dashboard → Domains → DNS CNAME"
+          echo ""
+          echo "Full guide: DEPLOY.md"
+          node scripts/check-i18n.js
+          npm run install:all
+          npm run build
+
+      - name: Trigger Render deploy (optional)
+        if: ${{ inputs.target == 'render' && secrets.RENDER_DEPLOY_HOOK != '' }}
+        env:
+          RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
+        run: |
+          curl -sf -X POST "$RENDER_DEPLOY_HOOK"
+          echo "Render deploy hook triggered."
+
+      - name: Render hook not configured
+        if: ${{ inputs.target == 'render' && secrets.RENDER_DEPLOY_HOOK == '' }}
+        run: |
+          echo "RENDER_DEPLOY_HOOK secret not set — skipping live deploy."
+          echo "Add it in GitHub → Settings → Secrets when Render gives you a deploy hook URL."

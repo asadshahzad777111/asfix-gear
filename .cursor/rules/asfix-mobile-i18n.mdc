@@ -1,0 +1,25 @@
+---
+description: Mobile-first UI and 3-language i18n rules for AsFix & Gear
+globs: frontend/src/**/*
+alwaysApply: false
+---
+
+# AsFix Mobile & i18n
+
+## Languages — exactly 3
+- Supported: `en`, `roman`, `ur` only — defined in `frontend/src/locales/translations.js`
+- Do not add world-languages picker or extra locale blocks (caused syntax breaks and hangs)
+- All user-facing strings go through `t('key')` — add keys to all 3 locales when adding UI text
+- Urdu mode sets `dir="rtl"` — test navbar, footer, forms in RTL
+
+## Mobile performance
+- Respect `mobile-performance.css`: no backdrop-blur on mobile, ambient bg off, scroll-behavior auto
+- Menu thumb animation: use spring in `useNavDrawerThumb.js`; stop rAF when menu closed
+- Avoid lazy routes that showed stuck "Load ho raha hai" — keep eager imports in `PageTransition.jsx` unless Suspense is tested
+- Gaming/Shop mode transitions: keep navigate delay under ~700ms
+- Poll APIs with `startVisibilityPoll` — pause when tab hidden
+
+## Touch UX
+- `(pointer: coarse)` — disable heavy hover/magnetic/ripple effects
+- Keep floating buttons (`cart`, `WhatsApp`, `gaming`) from overlapping on small screens
+- Test at 375px width and RTL before shipping UI changes

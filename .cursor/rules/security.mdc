@@ -1,0 +1,34 @@
+---
+description: Security — secrets, auth, rate limits, input validation for AsFix & Gear
+alwaysApply: true
+---
+
+# Security rules (AsFix & Gear)
+
+## Secrets & env
+
+- Never commit `.env`, `backend/data/data.json` tokens, or real admin passwords.
+- Default admin password is seed-only; remind user to run `npm run reset-admin` after deploy.
+- Use `process.env.ADMIN_PASSWORD` in seed scripts, not hardcoded production secrets.
+- Run `node scripts/check-secrets.js` before merging sensitive changes.
+
+## Auth
+
+- Staff routes must use existing auth middleware in `backend/routes/` — do not bypass token checks.
+- Frontend stores token in `localStorage` (`asfix_auth_token`); never log tokens or password hashes.
+- Admin/staff UI is gated by `useAuth()` / `isStaff` — keep those checks on mutating actions.
+
+## API safety
+
+- Validate and sanitize user input on the backend (repairs, contact, orders, products).
+- Keep JSON body limit reasonable (`express.json({ limit: '5mb' })`).
+- Do not expose internal paths, stack traces, or raw `data.json` in API responses.
+
+## Rate limiting & abuse
+
+- Prefer server-side validation over client-only checks for forms (repair booking, contact, checkout).
+- When adding public POST endpoints, consider basic rate limiting or duplicate-submission guards.
+
+## Dependencies
+
+- Avoid adding heavy auth libraries unless needed; match existing Express + JSON file store pattern.

@@ -1,0 +1,40 @@
+---
+description: QA checklist — mobile menu, cart, repair form before merge
+globs: frontend/src/**/*
+alwaysApply: false
+---
+
+# Website QA before merge
+
+Run through these manually or ask the agent to verify after UI changes:
+
+## Mobile menu
+
+- [ ] Hamburger opens/closes nav drawer on ≤ 768px
+- [ ] Focus bar follows touch/drag on menu items
+- [ ] Shop + Gaming mode buttons visible and tappable
+- [ ] Language switcher cycles en → roman → ur without layout break
+
+## Shop / cart
+
+- [ ] Product grid loads from `/api/products`
+- [ ] Add to cart, quantity change, remove item work
+- [ ] Checkout form submits order; success/error messages show
+- [ ] Open/closed badge reflects shop status API
+
+## Repair form
+
+- [ ] Device + issue selection works on mobile
+- [ ] Screen quality picker (if shown) selects and persists
+- [ ] Booking submits; WhatsApp link optional path works
+- [ ] Form validation messages use `t()` in all langs
+
+## Staff (if touched)
+
+- [ ] Login/logout; staff toolbar only when authenticated
+- [ ] Add product modal saves; chat inbox polls only when visible tab
+
+## Build
+
+- [ ] `npm run build` passes with no errors
+- [ ] No console errors on home, shop, gaming, repair, contact routes

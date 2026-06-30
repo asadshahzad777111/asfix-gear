@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="description" content="AsFix & Gear by Asad Shahzad — Expert mobile repair & premium accessories. WhatsApp: 03039227000. Open 9 AM – 9 PM." />
+    <meta name="theme-color" content="#0c0c12" />
+    <meta name="color-scheme" content="dark light" />
+    <title>AsFix & Gear | Mobile Repair & Accessories — Asad Shahzad</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <!-- Critical font only — display + Urdu fonts load later in JS -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&display=swap" rel="stylesheet" />
+    <script>
+      (function () {
+        var mode = localStorage.getItem('asfix-theme') || 'auto';
+        var theme = mode;
+        if (mode === 'auto') {
+          theme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+        }
+        document.documentElement.setAttribute('data-theme', theme);
+        document.documentElement.setAttribute('data-theme-mode', mode);
+      })();
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

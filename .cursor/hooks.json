@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "hooks": {
+    "beforeShellExecution": [
+      {
+        "command": "node .cursor/hooks/warn-env-commit.cjs",
+        "matcher": "git\\s+(add|commit|push)"
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "node .cursor/hooks/critical-file-hint.cjs"
+      }
+    ]
+  }
+}

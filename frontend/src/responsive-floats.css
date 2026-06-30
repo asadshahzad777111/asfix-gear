@@ -1,0 +1,367 @@
+/* ═══════════════════════════════════════════════════════════
+   Responsive floats + sale / shop / gaming animations
+   Phone · Tablet · Desktop · TV
+   ═══════════════════════════════════════════════════════════ */
+
+:root {
+  --float-dock-bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+  --float-dock-size: 3.15rem;
+  --float-dock-gap: 0.55rem;
+  --float-dock-row: calc(var(--float-dock-size) + var(--float-dock-bottom) + 0.85rem);
+}
+
+/* ── Sale animations — desktop/tablet only (mobile perf) ── */
+@media (prefers-reduced-motion: no-preference) and (min-width: 769px) {
+  .product-card-wrap--grid.on-sale,
+  .product-card-wrap.on-sale .product-card {
+    animation: saleBorderPulse 2.8s ease-in-out infinite;
+  }
+
+  .discount-ribbon--compact {
+    animation: ribbonShine 3s ease-in-out infinite, saleBadgePulse 2.2s ease-in-out infinite;
+  }
+
+  .discount-ribbon:not(.discount-ribbon--compact) {
+    animation: ribbonShine 3s ease-in-out infinite;
+  }
+
+  .filter-btn.filter-sale.active {
+    animation: saleFilterGlow 2.5s ease-in-out infinite;
+  }
+
+  .admin-sale-tag,
+  .price-off-tag {
+    animation: saleBadgePulse 2.2s ease-in-out infinite;
+  }
+
+  .detail-sale-banner {
+    animation: saleBannerGlow 2.4s ease-in-out infinite;
+  }
+
+  .gaming-product-card.on-sale,
+  .premium-gaming-card.on-sale {
+    animation: saleBorderPulse 2.8s ease-in-out infinite;
+  }
+
+  .price-sale {
+    animation: priceSaleGlow 2.6s ease-in-out infinite;
+  }
+}
+
+@keyframes saleBorderPulse {
+  0%, 100% {
+    border-color: rgba(255, 45, 120, 0.25);
+    box-shadow: var(--shadow-elevated);
+  }
+  50% {
+    border-color: rgba(255, 45, 120, 0.55);
+    box-shadow: 0 0 22px rgba(255, 45, 120, 0.18);
+  }
+}
+
+@keyframes saleBadgePulse {
+  0%, 100% { transform: scale(1); filter: brightness(1); }
+  50% { transform: scale(1.04); filter: brightness(1.12); }
+}
+
+@keyframes saleFilterGlow {
+  0%, 100% { box-shadow: 0 0 0 rgba(255, 45, 120, 0); }
+  50% { box-shadow: 0 0 18px rgba(255, 45, 120, 0.35); }
+}
+
+@keyframes saleBannerGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 rgba(255, 45, 120, 0);
+    filter: brightness(1);
+  }
+  50% {
+    box-shadow: 0 0 20px rgba(255, 45, 120, 0.28);
+    filter: brightness(1.08);
+  }
+}
+
+@keyframes priceSaleGlow {
+  0%, 100% { text-shadow: 0 0 20px color-mix(in srgb, var(--price-sale-color) 30%, transparent); }
+  50% { text-shadow: 0 0 28px color-mix(in srgb, var(--price-sale-color) 55%, transparent); }
+}
+
+/* ── Nav pill animations — desktop nav bar only ── */
+@media (prefers-reduced-motion: no-preference) and (min-width: 1025px) {
+  .gaming-mode-btn--nav {
+    animation: gamingNavGlow 3s ease-in-out infinite;
+  }
+
+  .shop-mode-btn--nav {
+    animation: shopNavGlow 3s ease-in-out infinite;
+  }
+}
+
+@keyframes gamingNavGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(0, 255, 136, 0.12); }
+  50% { box-shadow: 0 0 22px rgba(0, 255, 136, 0.32); }
+}
+
+@keyframes shopNavGlow {
+  0%, 100% { box-shadow: 0 0 12px rgba(255, 107, 44, 0.15); }
+  50% { box-shadow: 0 0 22px rgba(255, 107, 44, 0.35); }
+}
+
+/* Disable desktop-only trigger press (uses translateY — breaks mobile dock) */
+@media (max-width: 1024px) {
+  .gaming-mode-btn--trigger.activating {
+    animation: triggerPressMobile 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  }
+
+  .gaming-mode-btn--trigger:hover {
+    transform: none;
+  }
+}
+
+/* ── Phone (portrait + small phones) ── */
+@media (max-width: 768px) {
+  .app-main {
+    padding-bottom: var(--float-dock-row);
+  }
+
+  .hero-actions,
+  .hero-main {
+    padding-bottom: 0.25rem;
+  }
+
+  /* Bottom dock — no overlap with hero buttons */
+  .floating-cart-trigger {
+    bottom: var(--float-dock-bottom);
+    left: 0.65rem;
+    width: var(--float-dock-size);
+    height: var(--float-dock-size);
+    z-index: 200;
+  }
+
+  .gaming-mode-btn--trigger {
+    top: auto !important;
+    bottom: var(--float-dock-bottom) !important;
+    left: calc(0.65rem + var(--float-dock-size) + var(--float-dock-gap)) !important;
+    right: auto !important;
+    transform: none !important;
+    flex-direction: row;
+    width: var(--float-dock-size);
+    height: var(--float-dock-size);
+    padding: 0.35rem !important;
+    border-radius: 50% !important;
+    justify-content: center;
+    align-items: center;
+    background: linear-gradient(145deg, rgba(0, 255, 136, 0.2), rgba(3, 3, 8, 0.85)) !important;
+    z-index: 199;
+  }
+
+  .gaming-mode-btn--trigger:hover,
+  .gaming-mode-btn--trigger.activating {
+    transform: scale(1.05) !important;
+  }
+
+  .gaming-mode-btn--trigger.activating {
+    animation: triggerPressMobile 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  .gaming-mode-btn--trigger .gaming-btn-label,
+  .gaming-mode-btn--trigger .gaming-btn-ring,
+  .gaming-mode-btn--trigger .premium-btn-neon-ring {
+    display: none !important;
+  }
+
+  .gaming-mode-btn--trigger .gaming-btn-shine {
+    animation-duration: 4s;
+  }
+
+  .gaming-mode-btn--trigger .gaming-btn-core svg,
+  .gaming-mode-btn--trigger .gaming-btn-core {
+    width: 2rem !important;
+    height: 2rem !important;
+  }
+
+  .whatsapp-float {
+    bottom: var(--float-dock-bottom);
+    right: 0.65rem;
+    width: var(--float-dock-size);
+    height: var(--float-dock-size);
+    z-index: 200;
+  }
+
+  .staff-access {
+    bottom: var(--float-dock-bottom);
+    right: calc(0.65rem + var(--float-dock-size) + var(--float-dock-gap));
+    z-index: 198;
+  }
+
+  .staff-access-trigger {
+    width: var(--float-dock-size);
+    height: var(--float-dock-size);
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+  }
+
+  .staff-access-trigger-text {
+    display: none;
+  }
+
+  .staff-toolbar {
+    bottom: calc(var(--float-dock-bottom) + var(--float-dock-size) + 0.5rem);
+    right: 0.65rem;
+    left: 0.65rem;
+    flex-direction: row;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .staff-toolbar-btn-text {
+    display: inline;
+  }
+
+  .admin-float-desk {
+    top: auto;
+    bottom: calc(var(--float-dock-bottom) + var(--float-dock-size) + 0.75rem);
+    transform: none;
+  }
+
+  .fab-add {
+    bottom: calc(var(--float-dock-bottom) + var(--float-dock-size) + 0.5rem);
+    right: 0.65rem;
+  }
+
+  /* Nav drawer gaming/shop → mobile-nav.css */
+}
+
+/* ── Tablet (iPad portrait / small landscape) ── */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .app-main {
+    padding-bottom: 5.5rem;
+  }
+
+  .floating-cart-trigger {
+    bottom: 1.25rem;
+    left: 1rem;
+    width: 3.35rem;
+    height: 3.35rem;
+  }
+
+  .gaming-mode-btn--trigger {
+    top: auto;
+    bottom: 1.25rem;
+    left: calc(1rem + 3.35rem + 0.65rem);
+    transform: none;
+    flex-direction: row;
+    border-radius: 999px;
+    padding: 0.55rem 0.9rem 0.55rem 0.55rem;
+  }
+
+  .gaming-mode-btn--trigger:hover {
+    transform: translateY(-2px) !important;
+  }
+
+  .gaming-mode-btn--trigger.activating {
+    animation: triggerPressMobile 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  }
+
+  .gaming-mode-btn--trigger .gaming-btn-ring {
+    display: none;
+  }
+
+  .gaming-mode-btn--trigger .gaming-btn-label {
+    display: flex;
+  }
+
+  .whatsapp-float {
+    bottom: 1.25rem;
+    right: 1rem;
+    width: 3.35rem;
+    height: 3.35rem;
+  }
+
+  .staff-access {
+    bottom: 1.25rem;
+    right: calc(1rem + 3.35rem + 0.65rem);
+  }
+
+  .staff-toolbar {
+    bottom: calc(1.25rem + 3.75rem + 0.5rem);
+    right: 1rem;
+  }
+
+  .admin-float-desk {
+    top: 50%;
+    bottom: auto;
+    transform: translateY(-50%);
+  }
+}
+
+/* ── Desktop / Windows ── */
+@media (min-width: 1025px) {
+  .gaming-mode-btn--trigger {
+    top: 50%;
+    bottom: auto;
+    left: 0;
+    transform: translateY(-50%);
+  }
+
+  .gaming-mode-btn--trigger:hover {
+    transform: translateY(-50%) translateX(4px);
+  }
+}
+
+/* ── Large screens / TV ── */
+@media (min-width: 1600px) {
+  :root {
+    --float-dock-size: 3.5rem;
+  }
+
+  .gaming-mode-btn--trigger {
+    padding: 1rem 0.65rem 1rem 0.5rem;
+  }
+
+  .gaming-mode-btn--trigger .gaming-btn-label strong {
+    font-size: 0.75rem;
+  }
+
+  .whatsapp-float {
+    width: 3.5rem;
+    height: 3.5rem;
+  }
+}
+
+/* Touch devices — simpler motion (no broken hover transforms) */
+@media (pointer: coarse) {
+  .gaming-mode-btn--trigger,
+  .shop-mode-btn--trigger,
+  .whatsapp-float {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .premium-product.gaming.is-hovered .premium-rgb-wave,
+  .premium-product.gaming.is-hovered .premium-particle {
+    opacity: 0.35;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gaming-mode-btn--trigger .gaming-btn-shine,
+  .shop-mode-btn--nav,
+  .gaming-mode-btn--nav,
+  .whatsapp-float,
+  .discount-ribbon,
+  .discount-ribbon--compact,
+  .product-card-wrap--grid.on-sale,
+  .product-card-wrap.on-sale .product-card,
+  .gaming-product-card.on-sale,
+  .detail-sale-banner,
+  .price-sale,
+  .filter-btn.filter-sale.active {
+    animation: none !important;
+  }
+}
+
+@keyframes triggerPressMobile {
+  0% { transform: scale(1); filter: brightness(1); }
+  25% { transform: scale(0.88); filter: brightness(1.35); }
+  100% { transform: scale(1); }
+}

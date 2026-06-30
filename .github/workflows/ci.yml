@@ -1,0 +1,56 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+
+jobs:
+  build-and-smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm run install:all
+
+      - name: Seed database
+        run: npm run seed
+
+      - name: Check i18n key parity
+        run: node scripts/check-i18n.js
+
+      - name: Scan for secrets in tracked files
+        run: node scripts/check-secrets.js
+
+      - name: Build frontend
+        run: npm run build
+
+      - name: Backend smoke test
+        run: |
+          node backend/server.js &
+          SERVER_PID=$!
+          trap "kill $SERVER_PID 2>/dev/null || true" EXIT
+          for i in $(seq 1 30); do
+            if curl -sf http://localhost:5000/api/health > /dev/null; then
+              break
+            fi
+            sleep 1
+          done
+          curl -sf http://localhost:5000/api/health | grep -q '"status":"ok"'
+          curl -sf http://localhost:5000/api/products > /dev/null
+          echo "Backend smoke OK"

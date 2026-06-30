@@ -1,0 +1,116 @@
+/* ═══════════════════════════════════════════════════════════
+   Global responsive — phone · tablet/iPad · desktop · TV
+   ═══════════════════════════════════════════════════════════ */
+
+.app-main {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+.glass-card {
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.section-title,
+.page-title,
+.hero-title {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.btn-block {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+/* ── Phone ── */
+@media (max-width: 768px) {
+  .section {
+    padding: clamp(1.25rem, 3.5vw, 2rem) 0;
+  }
+
+  .container {
+    overflow-x: clip;
+  }
+
+  .page-header {
+    margin-bottom: 1rem;
+  }
+
+  .section-head {
+    margin-bottom: 1.5rem;
+  }
+}
+
+/* ── Tablet / iPad ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .section {
+    padding: clamp(1.75rem, 3.5vw, 2.75rem) 0;
+  }
+
+  .services-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.15rem;
+  }
+
+  .screen-quality-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .repair-steps {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .products-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ── Desktop / Windows ── */
+@media (min-width: 1025px) {
+  .services-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .services-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+/* ── Large screens / TV ── */
+@media (min-width: 1600px) {
+  .container {
+    width: min(1280px, calc(100% - var(--container-inline) * 2));
+  }
+
+  .section {
+    padding: clamp(3rem, 5vw, 5rem) 0;
+  }
+
+  .section-title {
+    font-size: clamp(2.25rem, 2.5vw, 3.25rem);
+  }
+
+  .page-title {
+    font-size: clamp(2.5rem, 3vw, 3.5rem);
+  }
+
+  .repair-steps {
+    gap: 1.35rem;
+  }
+
+  .services-grid {
+    gap: 1.35rem;
+  }
+}
+
+@media (min-width: 1920px) {
+  .container {
+    width: min(1400px, calc(100% - var(--container-inline) * 2));
+  }
+}

@@ -1,0 +1,39 @@
+---
+description: Security standards for AsFix & Gear — auth, API, secrets, input validation
+alwaysApply: true
+---
+
+# AsFix Security Rules
+
+## Secrets
+- Never commit `.env`, tokens, passwords, or `backend/data/data.json` with real customer data
+- Use `.env.example` for documented vars only (`CORS_ORIGIN`, `NODE_ENV`, `PORT`)
+- Shop phone/email live in `frontend/src/config/shop.js` — no API keys in frontend
+
+## Backend API
+- All admin/staff routes must use `requireAuth` + `requireRole`
+- Public write endpoints (`/api/contact`, `/api/orders`, `/api/repairs/book`) need rate limits and input length caps
+- Keep JSON body limit small (256kb); reject oversized payloads
+- Production: set `CORS_ORIGIN` to exact domain(s); never use `cors()` wide open in prod
+- Error responses: generic message only — no stack traces or internal paths to clients
+
+## Auth
+- Passwords hashed with scrypt (`backend/auth/crypto.js`) — never store plain text
+- Sessions use random tokens; expire inactive sessions
+- Login endpoint must stay rate-limited (brute-force protection)
+
+## Input
+- Trim and validate all user strings; enforce max lengths on contact/order/repair forms
+- Reject unexpected types (arrays/objects where strings expected)
+- No `eval`, no dynamic `require`, no unsanitized HTML injection in stored messages
+
+## Frontend
+- Auth token in localStorage is acceptable for this app; clear on 401/403 only
+- Never log tokens or passwords to console in production builds
+- Staff panels poll only when tab visible — use `startVisibilityPoll`
+
+## Deploy checklist
+- `NODE_ENV=production`
+- HTTPS via Render/Vercel (free SSL)
+- Reset default admin password after first deploy (`npm run reset-admin`)
+- Review `DEPLOY.md` before going live

@@ -1,0 +1,22 @@
+{
+  "name": "asfix-gear",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AsFix & Gear — Mobile Repair + Accessories Shop",
+  "scripts": {
+    "install:all": "npm install --prefix backend && npm install --prefix frontend",
+    "dev": "concurrently -n backend,frontend -c blue,magenta \"npm run dev --prefix backend\" \"npm run dev --prefix frontend\"",
+    "dev:backend": "npm run dev --prefix backend",
+    "dev:frontend": "npm run dev --prefix frontend",
+    "seed": "npm run seed --prefix backend",
+    "reset-admin": "npm run reset-admin --prefix backend",
+    "build": "npm run build --prefix frontend",
+    "start:prod": "npm run build && set NODE_ENV=production&& node backend/server.js",
+    "check:i18n": "node scripts/check-i18n.js",
+    "check:secrets": "node scripts/check-secrets.js"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

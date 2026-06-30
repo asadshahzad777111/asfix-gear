@@ -1,0 +1,33 @@
+---
+description: Render deploy steps and production checklist for AsFix & Gear
+globs: DEPLOY.md,backend/**/*
+alwaysApply: false
+---
+
+# Deploy rules (Render recommended)
+
+## Render Web Service (full stack)
+
+- **Build:** `npm run install:all && npm run seed && npm run build --prefix frontend`
+- **Start:** `NODE_ENV=production node backend/server.js`
+- **Port:** Render sets `PORT`; backend reads `process.env.PORT || 5000`.
+
+## Before every deploy
+
+1. Local: `npm run install:all && npm run seed && npm run build && npm run start:prod` (smoke test)
+2. Update `frontend/src/config/shop.js` (address, phone, email) if changed
+3. Run `node scripts/check-i18n.js` and `node scripts/check-secrets.js`
+4. Confirm `backend/data/` is NOT in git (gitignored — production re-seeds on build)
+
+## Custom domain
+
+1. Buy domain (Namecheap / GoDaddy)
+2. Render dashboard → Web Service → **Custom Domains**
+3. Add DNS CNAME as Render instructs; SSL is automatic
+
+## Split deploy (optional)
+
+- Frontend on Vercel (`frontend/` root, `VITE_API_URL` = Render backend URL)
+- Backend stays on Render with `backend/` as root if split
+
+See `DEPLOY.md` for full Roman Urdu + English guide.

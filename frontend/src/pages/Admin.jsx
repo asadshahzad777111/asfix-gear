@@ -1,0 +1,283 @@
+import { useEffect, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
+import { api } from '../api/client';
+import { useAuth } from '../context/AuthContext';
+import { canDeleteProducts, canManageTeam, canManageShopSettings, roleLabel } from '../config/permissions';
+import PageHeader from '../components/PageHeader';
+import AddProductForm from '../components/AddProductForm';
+import AdminDiscountPanel from '../components/AdminDiscountPanel';
+import AdminManagement from '../components/AdminManagement';
+import AdminChatInbox from '../components/AdminChatInbox';
+import ShopStatusControl from '../components/ShopStatusControl';
+import { useTranslation } from '../context/LanguageContext';
+import { ProductPrice } from '../components/DiscountPicker';
+import { hasDiscount } from '../utils/pricing';
+
+export default function Admin() {
+  const { user, logout } = useAuth();
+  const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
+  const [tab, setTab] = useState(searchParams.get('tab') || 'add');
+  const [bookings, setBookings] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [editingProduct, setEditingProduct] = useState(null);
+
+  const showAdminMgmt = canManageTeam(user);
+  const allowDelete = canDeleteProducts(user);
+  const showShopControl = canManageShopSettings(user);
+
+  const loadData = async () => {
+    setLoading(true);
+    try {
+      const [bookingData, productData] = await Promise.all([api.getBookings(), api.getProducts()]);
+      setBookings(bookingData);
+      setProducts(productData);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  useEffect(() => {
+    const t = searchParams.get('tab');
+    if (t) setTab(t);
+  }, [searchParams]);
+
+  const updateStatus = async (id, status) => {
+    try {
+      await api.updateBookingStatus(id, status);
+      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleDeleteProduct = async (id, name) => {
+    if (!allowDelete) return;
+    if (!confirm(t('admin.deleteConfirm', { name }))) return;
+    try {
+      await api.deleteProduct(id);
+      setProducts((prev) => prev.filter((p) => p.id !== id));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleEditProduct = (product) => {
+    setEditingProduct(product);
+    setTab('add');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleFormSuccess = () => {
+    setEditingProduct(null);
+    loadData();
+    setTab('products');
+  };
+
+  return (
+    <>
+      <PageHeader
+        eyebrow="⚙️ Admin"
+        title="Dashboard"
+        subtitle={`Welcome, ${user?.username || 'Staff'} — ${roleLabel(user?.role)}`}
+      >
+        <button type="button" className="btn btn-outline" onClick={logout}>
+          Logout
+        </button>
+      </PageHeader>
+
+      <section className="section" style={{ paddingTop: 0 }}>
+        <div className="container">
+          {showShopControl && <ShopStatusControl />}
+
+          <div className="admin-tabs">
+            <button type="button" className={`admin-tab admin-tab-add ${tab === 'add' ? 'active' : ''}`} onClick={() => { setTab('add'); setEditingProduct(null); }}>
+              {editingProduct ? '✏️ Edit Product' : '➕ Add Product'}
+            </button>
+            <button type="button" className={`admin-tab ${tab === 'products' ? 'active' : ''}`} onClick={() => setTab('products')}>
+              Products ({products.length})
+            </button>
+            <button type="button" className={`admin-tab ${tab === 'bookings' ? 'active' : ''}`} onClick={() => setTab('bookings')}>
+              Repair Intake ({bookings.length})
+            </button>
+            <button type="button" className={`admin-tab ${tab === 'messages' ? 'active' : ''}`} onClick={() => setTab('messages')}>
+              {t('admin.messages')}
+            </button>
+            {showAdminMgmt && (
+              <button type="button" className={`admin-tab ${tab === 'admins' ? 'active' : ''}`} onClick={() => setTab('admins')}>
+                {t('team.manageTeam')}
+              </button>
+            )}
+          </div>
+
+          {loading && !['add', 'admins', 'messages'].includes(tab) ? (
+            <div className="loading">{t('common.loading')}</div>
+          ) : tab === 'messages' ? (
+            <AdminChatInbox />
+          ) : tab === 'add' ? (
+            <div className="glass-card admin-add-wrap">
+              {editingProduct && (
+                <button type="button" className="btn btn-outline btn-sm" style={{ marginBottom: '1rem' }} onClick={() => setEditingProduct(null)}>
+                  ← Cancel Edit
+                </button>
+              )}
+              <AddProductForm
+                editProduct={editingProduct}
+                onSuccess={handleFormSuccess}
+              />
+            </div>
+          ) : tab === 'admins' && showAdminMgmt ? (
+            <AdminManagement />
+          ) : tab === 'products' ? (
+            <>
+              <div className="admin-toolbar">
+                <button type="button" className="btn btn-primary" onClick={() => { setEditingProduct(null); setTab('add'); }}>
+                  ➕ Naya Product
+                </button>
+              </div>
+              <div className="admin-products-grid">
+                {products.length === 0 ? (
+                  <div className="empty-state">
+                    <p>{t('admin.noProducts')}</p>
+                    <button type="button" className="btn btn-primary" onClick={() => setTab('add')}>➕ Add Product</button>
+                  </div>
+                ) : (
+                  products.map((p) => (
+                    <div key={p.id} className={`admin-product-card glass-card ${hasDiscount(p) ? 'on-sale' : ''}`}>
+                      <div className="admin-product-img-wrap">
+                        <img src={p.image} alt={p.name} />
+                        {hasDiscount(p) && <span className="admin-sale-tag">-{p.discount_percent}%</span>}
+                      </div>
+                      <div className="admin-product-info">
+                        <span className="preview-cat">{p.category}</span>
+                        <h3>{p.name}</h3>
+                        <ProductPrice product={p} size="sm" />
+                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>Stock: {p.stock}</p>
+                        {p.warranty ? <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>🛡️ {p.warranty}</p> : null}
+                        {p.featured ? <span className="featured-tag">⭐ Featured</span> : null}
+                        <AdminDiscountPanel
+                          product={p}
+                          onUpdated={(updated) => setProducts((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))}
+                        />
+                        <div className="admin-product-actions">
+                          <button type="button" className="btn btn-primary btn-sm" onClick={() => handleEditProduct(p)}>
+                            Edit
+                          </button>
+                          {allowDelete && (
+                            <button type="button" className="btn btn-outline btn-sm" onClick={() => handleDeleteProduct(p.id, p.name)}>
+                              Delete
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </>
+          ) : (
+            <>
+              <div className="admin-bookings-list">
+                {bookings.length === 0 ? (
+                  <div className="empty-state glass-card">Abhi koi repair intake nahi.</div>
+                ) : (
+                  bookings.map((b) => (
+                    <article key={b.id} className="admin-booking-card glass-card">
+                      <div className="admin-booking-head">
+                        <div>
+                          <h3>{b.customer_name}</h3>
+                          <p className="admin-booking-meta">
+                            {b.phone}
+                            {b.alternative_contact ? ` · Alt: ${b.alternative_contact}` : ''}
+                          </p>
+                        </div>
+                        <select className="status-select" value={b.status} onChange={(e) => updateStatus(b.id, e.target.value)}>
+                          <option value="pending">Pending</option>
+                          <option value="in_progress">In Progress</option>
+                          <option value="completed">Completed</option>
+                          <option value="cancelled">Cancelled</option>
+                        </select>
+                      </div>
+                      <div className="admin-booking-grid">
+                        <div>
+                          <span className="admin-booking-label">Device</span>
+                          <p>{b.device_brand} {b.device_model}</p>
+                        </div>
+                        <div>
+                          <span className="admin-booking-label">Estimated Time</span>
+                          <p>{b.estimated_repair_time || b.service_name || '—'}</p>
+                        </div>
+                        <div className="admin-booking-span-2">
+                          <span className="admin-booking-label">Issues</span>
+                          <p>{b.issue || '—'}</p>
+                          {b.issue_other ? <p className="admin-booking-sub">Other: {b.issue_other}</p> : null}
+                          {b.screen_quality ? <p className="admin-booking-sub">Screen: {b.screen_quality}</p> : null}
+                          {b.dead_mobile_acknowledged ? <p className="admin-booking-sub">Dead mobile policy: ✓ Accepted (no warranty)</p> : null}
+                        </div>
+                        <div>
+                          <span className="admin-booking-label">Submitted</span>
+                          <p>{b.created_at ? new Date(b.created_at).toLocaleString() : '—'}</p>
+                        </div>
+                        <div>
+                          <span className="admin-booking-label">Terms</span>
+                          <p>{b.terms_accepted ? '✓ Confirmed' : '—'}</p>
+                        </div>
+                      </div>
+                    </article>
+                  ))
+                )}
+              </div>
+              <div className="admin-table-wrap glass-card admin-table-desktop">
+                {bookings.length === 0 ? (
+                  <div className="empty-state">Abhi koi repair intake nahi.</div>
+                ) : (
+                  <table className="admin-table">
+                    <thead>
+                      <tr>
+                        <th>Customer</th>
+                        <th>Contact</th>
+                        <th>Device</th>
+                        <th>Issues</th>
+                        <th>Est. Time</th>
+                        <th>Status</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {bookings.map((b) => (
+                        <tr key={b.id}>
+                          <td>{b.customer_name}</td>
+                          <td>
+                            {b.phone}
+                            {b.alternative_contact ? <><br /><small>Alt: {b.alternative_contact}</small></> : null}
+                          </td>
+                          <td>{b.device_brand} {b.device_model}</td>
+                          <td className="admin-table-issues">{b.issue || '—'}</td>
+                          <td>{b.estimated_repair_time || '—'}</td>
+                          <td>
+                            <select className="status-select" value={b.status} onChange={(e) => updateStatus(b.id, e.target.value)}>
+                              <option value="pending">Pending</option>
+                              <option value="in_progress">In Progress</option>
+                              <option value="completed">Completed</option>
+                              <option value="cancelled">Cancelled</option>
+                            </select>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                )}
+              </div>
+            </>
+          )}
+        </div>
+      </section>
+    </>
+  );
+}
