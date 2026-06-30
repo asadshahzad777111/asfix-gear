@@ -9,9 +9,20 @@ import { getProductAnimKind } from '../utils/productAnimation';
 import { DiscountRibbon, ProductPrice } from './DiscountPicker';
 import { hasDiscount } from '../utils/pricing';
 import { useTranslation } from '../context/LanguageContext';
+import { useShopGate } from '../hooks/useShopGate';
+import ShopLoginPrompt from './ShopLoginPrompt';
+import CustomerLoginModal from './CustomerLoginModal';
 
 export default function ProductCard({ product, inGrid = false }) {
   const { t } = useTranslation();
+  const {
+    requireCustomer,
+    promptOpen,
+    closePrompt,
+    openLoginFromPrompt,
+    loginOpen,
+    setLoginOpen,
+  } = useShopGate();
   const waLink = orderProductOnWhatsApp(product);
   const onSale = hasDiscount(product);
   const { addItem } = useCart();
@@ -24,10 +35,12 @@ export default function ProductCard({ product, inGrid = false }) {
   const handleAdd = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    const rect = addRef.current?.getBoundingClientRect();
-    if (rect) addItem(product, rect);
-    setSelected(true);
-    setTimeout(() => setSelected(false), 600);
+    requireCustomer(() => {
+      const rect = addRef.current?.getBoundingClientRect();
+      if (rect) addItem(product, rect);
+      setSelected(true);
+      setTimeout(() => setSelected(false), 600);
+    });
   };
 
   const handleImgError = (e) => {

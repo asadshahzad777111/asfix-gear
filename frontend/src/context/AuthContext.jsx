@@ -73,6 +73,7 @@ export function AuthProvider({ children }) {
       loading,
       isStaff: isStaff(user),
       isCustomer: isCustomer(user),
+      isGuest: !user,
       login,
       register,
       logout,
