@@ -153,9 +153,10 @@ Render → Web Service → **Environment** → add / update:
 
 | Variable | Value | Kyun zaroori? |
 |----------|-------|----------------|
-| `NODE_ENV` | `production` | Already set hona chahiye |
 | `CORS_ORIGIN` | `https://asfixgear.com,https://www.asfixgear.com` | Production CORS — sirf yeh origins allow |
 | `PORT` | `5000` (ya Render default) | Usually Render `PORT` auto set karta hai |
+
+> **`NODE_ENV` env var mat add karein.** Start Command (`NODE_ENV=production node backend/server.js`) runtime par production set karti hai. Agar dashboard mein `NODE_ENV=production` ho to build step devDependencies (Vite) skip kar sakta hai → `vite: not found`. Purana var ho to delete karein aur redeploy.
 
 **CORS_ORIGIN format:** comma-separated, **no spaces** (spaces trim ho jati hain code mein, lekin clean rakhein):
 

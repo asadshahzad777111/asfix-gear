@@ -56,7 +56,8 @@ export default function Login() {
               <label htmlFor="login">{t('team.gmail')}</label>
               <input
                 id="login"
-                type="email"
+                type="text"
+                inputMode="email"
                 value={loginValue}
                 onChange={(e) => setLoginValue(e.target.value)}
                 placeholder="staff@gmail.com"

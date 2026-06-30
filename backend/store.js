@@ -597,6 +597,21 @@ export function ensureSuperAdmin({ email, username, password, name }) {
   });
 }
 
+/** Align super-admin Gmail with seed defaults (e.g. after typo fix on deploy). */
+export function syncSuperAdminEmail(email) {
+  const normalized = String(email).trim().toLowerCase();
+  return withData((data) => {
+    const index = data.users.findIndex((u) => u.role === 'super_admin');
+    if (index === -1) return { user: null, changed: false };
+
+    const user = data.users[index];
+    if (user.email === normalized) return { user, changed: false };
+
+    user.email = normalized;
+    return { user, changed: true };
+  });
+}
+
 export function getUserById(id) {
   return readData().users.find((u) => u.id === Number(id)) || null;
 }

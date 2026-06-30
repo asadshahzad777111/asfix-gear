@@ -6,7 +6,7 @@ export const SHOP = {
   owner: 'Asad Shahzad',
   phone: '03039227000',
   phoneIntl: '923039227000',
-  email: 'asadshahzad77111@gmail.com',
+  email: 'asadshahzad777111@gmail.com',
   hours: 'Subah 9:00 AM se Raat 9:00 PM (Har roz)',
   hoursEn: 'Daily: 9:00 AM – 9:00 PM',
   openHour: 9,

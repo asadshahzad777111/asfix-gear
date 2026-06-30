@@ -44,10 +44,11 @@ git push -u origin main
 1. https://render.com par account banayein
 2. **New → Web Service** → GitHub repo connect karein
 3. Settings:
-   - **Build Command:** `npm run install:all && npm run seed && npm run build --prefix frontend`
+   - **Build Command:** `npm run install:prod && npm run seed && npm run build`
    - **Start Command:** `NODE_ENV=production node backend/server.js`
    - **Environment:** Node
-4. **Deploy** dabayein
+4. **Environment variables:** `CORS_ORIGIN` set karein (deploy ke baad section dekhein). **`NODE_ENV=production` env var mein mat lagayein** — Start Command already production set karti hai. Agar `NODE_ENV=production` build time par set ho to `npm install` devDependencies skip karta hai aur `vite: not found` aata hai.
+5. **Deploy** dabayein
 
 Aapko URL milega jaise: `https://asfix-gear.onrender.com`
 
@@ -96,7 +97,7 @@ Agar aapke paas Hostinger ya koi Pakistani hosting hai:
 2. **New Project → Deploy from GitHub**
 3. Repo select karein
 4. Start command: `NODE_ENV=production node backend/server.js`
-5. Build: `npm run install:all && npm run seed && npm run build --prefix frontend`
+5. Build: `npm run install:prod && npm run seed && npm run build`
 
 ---
 
@@ -144,3 +145,12 @@ Short version (Render — single Web Service):
 ## Help
 
 Agar deploy mein koi step atke to mujhe bata dein — main step-by-step help kar dunga.
+
+### Render: `vite: not found` (exit 127)
+
+**Cause:** `NODE_ENV=production` during build → `npm install` skips `devDependencies` (Vite lives there).
+
+**Fix:**
+1. Render → Environment → **delete** `NODE_ENV` (Start Command already sets it at runtime).
+2. Build Command use karein: `npm run install:prod && npm run seed && npm run build`
+3. Redeploy.
