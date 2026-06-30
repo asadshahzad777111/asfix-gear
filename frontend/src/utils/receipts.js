@@ -5,12 +5,14 @@ function formatAmount(amount) {
 }
 
 function deliveryLine(city, paymentMode) {
-  const isLahore = String(city || '').toLowerCase() === 'lahore';
-  if (isLahore) {
-    return `${city} (COD via Rider)`;
-  }
-  const advance = paymentMode && paymentMode !== 'cod' ? 'Advance Payment' : 'Advance Payment';
-  return `${city || 'Other City'} - ${advance}`;
+  const mode = paymentMode === 'jazzcash'
+    ? 'JazzCash'
+    : paymentMode === 'easypaisa'
+      ? 'EasyPaisa'
+      : paymentMode === 'bank'
+        ? 'Bank Transfer'
+        : 'Advance Payment';
+  return `${city || 'Other City'} — ${mode}`;
 }
 
 export function buildOrderReceipt(order) {

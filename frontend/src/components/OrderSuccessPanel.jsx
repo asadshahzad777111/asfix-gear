@@ -1,8 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../api/client';
+import { api, formatPrice } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
+import { SHOP } from '../config/shop';
 import { buildOrderReceipt } from '../utils/receipts';
+
+const MERCHANT_NAME = 'ASAD SHAHZAD';
+const MOBILE_WALLETS = new Set(['jazzcash', 'easypaisa']);
 
 const TRUST_BADGES = [
   { key: 'trustSecure', icon: '🔒' },
@@ -65,6 +69,24 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
         </div>
         <p className="order-success-dispatch">{t('orderSuccess.estimatedDelivery')}</p>
       </div>
+
+      {MOBILE_WALLETS.has(order.payment_mode) && (
+        <div className="checkout-payment-instructions glass-card order-success-payment">
+          <h4 className="checkout-payment-instructions-title">{t('cart.paymentInstructionsTitle')}</h4>
+          <ol className="checkout-payment-instructions-steps">
+            <li>{t('cart.paymentStepSend', { amount: formatPrice(order.total_amount) })}</li>
+            <li>
+              <span className="checkout-payment-instructions-label">{t('cart.paymentMerchantNumber')}</span>
+              <strong className="checkout-payment-instructions-value">{SHOP.phone}</strong>
+            </li>
+            <li>
+              <span className="checkout-payment-instructions-label">{t('cart.paymentMerchantName')}</span>
+              <strong className="checkout-payment-instructions-value">{MERCHANT_NAME}</strong>
+            </li>
+            <li>{t('cart.paymentIncludeOrderIdWith', { orderId: order.order_id })}</li>
+          </ol>
+        </div>
+      )}
 
       <div className="order-success-trust">
         {TRUST_BADGES.map(({ key, icon }) => (

@@ -970,6 +970,75 @@ body.custom-cursor-active {
   color: var(--text-muted);
 }
 
+.checkout-payment-desc {
+  font-size: 0.62rem;
+  color: var(--text-muted);
+  line-height: 1.3;
+  margin-top: 0.1rem;
+}
+
+.checkout-payment-card--jazzcash.checkout-payment-card--selected {
+  border-color: #d4142a;
+  box-shadow: 0 0 0 1px rgba(212, 20, 42, 0.25);
+}
+
+.checkout-payment-card--easypaisa.checkout-payment-card--selected {
+  border-color: #00ae4d;
+  box-shadow: 0 0 0 1px rgba(0, 174, 77, 0.25);
+}
+
+.checkout-payment-instructions {
+  margin-top: 0.75rem;
+  padding: 0.75rem;
+  border-radius: 12px;
+  text-align: left;
+}
+
+.checkout-payment-instructions-title {
+  margin: 0 0 0.5rem;
+  font-size: 0.82rem;
+  font-weight: 800;
+}
+
+.checkout-payment-instructions-steps {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.78rem;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.checkout-payment-instructions-steps li {
+  margin-bottom: 0.35rem;
+}
+
+.checkout-payment-instructions-label {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--text-muted);
+}
+
+.checkout-payment-instructions-value {
+  display: block;
+  font-size: 0.95rem;
+  color: var(--text);
+  margin-top: 0.1rem;
+}
+
+.checkout-payment-reminder {
+  font-size: 0.78rem;
+  color: var(--primary, #ff6b2c);
+  margin: 0.65rem 0 0;
+  line-height: 1.4;
+}
+
+.order-success-payment {
+  margin-bottom: 0.75rem;
+}
+
 .checkout-summary-card {
   padding: 0.75rem;
   border-radius: 12px;

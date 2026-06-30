@@ -10,6 +10,7 @@ const MAX_CITY = 80;
 const MAX_ITEMS = 20;
 const MAX_GMAIL = 120;
 const VALID_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+const VALID_PAYMENT_MODES = ['jazzcash', 'easypaisa', 'bank'];
 
 router.get('/track', (req, res) => {
   const { orderId, phone } = req.query;
@@ -37,6 +38,11 @@ router.post('/', optionalAuth, (req, res) => {
     return res.status(400).json({ error: 'Order must include 1–20 items' });
   }
 
+  const mode = String(payment_mode || 'jazzcash').trim().toLowerCase();
+  if (!VALID_PAYMENT_MODES.includes(mode)) {
+    return res.status(400).json({ error: 'Invalid payment method' });
+  }
+
   const customerUserId =
     req.auth?.user?.role === 'customer' ? req.auth.user.id : null;
 
@@ -44,7 +50,7 @@ router.post('/', optionalAuth, (req, res) => {
     customer_name: customer_name.trim(),
     phone: phone.trim(),
     city: city?.trim() || '',
-    payment_mode: payment_mode || 'cod',
+    payment_mode: mode,
     items,
     notes: notes?.trim() || '',
     customer_user_id: customerUserId,

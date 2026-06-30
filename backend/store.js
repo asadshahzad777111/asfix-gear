@@ -475,7 +475,7 @@ export function createOrder(input) {
       customer_name: input.customer_name,
       phone: input.phone,
       city: input.city || '',
-      payment_mode: input.payment_mode || 'cod',
+      payment_mode: input.payment_mode || 'jazzcash',
       items,
       total_amount: total,
       shipping_status: 'pending',
