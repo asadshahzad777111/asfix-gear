@@ -110,6 +110,41 @@ Agar aapke paas Hostinger ya koi Pakistani hosting hai:
 | Custom domain | Render → Settings → Custom Domains — full guide: [DOMAIN-SETUP.md](./DOMAIN-SETUP.md) |
 | SSL (HTTPS) | Free — Render automatic (DNS verify ke baad) |
 | Production CORS | Render Environment → `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com` (Render `.onrender.com` URL is auto-allowed via `RENDER_EXTERNAL_URL`) |
+| Gmail OTP emails | Render Environment → `GMAIL_USER`, `GMAIL_APP_PASSWORD`, optional `SMTP_FROM` — see [Gmail OTP on Render](#gmail-otp-on-render) |
+
+---
+
+## Gmail OTP on Render
+
+Customer sign-up and login send a **6-digit code** to `@gmail.com` addresses. Without SMTP env vars, production returns a clear error instead of silently failing.
+
+### Step 1: Create a Gmail App Password
+
+1. Sign in to the Google account that will send mail (e.g. `asadshahzad777111@gmail.com`).
+2. Enable **2-Step Verification** on the Google account (required for app passwords).
+3. Open [Google App Passwords](https://myaccount.google.com/apppasswords).
+4. Create a new app password (name it e.g. `AsFix Gear Render`).
+5. Copy the **16-character password** (shown as four groups like `abcd efgh ijkl mnop`).
+
+### Step 2: Add environment variables on Render
+
+Render dashboard → your Web Service → **Environment** → add:
+
+| Variable | Value |
+|----------|-------|
+| `GMAIL_USER` | `asadshahzad777111@gmail.com` |
+| `GMAIL_APP_PASSWORD` | Your 16-char app password (spaces optional) |
+| `SMTP_FROM` | `"AsFix Gear" <asadshahzad777111@gmail.com>` (optional — defaults to branded sender) |
+
+Save changes and **redeploy** (or wait for auto-deploy).
+
+### Step 3: Test
+
+1. Open your live site → **Sign Up** with a Gmail address.
+2. Check inbox (and spam) for an email from **AsFix Gear**.
+3. Enter the 6-digit code in the app.
+
+> **Local dev:** Without these vars, the code is printed in the backend console as `[OTP dev] Email to ...` and returned in the API response as `devCode`.
 
 ---
 

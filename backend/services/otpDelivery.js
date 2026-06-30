@@ -1,7 +1,15 @@
 import nodemailer from 'nodemailer';
 
-const SHOP_NAME = 'AsFix & Gear';
+const BRAND_NAME = 'AsFix Gear';
 const SHOP_WHATSAPP_INTL = process.env.SHOP_WHATSAPP_INTL || '923039227000';
+
+export class OtpDeliveryError extends Error {
+  constructor(message, code) {
+    super(message);
+    this.name = 'OtpDeliveryError';
+    this.code = code;
+  }
+}
 
 function isProduction() {
   return process.env.NODE_ENV === 'production';
@@ -31,6 +39,63 @@ function twilioWhatsAppConfigured() {
 
 function whatsAppCloudConfigured() {
   return Boolean(process.env.WHATSAPP_TOKEN && process.env.WHATSAPP_PHONE_NUMBER_ID);
+}
+
+function getEmailFrom() {
+  if (process.env.SMTP_FROM) return process.env.SMTP_FROM;
+  const user = process.env.SMTP_USER || process.env.GMAIL_USER;
+  if (user) return `"${BRAND_NAME}" <${user}>`;
+  return `"${BRAND_NAME}" <noreply@asfixgear.com>`;
+}
+
+function buildOtpEmailHtml(code, purpose) {
+  const headline = purpose === 'login' ? 'Your login code' : 'Verify your email';
+  const intro =
+    purpose === 'login'
+      ? 'Use this code to sign in to your AsFix Gear account.'
+      : 'Use this code to complete your AsFix Gear registration.';
+  const year = new Date().getFullYear();
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>${BRAND_NAME} — Verification code</title>
+</head>
+<body style="margin:0;padding:0;background:#f4f6f8;font-family:Segoe UI,Roboto,Helvetica,Arial,sans-serif;">
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#f4f6f8;padding:32px 16px;">
+    <tr>
+      <td align="center">
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:480px;background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 4px 24px rgba(0,0,0,0.08);">
+          <tr>
+            <td style="background:linear-gradient(135deg,#0f172a 0%,#1e3a5f 100%);padding:28px 32px;text-align:center;">
+              <div style="font-size:22px;font-weight:700;color:#ffffff;letter-spacing:0.5px;">${BRAND_NAME}</div>
+              <div style="font-size:13px;color:#94a3b8;margin-top:4px;">Mobile Repair &amp; Accessories</div>
+            </td>
+          </tr>
+          <tr>
+            <td style="padding:32px;">
+              <h1 style="margin:0 0 12px;font-size:20px;color:#0f172a;">${headline}</h1>
+              <p style="margin:0 0 24px;font-size:15px;line-height:1.5;color:#475569;">${intro}</p>
+              <div style="text-align:center;margin:28px 0;">
+                <span style="display:inline-block;font-size:36px;font-weight:700;letter-spacing:8px;color:#0f172a;background:#f1f5f9;border:2px dashed #cbd5e1;border-radius:8px;padding:16px 24px;font-family:Consolas,Monaco,monospace;">${code}</span>
+              </div>
+              <p style="margin:0;font-size:13px;color:#64748b;text-align:center;">This code expires in <strong>10 minutes</strong>.</p>
+              <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;text-align:center;">Never share this code. ${BRAND_NAME} will never ask for it by phone or WhatsApp.</p>
+            </td>
+          </tr>
+          <tr>
+            <td style="background:#f8fafc;padding:16px 32px;text-align:center;border-top:1px solid #e2e8f0;">
+              <p style="margin:0;font-size:11px;color:#94a3b8;">&copy; ${year} ${BRAND_NAME} &middot; asfixgear.com</p>
+            </td>
+          </tr>
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
 }
 
 function createMailer() {
@@ -83,7 +148,7 @@ async function sendTwilioSms(to, body) {
   });
 
   if (!res.ok) {
-    const errText = await res.text();
+    await res.text();
     throw new Error(`Twilio SMS failed: ${res.status}`);
   }
 }
@@ -140,31 +205,47 @@ async function sendWhatsAppCloud(to, body) {
 export async function deliverEmailOtp(email, code, purpose = 'verification') {
   const subject =
     purpose === 'login'
-      ? `${SHOP_NAME} — Your login code`
-      : `${SHOP_NAME} — Verify your email`;
-  const text = `Your ${SHOP_NAME} verification code is: ${code}\n\nThis code expires in 10 minutes. Do not share it with anyone.`;
+      ? `${BRAND_NAME} — Your login code`
+      : `${BRAND_NAME} — Verify your email`;
+  const text = `Your ${BRAND_NAME} verification code is: ${code}\n\nThis code expires in 10 minutes. Do not share it with anyone.`;
 
   const result = { channel: 'email', sent: false, devCode: null, devMode: false };
 
-  if (smtpConfigured()) {
-    const transporter = createMailer();
-    const from = process.env.SMTP_FROM || process.env.SMTP_USER || process.env.GMAIL_USER;
-    await transporter.sendMail({ from, to: email, subject, text });
-    result.sent = true;
+  if (!smtpConfigured()) {
+    console.log(`[OTP dev] Email to ${email}: ${code}`);
+    if (isProduction()) {
+      throw new OtpDeliveryError(
+        'Email verification is temporarily unavailable. Please try again later or contact us.',
+        'EMAIL_NOT_CONFIGURED'
+      );
+    }
+    result.devMode = true;
+    result.devCode = code;
     return result;
   }
 
-  console.log(`[OTP dev] Email to ${email}: ${code}`);
-  if (!isProduction()) {
-    result.devMode = true;
-    result.devCode = code;
+  try {
+    const transporter = createMailer();
+    const from = getEmailFrom();
+    const html = buildOtpEmailHtml(code, purpose);
+    await transporter.sendMail({ from, to: email, subject, text, html });
+    result.sent = true;
+    return result;
+  } catch (err) {
+    console.error('[OTP] Email send failed:', err.message);
+    if (isProduction()) {
+      throw new OtpDeliveryError(
+        'Could not send verification email. Please try again in a few minutes.',
+        'EMAIL_SEND_FAILED'
+      );
+    }
+    throw err;
   }
-  return result;
 }
 
 export async function deliverPhoneOtp(phone, code, purpose = 'verification') {
   const e164 = normalizePhoneE164(phone);
-  const body = `Your ${SHOP_NAME} code is ${code}. Valid for 10 minutes.`;
+  const body = `Your ${BRAND_NAME} code is ${code}. Valid for 10 minutes.`;
 
   const result = {
     channel: 'phone',

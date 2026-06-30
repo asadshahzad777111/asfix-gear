@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { sanitizeUser, generateOtpCode, hashOtp, verifyOtp, otpExpiry } from '../auth/crypto.js';
-import { deliverEmailOtp, deliverPhoneOtp } from '../services/otpDelivery.js';
+import { deliverEmailOtp, deliverPhoneOtp, OtpDeliveryError } from '../services/otpDelivery.js';
 const router = Router();
 const SUPER_ADMIN = ['super_admin'];
 
@@ -139,6 +139,14 @@ function buildOtpDevResponse(delivery) {
   return payload;
 }
 
+function respondOtpDeliveryError(res, err, logTag) {
+  console.error(logTag, err);
+  if (err instanceof OtpDeliveryError) {
+    return res.status(503).json({ error: err.message });
+  }
+  return res.status(500).json({ error: 'Could not send verification code. Try again later.' });
+}
+
 router.post('/register/start', async (req, res) => {
   const parsed = parseCustomerRegistration(req.body);
   if (parsed.error) return res.status(400).json({ error: parsed.error });
@@ -198,8 +206,7 @@ router.post('/register/start', async (req, res) => {
 
     res.json(buildOtpDevResponse(delivery));
   } catch (err) {
-    console.error('[register/start]', err);
-    res.status(500).json({ error: 'Could not send verification code. Try again later.' });
+    respondOtpDeliveryError(res, err, '[register/start]');
   }
 });
 
@@ -304,8 +311,7 @@ router.post('/login/otp/start', async (req, res) => {
 
     res.json(buildOtpDevResponse(delivery));
   } catch (err) {
-    console.error('[login/otp/start]', err);
-    res.status(500).json({ error: 'Could not send verification code. Try again later.' });
+    respondOtpDeliveryError(res, err, '[login/otp/start]');
   }
 });
 

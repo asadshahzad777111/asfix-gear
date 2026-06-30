@@ -13,7 +13,19 @@ const IGNORE = [
   /\.lock$/,
   /check-secrets\.js$/,
   /seed-admin\.js$/,
+  /^\.env\.example$/,
 ];
+
+const DOC_FILES = /\.(md|mdc)$/i;
+
+function isEnvExampleFile(file) {
+  return file === '.env.example' || file.endsWith('/.env.example');
+}
+
+function isBlockedEnvFile(file) {
+  if (isEnvExampleFile(file)) return false;
+  return file.endsWith('.env') || file.includes('.env.');
+}
 
 const PATTERNS = [
   { name: 'AWS key', re: /AKIA[0-9A-Z]{16}/ },
@@ -35,7 +47,7 @@ const files = listTrackedFiles().filter((f) => !IGNORE.some((re) => re.test(f)))
 let hits = 0;
 
 for (const file of files) {
-  if (file.endsWith('.env') || file.includes('.env.')) {
+  if (isBlockedEnvFile(file)) {
     console.error(`[secrets] BLOCKED: tracked env file — ${file}`);
     hits += 1;
     continue;
@@ -50,6 +62,7 @@ for (const file of files) {
 
   for (const { name, re } of PATTERNS) {
     if (file.endsWith('.env') && name === '.env file content') continue;
+    if (name === '.env file content' && (DOC_FILES.test(file) || isEnvExampleFile(file))) continue;
     if (re.test(content)) {
       console.error(`[secrets] ${name} in ${file}`);
       hits += 1;
