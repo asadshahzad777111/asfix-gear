@@ -20,7 +20,7 @@ description: Add a new shop or gaming product to AsFix & Gear via staff UI or se
 ## Frontend
 
 - Product cards read from `/api/products` — no hardcoded list in React unless fallback
-- New categories may need translation keys in `frontend/src/locales/translations.js` (all 3 langs)
+- New categories may need translation keys in `frontend/src/locales/translations.js` (both langs — en + roman)
 
 ## Images
 

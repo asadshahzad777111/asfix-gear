@@ -1,6 +1,6 @@
 ---
 name: mobile-qa
-description: Mobile QA pass for AsFix & Gear — nav drawer, cart, repair form, 3 languages. Use before merge or when user reports mobile bugs.
+description: Mobile QA pass for AsFix & Gear — nav drawer, cart, repair form, 2 languages. Use before merge or when user reports mobile bugs.
 ---
 # Mobile QA — AsFix & Gear
 
@@ -12,7 +12,7 @@ Test at **375×812** (iPhone) and **390×844** in browser DevTools.
 
 ### Navigation
 - Open/close mobile menu; focus bar follows finger
-- Language switch: en → roman → ur — no overflow or broken RTL
+- Language switch: en → roman — no overflow
 - Gaming + Shop mode buttons work; transitions complete in < 1.5s
 
 ### Shop

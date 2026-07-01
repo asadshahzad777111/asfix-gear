@@ -1,5 +1,5 @@
 /**
- * Verify en / roman / ur translation keys match in translations.js
+ * Verify en / roman translation keys match in translations.js
  * Usage: node scripts/check-i18n.js
  */
 import { translations, LANGS } from '../frontend/src/locales/translations.js';

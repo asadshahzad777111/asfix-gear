@@ -1,21 +1,21 @@
 ---
-description: Mobile UX and 3-language i18n (en, roman, ur) for AsFix & Gear
+description: Mobile UX and 2-language i18n (en, roman) for AsFix & Gear
 globs: frontend/src/**/*
 alwaysApply: false
 ---
 
 # Mobile & i18n rules
 
-## Languages (exactly 3)
+## Languages (exactly 2)
 
-- Supported langs: `en`, `roman`, `ur` — defined in `frontend/src/locales/translations.js`.
-- Every new UI string must be added to **all three** language blocks with the same nested key path.
+- Supported langs: `en`, `roman` — defined in `frontend/src/locales/translations.js`.
+- Every new UI string must be added to **both** language blocks with the same nested key path.
 - Run `node scripts/check-i18n.js` after editing translations.
 
 ## Translation usage
 
 - Use `useTranslation()` and `t('key.path')` — no hardcoded English in shared components.
-- Urdu text: prefer RTL-friendly layout; test nav drawer and forms in `ur` mode.
+- Site is LTR only (Urdu script / RTL removed) — do not reintroduce `dir="rtl"` logic.
 
 ## Mobile performance
 

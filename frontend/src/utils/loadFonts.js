@@ -1,16 +1,3 @@
-let urduLoaded = false;
-
-/** Load Urdu Nastaliq font only when RTL / Urdu is active — saves initial bandwidth */
-export function loadUrduFont() {
-  if (urduLoaded || typeof document === 'undefined') return;
-  urduLoaded = true;
-
-  const link = document.createElement('link');
-  link.rel = 'stylesheet';
-  link.href = 'https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;600;700&display=swap';
-  document.head.appendChild(link);
-}
-
 /** Secondary display fonts — after first paint */
 export function loadDisplayFonts() {
   if (typeof window === 'undefined') return;

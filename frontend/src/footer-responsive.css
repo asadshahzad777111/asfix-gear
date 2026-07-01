@@ -188,12 +188,3 @@
     width: min(1320px, calc(100% - var(--container-inline) * 2));
   }
 }
-
-/* RTL */
-html[dir='rtl'] .footer-links a {
-  flex-direction: row-reverse;
-}
-
-html[dir='rtl'] .footer-bottom {
-  direction: rtl;
-}

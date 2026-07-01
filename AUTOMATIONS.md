@@ -31,7 +31,7 @@ File: `.cursor/hooks.json`
 ### NPM scripts (terminal)
 
 ```powershell
-npm run check:i18n      # en / roman / ur keys match
+npm run check:i18n      # en / roman keys match
 npm run check:secrets   # tracked files mein secrets scan
 npm run build           # frontend production build
 ```
@@ -50,7 +50,7 @@ npm run build           # frontend production build
 | Rule | Scope |
 |------|--------|
 | `security.mdc` | Secrets, auth, validation |
-| `mobile-i18n.mdc` | 3 languages, mobile perf |
+| `mobile-i18n.mdc` | 2 languages, mobile perf |
 | `deploy.mdc` | Render deploy steps |
 | `website-qa.mdc` | Menu, cart, repair QA |
 
@@ -152,10 +152,10 @@ Roman Urdu + English.
 ```
 Verify frontend/src/locales/translations.js:
 
-- LANGS must stay exactly: en, roman, ur
+- LANGS must stay exactly: en, roman
 - Run npm run check:i18n
-- If keys missing, list exact key paths and suggest Roman Urdu + Urdu strings for each missing key
-- Do not add a 4th language
+- If keys missing, list exact key paths and suggest English + Roman Urdu strings for each missing key
+- Do not add a 3rd language
 
 Comment on PR or reply with the diff summary.
 ```

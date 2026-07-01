@@ -467,16 +467,6 @@
   }
 }
 
-@media (max-width: 1024px) {
-  html[dir='rtl'] .nav-drawer a:not(.nav-drawer-accordion-link),
-  html[dir='rtl'] .nav-drawer button.nav-add-product,
-  html[dir='rtl'] .nav-drawer .gaming-mode-btn--nav,
-  html[dir='rtl'] .nav-drawer .shop-mode-btn--nav {
-    text-align: right;
-    justify-content: flex-end !important;
-  }
-}
-
 @keyframes navMenuItemIn {
   from {
     opacity: 0;
@@ -766,12 +756,6 @@
   .nav-drawer-item.nav-whatsapp .nav-drawer-item-icon {
     background: rgba(37, 211, 102, 0.15);
     border-color: rgba(37, 211, 102, 0.28);
-  }
-
-  html[dir='rtl'] .nav-drawer-item-label,
-  html[dir='rtl'] .nav-drawer .gaming-btn-nav-text,
-  html[dir='rtl'] .nav-drawer .shop-btn-nav-text {
-    text-align: right;
   }
 
 }

@@ -2,7 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 
 import { LANGS, translate } from '../locales/translations';
 
-import { loadDisplayFonts, loadUrduFont } from '../utils/loadFonts';
+import { loadDisplayFonts } from '../utils/loadFonts';
 
 
 
@@ -18,11 +18,9 @@ function applyLanguage(lang) {
 
   const resolved = LANGS.includes(lang) ? lang : 'en';
 
-  document.documentElement.setAttribute('lang', resolved === 'ur' ? 'ur' : resolved === 'en' ? 'en' : 'en-PK');
+  document.documentElement.setAttribute('lang', resolved === 'en' ? 'en' : 'en-PK');
 
-  document.documentElement.setAttribute('dir', resolved === 'ur' ? 'rtl' : 'ltr');
-
-  document.body.classList.toggle('lang-ur', resolved === 'ur');
+  document.documentElement.setAttribute('dir', 'ltr');
 
   document.body.classList.toggle('lang-roman', resolved === 'roman');
 
@@ -64,8 +62,6 @@ export function LanguageProvider({ children }) {
   useEffect(() => {
 
     applyLanguage(lang);
-
-    if (lang === 'ur') loadUrduFont();
 
   }, [lang]);
 
