@@ -111,6 +111,29 @@ export default function AccountRegister() {
     }
   };
 
+  const handleResend = async () => {
+    setSubmitting(true);
+    setError('');
+    try {
+      const data = await api.registerStart({
+        name: form.name.trim(),
+        username: form.username.trim(),
+        email: form.email.trim(),
+        phone: form.phone.trim(),
+        password: form.password,
+        confirmPassword: form.confirmPassword,
+      });
+      if (data.devCode) setDevCode(data.devCode);
+      if (data.whatsappLink) setWhatsappLink(data.whatsappLink);
+      setOtp('');
+      setOtpHint(form.email.trim() ? t('otp.sentEmail', { email: form.email.trim() }) : t('otp.sentPhone'));
+    } catch (err) {
+      setError(err.message || t('otp.sendFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
@@ -119,7 +142,7 @@ export default function AccountRegister() {
         subtitle={t('account.registerSubtitle')}
       />
 
-      <section className="section" style={{ paddingTop: 0 }}>
+      <section className="section auth-section">
         <div className="container login-wrap">
           {step === 'form' ? (
             <form className="glass-card login-form" onSubmit={handleStart}>
@@ -235,6 +258,15 @@ export default function AccountRegister() {
 
               <button type="submit" className="btn btn-primary btn-block" disabled={submitting || otp.length !== 6}>
                 {submitting ? t('otp.verifying') : t('account.createAccount')}
+              </button>
+
+              <button
+                type="button"
+                className="btn btn-outline btn-block"
+                disabled={submitting}
+                onClick={handleResend}
+              >
+                {submitting ? t('otp.sending') : t('otp.resend')}
               </button>
 
               <button

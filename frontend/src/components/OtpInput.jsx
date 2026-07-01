@@ -50,7 +50,7 @@ export default function OtpInput({ value, onChange, length = 6, disabled = false
           type="text"
           inputMode="numeric"
           pattern="[0-9]*"
-          maxLength={length}
+          maxLength={1}
           className="otp-digit"
           value={digit}
           disabled={disabled}

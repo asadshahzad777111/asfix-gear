@@ -4,6 +4,22 @@ import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
+const MAX_IMAGE_DATA_URL = 180_000;
+
+function validateProductImage(image) {
+  if (image == null) return image;
+  const value = String(image);
+  if (value.startsWith('data:') && value.length > MAX_IMAGE_DATA_URL) {
+    throw new Error('Image too large — use a URL or upload an image under 150KB');
+  }
+  return value;
+}
+
+function sanitizeProductBody(body) {
+  const next = { ...body };
+  if (next.image != null) next.image = validateProductImage(next.image);
+  return next;
+}
 const CAN_DELETE = ['super_admin', 'admin'];
 
 function isStaffUser(user) {
@@ -31,34 +47,45 @@ router.get('/:id', optionalAuth, (req, res) => {
 });
 
 router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
-  const { name, category, price, cost_price, description, image, stock, featured, discount_percent, warranty } =
-    req.body;
-  if (!name || !category || price == null || !description) {
-    return res.status(400).json({ error: 'Missing required fields' });
+  try {
+    const body = sanitizeProductBody(req.body);
+    const { name, category, price, cost_price, description, image, stock, featured, discount_percent, warranty } =
+      body;
+    if (!name || !category || price == null || !description) {
+      return res.status(400).json({ error: 'Missing required fields' });
+    }
+
+    const product = store.createProduct({
+      name,
+      category,
+      price,
+      cost_price,
+      description,
+      image,
+      stock,
+      featured,
+      discount_percent,
+      warranty,
+    });
+
+    res.status(201).json(product);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
   }
-
-  const product = store.createProduct({
-    name,
-    category,
-    price,
-    cost_price,
-    description,
-    image,
-    stock,
-    featured,
-    discount_percent,
-    warranty,
-  });
-
-  res.status(201).json(product);
 });
 
 router.put('/:id', requireAuth, requireRole(...STAFF), (req, res) => {
   const existing = store.getProductById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
 
-  const product = store.updateProduct(req.params.id, req.body);
-  res.json(product);
+  try {
+    const body = sanitizeProductBody(req.body);
+    const product = store.updateProduct(req.params.id, body);
+    if (!product) return res.status(404).json({ error: 'Product not found' });
+    res.json(product);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 router.patch('/:id/discount', requireAuth, requireRole(...STAFF), (req, res) => {

@@ -1,7 +1,7 @@
 import { randomBytes, randomInt, scryptSync, timingSafeEqual } from 'crypto';
 
 export function generateOtpCode() {
-  return String(randomInt(100000, 999999));
+  return String(randomInt(100000, 1_000_000));
 }
 
 export function hashOtp(code) {

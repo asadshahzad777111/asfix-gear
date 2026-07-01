@@ -187,6 +187,22 @@
     z-index: 200;
   }
 
+  .floating-repair-btn {
+    right: 0.65rem;
+    bottom: calc(var(--float-dock-bottom) + var(--float-dock-size) + 0.55rem);
+    padding: 0.55rem 0.85rem;
+    font-size: 0.8rem;
+    z-index: 197;
+  }
+
+  .floating-repair-btn-label {
+    display: none;
+  }
+
+  .floating-repair-btn-icon {
+    font-size: 1.25rem;
+  }
+
   .staff-access {
     bottom: var(--float-dock-bottom);
     right: calc(0.65rem + var(--float-dock-size) + var(--float-dock-gap));

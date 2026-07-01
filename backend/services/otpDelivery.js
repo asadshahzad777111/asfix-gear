@@ -215,7 +215,7 @@ export async function deliverEmailOtp(email, code, purpose = 'verification') {
     console.log(`[OTP dev] Email to ${email}: ${code}`);
     if (isProduction()) {
       throw new OtpDeliveryError(
-        'Email verification is temporarily unavailable. Please try again later or contact us.',
+        'Email verification is not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD on the server, then try again.',
         'EMAIL_NOT_CONFIGURED'
       );
     }
@@ -235,11 +235,14 @@ export async function deliverEmailOtp(email, code, purpose = 'verification') {
     console.error('[OTP] Email send failed:', err.message);
     if (isProduction()) {
       throw new OtpDeliveryError(
-        'Could not send verification email. Please try again in a few minutes.',
+        'Could not send verification email. Check GMAIL_USER and GMAIL_APP_PASSWORD, then try again.',
         'EMAIL_SEND_FAILED'
       );
     }
-    throw err;
+    console.log(`[OTP dev fallback] Email to ${email}: ${code}`);
+    result.devMode = true;
+    result.devCode = code;
+    return result;
   }
 }
 
@@ -290,12 +293,17 @@ export async function deliverPhoneOtp(phone, code, purpose = 'verification') {
   }
 
   result.method = 'whatsapp_manual';
-  result.whatsappLink = whatsappManualLink(code);
-  console.log(`[OTP dev] Phone ${phone}: ${code} (WhatsApp manual: ${result.whatsappLink})`);
+  console.log(`[OTP dev] Phone ${phone}: ${code}`);
 
   if (!isProduction()) {
     result.devMode = true;
     result.devCode = code;
+    result.whatsappLink = whatsappManualLink(code);
+  } else {
+    throw new OtpDeliveryError(
+      'SMS verification is not configured. Please register with Gmail or contact us.',
+      'PHONE_NOT_CONFIGURED'
+    );
   }
 
   return result;

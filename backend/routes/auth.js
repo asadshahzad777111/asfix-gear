@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { sanitizeUser, generateOtpCode, hashOtp, verifyOtp, otpExpiry } from '../auth/crypto.js';
+import { sanitizeUser, generateOtpCode, hashOtp, verifyOtp, otpExpiry, hashPassword } from '../auth/crypto.js';
 import { deliverEmailOtp, deliverPhoneOtp, OtpDeliveryError } from '../services/otpDelivery.js';
 const router = Router();
 const SUPER_ADMIN = ['super_admin'];
@@ -107,22 +107,10 @@ function parseCustomerRegistration(body) {
   return { name, email, phone, username: usernameResult.username, password };
 }
 
-router.post('/register', (req, res) => {
-  const parsed = parseCustomerRegistration(req.body);
-  if (parsed.error) return res.status(400).json({ error: parsed.error });
-
-  try {
-    const user = store.createCustomer(parsed);
-    store.recordLastLogin(user.id);
-    const session = store.createSession(user.id);
-    res.status(201).json({
-      token: session.token,
-      expires_at: session.expires_at,
-      user: sanitizeUser(user),
-    });
-  } catch (err) {
-    res.status(400).json({ error: err.message });
-  }
+router.post('/register', (_req, res) => {
+  res.status(410).json({
+    error: 'Direct registration is disabled. Use sign up with email verification.',
+  });
 });
 
 function buildOtpDevResponse(delivery) {
@@ -131,7 +119,9 @@ function buildOtpDevResponse(delivery) {
     channel: delivery.channel,
     method: delivery.method || delivery.channel,
   };
-  if (delivery.whatsappLink) payload.whatsappLink = delivery.whatsappLink;
+  if (delivery.whatsappLink && process.env.NODE_ENV !== 'production') {
+    payload.whatsappLink = delivery.whatsappLink;
+  }
   if (process.env.NODE_ENV !== 'production' && delivery.devCode) {
     payload.devCode = delivery.devCode;
     payload.devMode = true;
@@ -175,7 +165,7 @@ router.post('/register/start', async (req, res) => {
     email: parsed.email,
     phone: parsed.phone,
     username: parsed.username,
-    password: parsed.password,
+    password_hash: hashPassword(parsed.password),
   };
 
   try {
@@ -210,11 +200,18 @@ router.post('/register/start', async (req, res) => {
   }
 });
 
+function validateOtpCode(code) {
+  const codeStr = String(code || '').trim();
+  if (!/^\d{6}$/.test(codeStr)) {
+    return { error: 'Enter a valid 6-digit verification code' };
+  }
+  return { code: codeStr };
+}
+
 router.post('/register/verify', (req, res) => {
   const { code, email, phone } = req.body;
-  if (!code || String(code).length !== 6) {
-    return res.status(400).json({ error: '6-digit verification code is required' });
-  }
+  const codeResult = validateOtpCode(code);
+  if (codeResult.error) return res.status(400).json({ error: codeResult.error });
 
   const emailKey = String(email || '').trim().toLowerCase();
   const phoneKey = String(phone || '').replace(/\D/g, '');
@@ -226,7 +223,7 @@ router.post('/register/verify', (req, res) => {
   const result = store.verifyAndConsumeCode({
     purpose: 'register',
     target,
-    code: String(code).trim(),
+    code: codeResult.code,
     verifyFn: verifyOtp,
   });
 
@@ -318,9 +315,8 @@ router.post('/login/otp/start', async (req, res) => {
 router.post('/login/otp/verify', (req, res) => {
   const { code, login } = req.body;
   if (!login?.trim()) return res.status(400).json({ error: 'Gmail or phone is required' });
-  if (!code || String(code).length !== 6) {
-    return res.status(400).json({ error: '6-digit verification code is required' });
-  }
+  const codeResult = validateOtpCode(code);
+  if (codeResult.error) return res.status(400).json({ error: codeResult.error });
 
   const loginKey = login.trim().toLowerCase();
   const loginPhone = login.replace(/\D/g, '');
@@ -337,7 +333,7 @@ router.post('/login/otp/verify', (req, res) => {
   const result = store.verifyAndConsumeCode({
     purpose: 'login',
     target,
-    code: String(code).trim(),
+    code: codeResult.code,
     verifyFn: verifyOtp,
   });
 

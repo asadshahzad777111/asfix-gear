@@ -10,10 +10,11 @@ import { DiscountRibbon, ProductPrice } from './DiscountPicker';
 import { hasDiscount } from '../utils/pricing';
 import { useTranslation } from '../context/LanguageContext';
 import { useShopGate } from '../hooks/useShopGate';
+import useScrollReveal from '../hooks/useScrollReveal';
 import ShopLoginPrompt from './ShopLoginPrompt';
 import CustomerLoginModal from './CustomerLoginModal';
 
-export default function ProductCard({ product, inGrid = false }) {
+export default function ProductCard({ product, inGrid = false, revealIndex = 0 }) {
   const { t } = useTranslation();
   const {
     requireCustomer,
@@ -29,6 +30,11 @@ export default function ProductCard({ product, inGrid = false }) {
   const addRef = useRef(null);
   const [hovered, setHovered] = useState(false);
   const [selected, setSelected] = useState(false);
+  const revealRef = useScrollReveal({
+    threshold: 0.12,
+    delay: revealIndex * 90,
+    disabled: !inGrid || revealIndex < 0,
+  });
 
   const animKind = getProductAnimKind(product.category);
 
@@ -140,7 +146,8 @@ export default function ProductCard({ product, inGrid = false }) {
     return (
       <>
         <article
-          className={cardClass}
+          ref={revealRef}
+          className={`${cardClass} scroll-reveal`}
           onMouseEnter={() => setHovered(true)}
           onMouseLeave={() => setHovered(false)}
         >

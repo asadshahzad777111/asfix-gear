@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import DiscountPicker from './DiscountPicker';
 import { hasDiscount } from '../utils/pricing';
@@ -9,13 +9,22 @@ export default function AdminDiscountPanel({ product, onUpdated }) {
   const [enabled, setEnabled] = useState(hasDiscount(product));
   const [percent, setPercent] = useState(product.discount_percent || 0);
 
+  useEffect(() => {
+    setEnabled(hasDiscount(product));
+    setPercent(product.discount_percent || 0);
+  }, [product.id, product.discount_percent]);
+
   const save = async (newEnabled, newPercent) => {
+    const prevEnabled = enabled;
+    const prevPercent = percent;
     setSaving(true);
     try {
       const discount = newEnabled ? newPercent : 0;
       const updated = await api.setProductDiscount(product.id, discount);
       onUpdated(updated);
     } catch (err) {
+      setEnabled(prevEnabled);
+      setPercent(prevPercent);
       alert(err.message);
     } finally {
       setSaving(false);

@@ -14,6 +14,7 @@ import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
 import { hasDiscount } from '../utils/pricing';
 import { getStockStatus } from '../utils/stock';
+import { startVisibilityPoll } from '../utils/visibilityPoll';
 
 export default function Admin() {
   const { user, logout } = useAuth();
@@ -45,6 +46,7 @@ export default function Admin() {
 
   useEffect(() => {
     loadData();
+    return startVisibilityPoll(loadData, 45_000);
   }, []);
 
   useEffect(() => {
@@ -78,8 +80,14 @@ export default function Admin() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleFormSuccess = () => {
+  const handleFormSuccess = (saved) => {
     setEditingProduct(null);
+    if (saved?.id) {
+      setProducts((prev) => {
+        const exists = prev.some((p) => p.id === saved.id);
+        return exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [saved, ...prev];
+      });
+    }
     loadData();
     setTab('products');
   };

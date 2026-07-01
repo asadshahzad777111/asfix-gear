@@ -117,11 +117,8 @@ export const api = {
   },
   saveOrderGmail: (id, body) =>
     request(`/orders/${id}/gmail`, { method: 'PATCH', body: JSON.stringify(body) }),
-  updateOrderStatus: (id, shipping_status) =>
-    request(`/orders/${id}/status`, {
-      method: 'PATCH',
-      body: JSON.stringify({ shipping_status }),
-    }),
+  submitOrderFeedback: (orderId, body) =>
+    request('/orders/feedback', { method: 'POST', body: JSON.stringify({ orderId, ...body }) }),
 
   sendContact: (body) => request('/contact', { method: 'POST', body: JSON.stringify(body) }),
   getContactMessages: () => request('/contact'),

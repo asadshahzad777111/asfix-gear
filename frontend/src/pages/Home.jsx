@@ -3,10 +3,7 @@ import { Link } from 'react-router-dom';
 import ProductCard from '../components/ProductCard';
 import Marquee from '../components/Marquee';
 import RepairSteps from '../components/RepairSteps';
-import Testimonials from '../components/Testimonials';
 import LocationSection from '../components/LocationSection';
-import GamingLogo from '../components/gaming/GamingLogo';
-import GamingModeButton from '../components/gaming/GamingModeButton';
 import { PremiumLink, PremiumAnchor } from '../components/premium/PremiumButton';
 import { OpenBadgeLarge } from '../components/OpenBadge';
 import RepairServiceCard from '../components/RepairServiceCard';
@@ -20,7 +17,6 @@ export default function Home() {
   const [services, setServices] = useState([]);
   const [servicesLoading, setServicesLoading] = useState(true);
   const [productsLoading, setProductsLoading] = useState(true);
-  const [gamingPreview, setGamingPreview] = useState([]);
 
   const features = [
     { icon: '🔧', title: t('home.feature1Title'), desc: t('home.feature1Desc') },
@@ -34,14 +30,14 @@ export default function Home() {
 
     const load = async () => {
       try {
-        const [products, repairServices, gaming] = await Promise.all([
+        const [products, repairServices] = await Promise.all([
           api.getProducts({ featured: 'true' }),
           api.getRepairServices(),
-          api.getProducts({ category: 'Gaming' }),
         ]);
         if (cancelled) return;
-        setFeatured(products.slice(0, 4));
-        setGamingPreview(gaming.slice(0, 3));
+        setFeatured(
+          products.filter((p) => p.category !== 'Gaming').slice(0, 4)
+        );
         setServices(repairServices.slice(0, 6));
       } catch (err) {
         console.error(err);
@@ -61,7 +57,7 @@ export default function Home() {
 
   return (
     <>
-      <section className="hero">
+      <section className="hero section--hero">
         <div className="container">
           <div className="hero-bento">
             <div className="hero-main">
@@ -75,8 +71,7 @@ export default function Home() {
                 {' '}WhatsApp: <strong>{SHOP.phone}</strong> · {t('shop.hours')}
               </p>
               <div className="hero-actions">
-                <PremiumLink to="/repair" className="btn btn-primary">{t('home.bookRepair')}</PremiumLink>
-                <PremiumLink to="/shop" className="btn btn-outline">{t('home.shopGear')}</PremiumLink>
+                <PremiumLink to="/shop" className="btn btn-primary">{t('home.shopGear')}</PremiumLink>
                 <PremiumAnchor
                   href={generalWhatsAppMessage()}
                   target="_blank"
@@ -106,29 +101,7 @@ export default function Home() {
 
       <Marquee />
 
-      <section className="home-gaming-banner">
-        <div className="container home-gaming-inner">
-          <div className="home-gaming-text">
-            <GamingLogo size={56} />
-            <span className="gaming-eyebrow">🎮 {t('home.gamingEyebrow')}</span>
-            <h2>{t('home.gamingTitle')}</h2>
-            <p>{t('home.gamingDesc')}</p>
-            <GamingModeButton variant="nav" />
-          </div>
-          {!productsLoading && gamingPreview.length > 0 && (
-            <div className="home-gaming-preview">
-              {gamingPreview.map((p) => (
-                <div key={p.id} className="home-gaming-preview-item">
-                  <img src={p.image} alt={p.name} />
-                  <span>{p.name}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </section>
-
-      <section className="section">
+      <section className="section section--features">
         <div className="container">
           <div className="bento-features">
             {features.map((f) => (
@@ -142,7 +115,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section" style={{ paddingTop: 0 }}>
+      <section className="section section--steps">
         <div className="container">
           <div className="section-head">
             <span className="eyebrow">{t('home.howItWorks')}</span>
@@ -153,7 +126,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section">
+      <section className="section section--services">
         <div className="container">
           <div className="section-head">
             <span className="eyebrow">{t('home.servicesEyebrow')}</span>
@@ -169,13 +142,10 @@ export default function Home() {
               ))}
             </div>
           )}
-          <div className="text-center mt-2">
-            <Link to="/repair" className="btn btn-violet">{t('home.bookRepairNow')} →</Link>
-          </div>
         </div>
       </section>
 
-      <section className="section" style={{ paddingTop: 0 }}>
+      <section className="section section--shop" id="featured-shop">
         <div className="container">
           <div className="section-head">
             <span className="eyebrow">{t('nav.shop')}</span>
@@ -185,9 +155,9 @@ export default function Home() {
           {productsLoading ? (
             <div className="loading">{t('shop.loadingProducts')}</div>
           ) : (
-            <div className="products-grid">
-              {featured.map((product) => (
-                <ProductCard key={product.id} product={product} inGrid />
+            <div className="products-grid products-grid--reveal">
+              {featured.map((product, index) => (
+                <ProductCard key={product.id} product={product} inGrid revealIndex={index} />
               ))}
             </div>
           )}
@@ -197,19 +167,9 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="section" style={{ paddingTop: 0 }}>
-        <div className="container">
-          <div className="section-head">
-            <span className="eyebrow">{t('home.reviewsEyebrow')}</span>
-            <h2 className="section-title">{t('home.reviewsTitle')}</h2>
-          </div>
-          <Testimonials />
-        </div>
-      </section>
-
       <LocationSection />
 
-      <section className="cta-section">
+      <section className="cta-section section--cta">
         <div className="container">
           <div className="cta-card glass-card">
             <h2>{t('home.ctaTitle')}</h2>
@@ -218,7 +178,7 @@ export default function Home() {
               <a href={generalWhatsAppMessage()} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp">
                 💬 {t('nav.whatsapp')} {SHOP.phone}
               </a>
-              <Link to="/repair" className="btn btn-primary">{t('home.bookRepair')}</Link>
+              <PremiumLink to="/shop" className="btn btn-outline">{t('home.shopGear')}</PremiumLink>
             </div>
           </div>
         </div>

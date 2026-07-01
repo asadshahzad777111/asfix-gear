@@ -439,6 +439,13 @@ export default function AdminFloatingDashboard() {
 
                         )}
 
+                        {o.customer_feedback?.rating ? (
+                          <p className="admin-float-feedback">
+                            ★ {o.customer_feedback.rating}/5
+                            {o.customer_feedback.comment ? ` — "${o.customer_feedback.comment}"` : ''}
+                          </p>
+                        ) : null}
+
                       </article>
 
                     ))

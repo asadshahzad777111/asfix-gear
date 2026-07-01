@@ -111,6 +111,7 @@ function migrateData(data) {
   for (const order of data.orders) {
     if (order.customer_user_id == null) order.customer_user_id = null;
     if (order.stock_deducted == null) order.stock_deducted = false;
+    if (order.customer_feedback == null) order.customer_feedback = null;
     if (Array.isArray(order.items)) {
       for (const item of order.items) {
         if (item.cost_price == null) item.cost_price = 0;
@@ -127,33 +128,85 @@ function migrateData(data) {
   return data;
 }
 
+function writeDataAtomic(data) {
+  if (!fs.existsSync(DATA_DIR)) {
+    fs.mkdirSync(DATA_DIR, { recursive: true });
+  }
+  const tmp = `${DATA_FILE}.tmp`;
+  const content = JSON.stringify(data, null, 2);
+  fs.writeFileSync(tmp, content, 'utf8');
+  fs.renameSync(tmp, DATA_FILE);
+}
+
 function ensureDataFile() {
   if (!fs.existsSync(DATA_DIR)) {
     fs.mkdirSync(DATA_DIR, { recursive: true });
   }
   if (!fs.existsSync(DATA_FILE)) {
-    fs.writeFileSync(DATA_FILE, JSON.stringify(DEFAULT_DATA, null, 2), 'utf8');
+    writeDataAtomic(DEFAULT_DATA);
   }
 }
 
-function readData() {
+const LOCK_FILE = path.join(DATA_DIR, '.data.lock');
+const LOCK_MAX_SPINS = 200;
+
+function sleepSync(ms) {
+  const end = Date.now() + ms;
+  while (Date.now() < end) {
+    /* spin */
+  }
+}
+
+function acquireDataLock() {
+  for (let i = 0; i < LOCK_MAX_SPINS; i += 1) {
+    try {
+      fs.writeFileSync(LOCK_FILE, String(process.pid), { flag: 'wx' });
+      return;
+    } catch {
+      sleepSync(5);
+    }
+  }
+  throw new Error('Data store is busy — please try again');
+}
+
+function releaseDataLock() {
+  try {
+    fs.unlinkSync(LOCK_FILE);
+  } catch {
+    /* lock already released */
+  }
+}
+
+function readDataRaw() {
   ensureDataFile();
   const raw = fs.readFileSync(DATA_FILE, 'utf8');
-  const data = migrateData(JSON.parse(raw));
-  writeData(data);
+  return JSON.parse(raw);
+}
+
+function readData() {
+  const parsed = readDataRaw();
+  const before = JSON.stringify(parsed);
+  const data = migrateData(parsed);
+  if (JSON.stringify(data) !== before) {
+    writeDataAtomic(data);
+  }
   return data;
 }
 
 function writeData(data) {
-  ensureDataFile();
-  fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf8');
+  writeDataAtomic(data);
 }
 
 function withData(mutator) {
-  const data = readData();
-  const result = mutator(data);
-  writeData(data);
-  return result;
+  acquireDataLock();
+  try {
+    const data = readData();
+    const result = mutator(data);
+    writeData(data);
+    return result;
+  } finally {
+    releaseDataLock();
+  }
 }
 
 function now() {
@@ -838,9 +891,52 @@ export function trackOrder(orderId, phone) {
     total_amount: order.total_amount,
     shipping_status: order.shipping_status,
     status_history: order.status_history || [],
+    customer_feedback: order.customer_feedback || null,
     created_at: order.created_at,
     updated_at: order.updated_at,
   };
+}
+
+export function submitOrderFeedback(orderId, phone, { rating, comment = '' }) {
+  return withData((data) => {
+    const key = String(orderId || '').trim().toUpperCase().replace(/^#/, '');
+    const phoneKey = normalizePhone(phone);
+    const stars = Number(rating);
+
+    if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+      throw new Error('Please select a satisfaction rating from 1 to 5');
+    }
+
+    const commentText = String(comment || '').trim().slice(0, 500);
+
+    const index = data.orders.findIndex((o) => {
+      const ref = String(o.order_id || formatOrderId(o.id)).toUpperCase();
+      const idMatch =
+        ref === key ||
+        ref === `ASF-${key}` ||
+        key === `ASF-${1000 + o.id}` ||
+        String(o.id) === key;
+      return idMatch && normalizePhone(o.phone) === phoneKey;
+    });
+
+    if (index === -1) return null;
+
+    const order = data.orders[index];
+    if (!['delivered', 'shipped', 'out_for_delivery', 'payment_verified'].includes(order.shipping_status)) {
+      throw new Error('Feedback is available after your order is confirmed or delivered');
+    }
+    if (order.customer_feedback?.rating) {
+      throw new Error('Feedback already submitted for this order');
+    }
+
+    order.customer_feedback = {
+      rating: stars,
+      comment: commentText,
+      submitted_at: now(),
+    };
+    order.updated_at = now();
+    return order;
+  });
 }
 
 /* ── Auth / Users ── */
@@ -961,7 +1057,7 @@ export function listUsers() {
     .sort((a, b) => a.id - b.id);
 }
 
-export function createCustomer({ name, email, phone, username, password }) {
+export function createCustomer({ name, email, phone, username, password, password_hash }) {
   return withData((data) => {
     const emailKey = String(email || '').trim().toLowerCase();
     const phoneKey = normalizePhone(phone);
@@ -993,7 +1089,7 @@ export function createCustomer({ name, email, phone, username, password }) {
       email: emailKey,
       phone: phoneKey,
       username: userKey,
-      password_hash: hashPassword(password),
+      password_hash: password_hash || hashPassword(password),
       role: 'customer',
       active: true,
       blocked: false,

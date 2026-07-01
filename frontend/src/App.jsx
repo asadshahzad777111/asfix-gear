@@ -10,6 +10,7 @@ import AdminFloatingDashboard from './components/AdminFloatingDashboard';
 import StaffAccessPanel from './components/StaffAccessPanel';
 import StaffToolbar from './components/StaffToolbar';
 import FloatingCart from './components/premium/FloatingCart';
+import FloatingRepairButton from './components/FloatingRepairButton';
 import FlyToCart from './components/premium/FlyToCart';
 import GuestWelcomeBanner from './components/GuestWelcomeBanner';
 import PageTransition from './components/premium/PageTransition';
@@ -43,6 +44,7 @@ function AppContent() {
 
       {!isGamingPage && <Footer />}
       {!isGamingPage && <WhatsAppButton />}
+      {!isGamingPage && <FloatingRepairButton />}
       {showCart && <FloatingCart />}
       <FlyToCart />
       {!isGamingPage && <GamingModeButton variant="trigger" />}

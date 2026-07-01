@@ -9,7 +9,6 @@ import AddProductModal from './AddProductModal';
 import AccountMenu from './AccountMenu';
 import CustomerLoginModal from './CustomerLoginModal';
 import GamingModeButton from './gaming/GamingModeButton';
-import ShopModeButton from './gaming/ShopModeButton';
 import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
 import {
@@ -83,9 +82,9 @@ export default function Navbar() {
 
             <div className="nav-links-primary">
               <NavDrawerLink to="/" end icon="🏠" label={t('nav.home')} onClick={closeMenu} />
-              <GamingModeButton variant="nav" onAfterClick={closeMenu} />
-              <ShopModeButton variant="nav" onAfterClick={closeMenu} />
+              <NavDrawerLink to="/shop" icon="🛍️" label={t('nav.shop')} onClick={closeMenu} />
               <NavDrawerLink to="/repair" icon="🔧" label={t('nav.repair')} onClick={closeMenu} />
+              <GamingModeButton variant="nav" onAfterClick={closeMenu} />
               <NavDrawerLink to="/track" icon="📦" label={t('nav.track')} onClick={closeMenu} />
               <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />
             </div>

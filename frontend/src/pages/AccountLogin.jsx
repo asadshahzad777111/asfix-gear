@@ -111,7 +111,7 @@ export default function AccountLogin() {
         subtitle={t('account.loginSubtitle')}
       />
 
-      <section className="section" style={{ paddingTop: 0 }}>
+      <section className="section auth-section">
         <div className="container login-wrap">
           <div className="login-tabs">
             <button

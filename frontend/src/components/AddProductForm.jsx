@@ -59,8 +59,8 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
       setMessage({ type: 'error', text: 'Sirf image files upload karein.' });
       return;
     }
-    if (file.size > 2 * 1024 * 1024) {
-      setMessage({ type: 'error', text: 'Image 2MB se chhoti honi chahiye.' });
+    if (file.size > 150 * 1024) {
+      setMessage({ type: 'error', text: 'Image 150KB se chhoti honi chahiye (ya image URL use karein).' });
       return;
     }
     const reader = new FileReader();

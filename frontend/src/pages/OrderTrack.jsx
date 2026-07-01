@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { api, formatPrice } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
 import OrderTimeline from '../components/OrderTimeline';
+import OrderFeedbackForm from '../components/OrderFeedbackForm';
 
 export default function OrderTrack() {
   const { t } = useTranslation();
@@ -88,6 +89,14 @@ export default function OrderTrack() {
             ))}
           </ul>
           <p className="order-track-total">{t('track.total')}: <strong>{formatPrice(order.total_amount)}</strong></p>
+
+          {['delivered', 'shipped', 'out_for_delivery', 'payment_verified'].includes(order.shipping_status) && (
+            <OrderFeedbackForm
+              orderId={order.order_id}
+              phone={phone}
+              existing={order.customer_feedback}
+            />
+          )}
         </section>
       )}
 
