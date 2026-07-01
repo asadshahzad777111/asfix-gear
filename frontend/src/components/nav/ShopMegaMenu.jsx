@@ -84,7 +84,11 @@ export default function ShopMegaMenu() {
         aria-haspopup="true"
         onClick={() => {
           clearCloseTimer();
-          setOpen((v) => !v);
+          // Hover already opens the panel on desktop — clicking must never
+          // toggle it closed (that raced with hover-open and made the menu
+          // vanish the instant the mouse moved toward it). Click always
+          // opens; closing stays owned by mouseleave / outside-click / ESC.
+          setOpen(true);
         }}
       >
         🛍️ {t('nav.shop')}

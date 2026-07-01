@@ -49,12 +49,20 @@ export default function Navbar() {
     if (!menuOpen) setShopAccordionOpen(false);
   }, [menuOpen]);
 
-  const toggleShopAccordion = () => {
+  const toggleShopAccordion = (e) => {
+    e?.currentTarget?.blur();
     const drawer = document.getElementById('main-nav');
     const scrollTop = drawer?.scrollTop ?? 0;
     setShopAccordionOpen((open) => !open);
+    // Double rAF: some mobile browsers (esp. iOS Safari) re-apply their own
+    // focus/layout-driven scroll adjustment one frame after ours, so we
+    // pin scrollTop again after that frame too — prevents the drawer from
+    // jumping back to the top when the accordion expands/collapses.
     requestAnimationFrame(() => {
       if (drawer) drawer.scrollTop = scrollTop;
+      requestAnimationFrame(() => {
+        if (drawer) drawer.scrollTop = scrollTop;
+      });
     });
   };
 
@@ -113,6 +121,7 @@ export default function Navbar() {
                   aria-expanded={shopAccordionOpen}
                   aria-controls="nav-shop-accordion-panel"
                   onMouseDown={(e) => e.preventDefault()}
+                  onTouchStart={(e) => e.currentTarget.blur()}
                   onClick={toggleShopAccordion}
                 >
                   <span className="nav-drawer-item-glow" aria-hidden="true" />

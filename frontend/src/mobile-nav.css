@@ -180,6 +180,10 @@
     overflow-y: hidden !important;
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
+    /* Stop the browser's automatic scroll-anchoring from re-adjusting
+       scrollTop while the accordion panel below grows/shrinks — this was
+       causing the drawer to visibly jump when Shop was tapped. */
+    overflow-anchor: none;
     background: var(--drawer-bg) !important;
     border: 1px solid var(--glass-edge) !important;
     border-top: none !important;
