@@ -231,7 +231,7 @@
   .nav-drawer.open .nav-links-staff > *:nth-child(2) { animation-delay: 0.2s; }
   .nav-drawer.open .nav-whatsapp { animation-delay: 0.22s; }
 
-  .nav-drawer a,
+  .nav-drawer a:not(.nav-drawer-accordion-link),
   .nav-drawer button.nav-add-product,
   .nav-drawer .gaming-mode-btn--nav,
   .nav-drawer .shop-mode-btn--nav {
@@ -244,7 +244,7 @@
     box-shadow: none !important;
   }
 
-  .nav-drawer a:active,
+  .nav-drawer a:not(.nav-drawer-accordion-link):active,
   .nav-drawer button.nav-add-product:active,
   .nav-drawer .gaming-mode-btn--nav:active,
   .nav-drawer .shop-mode-btn--nav:active {
@@ -343,7 +343,7 @@
     touch-action: manipulation;
   }
 
-  .nav-drawer a,
+  .nav-drawer a:not(.nav-drawer-accordion-link),
   .nav-drawer button.nav-add-product,
   .nav-drawer .gaming-mode-btn--nav,
   .nav-drawer .shop-mode-btn--nav {
@@ -360,6 +360,25 @@
     box-sizing: border-box;
     background: var(--nav-hover) !important;
     border: 1px solid var(--glass-edge) !important;
+    color: var(--text) !important;
+  }
+
+  .nav-drawer a.nav-drawer-accordion-link {
+    display: flex !important;
+    width: 100% !important;
+    min-height: 44px !important;
+    padding: 0.5rem 0.75rem 0.5rem 2.85rem !important;
+    border-radius: 10px !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    background: transparent !important;
+    border: none !important;
+    color: var(--text-muted) !important;
+  }
+
+  .nav-drawer a.nav-drawer-accordion-link:active {
+    opacity: 0.88 !important;
+    background: var(--nav-hover) !important;
     color: var(--text) !important;
   }
 
@@ -445,7 +464,7 @@
 }
 
 @media (max-width: 1024px) {
-  html[dir='rtl'] .nav-drawer a,
+  html[dir='rtl'] .nav-drawer a:not(.nav-drawer-accordion-link),
   html[dir='rtl'] .nav-drawer button.nav-add-product,
   html[dir='rtl'] .nav-drawer .gaming-mode-btn--nav,
   html[dir='rtl'] .nav-drawer .shop-mode-btn--nav {
@@ -695,6 +714,25 @@
   .nav-drawer .shop-mode-btn--nav.nav-drawer-item {
     justify-content: flex-start !important;
     padding-left: 1rem !important;
+  }
+
+  .nav-drawer-accordion-trigger.nav-drawer-item {
+    margin-bottom: 0;
+  }
+
+  .nav-drawer-accordion-link {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .nav-drawer-accordion-link:active {
+    opacity: 0.88;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .nav-drawer-accordion-panel {
+      transition: none;
+    }
   }
 
   .nav-drawer .gaming-mode-btn--nav .gaming-btn-core,

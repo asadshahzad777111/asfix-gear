@@ -1,14 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
 import { SHOP_BRANDS, SHOP_CATEGORIES } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
+
+const HOVER_CLOSE_MS = 220;
 
 export default function ShopMegaMenu() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
   const [topProducts, setTopProducts] = useState([]);
   const wrapRef = useRef(null);
+  const closeTimerRef = useRef(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -25,42 +28,71 @@ export default function ShopMegaMenu() {
     };
   }, []);
 
+  const clearCloseTimer = useCallback(() => {
+    if (closeTimerRef.current) {
+      clearTimeout(closeTimerRef.current);
+      closeTimerRef.current = null;
+    }
+  }, []);
+
+  const openMenu = useCallback(() => {
+    clearCloseTimer();
+    setOpen(true);
+  }, [clearCloseTimer]);
+
+  const scheduleClose = useCallback(() => {
+    clearCloseTimer();
+    closeTimerRef.current = window.setTimeout(() => {
+      setOpen(false);
+      closeTimerRef.current = null;
+    }, HOVER_CLOSE_MS);
+  }, [clearCloseTimer]);
+
   useEffect(() => {
     const onDocClick = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) {
+        clearCloseTimer();
         setOpen(false);
       }
     };
     const onKey = (e) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') {
+        clearCloseTimer();
+        setOpen(false);
+      }
     };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
+      clearCloseTimer();
     };
-  }, []);
+  }, [clearCloseTimer]);
 
   return (
     <div
       className={`nav-mega-wrap ${open ? 'is-open' : ''}`}
       ref={wrapRef}
-      onMouseEnter={() => setOpen(true)}
-      onMouseLeave={() => setOpen(false)}
+      onMouseEnter={openMenu}
+      onMouseLeave={scheduleClose}
     >
       <button
         type="button"
         className="nav-mega-trigger"
         aria-expanded={open}
         aria-haspopup="true"
-        onClick={() => setOpen((v) => !v)}
+        onClick={() => {
+          clearCloseTimer();
+          setOpen((v) => !v);
+        }}
       >
         🛍️ {t('nav.shop')}
         <span className="nav-mega-chevron" aria-hidden="true">▾</span>
       </button>
 
-      <div className="nav-mega-panel" hidden={!open}>
+      <div className="nav-mega-panel" hidden={!open} onMouseEnter={openMenu}>
+        <div className="nav-mega-panel-body">
         <div className="nav-mega-col">
           <p className="nav-mega-label">{t('nav.categories')}</p>
           <ul className="nav-mega-list">
@@ -110,6 +142,7 @@ export default function ShopMegaMenu() {
               </ul>
             </>
           )}
+        </div>
         </div>
       </div>
     </div>

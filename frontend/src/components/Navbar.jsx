@@ -46,6 +46,19 @@ export default function Navbar() {
   }, [menuOpen]);
 
   useEffect(() => {
+    if (!menuOpen) setShopAccordionOpen(false);
+  }, [menuOpen]);
+
+  const toggleShopAccordion = () => {
+    const drawer = document.getElementById('main-nav');
+    const scrollTop = drawer?.scrollTop ?? 0;
+    setShopAccordionOpen((open) => !open);
+    requestAnimationFrame(() => {
+      if (drawer) drawer.scrollTop = scrollTop;
+    });
+  };
+
+  useEffect(() => {
     const onKeyDown = (e) => {
       if (e.key === 'Escape') closeMenu();
     };
@@ -93,22 +106,33 @@ export default function Navbar() {
 
             <div className="nav-links-primary">
               <NavDrawerLink to="/" end icon="🏠" label={t('nav.home')} className="nav-drawer-link--home" onClick={closeMenu} />
-              <div className="nav-drawer-accordion">
+              <div className={`nav-drawer-accordion ${shopAccordionOpen ? 'is-open' : ''}`}>
                 <button
                   type="button"
-                  className="nav-drawer-accordion-trigger"
+                  className="nav-drawer-item nav-drawer-accordion-trigger"
                   aria-expanded={shopAccordionOpen}
-                  onClick={() => setShopAccordionOpen((o) => !o)}
+                  aria-controls="nav-shop-accordion-panel"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={toggleShopAccordion}
                 >
-                  <span>🛍️ {t('nav.shop')}</span>
-                  <span aria-hidden="true">{shopAccordionOpen ? '▴' : '▾'}</span>
+                  <span className="nav-drawer-item-glow" aria-hidden="true" />
+                  <span className="nav-drawer-item-icon" aria-hidden="true">🛍️</span>
+                  <span className="nav-drawer-item-label">{t('nav.shop')}</span>
+                  <span className="nav-drawer-item-arrow nav-drawer-accordion-chevron" aria-hidden="true">▾</span>
                 </button>
-                {shopAccordionOpen && (
-                  <div className="nav-drawer-accordion-panel">
-                    <Link to="/shop" onClick={closeMenu}>{t('nav.shopAll')}</Link>
+                <div
+                  id="nav-shop-accordion-panel"
+                  className="nav-drawer-accordion-panel"
+                  aria-hidden={!shopAccordionOpen}
+                >
+                  <div className="nav-drawer-accordion-panel-inner">
+                    <Link to="/shop" className="nav-drawer-accordion-link" onClick={closeMenu}>
+                      {t('nav.shopAll')}
+                    </Link>
                     {SHOP_CATEGORIES.map((cat) => (
                       <Link
                         key={cat}
+                        className="nav-drawer-accordion-link"
                         to={`/shop?category=${encodeURIComponent(cat)}`}
                         onClick={closeMenu}
                       >
@@ -116,7 +140,7 @@ export default function Navbar() {
                       </Link>
                     ))}
                   </div>
-                )}
+                </div>
               </div>
               <NavDrawerLink to="/repair" icon="🔧" label={t('nav.repair')} onClick={closeMenu} />
               <GamingModeButton variant="nav" onAfterClick={closeMenu} />
