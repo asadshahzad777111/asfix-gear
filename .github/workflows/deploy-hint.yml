@@ -9,7 +9,7 @@ on:
     inputs:
       target:
         description: 'Deploy target'
-        required: true
+        required: false
         default: render
         type: choice
         options:
@@ -18,7 +18,16 @@ on:
           - railway
 
 jobs:
+  # workflow_dispatch-only workflows with required inputs can still be evaluated on push
+  # (0 jobs → failed run). This no-op keeps accidental push runs green.
+  skip-when-not-manual:
+    if: github.event_name != 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - run: echo "Manual workflow only — skipped on ${{ github.event_name }}."
+
   deploy-checklist:
+    if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
