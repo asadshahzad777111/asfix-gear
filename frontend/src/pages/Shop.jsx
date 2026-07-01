@@ -11,14 +11,14 @@ import { useTranslation } from '../context/LanguageContext';
 export default function Shop() {
   const { isStaff } = useAuth();
   const { t } = useTranslation();
+  const [searchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-  const [activeCategory, setActiveCategory] = useState('all');
+  const [activeCategory, setActiveCategory] = useState(() => searchParams.get('category') || 'all');
   const [showSaleOnly, setShowSaleOnly] = useState(false);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
-  const [searchParams] = useSearchParams();
 
   const loadProducts = () => {
     setLoading(true);
@@ -32,6 +32,13 @@ export default function Shop() {
   useEffect(() => {
     api.getCategories().then(setCategories).catch(console.error);
   }, []);
+
+  useEffect(() => {
+    const cat = searchParams.get('category') || 'all';
+    const q = searchParams.get('search') || '';
+    setActiveCategory(cat);
+    setSearch(q);
+  }, [searchParams]);
 
   useEffect(() => {
     loadProducts();

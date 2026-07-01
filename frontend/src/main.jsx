@@ -18,6 +18,8 @@ import './footer-responsive.css';
 import './repair-responsive.css';
 import './site-responsive.css';
 import './mobile-performance.css';
+import './components/home/home.css';
+import './components/nav/nav-upgrade.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

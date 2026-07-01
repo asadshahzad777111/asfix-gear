@@ -9,6 +9,21 @@ export const CATEGORIES = [
   'Accessories',
 ];
 
+/** Shop-home brand tiles — repair/accessory brands only (no fake labels). */
+export const SHOP_BRANDS = [
+  { id: 'iphone', label: 'iPhone', icon: '🍎', search: 'iPhone' },
+  { id: 'samsung', label: 'Samsung', icon: '📱', search: 'Samsung' },
+  { id: 'xiaomi', label: 'Xiaomi / Redmi', icon: '📲', search: 'Xiaomi' },
+  { id: 'oppo', label: 'Oppo / Vivo', icon: '📱', search: 'Oppo' },
+  { id: 'infinix', label: 'Infinix / Tecno', icon: '📱', search: 'Infinix' },
+  { id: 'huawei', label: 'Huawei / Honor', icon: '📱', search: 'Huawei' },
+];
+
+/** Featured collection cards on home (non-gaming, real categories). */
+export const HOME_COLLECTIONS = ['Cases', 'Chargers', 'Screen Guards', 'Audio'];
+
+export const SHOP_CATEGORIES = CATEGORIES.filter((c) => c !== 'Gaming');
+
 export const DEFAULT_IMAGES = {
   Gaming: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=600&fit=crop',
   Cases: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&h=600&fit=crop',

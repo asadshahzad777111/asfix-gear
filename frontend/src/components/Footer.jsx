@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
-import { SHOP, directionsContactPath } from '../config/shop';
+import { SHOP, directionsContactPath, generalContactPath } from '../config/shop';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 
@@ -44,6 +44,11 @@ export default function Footer() {
                 <a href={SHOP.mapsUrl} target="_blank" rel="noopener noreferrer">
                   {t('location.googleMaps')}
                 </a>
+              </li>
+              <li>
+                <Link to={generalContactPath()}>
+                  {t('nav.whatsapp')}
+                </Link>
               </li>
               <li>
                 <Link to={directionsContactPath()}>

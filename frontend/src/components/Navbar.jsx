@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { generalContactPath } from '../config/shop';
+import { SHOP_CATEGORIES } from '../config/products';
 import { useAuth } from '../context/AuthContext';
 import useNavDrawerThumb from '../hooks/useNavDrawerThumb';
 import OpenBadge from './OpenBadge';
@@ -11,6 +12,8 @@ import CustomerLoginModal from './CustomerLoginModal';
 import GamingModeButton from './gaming/GamingModeButton';
 import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
+import NavSearch from './nav/NavSearch';
+import ShopMegaMenu from './nav/ShopMegaMenu';
 import {
   NavDrawerAdminLink,
   NavDrawerButton,
@@ -23,6 +26,7 @@ export default function Navbar() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
+  const [shopAccordionOpen, setShopAccordionOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
 
@@ -55,6 +59,14 @@ export default function Navbar() {
         <div className="container navbar-inner">
           <LogoLink onNavigate={closeMenu} />
 
+          <NavSearch className="navbar-search--desktop" />
+
+          <div className="nav-desktop-bar">
+            <ShopMegaMenu />
+            <Link to="/repair" className="nav-desktop-link">{t('nav.repair')}</Link>
+            <Link to="/contact" className="nav-desktop-link">{t('nav.contact')}</Link>
+          </div>
+
           <nav
             id="main-nav"
             className={`nav-links nav-drawer ${menuOpen ? 'open' : ''}`}
@@ -80,11 +92,35 @@ export default function Navbar() {
             <span className="nav-drawer-section-label">{t('nav.explore')}</span>
 
             <div className="nav-links-primary">
-              <NavDrawerLink to="/" end icon="🏠" label={t('nav.home')} onClick={closeMenu} />
-              <NavDrawerLink to="/shop" icon="🛍️" label={t('nav.shop')} onClick={closeMenu} />
+              <NavDrawerLink to="/" end icon="🏠" label={t('nav.home')} className="nav-drawer-link--home" onClick={closeMenu} />
+              <div className="nav-drawer-accordion">
+                <button
+                  type="button"
+                  className="nav-drawer-accordion-trigger"
+                  aria-expanded={shopAccordionOpen}
+                  onClick={() => setShopAccordionOpen((o) => !o)}
+                >
+                  <span>🛍️ {t('nav.shop')}</span>
+                  <span aria-hidden="true">{shopAccordionOpen ? '▴' : '▾'}</span>
+                </button>
+                {shopAccordionOpen && (
+                  <div className="nav-drawer-accordion-panel">
+                    <Link to="/shop" onClick={closeMenu}>{t('nav.shopAll')}</Link>
+                    {SHOP_CATEGORIES.map((cat) => (
+                      <Link
+                        key={cat}
+                        to={`/shop?category=${encodeURIComponent(cat)}`}
+                        onClick={closeMenu}
+                      >
+                        {cat}
+                      </Link>
+                    ))}
+                  </div>
+                )}
+              </div>
               <NavDrawerLink to="/repair" icon="🔧" label={t('nav.repair')} onClick={closeMenu} />
               <GamingModeButton variant="nav" onAfterClick={closeMenu} />
-              <NavDrawerLink to="/track" icon="📦" label={t('nav.track')} onClick={closeMenu} />
+              <NavDrawerLink to="/track" icon="📦" label={t('nav.track')} className="nav-drawer-link--track" onClick={closeMenu} />
               <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />
             </div>
 
@@ -168,6 +204,12 @@ export default function Navbar() {
               <span className="menu-toggle-bar" />
               <span className="menu-toggle-bar" />
             </button>
+          </div>
+        </div>
+
+        <div className="navbar-search-row">
+          <div className="container">
+            <NavSearch />
           </div>
         </div>
 
