@@ -202,6 +202,28 @@ async function sendWhatsAppCloud(to, body) {
   }
 }
 
+/**
+ * Best-effort WhatsApp ping TO THE SHOP'S OWN NUMBER when a customer submits
+ * the contact form, so staff get a real-time nudge in addition to the
+ * message already landing in Admin Messages / Ops desk. Reuses the same
+ * Meta WhatsApp Cloud API helper used for phone OTP delivery above — no new
+ * API integration code. Silently skipped (never throws) if `WHATSAPP_TOKEN`
+ * + `WHATSAPP_PHONE_NUMBER_ID` are not configured, matching the existing
+ * dev-safe pattern in this file.
+ */
+export async function notifyShopWhatsApp(text) {
+  if (!whatsAppCloudConfigured()) {
+    return { sent: false, skipped: true };
+  }
+  try {
+    await sendWhatsAppCloud(SHOP_WHATSAPP_INTL, text);
+    return { sent: true };
+  } catch (err) {
+    console.error('[Contact] Shop WhatsApp notify failed:', err.message);
+    return { sent: false, error: err.message };
+  }
+}
+
 export async function deliverEmailOtp(email, code, purpose = 'verification') {
   const subject =
     purpose === 'login'

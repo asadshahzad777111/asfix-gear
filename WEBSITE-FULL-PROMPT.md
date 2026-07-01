@@ -144,10 +144,12 @@ npm run reset-admin
 Two-level hover/click menu in the navbar's "Shop" trigger, 3 columns:
 
 1. **Categories** — from `SHOP_CATEGORIES` (`products.js`), links to `/shop?category=...`
-2. **Brands** — from `SHOP_BRANDS` (`products.js`); hovering/clicking a brand swaps the 3rd column
-3. **Models** — exact device models for the active brand, sourced via `getModelsForShopBrand()` (`config/repairModels.js`, reuses the same brand→model chip data as the repair models panel); clicking a model navigates to `/shop?search=<model>` (shop intent, not repair)
+2. **Brands** — from `SHOP_BRANDS` (`products.js`, **14 brands**: iPhone, Samsung, OnePlus, Xiaomi/Redmi/POCO, Vivo/iQOO, Oppo, Infinix, Tecno, Google Pixel, Realme, Motorola, Nothing, Honor, Itel); hovering/clicking a brand swaps the 3rd column
+3. **Models** — device models for the active brand, grouped by series with sub-headers, sourced via `getSeriesForShopBrand()` (`config/repairModels.js`, reuses the same brand→model catalog as the repair models panel); clicking a model navigates to `/shop?search=<model>` (shop intent, not repair)
 
-Mobile keeps the existing accordion pattern in `Navbar.jsx` (unchanged). Hover-open/click-open and outside-click/ESC-close logic from the original menu is preserved; only the brand→model slide-out (3rd column, animated with `framer-motion`) was added.
+Mobile keeps the existing accordion pattern in `Navbar.jsx` (unchanged). Hover-open/click-open and outside-click/ESC-close logic from the original menu is preserved.
+
+**Full device catalog (commit — see changelog):** `repairModels.js` now holds a comprehensive 14-brand, ~400-model catalog (series-grouped, e.g. Samsung's S/Note/A/Z series, iPhone 17→6s, Xiaomi/Redmi/POCO, Vivo/iQOO, etc.) — single source of truth for the mega menu, the Repair page models panel, **and** the repair intake form's brand/model dropdown (`repairIntake.js` derives `DEVICE_BRANDS` from it, so there is no second hand-written model list to drift out of sync).
 
 ---
 
@@ -429,8 +431,8 @@ Used in: `ProductCard.jsx`, `ProductDetail.jsx`, `GamingProductCard.jsx`, `Float
 
 | File | Contents |
 |------|----------|
-| `config/repairIntake.js` | Device brands/models, issue types, screen tiers, dead-mobile policy, estimate times |
-| `config/repairModels.js` | Brand groups for quote chips, `repairQuoteContactPath()` |
+| `config/repairIntake.js` | Issue types, screen tiers, dead-mobile policy, estimate times. `DEVICE_BRANDS` (brand/model dropdown) is **derived from** `repairModels.js` — not a separate list |
+| `config/repairModels.js` | ★ Single source of truth: 14 brands × series-grouped models (~400 models) for quote chips, shop mega menu, and the intake dropdown. `repairQuoteContactPath()`, `getModelsForShopBrand()`, `getSeriesForShopBrand()` |
 
 ### Issue types
 Charging port, screen, battery, water damage, suddenly dead, sound, software — with severity (`standard`, `severe`, `dead`) affecting ETA text.
@@ -484,8 +486,12 @@ Charging port, screen, battery, water damage, suddenly dead, sound, software —
 ### Contact form submit
 `POST /api/contact` — stores message in `contact_messages`; staff reply via Admin Messages tab.
 
-### WhatsApp send from Contact
-`composeContactWhatsAppBody()` → `whatsappLink()` — only after user reviews the composed message.
+### WhatsApp send from Contact (auto-capture)
+`composeContactWhatsAppBody()` → `whatsappLink()` — user reviews the composed message, same as before. **Difference (see changelog):** clicking **"Send via WhatsApp"** now also silently calls `POST /api/contact` first (awaited) so the inquiry is guaranteed to land in Admin Messages / Ops desk **immediately**, before the `wa.me` tab opens — it no longer depends on the customer actually pressing send inside their own WhatsApp app.
+
+**Policy limitation (important, be honest about this):** WhatsApp does **not** allow a website to silently send a message from the *customer's own* WhatsApp account — that's a WhatsApp anti-spam policy, not something code can bypass. The `wa.me` link still requires the customer to tap send manually. What changed is that staff no longer depend on that manual tap to know about the inquiry.
+
+**Optional staff-side ping:** If `WHATSAPP_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID` (Meta Cloud API, same env vars already used for OTP in `backend/services/otpDelivery.js`) are set, `POST /api/contact` also fires a real outbound WhatsApp message **to the shop's own number** (`SHOP.phoneIntl`) with a short inquiry summary, via `notifyShopWhatsApp()` (reuses the existing Cloud API sender, no new integration code). Skipped silently if not configured; never blocks or fails the contact submission (wrapped in try/catch, fire-and-forget).
 
 ### Components updated for prefill routing
 `WhatsAppButton.jsx`, `ProductCard.jsx`, `RepairServiceCard.jsx`, `RepairModelsPanel.jsx`, `ScreenQualityPicker.jsx`, `LocationSection.jsx`, `Gaming.jsx`, `FloatingCart.jsx`, `OrderSuccessPanel.jsx`, `RepairSuccessPanel.jsx`, `config/shop.js`, `config/repairIntake.js`, `config/repairModels.js`
@@ -844,6 +850,8 @@ Sab jagah auto-update: contact page, checkout payment instructions, map, receipt
 ### Add a new product category
 **File:** `frontend/src/config/products.js` → `CATEGORIES` array + `DEFAULT_IMAGES` entry.
 
+**Accessory taxonomy note:** `Cases` = pouch/case, `Back Covers` = rigid back covers, `Screen Guards` = screen protectors/front glass. Tag real products as `"<Model> Back Cover"`, `"<Model> Case"`, etc. — Shop search (`/shop?search=<model>`) is a simple case-insensitive substring match on product name, so any product named with the model in it will surface correctly from the mega menu / repair models panel model links.
+
 ### Add repair service
 **Backend seed:** `backend/seed.js` repair_services array, OR insert via `data.json` (dev only).  
 Frontend loads from `GET /api/repairs/services`.
@@ -953,6 +961,8 @@ npm run check:i18n
 
 | Commit | Summary |
 |--------|---------|
+| _pending_ | **Contact auto-capture:** "Send via WhatsApp" on the Contact page now silently submits to `POST /api/contact` (awaited) before opening the `wa.me` link — inquiry is guaranteed to land in Admin Messages / Ops desk even if the customer never completes the manual WhatsApp send. Optional: if `WHATSAPP_TOKEN` + `WHATSAPP_PHONE_NUMBER_ID` are set, staff also get a real WhatsApp ping to the shop's own number via `notifyShopWhatsApp()` (reuses `otpDelivery.js` Cloud API sender). |
+| _pending_ | **Comprehensive device catalog:** `repairModels.js` expanded to 14 brands / ~400 models, series-grouped (Apple, Samsung, OnePlus, Xiaomi/Redmi/POCO, Vivo/iQOO, Oppo, Infinix, Tecno, Google Pixel, Realme, Motorola, Nothing, Honor, Itel). `SHOP_BRANDS` (`products.js`) expanded to match; `repairIntake.js` `DEVICE_BRANDS` now derived from the same source instead of a separate hand-written list. Added `Back Covers` product category alongside existing `Cases` and `Screen Guards`. |
 | `6f20586` | **Mega menu + home polish:** `ShopMegaMenu.jsx` upgraded to a true 2-level brand→model slide-out (desktop). Home product cards now show low/out-of-stock badges via `utils/stock.js`. Docs updated. |
 | `5fea50e` | **2026 auth redesign:** `AccountLogin`, `AccountRegister`, `Login`, `CustomerLoginModal` redesigned with a shared glassmorphic `AuthUI.jsx` component system (`auth-2026.css`) — animated tabs, step indicators, gradient CTAs with loading spinners, theme-aware. Logic unchanged. |
 | `10ad808` | **Urdu removal:** Removed Urdu script (`ur`) everywhere — site is now English + Roman Urdu only, LTR-only (RTL CSS/fonts removed). |

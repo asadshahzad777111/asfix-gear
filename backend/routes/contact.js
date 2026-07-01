@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
+import { notifyShopWhatsApp } from '../services/otpDelivery.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
@@ -8,6 +9,15 @@ const MAX_NAME = 120;
 const MAX_EMAIL = 160;
 const MAX_PHONE = 30;
 const MAX_MESSAGE = 2000;
+const WHATSAPP_SUMMARY_CHARS = 160;
+
+function buildShopWhatsAppSummary(saved) {
+  const excerpt =
+    saved.message.length > WHATSAPP_SUMMARY_CHARS
+      ? `${saved.message.slice(0, WHATSAPP_SUMMARY_CHARS)}…`
+      : saved.message;
+  return `New inquiry from ${saved.name}: ${excerpt}`;
+}
 
 router.post('/', optionalAuth, (req, res) => {
   const { name, email, phone, message } = req.body;
@@ -34,6 +44,10 @@ router.post('/', optionalAuth, (req, res) => {
     message: message.trim(),
     customer_user_id: customerUserId,
   });
+
+  // Best-effort staff WhatsApp alert — never blocks or fails the response
+  // (skipped silently if WhatsApp Cloud API env vars aren't configured).
+  notifyShopWhatsApp(buildShopWhatsAppSummary(saved)).catch(() => {});
 
   res.status(201).json({
     message: 'Message sent successfully. We will contact you soon!',

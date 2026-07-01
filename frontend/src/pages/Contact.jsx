@@ -38,6 +38,7 @@ export default function Contact() {
   );
 
   const [submitting, setSubmitting] = useState(false);
+  const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [form, setForm] = useState({
     name: '',
@@ -76,20 +77,24 @@ export default function Contact() {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
+  const submitContactMessage = () => {
+    const body = form.subject.trim()
+      ? `Subject: ${form.subject.trim()}\n\n${form.message.trim()}`
+      : form.message.trim();
+    return api.sendContact({
+      name: form.name,
+      email: form.email,
+      phone: form.phone,
+      message: body,
+    });
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
     setMessage({ type: '', text: '' });
     try {
-      const body = form.subject.trim()
-        ? `Subject: ${form.subject.trim()}\n\n${form.message.trim()}`
-        : form.message.trim();
-      const res = await api.sendContact({
-        name: form.name,
-        email: form.email,
-        phone: form.phone,
-        message: body,
-      });
+      const res = await submitContactMessage();
       setMessage({ type: 'success', text: res.message });
       setForm({ name: '', email: '', phone: '', subject: '', message: '' });
       setIsPrefilled(false);
@@ -97,6 +102,25 @@ export default function Contact() {
       setMessage({ type: 'error', text: err.message });
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  // Guarantee the message lands in Admin Messages / Ops desk BEFORE the
+  // customer navigates away to WhatsApp — WhatsApp itself still requires the
+  // customer to manually tap send in their own app, so this is the part of
+  // the flow the site can make reliable.
+  const handleSendWhatsApp = async () => {
+    if (sendingWhatsApp) return;
+    setSendingWhatsApp(true);
+    try {
+      if (form.name.trim() && form.message.trim()) {
+        await submitContactMessage();
+      }
+    } catch (err) {
+      console.error('Contact WhatsApp auto-capture failed:', err.message);
+    } finally {
+      setSendingWhatsApp(false);
+      window.open(waHref, '_blank', 'noopener,noreferrer');
     }
   };
 
@@ -191,15 +215,15 @@ export default function Contact() {
             <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: '100%' }}>
               {submitting ? t('contact.sending') : t('contact.send')}
             </button>
-            <a
-              href={waHref}
-              target="_blank"
-              rel="noopener noreferrer"
+            <button
+              type="button"
+              onClick={handleSendWhatsApp}
+              disabled={sendingWhatsApp}
               className="btn btn-whatsapp"
               style={{ width: '100%', marginTop: '0.75rem' }}
             >
               💬 {t('contact.sendWhatsApp')}
-            </a>
+            </button>
             <p className="field-hint" style={{ marginTop: '0.5rem', textAlign: 'center' }}>
               {t('contact.whatsappHint')}
             </p>
