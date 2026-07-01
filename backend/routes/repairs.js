@@ -7,37 +7,47 @@ const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
 const WHATSAPP_SUMMARY_CHARS = 160;
 
+const MAX_LEN = {
+  customer_name: 120,
+  phone: 30,
+  alternative_contact: 30,
+  device_brand: 60,
+  device_model: 60,
+  issue: 2000,
+  issue_other: 500,
+  estimated_repair_time: 60,
+  screen_quality: 60,
+};
+
+function str(value, max) {
+  const s = typeof value === 'string' ? value : value == null ? '' : String(value);
+  return max ? s.trim().slice(0, max) : s.trim();
+}
+
 router.get('/services', (_req, res) => {
   res.json(store.getRepairServices());
 });
 
 router.post('/book', (req, res) => {
-  const {
-    customer_name,
-    phone,
-    alternative_contact,
-    device_brand,
-    device_model,
-    issue,
-    issue_types,
-    issue_other,
-    estimated_repair_time,
-    terms_accepted,
-    screen_quality,
-    dead_mobile_acknowledged,
-    service_id,
-    preferred_date,
-  } = req.body;
+  const body = req.body || {};
+  const customer_name = str(body.customer_name, MAX_LEN.customer_name);
+  const phone = str(body.phone, MAX_LEN.phone);
+  const alternative_contact = str(body.alternative_contact, MAX_LEN.alternative_contact);
+  const device_brand = str(body.device_brand, MAX_LEN.device_brand);
+  const device_model = str(body.device_model, MAX_LEN.device_model);
+  const issue_other = str(body.issue_other, MAX_LEN.issue_other);
+  const summary = str(body.issue, MAX_LEN.issue);
+  const estimated_repair_time = str(body.estimated_repair_time, MAX_LEN.estimated_repair_time);
+  const screen_quality = str(body.screen_quality, MAX_LEN.screen_quality);
+  const { issue_types, terms_accepted, dead_mobile_acknowledged, service_id, preferred_date } = body;
 
-  if (!customer_name?.trim() || !phone?.trim() || !device_brand?.trim() || !device_model?.trim()) {
+  if (!customer_name || !phone || !device_brand || !device_model) {
     return res.status(400).json({ error: 'Please fill all required contact and device fields' });
   }
 
-  const types = Array.isArray(issue_types) ? issue_types : [];
-  const otherText = String(issue_other || '').trim();
-  const summary = String(issue || '').trim();
+  const types = Array.isArray(issue_types) ? issue_types.map((t) => str(t, 60)).slice(0, 20) : [];
 
-  if (types.length === 0 && !otherText && !summary) {
+  if (types.length === 0 && !issue_other && !summary) {
     return res.status(400).json({ error: 'Please select at least one issue or describe the problem' });
   }
 
@@ -46,20 +56,20 @@ router.post('/book', (req, res) => {
   }
 
   const booking = store.createRepairBooking({
-    customer_name: customer_name.trim(),
-    phone: phone.trim(),
-    alternative_contact: alternative_contact?.trim() || '',
-    device_brand: device_brand.trim(),
-    device_model: device_model.trim(),
-    issue: summary || otherText,
+    customer_name,
+    phone,
+    alternative_contact,
+    device_brand,
+    device_model,
+    issue: summary || issue_other,
     issue_types: types,
-    issue_other: otherText,
-    estimated_repair_time: estimated_repair_time || '',
-    screen_quality: screen_quality || '',
+    issue_other,
+    estimated_repair_time,
+    screen_quality,
     dead_mobile_acknowledged: Boolean(dead_mobile_acknowledged),
     terms_accepted: true,
-    service_id,
-    preferred_date,
+    service_id: str(service_id, 60) || undefined,
+    preferred_date: str(preferred_date, 30) || undefined,
   });
 
   // Best-effort WhatsApp alerts — never block or fail the response (skipped

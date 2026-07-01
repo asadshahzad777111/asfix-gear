@@ -16,7 +16,8 @@
     "start:prod": "npm run build && set NODE_ENV=production&& node backend/server.js",
     "check:i18n": "node scripts/check-i18n.js",
     "check:secrets": "node scripts/check-secrets.js",
-    "check:smoke": "node scripts/smoke-test.js"
+    "check:smoke": "node scripts/smoke-test.js",
+    "check:registration": "node scripts/registration-smoke.js"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

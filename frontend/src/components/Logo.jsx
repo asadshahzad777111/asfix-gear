@@ -18,38 +18,43 @@ export default function Logo({ size = 44, showText = true, className = '' }) {
             <stop stopColor="#1a1a2e" />
             <stop offset="1" stopColor="#0a0a12" />
           </linearGradient>
+          <filter id="logoShadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000000" floodOpacity="0.35" />
+          </filter>
         </defs>
 
-        <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#logoGradMain)" opacity="0.25" />
-        <rect x="8" y="8" width="104" height="104" rx="24" fill="#050508" stroke="url(#logoGradMain)" strokeWidth="2" />
+        <g filter="url(#logoShadow)">
+          <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#logoGradMain)" opacity="0.25" />
+          <rect x="8" y="8" width="104" height="104" rx="24" fill="#050508" stroke="url(#logoGradMain)" strokeWidth="2" />
 
-        {/* Phone body */}
-        <rect x="38" y="22" width="44" height="76" rx="10" fill="url(#logoGradInner)" stroke="url(#logoGradMain)" strokeWidth="2" />
-        <rect x="42" y="30" width="36" height="52" rx="4" fill="#0f0f1a" stroke="rgba(255,255,255,0.08)" />
+          {/* Phone body */}
+          <rect x="38" y="20" width="44" height="80" rx="10" fill="url(#logoGradInner)" stroke="url(#logoGradMain)" strokeWidth="2" />
+          <rect x="42" y="28" width="36" height="56" rx="4" fill="#0f0f1a" stroke="rgba(255,255,255,0.08)" />
 
-        {/* Screen shine */}
-        <path d="M42 30 L78 30 L72 38 L42 38 Z" fill="rgba(0,245,212,0.12)" />
+          {/* Screen shine */}
+          <path d="M42 28 L78 28 L72 36 L42 36 Z" fill="rgba(0,245,212,0.12)" />
 
-        {/* Wrench / fix icon */}
-        <path
-          d="M58 48 L52 54 C50.5 55.5 50.5 58 52 59.5 L60.5 68 C62 69.5 64.5 69.5 66 68 L68 66 L58 48Z"
-          fill="#FF6B2C"
-        />
-        <circle cx="54" cy="58" r="4" fill="#00F5D4" />
+          {/* Wrench / fix icon */}
+          <path
+            d="M58 46 L52 52 C50.5 53.5 50.5 56 52 57.5 L60.5 66 C62 67.5 64.5 67.5 66 66 L68 64 L58 46Z"
+            fill="#FF6B2C"
+          />
+          <circle cx="54" cy="56" r="4" fill="#00F5D4" />
 
-        {/* Gear dot */}
-        <circle cx="72" cy="72" r="6" fill="none" stroke="#7C3AED" strokeWidth="2" />
-        <circle cx="72" cy="72" r="2" fill="#7C3AED" />
+          {/* Gear dot */}
+          <circle cx="72" cy="70" r="6" fill="none" stroke="#7C3AED" strokeWidth="2" />
+          <circle cx="72" cy="70" r="2" fill="#7C3AED" />
 
-        {/* Home button */}
-        <circle cx="60" cy="90" r="3" fill="url(#logoGradMain)" />
+          {/* Home button */}
+          <circle cx="60" cy="92" r="3" fill="url(#logoGradMain)" />
 
-        {/* Top speaker */}
-        <rect x="54" y="26" width="12" height="2" rx="1" fill="rgba(255,255,255,0.2)" />
+          {/* Top speaker */}
+          <rect x="54" y="24" width="12" height="2" rx="1" fill="rgba(255,255,255,0.2)" />
 
-        {/* As text badge */}
-        <rect x="18" y="18" width="28" height="18" rx="6" fill="url(#logoGradMain)" />
-        <text x="32" y="30" textAnchor="middle" fill="white" fontSize="10" fontWeight="800" fontFamily="Syne, sans-serif">As</text>
+          {/* "As" monogram badge — bottom-left corner, clear of the phone icon */}
+          <rect x="14" y="80" width="26" height="18" rx="6" fill="url(#logoGradMain)" />
+          <text x="27" y="93" textAnchor="middle" fill="#050508" fontSize="9.5" fontWeight="800" fontFamily="Syne, sans-serif">As</text>
+        </g>
       </svg>
 
       {showText && (

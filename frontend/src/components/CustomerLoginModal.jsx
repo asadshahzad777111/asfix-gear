@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
+import useModalBehavior from '../hooks/useModalBehavior';
 import OtpInput from './OtpInput';
 import Logo from './Logo';
 import {
@@ -28,6 +29,8 @@ export default function CustomerLoginModal({ open, onClose }) {
   const [otpHint, setOtpHint] = useState('');
   const [whatsappLink, setWhatsappLink] = useState(null);
   const [devCode, setDevCode] = useState(null);
+
+  useModalBehavior(open, onClose);
 
   if (!open) return null;
 

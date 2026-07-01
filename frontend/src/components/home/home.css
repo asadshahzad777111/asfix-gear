@@ -203,11 +203,17 @@
 .home-collection-card {
   position: relative;
   display: block;
+  width: 100%;
+  padding: 0;
   border-radius: var(--radius-lg);
   overflow: hidden;
   min-height: 160px;
   text-decoration: none;
   border: 1px solid var(--border);
+  background: none;
+  font: inherit;
+  cursor: pointer;
+  text-align: left;
 }
 
 .home-collection-card img {
@@ -446,6 +452,11 @@
   text-decoration: none;
   color: var(--text);
   min-width: 72px;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
 }
 
 .home-trending-circle {

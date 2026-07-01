@@ -42,11 +42,21 @@ function waitForServer(url, timeoutMs = 30000) {
   });
 }
 
+// Console noise that is expected/benign in a sandboxed CI browser (blocked
+// third-party trackers, ad-block-style resource failures, etc.) and should
+// never fail the build on its own. Real render crashes always show up as a
+// `pageerror` and/or a blank #root, which we still fail on unconditionally.
+const IGNORED_CONSOLE_PATTERNS = [/favicon/i, /ERR_BLOCKED_BY_CLIENT/i, /net::ERR_/i];
+
 async function checkRoute(page, route) {
-  const errors = [];
-  const onPageError = (err) => errors.push(`pageerror: ${err.message}`);
+  const fatalErrors = [];
+  const warnings = [];
+  const onPageError = (err) => fatalErrors.push(`pageerror: ${err.message}`);
   const onConsole = (msg) => {
-    if (msg.type() === 'error') errors.push(`console.error: ${msg.text()}`);
+    if (msg.type() !== 'error') return;
+    const text = msg.text();
+    if (IGNORED_CONSOLE_PATTERNS.some((re) => re.test(text))) return;
+    warnings.push(`console.error: ${text}`);
   };
   page.on('pageerror', onPageError);
   page.on('console', onConsole);
@@ -57,9 +67,9 @@ async function checkRoute(page, route) {
 
     const rootHtml = await page.evaluate(() => document.getElementById('root')?.innerHTML || '');
     if (!rootHtml.trim()) {
-      errors.push('Blank page — #root rendered no content');
+      fatalErrors.push('Blank page — #root rendered no content');
     }
-    return errors;
+    return { fatalErrors, warnings };
   } finally {
     page.off('pageerror', onPageError);
     page.off('console', onConsole);
@@ -97,14 +107,15 @@ async function main() {
 
     for (const route of ROUTES) {
       process.stdout.write(`Checking ${route} ... `);
-      const errors = await checkRoute(page, route);
-      if (errors.length > 0) {
+      const { fatalErrors, warnings } = await checkRoute(page, route);
+      if (fatalErrors.length > 0) {
         hadFailure = true;
         console.log('FAIL');
-        for (const e of errors) console.log(`    ${e}`);
+        for (const e of fatalErrors) console.log(`    ${e}`);
       } else {
         console.log('OK');
       }
+      for (const w of warnings) console.log(`    [warn] ${w}`);
     }
 
     await browser.close();

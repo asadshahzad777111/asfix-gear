@@ -1,6 +1,8 @@
-import { Link } from 'react-router-dom';
-import { SHOP_CATEGORIES } from '../../config/products';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { MODEL_SPECIFIC_CATEGORIES, SHOP_CATEGORIES } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
+import PhoneFinderModal from '../PhoneFinderModal';
 
 const CATEGORY_ICONS = {
   Cases: '📱',
@@ -14,6 +16,16 @@ const CATEGORY_ICONS = {
 
 export default function TrendingCategories() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [finderCategory, setFinderCategory] = useState(null);
+
+  const handleClick = (category) => {
+    if (MODEL_SPECIFIC_CATEGORIES.includes(category)) {
+      setFinderCategory(category);
+    } else {
+      navigate(`/shop?category=${encodeURIComponent(category)}`);
+    }
+  };
 
   return (
     <section className="home-section">
@@ -25,19 +37,26 @@ export default function TrendingCategories() {
         </div>
         <div className="home-trending-row">
           {SHOP_CATEGORIES.map((category) => (
-            <Link
+            <button
               key={category}
-              to={`/shop?category=${encodeURIComponent(category)}`}
+              type="button"
+              onClick={() => handleClick(category)}
               className="home-trending-chip"
             >
               <span className="home-trending-circle" aria-hidden="true">
                 {CATEGORY_ICONS[category] || '📦'}
               </span>
               <span className="home-trending-label">{category}</span>
-            </Link>
+            </button>
           ))}
         </div>
       </div>
+
+      <PhoneFinderModal
+        open={Boolean(finderCategory)}
+        category={finderCategory}
+        onClose={() => setFinderCategory(null)}
+      />
     </section>
   );
 }

@@ -10,6 +10,7 @@ import AdminManagement from '../components/AdminManagement';
 import AdminChatInbox from '../components/AdminChatInbox';
 import AdminSalesReport from '../components/AdminSalesReport';
 import AdminOrderCard from '../components/AdminOrderCard';
+import AdminStockManager from '../components/AdminStockManager';
 import ShopStatusControl from '../components/ShopStatusControl';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
@@ -133,6 +134,9 @@ export default function Admin() {
             <button type="button" className={`admin-tab ${tab === 'products' ? 'active' : ''}`} onClick={() => setTab('products')}>
               Products ({products.length})
             </button>
+            <button type="button" className={`admin-tab ${tab === 'stock' ? 'active' : ''}`} onClick={() => setTab('stock')}>
+              📦 {t('admin.stockTab')}
+            </button>
             <button type="button" className={`admin-tab ${tab === 'orders' ? 'active' : ''}`} onClick={() => setTab('orders')}>
               Orders ({orders.length}){pendingOrders > 0 ? ` · ${pendingOrders} new` : ''}
             </button>
@@ -192,6 +196,13 @@ export default function Admin() {
                   ))
               )}
             </div>
+          ) : tab === 'stock' ? (
+            <AdminStockManager
+              products={products}
+              onProductUpdated={(updated) =>
+                setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+              }
+            />
           ) : tab === 'products' ? (
             <>
               <div className="admin-toolbar">

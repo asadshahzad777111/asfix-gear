@@ -43,6 +43,16 @@ export const HOME_COLLECTIONS = ['Cases', 'Chargers', 'Screen Guards', 'Audio'];
 
 export const SHOP_CATEGORIES = CATEGORIES.filter((c) => c !== 'Gaming');
 
+/**
+ * Categories where the product only fits one exact phone model — for these,
+ * clicking the category should guide the customer through "which company? →
+ * which model?" first (see `PhoneFinderModal`), instead of dumping every
+ * brand's cases/covers/guards into one long list they have to search
+ * through manually. Chargers/Cables/Audio/Power Banks/Accessories are
+ * mostly universal, so they skip straight to the shop listing.
+ */
+export const MODEL_SPECIFIC_CATEGORIES = ['Cases', 'Back Covers', 'Screen Guards'];
+
 export const DEFAULT_IMAGES = {
   Gaming: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=600&fit=crop',
   Cases: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&h=600&fit=crop',

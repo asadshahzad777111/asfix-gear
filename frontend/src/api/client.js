@@ -100,6 +100,8 @@ export const api = {
   updateProduct: (id, body) => request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   setProductDiscount: (id, discount_percent) =>
     request(`/products/${id}/discount`, { method: 'PATCH', body: JSON.stringify({ discount_percent }) }),
+  adjustProductStock: (id, delta, opts = {}) =>
+    request(`/products/${id}/stock`, { method: 'PATCH', body: JSON.stringify({ delta, ...opts }) }),
   deleteProduct: (id) => request(`/products/${id}`, { method: 'DELETE' }),
 
   getRepairServices: () => request('/repairs/services'),

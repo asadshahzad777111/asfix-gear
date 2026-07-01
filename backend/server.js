@@ -47,9 +47,29 @@ app.use('/api/orders', writeLimiter, ordersRouter);
 app.use('/api/shop', shopRouter);
 app.use('/api/admin', adminRouter);
 
+// Common automated-scanner probe paths (WordPress, phpMyAdmin, env/git
+// leaks, PHP info pages, etc.) — this app is a static React SPA + JSON API
+// with none of that surface, so answer instantly with 404 instead of
+// serving the SPA shell, which just wastes bandwidth on bot noise.
+const BLOCKED_PROBE_PATTERNS = [
+  /wp-admin|wp-login|wp-content|xmlrpc\.php/i,
+  /phpmyadmin|adminer/i,
+  /\.env($|\.)/i,
+  /\.git\//i,
+  /\.(php|asp|aspx|jsp|cgi)$/i,
+  /\/(config|backup|dump)\.(sql|zip|tar|gz)$/i,
+];
+
+app.use((req, res, next) => {
+  if (BLOCKED_PROBE_PATTERNS.some((re) => re.test(req.path))) {
+    return res.status(404).end();
+  }
+  next();
+});
+
 if (process.env.NODE_ENV === 'production') {
   const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
-  app.use(express.static(frontendDist, { maxAge: '1d', index: false }));
+  app.use(express.static(frontendDist, { maxAge: '1d', index: false, dotfiles: 'deny' }));
   app.get('*', (_req, res) => {
     res.sendFile(path.join(frontendDist, 'index.html'));
   });

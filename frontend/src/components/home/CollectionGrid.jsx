@@ -1,6 +1,8 @@
-import { Link } from 'react-router-dom';
-import { DEFAULT_IMAGES, HOME_COLLECTIONS } from '../../config/products';
+import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { DEFAULT_IMAGES, HOME_COLLECTIONS, MODEL_SPECIFIC_CATEGORIES } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
+import PhoneFinderModal from '../PhoneFinderModal';
 
 const COLLECTION_HINTS = {
   Cases: 'home.collectionCases',
@@ -11,6 +13,16 @@ const COLLECTION_HINTS = {
 
 export default function CollectionGrid() {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [finderCategory, setFinderCategory] = useState(null);
+
+  const handleClick = (category) => {
+    if (MODEL_SPECIFIC_CATEGORIES.includes(category)) {
+      setFinderCategory(category);
+    } else {
+      navigate(`/shop?category=${encodeURIComponent(category)}`);
+    }
+  };
 
   return (
     <section className="home-section">
@@ -22,9 +34,10 @@ export default function CollectionGrid() {
         </div>
         <div className="home-collection-grid">
           {HOME_COLLECTIONS.map((category) => (
-            <Link
+            <button
               key={category}
-              to={`/shop?category=${encodeURIComponent(category)}`}
+              type="button"
+              onClick={() => handleClick(category)}
               className="home-collection-card"
             >
               <img
@@ -36,10 +49,16 @@ export default function CollectionGrid() {
                 <strong>{category}</strong>
                 <span>{t(COLLECTION_HINTS[category] || 'home.collectionDefault')}</span>
               </div>
-            </Link>
+            </button>
           ))}
         </div>
       </div>
+
+      <PhoneFinderModal
+        open={Boolean(finderCategory)}
+        category={finderCategory}
+        onClose={() => setFinderCategory(null)}
+      />
     </section>
   );
 }

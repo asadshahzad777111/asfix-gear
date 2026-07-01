@@ -59,43 +59,34 @@ export default function GamingLogo({ size = 48, className = '', animated = true 
 
       <rect x="34" y="38" width="52" height="44" rx="12" fill="#0c0c18" stroke={`url(#${grad})`} strokeWidth="1.5" />
 
+      {/* Shoulder triggers — subtle single-tone, no letter labels (cleaner at small sizes) */}
       <path
         d="M34 46 L22 52 L22 62 L34 58 Z"
         fill={`url(#${grad})`}
-        opacity="0.9"
+        opacity="0.55"
         className="gaming-logo-trigger-l"
-        filter={`url(#${glow})`}
       />
-      <text x="24" y="59" fill="#06060f" fontSize="7" fontWeight="900" fontFamily="Syne,sans-serif">L</text>
-
       <path
         d="M86 46 L98 52 L98 62 L86 58 Z"
         fill={`url(#${grad})`}
-        opacity="0.9"
+        opacity="0.55"
         className="gaming-logo-trigger-r"
-        filter={`url(#${glow})`}
       />
-      <text x="90" y="59" fill="#06060f" fontSize="7" fontWeight="900" fontFamily="Syne,sans-serif">R</text>
 
-      <rect x="42" y="52" width="6" height="14" rx="1" fill="#00ff88" opacity="0.7" />
-      <rect x="39" y="55" width="12" height="6" rx="1" fill="#00ff88" opacity="0.7" />
+      {/* D-pad — single cyan tone */}
+      <rect x="42" y="52" width="6" height="14" rx="1.5" fill="#00d4ff" opacity="0.85" />
+      <rect x="39" y="55" width="12" height="6" rx="1.5" fill="#00d4ff" opacity="0.85" />
 
-      <circle cx="72" cy="56" r="4" fill="#ff0055" opacity="0.85" />
-      <circle cx="78" cy="62" r="4" fill="#00d4ff" opacity="0.85" />
-
-      <circle cx="60" cy="72" r="10" fill="none" stroke="#00ff88" strokeWidth="1.2" opacity="0.8" className="gaming-logo-cross" />
-      <circle cx="60" cy="72" r="2.5" fill="#ff0055" filter={`url(#${glow})`} className="gaming-logo-dot" />
-      <line x1="60" y1="58" x2="60" y2="64" stroke="#00ff88" strokeWidth="1.5" />
-      <line x1="60" y1="80" x2="60" y2="86" stroke="#00ff88" strokeWidth="1.5" />
-      <line x1="46" y1="72" x2="52" y2="72" stroke="#00ff88" strokeWidth="1.5" />
-      <line x1="68" y1="72" x2="74" y2="72" stroke="#00ff88" strokeWidth="1.5" />
+      {/* Action buttons — single accent tone, two sizes for depth (not four clashing hues) */}
+      <circle cx="72" cy="56" r="4" fill={`url(#${grad})`} opacity="0.9" filter={`url(#${glow})`} />
+      <circle cx="79" cy="63" r="3" fill={`url(#${grad})`} opacity="0.55" />
 
       <rect x="44" y="14" width="32" height="16" rx="5" fill={`url(#${grad})`} />
       <text x="60" y="25" textAnchor="middle" fill="#06060f" fontSize="10" fontWeight="900" fontFamily="Syne,sans-serif">AsG</text>
 
       <path
         d="M60 28 L56 36 L62 36 L58 44"
-        stroke="#00ff88"
+        stroke="#00d4ff"
         strokeWidth="1.5"
         fill="none"
         strokeLinecap="round"

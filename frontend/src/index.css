@@ -2198,7 +2198,13 @@ img { max-width: 100%; height: auto; display: block; }
   .btn-add-submit { min-width: 0; width: 100%; }
 
   .fab-add .fab-label { display: none; }
-  .modal-panel { padding: clamp(1rem, 4vw, 1.25rem); max-height: 92vh; }
+  .modal-panel {
+    padding: clamp(1rem, 4vw, 1.25rem);
+    max-height: 92vh;
+    max-height: 92dvh;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior: contain;
+  }
   .modal-close { top: 0.75rem; right: 0.75rem; width: 32px; height: 32px; }
   .add-product-header { padding-right: 2.5rem; }
   .add-product-header h2 { font-size: 1.2rem; }
@@ -2506,6 +2512,7 @@ img { max-width: 100%; height: auto; display: block; }
   display: grid;
   place-items: center;
   padding: 1rem;
+  overscroll-behavior: contain;
   animation: fadeIn 0.2s ease;
 }
 
@@ -2513,7 +2520,9 @@ img { max-width: 100%; height: auto; display: block; }
   position: relative;
   width: min(920px, 100%);
   max-height: 90vh;
+  max-height: 90dvh;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--bg-elevated);
   border: 1px solid var(--glass-edge);
   border-radius: var(--radius-lg);
@@ -2547,6 +2556,150 @@ img { max-width: 100%; height: auto; display: block; }
 
 @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: none; } }
+
+/* Phone finder (brand → model guided picker) */
+.phone-finder-panel {
+  width: min(560px, 100%);
+}
+
+.phone-finder-step {
+  display: flex;
+  flex-direction: column;
+}
+
+.phone-finder-eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 0.35rem;
+}
+
+.phone-finder-title {
+  font-family: var(--font-display);
+  font-size: 1.35rem;
+  font-weight: 800;
+  margin-bottom: 0.35rem;
+}
+
+.phone-finder-sub {
+  color: var(--text-muted);
+  font-size: 0.88rem;
+  margin-bottom: 1.25rem;
+}
+
+.phone-finder-brand-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  gap: 0.6rem;
+  margin-bottom: 1.25rem;
+}
+
+.phone-finder-brand-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 1rem 0.5rem;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+}
+
+.phone-finder-brand-btn:hover {
+  border-color: var(--primary);
+  background: var(--nav-hover);
+  transform: translateY(-2px);
+}
+
+.phone-finder-brand-icon {
+  font-size: 1.8rem;
+}
+
+.phone-finder-skip {
+  align-self: center;
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0.5rem;
+}
+
+.phone-finder-back {
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0 0 0.75rem;
+}
+
+.phone-finder-model-search {
+  width: 100%;
+  padding: 0.7rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.88rem;
+  margin: 0.75rem 0 1rem;
+}
+
+.phone-finder-model-scroll {
+  max-height: 45vh;
+  overflow-y: auto;
+  margin-bottom: 1rem;
+  padding-right: 0.25rem;
+}
+
+.phone-finder-series { margin-bottom: 1rem; }
+
+.phone-finder-series-name {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 0.5rem;
+}
+
+.phone-finder-model-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.phone-finder-model-chip {
+  padding: 0.5rem 0.9rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.82rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.phone-finder-model-chip:hover {
+  border-color: var(--primary);
+  background: var(--nav-hover);
+}
+
+.phone-finder-no-match {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+  padding: 1.5rem 0;
+}
 
 /* Add product form */
 .add-product-header h2 {
@@ -2792,6 +2945,151 @@ img { max-width: 100%; height: auto; display: block; }
 .admin-order-card-full .admin-float-meta,
 .admin-order-card-full .admin-float-sub,
 .admin-order-card-full .admin-float-items { font-size: 0.85rem; }
+
+/* Quick Stock Adjust (offline sales / restocks) */
+.admin-stock-manager { padding: 1.25rem; }
+
+.admin-stock-head h3 {
+  font-family: var(--font-display);
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin-bottom: 0.3rem;
+}
+
+.admin-stock-head p {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+  max-width: 640px;
+}
+
+.admin-stock-search {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.9rem;
+  margin-bottom: 1rem;
+}
+
+.admin-stock-feedback {
+  padding: 0.65rem 0.9rem;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  margin-bottom: 1rem;
+}
+
+.admin-stock-feedback--success {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #4ade80;
+}
+
+.admin-stock-feedback--error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.admin-stock-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.admin-stock-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.75rem;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-card);
+  flex-wrap: wrap;
+}
+
+.admin-stock-row-img {
+  width: 52px;
+  height: 52px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+}
+
+.admin-stock-row-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  flex: 1 1 220px;
+  min-width: 0;
+}
+
+.admin-stock-row-info strong {
+  font-size: 0.9rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-stock-row-meta {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-stock-row-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.admin-stock-row-count--out { color: #f87171; }
+.admin-stock-row-count--low { color: #fbbf24; }
+.admin-stock-row-count--in { color: var(--mint); }
+
+.admin-stock-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-shrink: 0;
+  flex-wrap: wrap;
+}
+
+.admin-stock-qty-input {
+  width: 4.25rem;
+  padding: 0.5rem 0.4rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text);
+  text-align: center;
+  font-size: 0.85rem;
+}
+
+.admin-stock-btn--minus:hover:not(:disabled) {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.35);
+  color: #fca5a5;
+}
+
+.admin-stock-btn--plus:hover:not(:disabled) {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: rgba(34, 197, 94, 0.35);
+  color: #4ade80;
+}
+
+@media (max-width: 640px) {
+  .admin-stock-row { flex-direction: column; align-items: stretch; }
+  .admin-stock-row-actions { width: 100%; justify-content: stretch; }
+  .admin-stock-qty-input { flex: 0 0 4.25rem; }
+  .admin-stock-btn { flex: 1; }
+}
 
 .admin-product-card {
   overflow: hidden;

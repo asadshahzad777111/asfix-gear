@@ -110,6 +110,35 @@ router.patch('/:id/discount', requireAuth, requireRole(...STAFF), (req, res) => 
   res.json(product);
 });
 
+/**
+ * Manual stock adjustment — for offline/walk-in sales (negative delta) and
+ * physical restocks (positive delta) that never go through the website
+ * checkout flow, so staff can keep online stock counts accurate.
+ */
+router.patch('/:id/stock', requireAuth, requireRole(...STAFF), (req, res) => {
+  const existing = store.getProductById(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Product not found' });
+
+  const delta = Number(req.body.delta);
+  if (!Number.isFinite(delta) || delta === 0) {
+    return res.status(400).json({ error: 'Enter a non-zero quantity' });
+  }
+  if (Math.abs(delta) > 100000) {
+    return res.status(400).json({ error: 'Quantity is too large' });
+  }
+
+  try {
+    const product = store.adjustProductStock(req.params.id, delta, {
+      reason: req.body.reason === 'restock' ? 'restock' : 'offline_sale',
+      note: req.body.note,
+      staffName: req.auth.user.name || req.auth.user.username,
+    });
+    res.json(product);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 router.delete('/:id', requireAuth, requireRole(...CAN_DELETE), (req, res) => {
   const deleted = store.deleteProduct(req.params.id);
   if (!deleted) return res.status(404).json({ error: 'Product not found' });

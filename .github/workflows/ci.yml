@@ -13,12 +13,12 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v6
         with:
-          node-version: '20'
+          node-version: '22'
           cache: npm
           cache-dependency-path: |
             package-lock.json
@@ -30,6 +30,9 @@ jobs:
 
       - name: Seed database
         run: npm run seed
+
+      - name: Registration + password-reset flow smoke test
+        run: npm run check:registration
 
       - name: Check i18n key parity
         run: node scripts/check-i18n.js

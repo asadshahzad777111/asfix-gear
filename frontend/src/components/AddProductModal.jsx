@@ -1,6 +1,9 @@
 import AddProductForm from './AddProductForm';
+import useModalBehavior from '../hooks/useModalBehavior';
 
 export default function AddProductModal({ open, onClose, onSuccess }) {
+  useModalBehavior(open, onClose);
+
   if (!open) return null;
 
   const handleSuccess = (product) => {

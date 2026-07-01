@@ -360,6 +360,43 @@ export function updateProduct(id, input) {
   });
 }
 
+/**
+ * Manual stock adjustment for sales/restocks that happen outside the
+ * website (walk-in / offline customers, physical restock counts, etc.).
+ * `delta` is signed: negative to remove stock sold offline, positive to add
+ * newly restocked units. Every adjustment is appended to the product's
+ * `stock_log` so staff can audit who changed what and why later.
+ */
+export function adjustProductStock(id, delta, { reason = 'offline_sale', note = '', staffName = '' } = {}) {
+  return withData((data) => {
+    const numId = Number(id);
+    const index = data.products.findIndex((p) => p.id === numId);
+    if (index === -1) return null;
+
+    const change = Math.trunc(Number(delta));
+    if (!change) throw new Error('Stock change amount is required');
+
+    const product = data.products[index];
+    const currentStock = Number(product.stock) || 0;
+    const nextStock = Math.max(0, currentStock + change);
+
+    const logEntry = {
+      at: now(),
+      delta: nextStock - currentStock,
+      reason,
+      note: String(note || '').trim().slice(0, 200),
+      staff: String(staffName || '').trim().slice(0, 60),
+      resulting_stock: nextStock,
+    };
+
+    const stockLog = Array.isArray(product.stock_log) ? product.stock_log : [];
+    product.stock = nextStock;
+    product.stock_log = [...stockLog, logEntry].slice(-50);
+
+    return product;
+  });
+}
+
 export function setProductDiscount(id, discountPercent) {
   return withData((data) => {
     const numId = Number(id);

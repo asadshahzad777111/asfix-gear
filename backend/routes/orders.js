@@ -9,6 +9,7 @@ const MAX_PHONE = 30;
 const MAX_CITY = 80;
 const MAX_ITEMS = 20;
 const MAX_GMAIL = 120;
+const MAX_NOTES = 500;
 const VALID_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 const VALID_PAYMENT_MODES = ['jazzcash', 'easypaisa', 'bank'];
 
@@ -58,6 +59,9 @@ router.post('/', requireAuth, (req, res) => {
   }
   if (!Array.isArray(items) || items.length === 0 || items.length > MAX_ITEMS) {
     return res.status(400).json({ error: 'Order must include 1–20 items' });
+  }
+  if (notes && String(notes).trim().length > MAX_NOTES) {
+    return res.status(400).json({ error: 'Notes too long' });
   }
 
   const mode = String(payment_mode || 'jazzcash').trim().toLowerCase();
