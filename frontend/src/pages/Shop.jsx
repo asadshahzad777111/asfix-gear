@@ -6,24 +6,29 @@ import PageHeader from '../components/PageHeader';
 import AddProductModal from '../components/AddProductModal';
 import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
+import { SHOP_BRANDS } from '../config/products';
 import { useTranslation } from '../context/LanguageContext';
 
 export default function Shop() {
   const { isStaff } = useAuth();
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
   const [activeCategory, setActiveCategory] = useState(() => searchParams.get('category') || 'all');
+  const [activeBrand, setActiveBrand] = useState(() => searchParams.get('brand') || 'all');
   const [showSaleOnly, setShowSaleOnly] = useState(false);
   const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [loading, setLoading] = useState(true);
   const [addOpen, setAddOpen] = useState(false);
 
+  const activeBrandData = SHOP_BRANDS.find((b) => b.id === activeBrand);
+
   const loadProducts = () => {
     setLoading(true);
     const params = {};
     if (activeCategory !== 'all') params.category = activeCategory;
+    if (activeBrand !== 'all') params.brand = activeBrand;
     if (showSaleOnly) params.on_sale = 'true';
     if (search.trim()) params.search = search.trim();
     api.getProducts(params).then(setProducts).catch(console.error).finally(() => setLoading(false));
@@ -35,14 +40,32 @@ export default function Shop() {
 
   useEffect(() => {
     const cat = searchParams.get('category') || 'all';
+    const brand = searchParams.get('brand') || 'all';
     const q = searchParams.get('search') || '';
     setActiveCategory(cat);
+    setActiveBrand(brand);
     setSearch(q);
   }, [searchParams]);
 
   useEffect(() => {
     loadProducts();
-  }, [activeCategory, showSaleOnly, search]);
+  }, [activeCategory, activeBrand, showSaleOnly, search]);
+
+  const clearBrand = () => {
+    setActiveBrand('all');
+    const next = new URLSearchParams(searchParams);
+    next.delete('brand');
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleBrandSelect = (e) => {
+    const value = e.target.value;
+    setActiveBrand(value);
+    const next = new URLSearchParams(searchParams);
+    if (value === 'all') next.delete('brand');
+    else next.set('brand', value);
+    setSearchParams(next, { replace: true });
+  };
 
   useEffect(() => {
     if (isStaff && searchParams.get('add') === '1') setAddOpen(true);
@@ -69,6 +92,12 @@ export default function Shop() {
 
       <section className="section" style={{ paddingTop: 0 }}>
         <div className="container">
+          {activeBrandData && (
+            <div className="active-brand-chip">
+              {t('shop.showingBrand', { brand: activeBrandData.label })}
+              <button type="button" onClick={clearBrand} aria-label={t('shop.clearBrand')}>✕</button>
+            </div>
+          )}
           <div className="filters-bar">
             <button type="button" className={`filter-btn ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => setActiveCategory('all')}>{t('shop.all')}</button>
             {categories.map((cat) => (
@@ -77,6 +106,12 @@ export default function Shop() {
             <button type="button" className={`filter-btn filter-sale ${showSaleOnly ? 'active' : ''}`} onClick={() => setShowSaleOnly((s) => !s)}>
               🏷️ {t('shop.sale')}
             </button>
+            <select className="filter-btn filter-brand-select" value={activeBrand} onChange={handleBrandSelect} aria-label={t('shop.filterByBrand')}>
+              <option value="all">{t('shop.allBrands')}</option>
+              {SHOP_BRANDS.map((b) => (
+                <option key={b.id} value={b.id}>{b.icon} {b.label}</option>
+              ))}
+            </select>
             <div className="search-box">
               <input type="search" placeholder={t('shop.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>

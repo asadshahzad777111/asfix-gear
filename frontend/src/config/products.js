@@ -58,6 +58,8 @@ export const DEFAULT_IMAGES = {
 export const EMPTY_PRODUCT = {
   name: '',
   category: 'Cases',
+  brand: '',
+  compatible_models: '',
   price: '',
   cost_price: '',
   description: '',

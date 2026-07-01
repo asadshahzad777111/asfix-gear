@@ -48,12 +48,30 @@ function getEmailFrom() {
   return `"${BRAND_NAME}" <noreply@asfixgear.com>`;
 }
 
+const OTP_COPY = {
+  login: {
+    headline: 'Your login code',
+    intro: 'Use this code to sign in to your AsFix Gear account.',
+    subject: `${BRAND_NAME} — Your login code`,
+  },
+  reset: {
+    headline: 'Reset your password',
+    intro: 'Use this code to set a new password for your AsFix Gear account.',
+    subject: `${BRAND_NAME} — Password reset code`,
+  },
+  register: {
+    headline: 'Verify your email',
+    intro: 'Use this code to complete your AsFix Gear registration.',
+    subject: `${BRAND_NAME} — Verify your email`,
+  },
+};
+
+function otpCopyFor(purpose) {
+  return OTP_COPY[purpose] || OTP_COPY.register;
+}
+
 function buildOtpEmailHtml(code, purpose) {
-  const headline = purpose === 'login' ? 'Your login code' : 'Verify your email';
-  const intro =
-    purpose === 'login'
-      ? 'Use this code to sign in to your AsFix Gear account.'
-      : 'Use this code to complete your AsFix Gear registration.';
+  const { headline, intro } = otpCopyFor(purpose);
   const year = new Date().getFullYear();
 
   return `<!DOCTYPE html>
@@ -245,10 +263,7 @@ export async function notifyCustomerWhatsApp(phone, text) {
 }
 
 export async function deliverEmailOtp(email, code, purpose = 'verification') {
-  const subject =
-    purpose === 'login'
-      ? `${BRAND_NAME} — Your login code`
-      : `${BRAND_NAME} — Verify your email`;
+  const subject = otpCopyFor(purpose).subject;
   const text = `Your ${BRAND_NAME} verification code is: ${code}\n\nThis code expires in 10 minutes. Do not share it with anyone.`;
 
   const result = { channel: 'email', sent: false, devCode: null, devMode: false };
@@ -290,7 +305,8 @@ export async function deliverEmailOtp(email, code, purpose = 'verification') {
 
 export async function deliverPhoneOtp(phone, code, purpose = 'verification') {
   const e164 = normalizePhoneE164(phone);
-  const body = `Your ${BRAND_NAME} code is ${code}. Valid for 10 minutes.`;
+  const label = purpose === 'reset' ? 'password reset code' : purpose === 'login' ? 'login code' : 'verification code';
+  const body = `Your ${BRAND_NAME} ${label} is ${code}. Valid for 10 minutes.`;
 
   const result = {
     channel: 'phone',

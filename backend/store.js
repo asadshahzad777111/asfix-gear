@@ -259,11 +259,14 @@ export function getStats() {
 }
 
 export function getProducts(filters = {}) {
-  const { category, featured, search, on_sale } = filters;
+  const { category, featured, search, on_sale, brand } = filters;
   let products = readData().products;
 
   if (category && category !== 'all') {
     products = products.filter((p) => p.category === category);
+  }
+  if (brand && brand !== 'all') {
+    products = products.filter((p) => String(p.brand || '').toLowerCase() === String(brand).toLowerCase());
   }
   if (featured === 'true') {
     products = products.filter((p) => Number(p.featured) === 1);
@@ -276,7 +279,9 @@ export function getProducts(filters = {}) {
     products = products.filter(
       (p) =>
         String(p.name).toLowerCase().includes(term) ||
-        String(p.description).toLowerCase().includes(term)
+        String(p.description).toLowerCase().includes(term) ||
+        String(p.brand || '').toLowerCase().includes(term) ||
+        String(p.compatible_models || '').toLowerCase().includes(term)
     );
   }
 
@@ -300,6 +305,8 @@ export function createProduct(input) {
       id,
       name: input.name,
       category: input.category,
+      brand: String(input.brand || '').trim(),
+      compatible_models: String(input.compatible_models || '').trim(),
       price: Number(input.price),
       cost_price: Math.max(0, Number(input.cost_price) || 0),
       description: input.description,
@@ -331,6 +338,11 @@ export function updateProduct(id, input) {
       ...existing,
       name: input.name ?? existing.name,
       category: input.category ?? existing.category,
+      brand: input.brand != null ? String(input.brand).trim() : existing.brand ?? '',
+      compatible_models:
+        input.compatible_models != null
+          ? String(input.compatible_models).trim()
+          : existing.compatible_models ?? '',
       price: input.price != null ? Number(input.price) : existing.price,
       cost_price:
         input.cost_price != null ? Math.max(0, Number(input.cost_price) || 0) : existing.cost_price ?? 0,

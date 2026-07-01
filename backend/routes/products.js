@@ -49,8 +49,20 @@ router.get('/:id', optionalAuth, (req, res) => {
 router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
   try {
     const body = sanitizeProductBody(req.body);
-    const { name, category, price, cost_price, description, image, stock, featured, discount_percent, warranty } =
-      body;
+    const {
+      name,
+      category,
+      brand,
+      compatible_models,
+      price,
+      cost_price,
+      description,
+      image,
+      stock,
+      featured,
+      discount_percent,
+      warranty,
+    } = body;
     if (!name || !category || price == null || !description) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
@@ -58,6 +70,8 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
     const product = store.createProduct({
       name,
       category,
+      brand,
+      compatible_models,
       price,
       cost_price,
       description,

@@ -379,6 +379,30 @@
 }
 
 /* Footer links */
+.auth-2026-forgot-link {
+  display: block;
+  width: 100%;
+  margin-top: 0.85rem;
+  padding: 0;
+  border: none;
+  background: none;
+  text-align: center;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--primary);
+  cursor: pointer;
+}
+
+.auth-2026-forgot-link:hover {
+  text-decoration: underline;
+}
+
+.auth-2026-reset-done {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
 .auth-2026-foot {
   margin-top: 1.5rem;
   text-align: center;

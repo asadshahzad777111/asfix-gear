@@ -109,6 +109,9 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
         </div>
         <div className="product-body">
           <h3 className="product-name">{product.name}</h3>
+          {product.compatible_models && (
+            <p className="product-compat-models">📱 {product.compatible_models}</p>
+          )}
           <div className="product-footer">
             <div className="product-price-slot">
               <ProductPrice product={product} size="sm" />

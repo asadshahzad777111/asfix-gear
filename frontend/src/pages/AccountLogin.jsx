@@ -34,6 +34,13 @@ export default function AccountLogin() {
   const [whatsappLink, setWhatsappLink] = useState(null);
   const [devCode, setDevCode] = useState(null);
 
+  const [resetLogin, setResetLogin] = useState('');
+  const [resetStep, setResetStep] = useState('request');
+  const [resetCode, setResetCode] = useState('');
+  const [resetPassword, setResetPassword] = useState('');
+  const [resetConfirm, setResetConfirm] = useState('');
+  const [resetDone, setResetDone] = useState(false);
+
   if (loading) {
     return <div className="loading container">{t('common.loading')}</div>;
   }
@@ -92,6 +99,81 @@ export default function AccountLogin() {
     }
   };
 
+  const openForgotPassword = () => {
+    setMode('reset');
+    setError('');
+    setResetStep('request');
+    setResetLogin(loginValue.trim());
+    setResetCode('');
+    setResetPassword('');
+    setResetConfirm('');
+    setResetDone(false);
+    setOtpHint('');
+    setWhatsappLink(null);
+    setDevCode(null);
+  };
+
+  const handleResetStart = async (e) => {
+    e.preventDefault();
+    setSubmitting(true);
+    setError('');
+    setOtpHint('');
+    setWhatsappLink(null);
+    setDevCode(null);
+
+    try {
+      const data = await api.passwordResetStart({ login: resetLogin.trim() });
+      setOtpHint(t('otp.sentReset'));
+      if (data.whatsappLink) setWhatsappLink(data.whatsappLink);
+      if (data.devCode) setDevCode(data.devCode);
+      setResetStep('verify');
+      setResetCode('');
+    } catch (err) {
+      setError(err.message || t('otp.sendFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleResetVerify = async (e) => {
+    e.preventDefault();
+    setError('');
+
+    if (resetCode.length !== 6) {
+      setError(t('otp.codeRequired'));
+      return;
+    }
+    if (resetPassword.length < 6) {
+      setError(t('otp.passwordTooShort'));
+      return;
+    }
+    if (resetPassword !== resetConfirm) {
+      setError(t('otp.passwordMismatch'));
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await api.passwordResetVerify({
+        login: resetLogin.trim(),
+        code: resetCode,
+        newPassword: resetPassword,
+        confirmPassword: resetConfirm,
+      });
+      setResetDone(true);
+    } catch (err) {
+      setError(err.message || t('otp.verifyFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const backToSignIn = () => {
+    setMode('password');
+    setError('');
+    setPassword('');
+  };
+
   const handleOtpVerify = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -124,21 +206,31 @@ export default function AccountLogin() {
             subtitle={t('account.loginSubtitle')}
           />
 
-          <AuthTabs
-            layoutId="account-login-tab"
-            active={mode}
-            onChange={(next) => { setMode(next); setError(''); setOtpStep('request'); }}
-            tabs={[
-              { id: 'password', label: t('otp.passwordTab') },
-              { id: 'otp', label: t('otp.codeTab') },
-            ]}
-          />
+          {mode !== 'reset' && (
+            <AuthTabs
+              layoutId="account-login-tab"
+              active={mode}
+              onChange={(next) => { setMode(next); setError(''); setOtpStep('request'); }}
+              tabs={[
+                { id: 'password', label: t('otp.passwordTab') },
+                { id: 'otp', label: t('otp.codeTab') },
+              ]}
+            />
+          )}
 
           {mode === 'otp' && (
             <AuthSteps
               step={otpStep === 'request' ? 'start' : 'verify'}
               labelStart={t('otp.loginField')}
               labelVerify={t('otp.enterCode')}
+            />
+          )}
+
+          {mode === 'reset' && !resetDone && (
+            <AuthSteps
+              step={resetStep === 'request' ? 'start' : 'verify'}
+              labelStart={t('otp.loginField')}
+              labelVerify={t('otp.resetStepLabel')}
             />
           )}
 
@@ -176,7 +268,104 @@ export default function AccountLogin() {
               <AuthSubmitButton submitting={submitting}>
                 {submitting ? t('account.signingIn') : t('account.signIn')}
               </AuthSubmitButton>
+
+              <button type="button" className="auth-2026-forgot-link" onClick={openForgotPassword}>
+                {t('otp.forgotPassword')}
+              </button>
             </form>
+          ) : mode === 'reset' ? (
+            resetDone ? (
+              <div className="auth-2026-reset-done">
+                <AuthAlert type="success">{t('otp.resetSuccess')}</AuthAlert>
+                <AuthSubmitButton onClick={backToSignIn} type="button">
+                  {t('otp.backToSignIn')}
+                </AuthSubmitButton>
+              </div>
+            ) : resetStep === 'request' ? (
+              <form onSubmit={handleResetStart}>
+                {error && <AuthAlert type="error">{error}</AuthAlert>}
+
+                <div className="auth-2026-field">
+                  <label htmlFor="reset-login">{t('otp.loginField')}</label>
+                  <input
+                    id="reset-login"
+                    type="text"
+                    value={resetLogin}
+                    onChange={(e) => setResetLogin(e.target.value)}
+                    placeholder={t('otp.loginPlaceholder')}
+                    required
+                    autoFocus
+                  />
+                </div>
+
+                <AuthSubmitButton submitting={submitting}>
+                  {submitting ? t('otp.sending') : t('otp.sendCode')}
+                </AuthSubmitButton>
+
+                <AuthSecondaryButton disabled={submitting} onClick={backToSignIn}>
+                  {t('otp.back')}
+                </AuthSecondaryButton>
+              </form>
+            ) : (
+              <form onSubmit={handleResetVerify}>
+                {error && <AuthAlert type="error">{error}</AuthAlert>}
+                {otpHint && <AuthAlert type="info">{otpHint}</AuthAlert>}
+                {devCode && (
+                  <AuthAlert type="success" center>
+                    {t('otp.devCode')}: <strong>{devCode}</strong>
+                  </AuthAlert>
+                )}
+                {whatsappLink && (
+                  <p className="auth-2026-whatsapp-hint">
+                    <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
+                      {t('otp.openWhatsApp')}
+                    </a>
+                  </p>
+                )}
+
+                <div className="auth-2026-field">
+                  <label>{t('otp.enterCode')}</label>
+                  <OtpInput value={resetCode} onChange={setResetCode} disabled={submitting} idPrefix="reset-otp" />
+                </div>
+
+                <div className="auth-2026-field">
+                  <label htmlFor="reset-new-password">{t('otp.newPassword')}</label>
+                  <input
+                    id="reset-new-password"
+                    type="password"
+                    value={resetPassword}
+                    onChange={(e) => setResetPassword(e.target.value)}
+                    placeholder={t('login.passwordPlaceholder')}
+                    autoComplete="new-password"
+                    required
+                  />
+                </div>
+
+                <div className="auth-2026-field">
+                  <label htmlFor="reset-confirm-password">{t('otp.confirmNewPassword')}</label>
+                  <input
+                    id="reset-confirm-password"
+                    type="password"
+                    value={resetConfirm}
+                    onChange={(e) => setResetConfirm(e.target.value)}
+                    placeholder={t('login.passwordPlaceholder')}
+                    autoComplete="new-password"
+                    required
+                  />
+                </div>
+
+                <AuthSubmitButton submitting={submitting} disabled={resetCode.length !== 6}>
+                  {submitting ? t('otp.verifying') : t('otp.resetSubmit')}
+                </AuthSubmitButton>
+
+                <AuthSecondaryButton
+                  disabled={submitting}
+                  onClick={() => { setResetStep('request'); setResetCode(''); setError(''); }}
+                >
+                  {t('otp.back')}
+                </AuthSecondaryButton>
+              </form>
+            )
           ) : otpStep === 'request' ? (
             <form onSubmit={handleOtpStart}>
               {error && <AuthAlert type="error">{error}</AuthAlert>}

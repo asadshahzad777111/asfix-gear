@@ -9,6 +9,7 @@ import AdminDiscountPanel from '../components/AdminDiscountPanel';
 import AdminManagement from '../components/AdminManagement';
 import AdminChatInbox from '../components/AdminChatInbox';
 import AdminSalesReport from '../components/AdminSalesReport';
+import AdminOrderCard from '../components/AdminOrderCard';
 import ShopStatusControl from '../components/ShopStatusControl';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
@@ -23,6 +24,7 @@ export default function Admin() {
   const [tab, setTab] = useState(searchParams.get('tab') || 'add');
   const [bookings, setBookings] = useState([]);
   const [products, setProducts] = useState([]);
+  const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [editingProduct, setEditingProduct] = useState(null);
 
@@ -34,13 +36,29 @@ export default function Admin() {
   const loadData = async () => {
     setLoading(true);
     try {
-      const [bookingData, productData] = await Promise.all([api.getBookings(), api.getProducts()]);
+      const [bookingData, productData, orderData] = await Promise.all([
+        api.getBookings(),
+        api.getProducts(),
+        api.getOrders(),
+      ]);
       setBookings(bookingData);
       setProducts(productData);
+      setOrders(orderData);
     } catch (err) {
       console.error(err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const pendingOrders = orders.filter((o) => o.shipping_status === 'pending').length;
+
+  const updateOrderStatus = async (id, shipping_status) => {
+    try {
+      const updated = await api.updateOrderStatus(id, shipping_status);
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    } catch (err) {
+      alert(err.message);
     }
   };
 
@@ -115,6 +133,9 @@ export default function Admin() {
             <button type="button" className={`admin-tab ${tab === 'products' ? 'active' : ''}`} onClick={() => setTab('products')}>
               Products ({products.length})
             </button>
+            <button type="button" className={`admin-tab ${tab === 'orders' ? 'active' : ''}`} onClick={() => setTab('orders')}>
+              Orders ({orders.length}){pendingOrders > 0 ? ` · ${pendingOrders} new` : ''}
+            </button>
             <button type="button" className={`admin-tab ${tab === 'bookings' ? 'active' : ''}`} onClick={() => setTab('bookings')}>
               Repair Intake ({bookings.length})
             </button>
@@ -153,6 +174,24 @@ export default function Admin() {
             </div>
           ) : tab === 'admins' && showAdminMgmt ? (
             <AdminManagement />
+          ) : tab === 'orders' ? (
+            <div className="admin-orders-list">
+              {orders.length === 0 ? (
+                <div className="empty-state glass-card">Abhi koi order nahi.</div>
+              ) : (
+                orders
+                  .slice()
+                  .reverse()
+                  .map((o) => (
+                    <AdminOrderCard
+                      key={o.id}
+                      order={o}
+                      onUpdateStatus={updateOrderStatus}
+                      className="admin-float-card admin-order-card-full glass-card"
+                    />
+                  ))
+              )}
+            </div>
           ) : tab === 'products' ? (
             <>
               <div className="admin-toolbar">

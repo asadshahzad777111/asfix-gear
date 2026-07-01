@@ -1209,6 +1209,15 @@ img { max-width: 100%; height: auto; display: block; }
   min-height: 2.7em;
 }
 
+.product-compat-models {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  margin: -0.4rem 0 0.6rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .product-footer {
   display: flex;
   flex-direction: column;
@@ -1711,6 +1720,38 @@ img { max-width: 100%; height: auto; display: block; }
   align-items: center;
 }
 
+.filter-brand-select {
+  appearance: auto;
+  max-width: 11rem;
+}
+
+.active-brand-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.5rem 0.4rem 0.9rem;
+  border-radius: 999px;
+  background: rgba(47, 214, 163, 0.12);
+  border: 1px solid rgba(47, 214, 163, 0.35);
+  color: var(--text);
+  font-size: 0.85rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.active-brand-chip button {
+  width: 1.4rem;
+  height: 1.4rem;
+  border-radius: 50%;
+  border: none;
+  background: rgba(0, 0, 0, 0.15);
+  color: inherit;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-size: 0.75rem;
+}
+
 .filter-btn {
   padding: 0.5rem 1.1rem;
   border-radius: 999px;
@@ -2158,6 +2199,15 @@ img { max-width: 100%; height: auto; display: block; }
 
   .fab-add .fab-label { display: none; }
   .modal-panel { padding: clamp(1rem, 4vw, 1.25rem); max-height: 92vh; }
+  .modal-close { top: 0.75rem; right: 0.75rem; width: 32px; height: 32px; }
+  .add-product-header { padding-right: 2.5rem; }
+  .add-product-header h2 { font-size: 1.2rem; }
+  .category-chips { gap: 0.4rem; }
+  .category-chip {
+    min-height: var(--touch-min);
+    padding: 0.5rem 0.85rem;
+    font-size: 0.82rem;
+  }
 
   .filters-bar {
     flex-direction: column;
@@ -2726,6 +2776,22 @@ img { max-width: 100%; height: auto; display: block; }
   grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: clamp(0.85rem, 2vw, 1rem);
 }
+
+.admin-orders-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1rem;
+  align-items: start;
+}
+
+.admin-order-card-full {
+  padding: 1.25rem;
+}
+
+.admin-order-card-full .admin-float-card-head strong { font-size: 1rem; }
+.admin-order-card-full .admin-float-meta,
+.admin-order-card-full .admin-float-sub,
+.admin-order-card-full .admin-float-items { font-size: 0.85rem; }
 
 .admin-product-card {
   overflow: hidden;

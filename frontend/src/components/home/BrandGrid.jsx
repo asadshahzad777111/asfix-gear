@@ -17,7 +17,7 @@ export default function BrandGrid() {
           {SHOP_BRANDS.map((brand) => (
             <Link
               key={brand.id}
-              to={`/shop?search=${encodeURIComponent(brand.search)}`}
+              to={`/shop?brand=${encodeURIComponent(brand.id)}`}
               className="home-brand-card"
             >
               <span className="home-brand-icon" aria-hidden="true">{brand.icon}</span>

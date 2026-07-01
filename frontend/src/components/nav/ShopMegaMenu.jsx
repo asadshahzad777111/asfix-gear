@@ -150,7 +150,7 @@ export default function ShopMegaMenu() {
                           {series.models.map((model) => (
                             <Link
                               key={model}
-                              to={`/shop?search=${encodeURIComponent(model)}`}
+                              to={`/shop?brand=${encodeURIComponent(activeBrandData.id)}&search=${encodeURIComponent(model)}`}
                               className="nav-mega-model-chip"
                               onClick={() => setOpen(false)}
                             >
@@ -162,7 +162,7 @@ export default function ShopMegaMenu() {
                     ))}
                   </div>
                   <Link
-                    to={`/shop?search=${encodeURIComponent(activeBrandData.search)}`}
+                    to={`/shop?brand=${encodeURIComponent(activeBrandData.id)}`}
                     className="nav-mega-view-all"
                     onClick={() => setOpen(false)}
                   >

@@ -1,4 +1,5 @@
 import AmbientBackground from './components/AmbientBackground';
+import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ChatAssistant from './components/ChatAssistant';
@@ -35,7 +36,9 @@ function AppContent() {
       <Navbar />
       <GuestWelcomeBanner />
       <main className="app-main">
-        <PageTransition />
+        <ErrorBoundary key={location.pathname}>
+          <PageTransition />
+        </ErrorBoundary>
       </main>
 
       {showStaffLogin && <StaffAccessPanel />}
@@ -56,5 +59,9 @@ function AppContent() {
 }
 
 export default function App() {
-  return <AppContent />;
+  return (
+    <ErrorBoundary>
+      <AppContent />
+    </ErrorBoundary>
+  );
 }

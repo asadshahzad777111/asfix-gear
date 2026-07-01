@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import DiscountPicker, { DiscountRibbon, ProductPrice } from './DiscountPicker';
-import { CATEGORIES, EMPTY_PRODUCT, DEFAULT_IMAGES, getDefaultImage } from '../config/products';
+import { CATEGORIES, EMPTY_PRODUCT, DEFAULT_IMAGES, SHOP_BRANDS, getDefaultImage } from '../config/products';
+import { getModelsForShopBrand } from '../config/repairModels';
 import { useTranslation } from '../context/LanguageContext';
 
 const isDefaultImage = (url) => Object.values(DEFAULT_IMAGES).includes(url);
@@ -11,6 +12,8 @@ function productToForm(editProduct) {
   return {
     name: editProduct.name || '',
     category: editProduct.category || 'Cases',
+    brand: editProduct.brand || '',
+    compatible_models: editProduct.compatible_models || '',
     price: String(editProduct.price ?? ''),
     cost_price: String(editProduct.cost_price ?? ''),
     description: editProduct.description || '',
@@ -68,9 +71,16 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
     reader.readAsDataURL(file);
   };
 
+  const modelSuggestions = useMemo(
+    () => (product.brand ? getModelsForShopBrand(product.brand) : []),
+    [product.brand]
+  );
+
   const buildPayload = () => ({
     name: product.name.trim(),
     category: product.category,
+    brand: product.brand,
+    compatible_models: product.compatible_models.trim(),
     price: Number(product.price),
     cost_price: Number(product.cost_price) || 0,
     description: product.description.trim(),
@@ -141,26 +151,51 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
 
           <div className="form-group">
             <label>Category *</label>
-            <select
-              value={product.category}
-              onChange={(e) => handleCategoryPick(e.target.value)}
-              className="category-select"
-            >
-              {CATEGORIES.map((cat) => (
-                <option key={cat} value={cat}>{cat}</option>
-              ))}
-            </select>
-            <div className="category-chips">
+            <div className="category-chips" role="radiogroup" aria-label="Category">
               {CATEGORIES.map((cat) => (
                 <button
                   key={cat}
                   type="button"
+                  role="radio"
+                  aria-checked={product.category === cat}
                   className={`category-chip ${product.category === cat ? 'active' : ''}`}
                   onClick={() => handleCategoryPick(cat)}
                 >
                   {cat}
                 </button>
               ))}
+            </div>
+          </div>
+
+          <div className="form-row-2">
+            <div className="form-group">
+              <label>Brand</label>
+              <select
+                value={product.brand}
+                onChange={(e) => setField('brand', e.target.value)}
+                className="category-select"
+              >
+                <option value="">Universal / Not brand-specific</option>
+                {SHOP_BRANDS.map((b) => (
+                  <option key={b.id} value={b.id}>{b.icon} {b.label}</option>
+                ))}
+              </select>
+              <p className="field-hint">Isse yeh product Shop &gt; Brand grid aur mega menu mein sahi jagah dikhega.</p>
+            </div>
+            <div className="form-group">
+              <label>Compatible Model(s)</label>
+              <input
+                list="model-suggestions"
+                value={product.compatible_models}
+                onChange={(e) => setField('compatible_models', e.target.value)}
+                placeholder={product.brand ? 'e.g. iPhone 13, iPhone 13 Pro' : 'Pehle brand select karein'}
+              />
+              <datalist id="model-suggestions">
+                {modelSuggestions.map((m) => (
+                  <option key={m} value={m} />
+                ))}
+              </datalist>
+              <p className="field-hint">Comma se alag kar ke multiple models likh sakte hain.</p>
             </div>
           </div>
 

@@ -364,6 +364,100 @@ router.post('/login/otp/verify', (req, res) => {
   });
 });
 
+function resolveOtpTarget(login, user) {
+  const emailKey = String(user.email || '').trim().toLowerCase();
+  const phoneKey = String(user.phone || '').replace(/\D/g, '');
+  const loginKey = login.trim().toLowerCase();
+  const loginPhone = login.replace(/\D/g, '');
+  const useEmail =
+    emailKey &&
+    (loginKey === emailKey || loginKey === user.username || (!phoneKey && !loginPhone));
+  return { useEmail, target: useEmail ? emailKey : phoneKey || loginPhone };
+}
+
+router.post('/password/reset/start', async (req, res) => {
+  const login = String(req.body.login || '').trim();
+  if (!login) return res.status(400).json({ error: 'Gmail or phone is required' });
+
+  const user = store.findUserByLogin(login);
+  if (!user || user.role !== 'customer') {
+    return res.status(404).json({ error: 'No account found with this Gmail or phone' });
+  }
+  if (store.isUserBlocked(user)) {
+    return res.status(403).json({ error: 'Your account is blocked. Contact the shop owner.' });
+  }
+
+  const { useEmail, target } = resolveOtpTarget(login, user);
+  if (!target) {
+    return res.status(400).json({ error: 'Account has no Gmail or phone for password reset' });
+  }
+
+  const code = generateOtpCode();
+  const codeHash = hashOtp(code);
+  const expiresAt = otpExpiry(10);
+
+  try {
+    let delivery;
+    if (useEmail) {
+      delivery = await deliverEmailOtp(target, code, 'reset');
+    } else {
+      delivery = await deliverPhoneOtp(target, code, 'reset');
+    }
+    store.createVerificationCode({
+      purpose: 'reset',
+      channel: useEmail ? 'email' : 'phone',
+      target,
+      payload: { user_id: user.id },
+      codeHash,
+      expiresAt,
+    });
+    res.json(buildOtpDevResponse(delivery));
+  } catch (err) {
+    respondOtpDeliveryError(res, err, '[password/reset/start]');
+  }
+});
+
+router.post('/password/reset/verify', (req, res) => {
+  const { code, login, newPassword, confirmPassword } = req.body;
+  if (!login?.trim()) return res.status(400).json({ error: 'Gmail or phone is required' });
+  const codeResult = validateOtpCode(code);
+  if (codeResult.error) return res.status(400).json({ error: codeResult.error });
+  const pwErr = validatePassword(newPassword);
+  if (pwErr) return res.status(400).json({ error: pwErr });
+  if (newPassword !== confirmPassword) {
+    return res.status(400).json({ error: 'Passwords do not match' });
+  }
+
+  const user = store.findUserByLogin(login.trim());
+  if (!user || user.role !== 'customer') return res.status(404).json({ error: 'No account found' });
+
+  const { target } = resolveOtpTarget(login, user);
+
+  const result = store.verifyAndConsumeCode({
+    purpose: 'reset',
+    target,
+    code: codeResult.code,
+    verifyFn: verifyOtp,
+  });
+
+  if (!result.ok) {
+    const messages = {
+      not_found: 'No pending reset found. Request a new code.',
+      expired: 'Code expired. Request a new one.',
+      too_many_attempts: 'Too many attempts. Request a new code.',
+      invalid: 'Invalid verification code',
+    };
+    return res.status(400).json({ error: messages[result.reason] || 'Verification failed' });
+  }
+
+  if (result.payload.user_id !== user.id) {
+    return res.status(403).json({ error: 'Invalid account' });
+  }
+
+  store.resetUserPassword(user.id, newPassword);
+  res.json({ message: 'Password reset successfully. Please sign in with your new password.' });
+});
+
 router.patch('/profile', requireAuth, requireRole('customer'), (req, res) => {
   const { name } = req.body;
   try {

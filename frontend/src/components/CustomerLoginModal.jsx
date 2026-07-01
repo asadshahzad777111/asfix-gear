@@ -217,6 +217,14 @@ export default function CustomerLoginModal({ open, onClose }) {
             <AuthSubmitButton submitting={submitting}>
               {submitting ? t('account.signingIn') : t('account.signIn')}
             </AuthSubmitButton>
+
+            <button
+              type="button"
+              className="auth-2026-forgot-link"
+              onClick={() => { handleClose(); navigate('/account/login'); }}
+            >
+              {t('otp.forgotPassword')}
+            </button>
           </form>
         ) : otpStep === 'request' ? (
           <form onSubmit={handleOtpStart}>
