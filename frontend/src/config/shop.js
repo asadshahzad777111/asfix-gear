@@ -1,4 +1,4 @@
-import { getSalePrice, hasDiscount } from '../utils/pricing.js';
+import { buildContactPath, buildContactPrefill } from '../utils/contactPrefill.js';
 
 export const SHOP = {
   name: 'AsFix & Gear',
@@ -52,24 +52,18 @@ export function whatsappLink(message) {
   return `https://wa.me/${SHOP.phoneIntl}?text=${encodeURIComponent(message)}`;
 }
 
-export function orderProductOnWhatsApp(product) {
-  const priceLine = hasDiscount(product)
-    ? `Original: Rs. ${Number(product.price).toLocaleString()}\n*Sale Price: Rs. ${getSalePrice(product).toLocaleString()} (${product.discount_percent}% OFF)*`
-    : `Price: Rs. ${Number(product.price).toLocaleString()}`;
-
-  return whatsappLink(
-    `Assalam o Alaikum! Main *${product.name}* order karna chahta/chahti hoon.\n\n${priceLine}\nCategory: ${product.category}\n\nKya ye available hai?`
-  );
+export function orderProductContactPath(product) {
+  return buildContactPath(buildContactPrefill({ type: 'product', product }));
 }
 
-export function generalWhatsAppMessage() {
-  return whatsappLink(
-    'Assalam o Alaikum! Main AsFix & Gear se rabta karna chahta/chahti hoon. Kya aap available hain?'
-  );
+export function generalContactPath() {
+  return buildContactPath(buildContactPrefill({ type: 'general' }));
 }
 
-export function directionsWhatsApp() {
-  return whatsappLink(
-    `Assalam o Alaikum! Main aapki shop *${SHOP.name}* par aana chahta/chahti hoon.\n\nGoogle Maps: ${SHOP.mapsUrl}`
-  );
+export function directionsContactPath() {
+  return buildContactPath(buildContactPrefill({ type: 'directions' }));
+}
+
+export function gamingContactPath() {
+  return buildContactPath(buildContactPrefill({ type: 'gaming' }));
 }

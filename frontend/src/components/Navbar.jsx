@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { generalWhatsAppMessage } from '../config/shop';
+import { generalContactPath } from '../config/shop';
 import { useAuth } from '../context/AuthContext';
 import useNavDrawerThumb from '../hooks/useNavDrawerThumb';
 import OpenBadge from './OpenBadge';
@@ -13,7 +13,6 @@ import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
 import {
   NavDrawerAdminLink,
-  NavDrawerAnchor,
   NavDrawerButton,
   NavDrawerLink,
 } from './NavDrawerItem';
@@ -128,13 +127,11 @@ export default function Navbar() {
               </>
             )}
 
-            <NavDrawerAnchor
-              href={generalWhatsAppMessage()}
+            <NavDrawerLink
+              to={generalContactPath()}
               icon="📱"
               label={t('nav.whatsapp')}
               className="nav-whatsapp"
-              target="_blank"
-              rel="noopener noreferrer"
               onClick={closeMenu}
             />
           </nav>

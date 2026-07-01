@@ -1,4 +1,4 @@
-import { whatsappLink } from './shop';
+import { buildContactPath, buildContactPrefill } from '../utils/contactPrefill';
 
 export const REPAIR_DEVICE_BRANDS = [
   {
@@ -27,16 +27,10 @@ export const REPAIR_DEVICE_BRANDS = [
   },
 ];
 
-export function repairQuoteWhatsApp(serviceName, modelHint = '') {
-  const modelLine = modelHint ? `Model: *${modelHint}*\n` : '';
-  return whatsappLink(
-    `Assalam o Alaikum! Main AsFix & Gear se rabta kar raha/rahi hoon.\n\n${modelLine}Service: *${serviceName}*\n\nMere phone ki exact repair cost bata dein — shukriya!`
-  );
+export function repairQuoteContactPath(serviceName, modelHint = '') {
+  return buildContactPath(buildContactPrefill({ type: 'repair-service', serviceName, modelHint }));
 }
 
-export function generalRepairQuoteWhatsApp(modelHint = '') {
-  const modelLine = modelHint ? `Mera phone: *${modelHint}*\n` : '';
-  return whatsappLink(
-    `Assalam o Alaikum! ${modelLine}Repair ki price aur availability bata dein — AsFix & Gear.`
-  );
+export function generalRepairQuoteContactPath(modelHint = '') {
+  return buildContactPath(buildContactPrefill({ type: 'repair-model', modelHint }));
 }

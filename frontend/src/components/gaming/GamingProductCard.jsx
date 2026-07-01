@@ -1,7 +1,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { orderProductOnWhatsApp } from '../../config/shop';
+import { orderProductContactPath } from '../../config/shop';
 import { useCart } from '../../context/CartContext';
 import { playProductJump } from '../../utils/gamingSound';
 import { DiscountRibbon, ProductPrice } from '../DiscountPicker';
@@ -16,7 +16,7 @@ export default function GamingProductCard({ product, index }) {
   const { t } = useTranslation();
   const ref = useRef(null);
   const addRef = useRef(null);
-  const waLink = orderProductOnWhatsApp(product);
+  const contactTo = orderProductContactPath(product);
   const onSale = hasDiscount(product);
   const { addItem } = useCart();
   const {
@@ -104,9 +104,9 @@ export default function GamingProductCard({ product, index }) {
       >
         {cartLabel}
       </button>
-      <a href={waLink} target="_blank" rel="noopener noreferrer" className="gaming-product-order gaming-product-wa">
+      <Link to={contactTo} className="gaming-product-order gaming-product-wa">
         ⚡ ORDER
-      </a>
+      </Link>
     </motion.article>
     <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
     <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />

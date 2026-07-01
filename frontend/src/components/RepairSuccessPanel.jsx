@@ -1,10 +1,12 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../context/LanguageContext';
 import { buildRepairReceipt } from '../utils/receipts';
+import { buildContactPath, buildContactPrefill } from '../utils/contactPrefill';
 
 export default function RepairSuccessPanel({ booking, onReset }) {
   const { t } = useTranslation();
-  const { waUrl } = buildRepairReceipt(booking);
+  const { text } = buildRepairReceipt(booking);
+  const contactTo = buildContactPath(buildContactPrefill({ type: 'repair-receipt', text }));
 
   return (
     <div className="order-success-panel glass-card repair-success-panel">
@@ -15,14 +17,12 @@ export default function RepairSuccessPanel({ booking, onReset }) {
       </p>
       <p className="order-success-hint">{t('repairSuccess.hint')}</p>
 
-      <a
-        href={waUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        to={contactTo}
         className="btn btn-whatsapp premium-btn premium-btn--liquid order-success-wa"
       >
         {t('repairSuccess.sendWhatsApp')}
-      </a>
+      </Link>
 
       <div className="order-success-actions">
         {onReset && (

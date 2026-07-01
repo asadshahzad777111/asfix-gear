@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom';
 import Logo from './Logo';
-import { SHOP, directionsWhatsApp } from '../config/shop';
+import { SHOP, directionsContactPath } from '../config/shop';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 
@@ -46,9 +46,9 @@ export default function Footer() {
                 </a>
               </li>
               <li>
-                <a href={directionsWhatsApp()} target="_blank" rel="noopener noreferrer">
+                <Link to={directionsContactPath()}>
                   {t('common.getDirections')}
-                </a>
+                </Link>
               </li>
             </ul>
           </div>

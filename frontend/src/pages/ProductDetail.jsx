@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { api, formatPrice } from '../api/client';
-import { orderProductOnWhatsApp } from '../config/shop';
+import { orderProductContactPath } from '../config/shop';
 import { useCart } from '../context/CartContext';
 import { useTranslation } from '../context/LanguageContext';
 import { useShopGate } from '../hooks/useShopGate';
@@ -10,7 +10,7 @@ import ShopLoginPrompt from '../components/ShopLoginPrompt';
 import CustomerLoginModal from '../components/CustomerLoginModal';
 import { getProductAnimKind } from '../utils/productAnimation';
 import CasePreviewer from '../components/premium/CasePreviewer';
-import PremiumButton, { PremiumLink, PremiumAnchor } from '../components/premium/PremiumButton';
+import PremiumButton, { PremiumLink } from '../components/premium/PremiumButton';
 import { DiscountRibbon, ProductPrice } from '../components/DiscountPicker';
 import { getSavings, hasDiscount } from '../utils/pricing';
 import { getStockStatus } from '../utils/stock';
@@ -118,9 +118,9 @@ export default function ProductDetail() {
               >
                 {t('product.addToCart')}
               </PremiumButton>
-              <PremiumAnchor href={orderProductOnWhatsApp(product)} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp">
+              <PremiumLink to={orderProductContactPath(product)} className="btn btn-whatsapp">
                 {t('product.orderWhatsApp')}
-              </PremiumAnchor>
+              </PremiumLink>
               <PremiumLink to="/contact" className="btn btn-outline">{t('product.contact')}</PremiumLink>
             </div>
           </div>

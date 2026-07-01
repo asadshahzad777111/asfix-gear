@@ -4,6 +4,7 @@ import { api, formatPrice } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
 import { SHOP } from '../config/shop';
 import { buildOrderReceipt } from '../utils/receipts';
+import { buildContactPath, buildContactPrefill } from '../utils/contactPrefill';
 
 const MERCHANT_NAME = 'ASAD SHAHZAD';
 const MOBILE_WALLETS = new Set(['jazzcash', 'easypaisa']);
@@ -18,7 +19,8 @@ const NEXT_STEPS = ['step1', 'step2', 'step3'];
 
 export default function OrderSuccessPanel({ order, phone, onDone }) {
   const { t } = useTranslation();
-  const { waUrl } = buildOrderReceipt(order);
+  const { text } = buildOrderReceipt(order);
+  const contactTo = buildContactPath(buildContactPrefill({ type: 'order-receipt', text }));
   const [gmail, setGmail] = useState('');
   const [gmailMsg, setGmailMsg] = useState('');
   const [saving, setSaving] = useState(false);
@@ -108,14 +110,12 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
 
       <p className="order-success-hint">{t('orderSuccess.hint')}</p>
 
-      <a
-        href={waUrl}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        to={contactTo}
         className="btn btn-whatsapp premium-btn premium-btn--liquid order-success-wa"
       >
         {t('orderSuccess.sendWhatsApp')}
-      </a>
+      </Link>
 
       <div className="order-success-gmail glass-card">
         <p>{t('orderSuccess.gmailPrompt')}</p>

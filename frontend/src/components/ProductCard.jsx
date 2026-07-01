@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import PremiumButton from '../components/premium/PremiumButton';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { orderProductOnWhatsApp } from '../config/shop';
+import { orderProductContactPath } from '../config/shop';
 import { getDefaultImage } from '../config/products';
 import { useCart } from '../context/CartContext';
 import { getProductAnimKind } from '../utils/productAnimation';
@@ -24,7 +24,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     loginOpen,
     setLoginOpen,
   } = useShopGate();
-  const waLink = orderProductOnWhatsApp(product);
+  const contactTo = orderProductContactPath(product);
   const onSale = hasDiscount(product);
   const { addItem } = useCart();
   const addRef = useRef(null);
@@ -129,15 +129,13 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
         >
           {t('product.addCartShort')}
         </PremiumButton>
-        <a
-          href={waLink}
-          target="_blank"
-          rel="noopener noreferrer"
+        <Link
+          to={contactTo}
           className="product-wa-btn"
           onClick={(e) => e.stopPropagation()}
         >
           {t('product.orderShort')}
-        </a>
+        </Link>
       </div>
     </>
   );

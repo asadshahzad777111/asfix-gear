@@ -1,4 +1,5 @@
-import { SCREEN_QUALITY_TIERS, screenQualityWhatsApp } from '../config/repairIntake';
+import { SCREEN_QUALITY_TIERS, screenQualityContactPath } from '../config/repairIntake';
+import { Link } from 'react-router-dom';
 
 import { useTranslation } from '../context/LanguageContext';
 
@@ -121,44 +122,22 @@ export default function ScreenQualityPicker({
         <div className="screen-quality-actions">
 
           {selected ? (
-
-            <a
-
-              href={screenQualityWhatsApp(deviceLabel, selected)}
-
-              target="_blank"
-
-              rel="noopener noreferrer"
-
+            <Link
+              to={screenQualityContactPath(deviceLabel, selected)}
               className="btn btn-whatsapp btn-block"
-
             >
-
               💬 {t('repair.screenWaConfirm', { quality: selectedLabel })}
-
-            </a>
-
+            </Link>
           ) : (
-
             <p className="field-hint">{t('repair.screenHint')}</p>
-
           )}
 
-          <a
-
-            href={screenQualityWhatsApp(deviceLabel, 'compare')}
-
-            target="_blank"
-
-            rel="noopener noreferrer"
-
+          <Link
+            to={screenQualityContactPath(deviceLabel, 'compare')}
             className="btn btn-outline btn-block"
-
           >
-
             💬 {t('repair.screenCompare')}
-
-          </a>
+          </Link>
 
         </div>
 

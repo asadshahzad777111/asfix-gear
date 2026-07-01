@@ -1,4 +1,4 @@
-import { whatsappLink } from './shop';
+import { buildContactPath, buildContactPrefill } from '../utils/contactPrefill';
 
 export const DEVICE_BRANDS = {
   Apple: ['iPhone 15', 'iPhone 14', 'iPhone 13', 'iPhone 12', 'iPhone 11', 'iPhone SE', 'Other model'],
@@ -95,15 +95,6 @@ export function buildIssueSummary(issueTypes = [], issueOther = '', screenQualit
   return parts.join(' | ') || issueOther.trim();
 }
 
-export function screenQualityWhatsApp(deviceLabel = '', tierId = 'medium') {
-  const device = deviceLabel ? `Device: *${deviceLabel}*\n` : '';
-  if (tierId === 'compare') {
-    return whatsappLink(
-      `Assalam o Alaikum! ${device}Mujhe screen replacement chahiye.\n\nKya aap *Low, Medium aur High* quality ki alag alag rates bata sakte hain?\n\nShukriya — AsFix & Gear`
-    );
-  }
-  const tier = TIER_MAP[tierId] || TIER_MAP.medium;
-  return whatsappLink(
-    `Assalam o Alaikum! ${device}Service: *Screen Replacement*\nQuality: *${tier.label}*\n\nIs quality ki exact rate aur availability confirm kar dein.\n\nShukriya — AsFix & Gear`
-  );
+export function screenQualityContactPath(deviceLabel = '', tierId = 'medium') {
+  return buildContactPath(buildContactPrefill({ type: 'screen-quality', deviceLabel, tierId }));
 }

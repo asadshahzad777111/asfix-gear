@@ -1,4 +1,5 @@
-import { REPAIR_DEVICE_BRANDS, generalRepairQuoteWhatsApp } from '../config/repairModels';
+import { REPAIR_DEVICE_BRANDS, generalRepairQuoteContactPath } from '../config/repairModels';
+import { Link } from 'react-router-dom';
 import { useTranslation } from '../context/LanguageContext';
 
 export default function RepairModelsPanel() {
@@ -18,29 +19,25 @@ export default function RepairModelsPanel() {
             <strong>{group.brand}</strong>
             <div className="repair-model-chips">
               {group.models.map((model) => (
-                <a
+                <Link
                   key={model}
-                  href={generalRepairQuoteWhatsApp(`${group.brand} ${model}`)}
-                  target="_blank"
-                  rel="noopener noreferrer"
+                  to={generalRepairQuoteContactPath(`${group.brand} ${model}`)}
                   className="repair-model-chip"
                 >
                   {model}
-                </a>
+                </Link>
               ))}
             </div>
           </div>
         ))}
       </div>
 
-      <a
-        href={generalRepairQuoteWhatsApp()}
-        target="_blank"
-        rel="noopener noreferrer"
+      <Link
+        to={generalRepairQuoteContactPath()}
         className="btn btn-whatsapp btn-block"
       >
         💬 {t('repair.modelsWhatsApp')}
-      </a>
+      </Link>
     </div>
   );
 }

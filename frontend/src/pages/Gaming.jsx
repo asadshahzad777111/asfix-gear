@@ -6,7 +6,7 @@ import { useGaming } from '../context/GamingContext';
 import { useTranslation } from '../context/LanguageContext';
 import GamingLogo from '../components/gaming/GamingLogo';
 import GamingProductCard from '../components/gaming/GamingProductCard';
-import { generalWhatsAppMessage, SHOP } from '../config/shop';
+import { gamingContactPath, SHOP } from '../config/shop';
 
 const PUBG_TAGS = ['PUBG Mobile', 'Battle Royale', 'Triggers', 'Claw Grip', 'Low Latency', 'RGB Gear'];
 
@@ -56,9 +56,9 @@ export default function Gaming() {
 
           <div className="gaming-hero-actions">
             <a href="#gaming-products" className="btn-gaming-primary">{t('gaming.shopGear')}</a>
-            <a href={generalWhatsAppMessage()} target="_blank" rel="noopener noreferrer" className="btn-gaming-outline">
+            <Link to={gamingContactPath()} className="btn-gaming-outline">
               {t('gaming.whatsappOrder')}
-            </a>
+            </Link>
             <button type="button" className="btn-gaming-outline btn-gaming-exit" onClick={exitGamingMode}>
               {t('gaming.exitMode')}
             </button>
@@ -131,9 +131,9 @@ export default function Gaming() {
           <GamingLogo size={60} />
           <h2>{t('gaming.ctaTitle')}</h2>
           <p>{t('gaming.ctaSub', { phone: SHOP.phone })}</p>
-          <a href={generalWhatsAppMessage()} target="_blank" rel="noopener noreferrer" className="btn-gaming-primary btn-gaming-lg">
+          <Link to={gamingContactPath()} className="btn-gaming-primary btn-gaming-lg">
             {t('gaming.ctaBtn', { phone: SHOP.phone })}
-          </a>
+          </Link>
         </div>
       </section>
     </div>

@@ -15,7 +15,9 @@ import { useTranslation } from '../../context/LanguageContext';
 
 import { useAuth } from '../../context/AuthContext';
 
+import { Link } from 'react-router-dom';
 import { SHOP } from '../../config/shop';
+import { buildContactPath, buildContactPrefill } from '../../utils/contactPrefill';
 
 import OrderSuccessPanel from '../OrderSuccessPanel';
 
@@ -170,15 +172,11 @@ export default function FloatingCart() {
 
 
 
-  const waHref =
+  const cartContactTo =
 
     items.length > 0
 
-      ? `https://wa.me/${SHOP.phoneIntl}?text=${encodeURIComponent(
-
-          `AsFix & Gear Order:\n\n${items.map((i) => `• ${i.name} x${i.qty}`).join('\n')}\n\nTotal: ${formatPrice(total)}`
-
-        )}`
+      ? buildContactPath(buildContactPrefill({ type: 'cart', items, total, formatPrice }))
 
       : '#';
 
@@ -834,13 +832,9 @@ export default function FloatingCart() {
 
                   )}
 
-                  <a
+                  <Link
 
-                    href={waHref}
-
-                    target="_blank"
-
-                    rel="noopener noreferrer"
+                    to={cartContactTo}
 
                     className="btn btn-whatsapp premium-btn premium-btn--liquid"
 
@@ -850,7 +844,7 @@ export default function FloatingCart() {
 
                     {t('cart.whatsappCheckout')}
 
-                  </a>
+                  </Link>
 
                   {items.length > 0 && (
 

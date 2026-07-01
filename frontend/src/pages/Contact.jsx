@@ -1,17 +1,64 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useLocation, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import LocationSection from '../components/LocationSection';
-import { SHOP, generalWhatsAppMessage } from '../config/shop';
+import { SHOP, whatsappLink } from '../config/shop';
+import { composeContactWhatsAppBody } from '../utils/contactPrefill';
 import { useTranslation } from '../context/LanguageContext';
+
+function readPrefill(searchParams, locationState) {
+  const fromState = locationState?.contactPrefill;
+  if (fromState?.subject || fromState?.message) {
+    return {
+      subject: fromState.subject || '',
+      message: fromState.message || '',
+      prefilled: true,
+    };
+  }
+
+  const subject = searchParams.get('subject') || '';
+  const message = searchParams.get('message') || '';
+  return {
+    subject,
+    message,
+    prefilled: Boolean(subject || message),
+  };
+}
 
 export default function Contact() {
   const { t } = useTranslation();
   const { user, isCustomer } = useAuth();
+  const [searchParams] = useSearchParams();
+  const location = useLocation();
+  const initialPrefill = useMemo(
+    () => readPrefill(searchParams, location.state),
+    [searchParams, location.state]
+  );
+
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
-  const [form, setForm] = useState({ name: '', email: '', phone: '', message: '' });
+  const [form, setForm] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    subject: initialPrefill.subject,
+    message: initialPrefill.message,
+  });
+  const [isPrefilled, setIsPrefilled] = useState(initialPrefill.prefilled);
+
+  useEffect(() => {
+    const prefill = readPrefill(searchParams, location.state);
+    if (prefill.prefilled) {
+      setForm((prev) => ({
+        ...prev,
+        subject: prefill.subject,
+        message: prefill.message,
+      }));
+      setIsPrefilled(true);
+    }
+  }, [searchParams, location.state]);
 
   useEffect(() => {
     if (!isCustomer || !user) return;
@@ -23,6 +70,8 @@ export default function Contact() {
     }));
   }, [isCustomer, user]);
 
+  const waHref = whatsappLink(composeContactWhatsAppBody(form));
+
   const handleChange = (e) => {
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
@@ -32,9 +81,18 @@ export default function Contact() {
     setSubmitting(true);
     setMessage({ type: '', text: '' });
     try {
-      const res = await api.sendContact(form);
+      const body = form.subject.trim()
+        ? `Subject: ${form.subject.trim()}\n\n${form.message.trim()}`
+        : form.message.trim();
+      const res = await api.sendContact({
+        name: form.name,
+        email: form.email,
+        phone: form.phone,
+        message: body,
+      });
       setMessage({ type: 'success', text: res.message });
-      setForm({ name: '', email: '', phone: '', message: '' });
+      setForm({ name: '', email: '', phone: '', subject: '', message: '' });
+      setIsPrefilled(false);
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
     } finally {
@@ -74,7 +132,7 @@ export default function Contact() {
               <div className="icon">💬</div>
               <div>
                 <h4>{t('nav.whatsapp')}</h4>
-                <a href={generalWhatsAppMessage()} target="_blank" rel="noopener noreferrer" className="contact-link">{SHOP.phone}</a>
+                <a href={`tel:+${SHOP.phoneIntl}`} className="contact-link">{SHOP.phone}</a>
               </div>
             </div>
             <div className="contact-item">
@@ -91,14 +149,20 @@ export default function Contact() {
                 <p>{t('shop.hours')}</p>
               </div>
             </div>
-            <a href={generalWhatsAppMessage()} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp" style={{ width: '100%' }}>
-              💬 {t('contact.whatsappBtn')}
+            <a href="#contact-form" className="btn btn-outline" style={{ width: '100%' }}>
+              {t('contact.sendMessage')}
             </a>
           </div>
 
-          <form className="glass-card booking-form" onSubmit={handleSubmit}>
+          <form id="contact-form" className="glass-card booking-form" onSubmit={handleSubmit}>
             <h2>{t('contact.sendMessage')}</h2>
             <p>{t('contact.formHint')}</p>
+
+            {isPrefilled && (
+              <div className="alert alert-success contact-prefill-banner">
+                {t('contact.prefillBanner')}
+              </div>
+            )}
 
             {message.text && (
               <div className={`alert alert-${message.type === 'success' ? 'success' : 'error'}`}>{message.text}</div>
@@ -117,12 +181,28 @@ export default function Contact() {
               <input id="phone" name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder={SHOP.phone} />
             </div>
             <div className="form-group">
+              <label htmlFor="subject">{t('contact.subject')}</label>
+              <input id="subject" name="subject" value={form.subject} onChange={handleChange} placeholder={t('contact.subjectPlaceholder')} />
+            </div>
+            <div className="form-group">
               <label htmlFor="message">{t('contact.message')} *</label>
-              <textarea id="message" name="message" value={form.message} onChange={handleChange} required />
+              <textarea id="message" name="message" value={form.message} onChange={handleChange} required rows={8} />
             </div>
             <button type="submit" className="btn btn-primary" disabled={submitting} style={{ width: '100%' }}>
               {submitting ? t('contact.sending') : t('contact.send')}
             </button>
+            <a
+              href={waHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn btn-whatsapp"
+              style={{ width: '100%', marginTop: '0.75rem' }}
+            >
+              💬 {t('contact.sendWhatsApp')}
+            </a>
+            <p className="field-hint" style={{ marginTop: '0.5rem', textAlign: 'center' }}>
+              {t('contact.whatsappHint')}
+            </p>
           </form>
         </div>
       </section>
