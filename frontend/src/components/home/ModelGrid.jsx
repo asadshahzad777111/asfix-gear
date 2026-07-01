@@ -2,13 +2,14 @@ import { Link } from 'react-router-dom';
 import { REPAIR_DEVICE_BRANDS, generalRepairQuoteContactPath } from '../../config/repairModels';
 import { useTranslation } from '../../context/LanguageContext';
 
-const POPULAR_MODELS = REPAIR_DEVICE_BRANDS.flatMap((group) =>
-  group.models.slice(0, 2).map((model) => ({
+const POPULAR_MODELS = REPAIR_DEVICE_BRANDS.flatMap((group) => {
+  const models = group.series.flatMap((series) => series.models);
+  return models.slice(0, 2).map((model) => ({
     brand: group.brand,
     model,
     key: `${group.brand}-${model}`,
-  }))
-);
+  }));
+});
 
 export default function ModelGrid() {
   const { t } = useTranslation();
