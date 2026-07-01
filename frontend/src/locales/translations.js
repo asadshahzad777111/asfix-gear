@@ -95,8 +95,6 @@ export const translations = {
       bookRepairNow: 'Book Repair Now',
       reviewsEyebrow: 'Reviews',
       reviewsTitle: 'What Customers Say',
-      ctaTitle: 'Phone Fix + Gear = AsFix & Gear',
-      ctaDesc: 'Visit today or message on WhatsApp — {owner} will help you personally.',
       loadingServices: 'Loading services...',
     },
     repair: {
@@ -778,8 +776,6 @@ export const translations = {
       bookRepairNow: 'Repair Book Karein',
       reviewsEyebrow: 'Reviews',
       reviewsTitle: 'Customers Kya Kehte Hain',
-      ctaTitle: 'Phone Fix + Gear = AsFix & Gear',
-      ctaDesc: 'Aaj hi visit karein ya WhatsApp par message karein — {owner} khud help karega.',
       loadingServices: 'Services load ho rahe hain...',
     },
     repair: {
@@ -1461,8 +1457,6 @@ export const translations = {
       bookRepairNow: 'ابھی مرمت بک کریں',
       reviewsEyebrow: 'جائزے',
       reviewsTitle: 'گاہک کیا کہتے ہیں',
-      ctaTitle: 'فون مرمت + سامان = AsFix & Gear',
-      ctaDesc: 'آج ہی تشریف لائیں یا WhatsApp پر پیغام بھیجیں — {owner} خود مدد کریں گے۔',
       loadingServices: 'خدمات لوڈ ہو رہی ہیں...',
     },
     repair: {

@@ -4,11 +4,11 @@ import ProductCard from '../components/ProductCard';
 import Marquee from '../components/Marquee';
 import RepairSteps from '../components/RepairSteps';
 import LocationSection from '../components/LocationSection';
-import { PremiumLink, PremiumAnchor } from '../components/premium/PremiumButton';
+import { PremiumLink } from '../components/premium/PremiumButton';
 import { OpenBadgeLarge } from '../components/OpenBadge';
 import RepairServiceCard from '../components/RepairServiceCard';
 import { api } from '../api/client';
-import { SHOP, generalWhatsAppMessage } from '../config/shop';
+import { SHOP } from '../config/shop';
 import { useTranslation } from '../context/LanguageContext';
 
 export default function Home() {
@@ -66,20 +66,9 @@ export default function Home() {
                 {t('home.heroTitle1')}<br />
                 <span className="grad">{t('home.heroTitle2')}</span>
               </h1>
-              <p className="hero-desc">
-                {t('home.heroDesc')}
-                {' '}WhatsApp: <strong>{SHOP.phone}</strong> · {t('shop.hours')}
-              </p>
+              <p className="hero-desc">{t('home.heroDesc')}</p>
               <div className="hero-actions">
                 <PremiumLink to="/shop" className="btn btn-primary">{t('home.shopGear')}</PremiumLink>
-                <PremiumAnchor
-                  href={generalWhatsAppMessage()}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="btn btn-whatsapp"
-                >
-                  {t('nav.whatsapp')}
-                </PremiumAnchor>
               </div>
               <OpenBadgeLarge />
             </div>
@@ -168,21 +157,6 @@ export default function Home() {
       </section>
 
       <LocationSection />
-
-      <section className="cta-section section--cta">
-        <div className="container">
-          <div className="cta-card glass-card">
-            <h2>{t('home.ctaTitle')}</h2>
-            <p>{t('home.ctaDesc', { owner: SHOP.owner })}</p>
-            <div className="cta-actions">
-              <a href={generalWhatsAppMessage()} target="_blank" rel="noopener noreferrer" className="btn btn-whatsapp">
-                💬 {t('nav.whatsapp')} {SHOP.phone}
-              </a>
-              <PremiumLink to="/shop" className="btn btn-outline">{t('home.shopGear')}</PremiumLink>
-            </div>
-          </div>
-        </div>
-      </section>
     </>
   );
 }
