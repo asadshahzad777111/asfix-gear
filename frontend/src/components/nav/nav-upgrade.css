@@ -284,6 +284,26 @@
   line-height: 1.4;
 }
 
+.nav-mega-model-series-scroll {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  margin-bottom: 0.65rem;
+}
+
+.nav-mega-model-series + .nav-mega-model-series {
+  margin-top: 0.65rem;
+}
+
+.nav-mega-model-series-name {
+  margin: 0 0 0.35rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
 .nav-mega-model-chips {
   display: flex;
   flex-wrap: wrap;
@@ -326,9 +346,8 @@
     width: min(620px, 92vw);
   }
 
-  .nav-mega-model-chips {
-    max-height: 168px;
-    overflow-y: auto;
+  .nav-mega-model-series-scroll {
+    max-height: 200px;
   }
 }
 

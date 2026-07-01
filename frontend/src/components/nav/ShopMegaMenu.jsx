@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { AnimatePresence, motion } from 'framer-motion';
 import { SHOP_BRANDS, SHOP_CATEGORIES } from '../../config/products';
-import { getModelsForShopBrand } from '../../config/repairModels';
+import { getSeriesForShopBrand } from '../../config/repairModels';
 import { useTranslation } from '../../context/LanguageContext';
 
 const HOVER_CLOSE_MS = 220;
@@ -57,7 +57,7 @@ export default function ShopMegaMenu() {
   }, [clearCloseTimer]);
 
   const activeBrandData = SHOP_BRANDS.find((b) => b.id === activeBrand) || SHOP_BRANDS[0];
-  const activeModels = activeBrandData ? getModelsForShopBrand(activeBrandData.id) : [];
+  const activeSeries = activeBrandData ? getSeriesForShopBrand(activeBrandData.id) : [];
 
   return (
     <div
@@ -142,16 +142,23 @@ export default function ShopMegaMenu() {
                     {activeBrandData.icon} {activeBrandData.label}
                   </p>
                   <p className="nav-mega-models-sub">{t('home.chooseModelSub')}</p>
-                  <div className="nav-mega-model-chips">
-                    {activeModels.map((model) => (
-                      <Link
-                        key={model}
-                        to={`/shop?search=${encodeURIComponent(model)}`}
-                        className="nav-mega-model-chip"
-                        onClick={() => setOpen(false)}
-                      >
-                        {model}
-                      </Link>
+                  <div className="nav-mega-model-series-scroll">
+                    {activeSeries.map((series) => (
+                      <div key={series.name} className="nav-mega-model-series">
+                        <p className="nav-mega-model-series-name">{series.name}</p>
+                        <div className="nav-mega-model-chips">
+                          {series.models.map((model) => (
+                            <Link
+                              key={model}
+                              to={`/shop?search=${encodeURIComponent(model)}`}
+                              className="nav-mega-model-chip"
+                              onClick={() => setOpen(false)}
+                            >
+                              {model}
+                            </Link>
+                          ))}
+                        </div>
+                      </div>
                     ))}
                   </div>
                   <Link

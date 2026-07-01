@@ -1,17 +1,18 @@
 import { buildContactPath, buildContactPrefill } from '../utils/contactPrefill';
+import { REPAIR_DEVICE_BRANDS } from './repairModels';
 
-export const DEVICE_BRANDS = {
-  Apple: ['iPhone 15', 'iPhone 14', 'iPhone 13', 'iPhone 12', 'iPhone 11', 'iPhone SE', 'Other model'],
-  Samsung: ['Galaxy S24', 'Galaxy S23', 'Galaxy A54', 'Galaxy A34', 'Galaxy A14', 'Galaxy Note', 'Other model'],
-  Xiaomi: ['Redmi Note 13', 'Redmi Note 12', 'POCO X6', 'POCO F5', 'Mi 13', 'Other model'],
-  Oppo: ['A78', 'A58', 'Reno 11', 'Reno 10', 'Find X', 'Other model'],
-  Vivo: ['V29', 'V27', 'Y36', 'Y22', 'Other model'],
-  Realme: ['C55', '11 Pro', 'Narzo 60', 'Other model'],
-  Infinix: ['Hot 40', 'Note 30', 'Smart 8', 'Other model'],
-  Tecno: ['Spark 20', 'Camon 20', 'Pova 6', 'Other model'],
-  OnePlus: ['12', '11', 'Nord CE 3', 'Other model'],
-  Huawei: ['P60', 'Nova 11', 'Y9a', 'Other model'],
-};
+/**
+ * Repair booking form brand/model dropdown — derived from the same
+ * `REPAIR_DEVICE_BRANDS` catalog used by the Repair models panel and Shop
+ * mega menu (`config/repairModels.js`), so the full device list only lives
+ * in one place. `'Other model'` stays appended per brand for manual entry.
+ */
+export const DEVICE_BRANDS = Object.fromEntries(
+  REPAIR_DEVICE_BRANDS.map((group) => [
+    group.brand,
+    [...group.series.flatMap((s) => s.models), 'Other model'],
+  ])
+);
 
 export const REPAIR_ISSUE_OPTIONS = [
   { id: 'charging_port', label: 'Charging Port issue / Not charging', severity: 'standard' },

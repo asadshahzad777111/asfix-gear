@@ -960,6 +960,26 @@ img { max-width: 100%; height: auto; display: block; }
   margin-bottom: 0.5rem;
 }
 
+.repair-model-group-body {
+  max-height: 260px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+}
+
+.repair-model-series + .repair-model-series {
+  margin-top: 0.6rem;
+}
+
+.repair-model-series-name {
+  display: block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  margin-bottom: 0.3rem;
+}
+
 .repair-model-chips {
   display: flex;
   flex-wrap: wrap;

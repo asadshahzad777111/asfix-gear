@@ -17,15 +17,22 @@ export default function RepairModelsPanel() {
         {REPAIR_DEVICE_BRANDS.map((group) => (
           <div key={group.brand} className="repair-model-group">
             <strong>{group.brand}</strong>
-            <div className="repair-model-chips">
-              {group.models.map((model) => (
-                <Link
-                  key={model}
-                  to={generalRepairQuoteContactPath(`${group.brand} ${model}`)}
-                  className="repair-model-chip"
-                >
-                  {model}
-                </Link>
+            <div className="repair-model-group-body">
+              {group.series.map((series) => (
+                <div key={series.name} className="repair-model-series">
+                  <span className="repair-model-series-name">{series.name}</span>
+                  <div className="repair-model-chips">
+                    {series.models.map((model) => (
+                      <Link
+                        key={model}
+                        to={generalRepairQuoteContactPath(`${group.brand} ${model}`)}
+                        className="repair-model-chip"
+                      >
+                        {model}
+                      </Link>
+                    ))}
+                  </div>
+                </div>
               ))}
             </div>
           </div>
