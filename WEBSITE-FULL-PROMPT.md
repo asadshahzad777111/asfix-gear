@@ -953,7 +953,9 @@ npm run check:i18n
 
 | Commit | Summary |
 |--------|---------|
-| _pending_ | **i18n cleanup + 2026 auth redesign + shop mega menu:** Removed Urdu script (`ur`) everywhere — site is now English + Roman Urdu only, LTR-only (RTL CSS/fonts removed). Redesigned `AccountLogin`, `AccountRegister`, `Login`, `CustomerLoginModal` with a shared glassmorphic `AuthUI.jsx` component system (`auth-2026.css`) — animated tabs, step indicators, gradient CTAs with loading spinners, theme-aware. `ShopMegaMenu.jsx` upgraded to a true 2-level brand→model slide-out (desktop). Home product cards now show low/out-of-stock badges via `utils/stock.js`. |
+| `6f20586` | **Mega menu + home polish:** `ShopMegaMenu.jsx` upgraded to a true 2-level brand→model slide-out (desktop). Home product cards now show low/out-of-stock badges via `utils/stock.js`. Docs updated. |
+| `5fea50e` | **2026 auth redesign:** `AccountLogin`, `AccountRegister`, `Login`, `CustomerLoginModal` redesigned with a shared glassmorphic `AuthUI.jsx` component system (`auth-2026.css`) — animated tabs, step indicators, gradient CTAs with loading spinners, theme-aware. Logic unchanged. |
+| `10ad808` | **Urdu removal:** Removed Urdu script (`ur`) everywhere — site is now English + Roman Urdu only, LTR-only (RTL CSS/fonts removed). |
 | `9fb61d4` | **Contact prefill:** All WhatsApp intents route through `/contact` with prefilled subject/message (`contactPrefill.js`). WhatsApp float → general contact path. Product, repair, cart, gaming, directions, receipts all prefilled. |
 | `524be2b` | **Home cleanup:** Removed duplicate home CTAs (hero WhatsApp, bottom CTA card). Added initial `WEBSITE-FULL-PROMPT.md`. |
 | `dde1441` | Fix `deploy-hint` workflow empty runs — manual-only guard. |
