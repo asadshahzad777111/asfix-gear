@@ -56,6 +56,10 @@ export function orderProductContactPath(product) {
   return buildContactPath(buildContactPrefill({ type: 'product', product }));
 }
 
+export function restockInquiryContactPath(product) {
+  return buildContactPath(buildContactPrefill({ type: 'restock-inquiry', product }));
+}
+
 export function generalContactPath() {
   return buildContactPath(buildContactPrefill({ type: 'general' }));
 }

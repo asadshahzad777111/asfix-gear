@@ -2,6 +2,66 @@
    Navbar — search bar + shop mega menu
    ═══════════════════════════════════════════════════════════ */
 
+/* Google Translate widget — hide Google's own banner/branding chrome and
+   restyle the bare <select> it injects to match our pill buttons. */
+.goog-te-banner-frame.skiptranslate {
+  display: none !important;
+}
+
+body {
+  top: 0 !important;
+}
+
+.goog-tooltip,
+.goog-tooltip:hover {
+  display: none !important;
+}
+
+.goog-text-highlight {
+  background: none !important;
+  box-shadow: none !important;
+}
+
+.gtranslate-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  position: relative;
+}
+
+.gtranslate-icon {
+  font-size: 0.85rem;
+  opacity: 0.85;
+}
+
+.gtranslate-wrap .goog-te-gadget {
+  font-size: 0 !important;
+  color: transparent !important;
+}
+
+.gtranslate-wrap .goog-te-gadget > span > a {
+  display: none !important;
+}
+
+.gtranslate-wrap .goog-te-combo {
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 0.3rem 0.5rem;
+  cursor: pointer;
+  max-width: 108px;
+}
+
+.nav-search-wrap {
+  position: relative;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
 .nav-search {
   display: flex;
   align-items: center;
@@ -14,6 +74,186 @@
   background: var(--bg-card);
   border: 1px solid var(--border);
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.nav-search-clear-btn {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: none;
+  background: var(--nav-hover);
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.nav-search-clear-btn:hover {
+  color: var(--text);
+  background: var(--border);
+}
+
+.nav-search-dropdown {
+  position: absolute;
+  top: calc(100% + 0.5rem);
+  left: 0;
+  right: 0;
+  z-index: 150;
+  max-height: min(60vh, 480px);
+  overflow-y: auto;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-elevated);
+  padding: 0.5rem;
+}
+
+.nav-search-dropdown-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.4rem 0.6rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.nav-search-clear-all {
+  background: none;
+  border: none;
+  color: var(--primary);
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: none;
+  letter-spacing: normal;
+  cursor: pointer;
+}
+
+.nav-search-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.nav-search-recent-item {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.nav-search-suggestion {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 10px;
+  border: none;
+  background: none;
+  color: var(--text);
+  font-size: 0.85rem;
+  text-align: left;
+  cursor: pointer;
+  min-width: 0;
+}
+
+.nav-search-suggestion span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nav-search-suggestion:hover {
+  background: var(--nav-hover);
+}
+
+.nav-search-suggestion--query {
+  font-weight: 600;
+  width: 100%;
+}
+
+.nav-search-suggestion-icon {
+  flex-shrink: 0;
+  opacity: 0.6;
+}
+
+.nav-search-remove-btn {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  border: none;
+  background: none;
+  color: var(--text-muted);
+  font-size: 0.7rem;
+  cursor: pointer;
+}
+
+.nav-search-remove-btn:hover {
+  background: var(--nav-hover);
+  color: var(--text);
+}
+
+.nav-search-product-suggestion {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  padding: 0.5rem 0.6rem;
+  border-radius: 10px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nav-search-product-suggestion:hover {
+  background: var(--nav-hover);
+}
+
+.nav-search-product-suggestion img {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  object-fit: cover;
+  flex-shrink: 0;
+  background: var(--bg-elevated);
+}
+
+.nav-search-product-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  gap: 0.1rem;
+}
+
+.nav-search-product-info strong {
+  font-size: 0.83rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: var(--text);
+}
+
+.nav-search-product-info span {
+  font-size: 0.76rem;
+  color: var(--text-muted);
+}
+
+.nav-search-loading {
+  padding: 0.6rem;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  text-align: center;
 }
 
 .nav-search:focus-within {
@@ -410,6 +650,13 @@
 .nav-drawer-accordion-link:hover {
   background: var(--nav-hover);
   color: var(--text);
+}
+
+.nav-drawer-accordion-link--btn {
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
 }
 
 .nav-desktop-bar {

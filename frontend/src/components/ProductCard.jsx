@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import PremiumButton from '../components/premium/PremiumButton';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { orderProductContactPath } from '../config/shop';
+import { orderProductContactPath, restockInquiryContactPath } from '../config/shop';
 import { getDefaultImage } from '../config/products';
 import { useCart } from '../context/CartContext';
 import { getProductAnimKind } from '../utils/productAnimation';
@@ -24,7 +24,8 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     loginOpen,
     setLoginOpen,
   } = useShopGate();
-  const contactTo = orderProductContactPath(product);
+  const inStock = product.stock > 0;
+  const contactTo = inStock ? orderProductContactPath(product) : restockInquiryContactPath(product);
   const onSale = hasDiscount(product);
   const { addItem } = useCart();
   const addRef = useRef(null);
@@ -134,10 +135,10 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
         </PremiumButton>
         <Link
           to={contactTo}
-          className="product-wa-btn"
+          className={`product-wa-btn ${!inStock ? 'product-wa-btn--restock' : ''}`}
           onClick={(e) => e.stopPropagation()}
         >
-          {t('product.orderShort')}
+          {inStock ? t('product.orderShort') : t('product.requestItem')}
         </Link>
       </div>
     </>

@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { api, formatPrice } from '../api/client';
-import { orderProductContactPath } from '../config/shop';
+import { orderProductContactPath, restockInquiryContactPath } from '../config/shop';
 import { useCart } from '../context/CartContext';
 import { useTranslation } from '../context/LanguageContext';
 import { useShopGate } from '../hooks/useShopGate';
@@ -118,9 +118,15 @@ export default function ProductDetail() {
               >
                 {t('product.addToCart')}
               </PremiumButton>
-              <PremiumLink to={orderProductContactPath(product)} className="btn btn-whatsapp">
-                {t('product.orderWhatsApp')}
-              </PremiumLink>
+              {product.stock > 0 ? (
+                <PremiumLink to={orderProductContactPath(product)} className="btn btn-whatsapp">
+                  {t('product.orderWhatsApp')}
+                </PremiumLink>
+              ) : (
+                <PremiumLink to={restockInquiryContactPath(product)} className="btn btn-whatsapp">
+                  {t('product.requestItem')}
+                </PremiumLink>
+              )}
               <PremiumLink to="/contact" className="btn btn-outline">{t('product.contact')}</PremiumLink>
             </div>
           </div>

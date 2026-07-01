@@ -305,3 +305,27 @@ html.theme-transitioning *::after {
   }
 }
 
+.gtranslate-wrap--toolbar {
+  display: none;
+}
+
+.gtranslate-wrap--drawer {
+  display: none;
+}
+
+@media (min-width: 769px) {
+  .gtranslate-wrap--toolbar {
+    display: flex;
+  }
+}
+
+@media (max-width: 768px) {
+  .nav-drawer.open .gtranslate-wrap--drawer,
+  .nav-links.open .gtranslate-wrap--drawer {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    margin: 0 0 0.65rem;
+  }
+}
+

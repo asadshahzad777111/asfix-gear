@@ -23,6 +23,13 @@ app.disable('x-powered-by');
 app.use(securityHeaders);
 app.use(express.json({ limit: '256kb' }));
 app.use('/api', cors(getCorsOptions()));
+// Product/stock/order data changes constantly (staff edits from any device,
+// live stock adjustments, etc.) — never let a browser, proxy, or CDN cache
+// an API response, or customers on other devices would see stale data.
+app.use('/api', (_req, res, next) => {
+  res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
+  next();
+});
 app.use('/api', apiLimiter);
 
 app.get('/api/health', (_req, res) => {

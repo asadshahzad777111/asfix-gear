@@ -7,8 +7,10 @@ import { useTranslation } from '../context/LanguageContext';
 import GamingLogo from '../components/gaming/GamingLogo';
 import GamingProductCard from '../components/gaming/GamingProductCard';
 import { gamingContactPath, SHOP } from '../config/shop';
+import { startVisibilityPoll } from '../utils/visibilityPoll';
 
 const PUBG_TAGS = ['PUBG Mobile', 'Battle Royale', 'Triggers', 'Claw Grip', 'Low Latency', 'RGB Gear'];
+const STOCK_POLL_MS = 20_000;
 
 export default function Gaming() {
   const { isStaff } = useAuth();
@@ -18,10 +20,16 @@ export default function Gaming() {
   const { exitGamingMode } = useGaming();
 
   useEffect(() => {
-    api.getProducts({ category: 'Gaming' })
-      .then(setProducts)
-      .catch(console.error)
-      .finally(() => setLoading(false));
+    const load = () => {
+      api.getProducts({ category: 'Gaming' })
+        .then(setProducts)
+        .catch(console.error)
+        .finally(() => setLoading(false));
+    };
+    // Gaming stock moves fast (walk-in + online sales) — keep it fresh with a
+    // lightweight poll instead of only fetching once on mount, so shoppers
+    // never see an out-of-date "in stock" badge for gear that just sold out.
+    return startVisibilityPoll(load, STOCK_POLL_MS);
   }, []);
 
   return (

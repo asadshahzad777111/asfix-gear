@@ -48,6 +48,27 @@ export function buildContactPrefill(input = {}) {
       };
     }
 
+    case 'restock-inquiry': {
+      const { product } = input;
+      return {
+        subject: `Availability request: ${product.name}`,
+        message: [
+          'Assalam o Alaikum!',
+          '',
+          `*${product.name}* is currently showing out of stock on your website, but I am still interested.`,
+          `Category: ${product.category}`,
+          '',
+          'Could you please let me know:',
+          '1. Can you arrange this item for me?',
+          '2. What would the cost be?',
+          '3. How long would it take to arrange?',
+          '',
+          'Please get back to me — thank you!',
+          SIGNOFF,
+        ].join('\n'),
+      };
+    }
+
     case 'repair-service': {
       const { serviceName, modelHint = '' } = input;
       const modelLine = modelHint ? `Device: *${modelHint}*\n` : '';

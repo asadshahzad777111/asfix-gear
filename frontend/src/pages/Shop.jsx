@@ -8,6 +8,9 @@ import { useAuth } from '../context/AuthContext';
 import { api } from '../api/client';
 import { SHOP_BRANDS } from '../config/products';
 import { useTranslation } from '../context/LanguageContext';
+import { startVisibilityPoll } from '../utils/visibilityPoll';
+
+const STOCK_POLL_MS = 25_000;
 
 export default function Shop() {
   const { isStaff } = useAuth();
@@ -24,8 +27,8 @@ export default function Shop() {
 
   const activeBrandData = SHOP_BRANDS.find((b) => b.id === activeBrand);
 
-  const loadProducts = () => {
-    setLoading(true);
+  const loadProducts = (silent = false) => {
+    if (!silent) setLoading(true);
     const params = {};
     if (activeCategory !== 'all') params.category = activeCategory;
     if (activeBrand !== 'all') params.brand = activeBrand;
@@ -48,7 +51,16 @@ export default function Shop() {
   }, [searchParams]);
 
   useEffect(() => {
-    loadProducts();
+    // First fetch for these filters shows the loading state; the periodic
+    // background refreshes after it stay silent so stock/price stay fresh
+    // (offline sales, admin edits, another shopper checking out) without
+    // flashing the spinner while someone is browsing.
+    let isFirst = true;
+    return startVisibilityPoll(() => {
+      loadProducts(!isFirst);
+      isFirst = false;
+    }, STOCK_POLL_MS);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCategory, activeBrand, showSaleOnly, search]);
 
   const clearBrand = () => {

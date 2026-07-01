@@ -367,7 +367,8 @@
     color: var(--text) !important;
   }
 
-  .nav-drawer a.nav-drawer-accordion-link {
+  .nav-drawer a.nav-drawer-accordion-link,
+  .nav-drawer button.nav-drawer-accordion-link {
     display: flex !important;
     width: 100% !important;
     min-height: 44px !important;
@@ -378,9 +379,11 @@
     background: transparent !important;
     border: none !important;
     color: var(--text-muted) !important;
+    text-align: left;
   }
 
-  .nav-drawer a.nav-drawer-accordion-link:active {
+  .nav-drawer a.nav-drawer-accordion-link:active,
+  .nav-drawer button.nav-drawer-accordion-link:active {
     opacity: 0.88 !important;
     background: var(--nav-hover) !important;
     color: var(--text) !important;

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { generalContactPath } from '../config/shop';
-import { SHOP_CATEGORIES } from '../config/products';
+import { MODEL_SPECIFIC_CATEGORIES, SHOP_CATEGORIES } from '../config/products';
 import { useAuth } from '../context/AuthContext';
 import useNavDrawerThumb from '../hooks/useNavDrawerThumb';
 import OpenBadge from './OpenBadge';
@@ -9,6 +9,8 @@ import Logo from './Logo';
 import AddProductModal from './AddProductModal';
 import AccountMenu from './AccountMenu';
 import CustomerLoginModal from './CustomerLoginModal';
+import PhoneFinderModal from './PhoneFinderModal';
+import GoogleTranslateWidget from './GoogleTranslateWidget';
 import GamingModeButton from './gaming/GamingModeButton';
 import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
@@ -29,6 +31,7 @@ export default function Navbar() {
   const [shopAccordionOpen, setShopAccordionOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
+  const [finderCategory, setFinderCategory] = useState(null);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -109,6 +112,7 @@ export default function Navbar() {
             </div>
 
             <LanguageToggle className="lang-toggle--drawer" />
+            <GoogleTranslateWidget className="gtranslate-wrap--drawer" />
 
             <span className="nav-drawer-section-label">{t('nav.explore')}</span>
 
@@ -138,16 +142,30 @@ export default function Navbar() {
                     <Link to="/shop" className="nav-drawer-accordion-link" onClick={closeMenu}>
                       {t('nav.shopAll')}
                     </Link>
-                    {SHOP_CATEGORIES.map((cat) => (
-                      <Link
-                        key={cat}
-                        className="nav-drawer-accordion-link"
-                        to={`/shop?category=${encodeURIComponent(cat)}`}
-                        onClick={closeMenu}
-                      >
-                        {cat}
-                      </Link>
-                    ))}
+                    {SHOP_CATEGORIES.map((cat) =>
+                      MODEL_SPECIFIC_CATEGORIES.includes(cat) ? (
+                        <button
+                          key={cat}
+                          type="button"
+                          className="nav-drawer-accordion-link nav-drawer-accordion-link--btn"
+                          onClick={() => {
+                            closeMenu();
+                            setFinderCategory(cat);
+                          }}
+                        >
+                          {cat}
+                        </button>
+                      ) : (
+                        <Link
+                          key={cat}
+                          className="nav-drawer-accordion-link"
+                          to={`/shop?category=${encodeURIComponent(cat)}`}
+                          onClick={closeMenu}
+                        >
+                          {cat}
+                        </Link>
+                      )
+                    )}
                   </div>
                 </div>
               </div>
@@ -224,6 +242,7 @@ export default function Navbar() {
               </div>
             )}
             <LanguageToggle className="lang-toggle--toolbar" />
+            <GoogleTranslateWidget className="gtranslate-wrap--toolbar" />
             <ThemeToggle className="theme-toggle--nav" />
             <button
               type="button"
@@ -255,6 +274,11 @@ export default function Navbar() {
 
       {isStaff && <AddProductModal open={addOpen} onClose={() => setAddOpen(false)} />}
       <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
+      <PhoneFinderModal
+        open={Boolean(finderCategory)}
+        category={finderCategory}
+        onClose={() => setFinderCategory(null)}
+      />
     </>
   );
 }
