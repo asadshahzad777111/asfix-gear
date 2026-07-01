@@ -1,9 +1,11 @@
 import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
+const WHATSAPP_SUMMARY_CHARS = 160;
 
 router.get('/services', (_req, res) => {
   res.json(store.getRepairServices());
@@ -59,6 +61,22 @@ router.post('/book', (req, res) => {
     service_id,
     preferred_date,
   });
+
+  // Best-effort WhatsApp alerts — never block or fail the response (skipped
+  // silently if WhatsApp Cloud API env vars aren't configured).
+  const deviceLabel = `${booking.device_brand} ${booking.device_model}`.trim();
+  const issueExcerpt =
+    booking.issue.length > WHATSAPP_SUMMARY_CHARS
+      ? `${booking.issue.slice(0, WHATSAPP_SUMMARY_CHARS)}…`
+      : booking.issue;
+  notifyShopWhatsApp(
+    `New repair booking from ${booking.customer_name}: ${deviceLabel} — ${issueExcerpt}`
+  ).catch(() => {});
+
+  notifyCustomerWhatsApp(
+    booking.phone,
+    `Assalam o Alaikum ${booking.customer_name}! Your repair booking for ${deviceLabel} at AsFix & Gear has been received. We'll contact you shortly to confirm next steps.`
+  ).catch(() => {});
 
   res.status(201).json({ message: 'Repair intake submitted successfully', booking });
 });

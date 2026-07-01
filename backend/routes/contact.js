@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
-import { notifyShopWhatsApp } from '../services/otpDelivery.js';
+import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
@@ -48,6 +48,15 @@ router.post('/', optionalAuth, (req, res) => {
   // Best-effort staff WhatsApp alert — never blocks or fails the response
   // (skipped silently if WhatsApp Cloud API env vars aren't configured).
   notifyShopWhatsApp(buildShopWhatsAppSummary(saved)).catch(() => {});
+
+  // Best-effort instant confirmation back to the customer, so every inquiry
+  // gets an automatic reply even before a staff member replies personally.
+  if (saved.phone) {
+    notifyCustomerWhatsApp(
+      saved.phone,
+      `Assalam o Alaikum ${saved.name}! We received your message at AsFix & Gear and will reply soon. Thank you for contacting us.`
+    ).catch(() => {});
+  }
 
   res.status(201).json({
     message: 'Message sent successfully. We will contact you soon!',

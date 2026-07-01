@@ -54,3 +54,9 @@ jobs:
           curl -sf http://localhost:5000/api/health | grep -q '"status":"ok"'
           curl -sf http://localhost:5000/api/products > /dev/null
           echo "Backend smoke OK"
+
+      - name: Install Playwright browser
+        run: npx playwright install --with-deps chromium
+
+      - name: Full-page browser smoke test (catches runtime/blank-page crashes)
+        run: npm run check:smoke

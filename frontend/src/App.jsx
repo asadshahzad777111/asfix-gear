@@ -1,7 +1,7 @@
 import AmbientBackground from './components/AmbientBackground';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import WhatsAppButton from './components/WhatsAppButton';
+import ChatAssistant from './components/ChatAssistant';
 import GamingTransition from './components/gaming/GamingTransition';
 import GamingModeButton from './components/gaming/GamingModeButton';
 import ExitGamingButton from './components/gaming/ExitGamingButton';
@@ -43,7 +43,7 @@ function AppContent() {
       {showAdminDesk && <StaffToolbar />}
 
       {!isGamingPage && <Footer />}
-      {!isGamingPage && <WhatsAppButton />}
+      {!isGamingPage && <ChatAssistant />}
       {!isGamingPage && <FloatingRepairButton />}
       {showCart && <FloatingCart />}
       <FlyToCart />

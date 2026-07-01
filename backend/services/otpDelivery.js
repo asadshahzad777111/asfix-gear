@@ -224,6 +224,26 @@ export async function notifyShopWhatsApp(text) {
   }
 }
 
+/**
+ * Best-effort automatic WhatsApp confirmation sent TO THE CUSTOMER right
+ * after they submit a contact message or repair booking, so every inquiry
+ * gets an instant acknowledgement even before staff reply personally.
+ * Silently skipped (never throws) if the customer gave no usable phone
+ * number or WhatsApp Cloud API env vars aren't configured.
+ */
+export async function notifyCustomerWhatsApp(phone, text) {
+  if (!whatsAppCloudConfigured()) return { sent: false, skipped: true };
+  const e164 = normalizePhoneE164(phone);
+  if (!e164) return { sent: false, skipped: true };
+  try {
+    await sendWhatsAppCloud(e164, text);
+    return { sent: true };
+  } catch (err) {
+    console.error('[Notify] Customer WhatsApp confirmation failed:', err.message);
+    return { sent: false, error: err.message };
+  }
+}
+
 export async function deliverEmailOtp(email, code, purpose = 'verification') {
   const subject =
     purpose === 'login'
