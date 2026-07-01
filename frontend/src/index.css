@@ -1915,6 +1915,7 @@ img { max-width: 100%; height: auto; display: block; }
 .sales-report--compact .sales-summary-grid { grid-template-columns: repeat(2, 1fr); }
 .sales-report--compact .sales-report-table { min-width: 560px; font-size: 0.78rem; }
 .admin-float-item-price { color: var(--text-muted); font-size: 0.78rem; }
+.admin-float-item-cost { color: #86efac; font-size: 0.72rem; }
 .admin-float-receipt-actions { display: flex; flex-wrap: wrap; gap: 0.35rem; margin: 0.5rem 0; }
 .preview-cost { font-size: 0.8rem; color: var(--text-muted); margin: 0.35rem 0 0; }
 

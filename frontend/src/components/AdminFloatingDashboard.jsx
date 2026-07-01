@@ -355,16 +355,26 @@ export default function AdminFloatingDashboard() {
 
                         <ul className="admin-float-items">
 
-                          {o.items.map((item, idx) => (
-
-                            <li key={idx}>
-                              {item.name} ×{item.qty}
-                              {item.price != null && (
-                                <span className="admin-float-item-price"> — {formatPrice(Number(item.price) * Number(item.qty || 1))}</span>
-                              )}
-                            </li>
-
-                          ))}
+                          {o.items.map((item, idx) => {
+                            const qty = Number(item.qty) || 1;
+                            const saleLine = Number(item.price) * qty;
+                            const costLine = Number(item.cost_price || 0) * qty;
+                            const profitLine = saleLine - costLine;
+                            return (
+                              <li key={idx}>
+                                {item.name} ×{qty}
+                                {item.price != null && (
+                                  <span className="admin-float-item-price"> — {formatPrice(saleLine)}</span>
+                                )}
+                                {item.cost_price > 0 && (
+                                  <span className="admin-float-item-cost">
+                                    {' '}· {t('sales.costShort')}: {formatPrice(costLine)}
+                                    {' '}· {t('sales.profitShort')}: {formatPrice(profitLine)}
+                                  </span>
+                                )}
+                              </li>
+                            );
+                          })}
 
                         </ul>
 

@@ -1,4 +1,5 @@
 # Manual deploy reminder — does NOT deploy by itself.
+# Run from GitHub Actions → Deploy hint (manual). Not triggered on push.
 # Connect Render deploy hook URL as a repository secret when ready:
 #   RENDER_DEPLOY_HOOK=https://api.render.com/deploy/srv-...
 name: Deploy hint (manual)
@@ -19,9 +20,20 @@ on:
 jobs:
   deploy-checklist:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            backend/package-lock.json
+            frontend/package-lock.json
 
       - name: Pre-deploy checklist
         run: |
@@ -37,16 +49,21 @@ jobs:
           npm run install:all
           npm run build
 
-      - name: Trigger Render deploy (optional)
-        if: ${{ inputs.target == 'render' && secrets.RENDER_DEPLOY_HOOK != '' }}
+      - name: Optional Render deploy hook
+        if: inputs.target == 'render'
         env:
           RENDER_DEPLOY_HOOK: ${{ secrets.RENDER_DEPLOY_HOOK }}
         run: |
-          curl -sf -X POST "$RENDER_DEPLOY_HOOK"
-          echo "Render deploy hook triggered."
+          if [ -n "$RENDER_DEPLOY_HOOK" ]; then
+            curl -sf -X POST "$RENDER_DEPLOY_HOOK"
+            echo "Render deploy hook triggered."
+          else
+            echo "RENDER_DEPLOY_HOOK secret not set — skipping live deploy."
+            echo "Add it in GitHub → Settings → Secrets when Render gives you a deploy hook URL."
+          fi
 
-      - name: Render hook not configured
-        if: ${{ inputs.target == 'render' && secrets.RENDER_DEPLOY_HOOK == '' }}
+      - name: Non-Render target selected
+        if: inputs.target != 'render'
         run: |
-          echo "RENDER_DEPLOY_HOOK secret not set — skipping live deploy."
-          echo "Add it in GitHub → Settings → Secrets when Render gives you a deploy hook URL."
+          echo "Target: ${{ inputs.target }}"
+          echo "No automated deploy hook for this target — follow DEPLOY.md manually."

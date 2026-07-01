@@ -21,10 +21,11 @@ function formatItemLine(item, showCost) {
   const lineSale = unitSale * qty;
   const unitCost = Number(item.cost_price) || 0;
   const lineCost = unitCost * qty;
+  const lineProfit = lineSale - lineCost;
 
   let line = `• ${item.name} ×${qty} — ${formatAmount(lineSale)}`;
   if (showCost && unitCost > 0) {
-    line += ` (cost ${formatAmount(lineCost)})`;
+    line += ` (asal ${formatAmount(lineCost)}, profit ${formatAmount(lineProfit)})`;
   }
   return line;
 }

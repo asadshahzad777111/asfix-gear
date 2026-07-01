@@ -262,6 +262,8 @@ export const translations = {
       stock: 'Stock',
       receiptCustomer: 'Customer Receipt',
       receiptStaff: 'Staff Receipt',
+      exportCsv: 'Export CSV',
+      profitShort: 'Profit',
     },
     staff: {
       badge: 'Authorized Staff Only',
@@ -943,6 +945,8 @@ export const translations = {
       stock: 'Stock',
       receiptCustomer: 'Customer Receipt',
       receiptStaff: 'Staff Receipt',
+      exportCsv: 'Export CSV',
+      profitShort: 'Profit',
     },
     staff: {
       badge: 'Sirf Authorized Staff',
@@ -1624,6 +1628,8 @@ export const translations = {
       stock: 'اسٹاک',
       receiptCustomer: 'کسٹمر رسید',
       receiptStaff: 'اسٹاف رسید',
+      exportCsv: 'CSV ایکسپورٹ',
+      profitShort: 'منافع',
     },
     staff: {
       badge: 'صرف مجاز اسٹاف',

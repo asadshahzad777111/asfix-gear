@@ -21,6 +21,88 @@ function todayInputValue() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }
 
+function csvEscape(value) {
+  return `"${String(value ?? '').replace(/"/g, '""')}"`;
+}
+
+function downloadSalesCsv(report, period) {
+  if (!report?.orders?.length) return;
+
+  const headers = [
+    'Order ID',
+    'Date',
+    'Customer',
+    'Phone',
+    'Item',
+    'Qty',
+    'Sale',
+    'Cost (Asal)',
+    'Profit',
+    'Order Sale',
+    'Order Cost',
+    'Order Profit',
+    'Status',
+  ];
+
+  const rows = [headers.map(csvEscape).join(',')];
+
+  for (const row of report.orders) {
+    const items = row.items?.length ? row.items : [{ name: '—', qty: 1, sale_line: 0, cost_line: 0 }];
+    items.forEach((item, idx) => {
+      const lineProfit = Number(item.sale_line || 0) - Number(item.cost_line || 0);
+      rows.push(
+        [
+          idx === 0 ? row.order_id : '',
+          idx === 0 ? formatDateTime(row.created_at) : '',
+          idx === 0 ? row.customer_name : '',
+          idx === 0 ? row.phone : '',
+          item.name,
+          item.qty,
+          item.sale_line,
+          item.cost_line,
+          lineProfit,
+          idx === 0 ? row.sale_total : '',
+          idx === 0 ? row.cost_total : '',
+          idx === 0 ? row.profit : '',
+          idx === 0 ? row.shipping_status : '',
+        ]
+          .map(csvEscape)
+          .join(',')
+      );
+    });
+  }
+
+  if (report.summary) {
+    rows.push(
+      [
+        'TOTALS',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        '',
+        report.summary.sale_total,
+        report.summary.cost_total,
+        report.summary.profit,
+        `${report.summary.order_count} orders`,
+      ]
+        .map(csvEscape)
+        .join(',')
+    );
+  }
+
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = `asfix-sales-${period}-${todayInputValue()}.csv`;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export default function AdminSalesReport({ compact = false }) {
   const { t } = useTranslation();
   const [period, setPeriod] = useState('day');
@@ -91,6 +173,15 @@ export default function AdminSalesReport({ compact = false }) {
           <button type="button" className="btn btn-outline btn-sm" onClick={loadReport} disabled={loading}>
             {loading ? t('sales.loading') : t('sales.refresh')}
           </button>
+          {report?.orders?.length > 0 && (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              onClick={() => downloadSalesCsv(report, period)}
+            >
+              {t('sales.exportCsv')}
+            </button>
+          )}
         </div>
       </div>
 
