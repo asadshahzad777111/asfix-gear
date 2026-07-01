@@ -20,6 +20,7 @@ import './site-responsive.css';
 import './mobile-performance.css';
 import './components/home/home.css';
 import './components/nav/nav-upgrade.css';
+import './auth-2026.css';
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

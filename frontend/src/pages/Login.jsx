@@ -2,8 +2,16 @@ import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
-import PageHeader from '../components/PageHeader';
 import { isStaff as checkStaff, isCustomer as checkCustomer } from '../config/permissions';
+import {
+  AuthShell,
+  AuthCard,
+  AuthBrand,
+  AuthHead,
+  AuthAlert,
+  AuthSubmitButton,
+} from '../components/auth/AuthUI';
+
 export default function Login() {
   const { login, isStaff, user, loading } = useAuth();
   const { t } = useTranslation();
@@ -50,19 +58,20 @@ export default function Login() {
   };
 
   return (
-    <>
-      <PageHeader
-        eyebrow={t('login.eyebrow')}
-        title={t('login.title')}
-        subtitle={t('login.subtitle')}
-      />
+    <AuthShell>
+      <div className="container login-wrap">
+        <AuthCard staff>
+          <AuthBrand />
+          <AuthHead
+            eyebrow={t('login.eyebrow')}
+            title={t('login.title')}
+            subtitle={t('login.subtitle')}
+          />
 
-      <section className="section" style={{ paddingTop: 0 }}>
-        <div className="container login-wrap">
-          <form className="glass-card login-form" onSubmit={handleSubmit}>
-            {error && <div className="alert alert-error">{error}</div>}
+          <form onSubmit={handleSubmit}>
+            {error && <AuthAlert type="error">{error}</AuthAlert>}
 
-            <div className="form-group">
+            <div className="auth-2026-field">
               <label htmlFor="login">{t('team.gmail')}</label>
               <input
                 id="login"
@@ -77,7 +86,7 @@ export default function Login() {
               />
             </div>
 
-            <div className="form-group">
+            <div className="auth-2026-field">
               <label htmlFor="password">{t('login.password')}</label>
               <input
                 id="password"
@@ -90,19 +99,19 @@ export default function Login() {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+            <AuthSubmitButton submitting={submitting}>
               {submitting ? t('login.signingIn') : t('login.signIn')}
-            </button>
+            </AuthSubmitButton>
 
-            <p className="login-foot">
+            <p className="auth-2026-foot">
               <Link to="/account/login">{t('nav.accountLogin')}</Link>
             </p>
-            <p className="login-foot">
+            <p className="auth-2026-foot">
               <Link to="/">{t('login.backToStore')}</Link>
             </p>
           </form>
-        </div>
-      </section>
-    </>
+        </AuthCard>
+      </div>
+    </AuthShell>
   );
 }

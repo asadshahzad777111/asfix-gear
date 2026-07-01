@@ -4,6 +4,14 @@ import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import OtpInput from './OtpInput';
+import Logo from './Logo';
+import {
+  AuthAlert,
+  AuthTabs,
+  AuthSteps,
+  AuthSubmitButton,
+  AuthSecondaryButton,
+} from './auth/AuthUI';
 
 export default function CustomerLoginModal({ open, onClose }) {
   const { login, isCustomer, isStaff, user, completeSession, logout } = useAuth();
@@ -111,7 +119,7 @@ export default function CustomerLoginModal({ open, onClose }) {
     return (
       <div className="modal-overlay" onClick={handleClose} role="presentation">
         <div
-          className="modal-panel customer-login-modal"
+          className="modal-panel customer-login-modal auth-2026-modal"
           onClick={(e) => e.stopPropagation()}
           role="dialog"
           aria-modal="true"
@@ -120,8 +128,11 @@ export default function CustomerLoginModal({ open, onClose }) {
           <button type="button" className="modal-close" onClick={handleClose} aria-label={t('nav.closeMenu')}>
             ✕
           </button>
-          <h2>{t('account.title')}</h2>
-          <p>{t('account.welcome')}, {user.name || user.username}</p>
+          <div className="auth-2026-modal-head">
+            <Logo size={38} showText={false} />
+            <h2>{t('account.title')}</h2>
+            <p>{t('account.welcome')}, {user.name || user.username}</p>
+          </div>
           <Link to="/account" className="btn btn-primary btn-block" onClick={handleClose}>
             {t('nav.myAccount')}
           </Link>
@@ -139,7 +150,7 @@ export default function CustomerLoginModal({ open, onClose }) {
   return (
     <div className="modal-overlay" onClick={handleClose} role="presentation">
       <div
-        className="modal-panel customer-login-modal"
+        className="modal-panel customer-login-modal auth-2026-modal"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
@@ -149,31 +160,35 @@ export default function CustomerLoginModal({ open, onClose }) {
           ✕
         </button>
 
-        <h2>{t('account.loginTitle')}</h2>
-        <p className="customer-login-modal-sub">{t('account.loginSubtitle')}</p>
-
-        <div className="login-tabs login-tabs--modal">
-          <button
-            type="button"
-            className={mode === 'password' ? 'active' : ''}
-            onClick={() => { setMode('password'); setError(''); }}
-          >
-            {t('otp.passwordTab')}
-          </button>
-          <button
-            type="button"
-            className={mode === 'otp' ? 'active' : ''}
-            onClick={() => { setMode('otp'); setError(''); setOtpStep('request'); }}
-          >
-            {t('otp.codeTab')}
-          </button>
+        <div className="auth-2026-modal-head">
+          <Logo size={38} showText={false} />
+          <h2>{t('account.loginTitle')}</h2>
+          <p className="customer-login-modal-sub">{t('account.loginSubtitle')}</p>
         </div>
+
+        <AuthTabs
+          layoutId="customer-modal-tab"
+          active={mode}
+          onChange={(next) => { setMode(next); setError(''); setOtpStep('request'); }}
+          tabs={[
+            { id: 'password', label: t('otp.passwordTab') },
+            { id: 'otp', label: t('otp.codeTab') },
+          ]}
+        />
+
+        {mode === 'otp' && (
+          <AuthSteps
+            step={otpStep === 'request' ? 'start' : 'verify'}
+            labelStart={t('otp.loginField')}
+            labelVerify={t('otp.enterCode')}
+          />
+        )}
 
         {mode === 'password' ? (
           <form onSubmit={handlePasswordSubmit}>
-            {error && <div className="alert alert-error">{error}</div>}
+            {error && <AuthAlert type="error">{error}</AuthAlert>}
 
-            <div className="form-group">
+            <div className="auth-2026-field">
               <label htmlFor="modal-login">{t('account.loginField')}</label>
               <input
                 id="modal-login"
@@ -187,7 +202,7 @@ export default function CustomerLoginModal({ open, onClose }) {
               />
             </div>
 
-            <div className="form-group">
+            <div className="auth-2026-field">
               <label htmlFor="modal-password">{t('login.password')}</label>
               <input
                 id="modal-password"
@@ -199,15 +214,15 @@ export default function CustomerLoginModal({ open, onClose }) {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+            <AuthSubmitButton submitting={submitting}>
               {submitting ? t('account.signingIn') : t('account.signIn')}
-            </button>
+            </AuthSubmitButton>
           </form>
         ) : otpStep === 'request' ? (
           <form onSubmit={handleOtpStart}>
-            {error && <div className="alert alert-error">{error}</div>}
+            {error && <AuthAlert type="error">{error}</AuthAlert>}
 
-            <div className="form-group">
+            <div className="auth-2026-field">
               <label htmlFor="modal-otp-login">{t('otp.loginField')}</label>
               <input
                 id="modal-otp-login"
@@ -220,48 +235,46 @@ export default function CustomerLoginModal({ open, onClose }) {
               />
             </div>
 
-            <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+            <AuthSubmitButton submitting={submitting}>
               {submitting ? t('otp.sending') : t('otp.sendCode')}
-            </button>
+            </AuthSubmitButton>
           </form>
         ) : (
           <form onSubmit={handleOtpVerify}>
-            {error && <div className="alert alert-error">{error}</div>}
-            {otpHint && <div className="alert alert-info">{otpHint}</div>}
+            {error && <AuthAlert type="error">{error}</AuthAlert>}
+            {otpHint && <AuthAlert type="info">{otpHint}</AuthAlert>}
             {devCode && (
-              <div className="alert alert-info otp-dev-code">
+              <AuthAlert type="success" center>
                 {t('otp.devCode')}: <strong>{devCode}</strong>
-              </div>
+              </AuthAlert>
             )}
             {whatsappLink && (
-              <p className="form-hint">
+              <p className="auth-2026-whatsapp-hint">
                 <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
                   {t('otp.openWhatsApp')}
                 </a>
               </p>
             )}
 
-            <div className="form-group">
+            <div className="auth-2026-field">
               <label>{t('otp.enterCode')}</label>
               <OtpInput value={otp} onChange={setOtp} disabled={submitting} idPrefix="modal-otp" />
             </div>
 
-            <button type="submit" className="btn btn-primary btn-block" disabled={submitting || otp.length !== 6}>
+            <AuthSubmitButton submitting={submitting} disabled={otp.length !== 6}>
               {submitting ? t('otp.verifying') : t('account.signIn')}
-            </button>
+            </AuthSubmitButton>
 
-            <button
-              type="button"
-              className="btn btn-ghost btn-block"
+            <AuthSecondaryButton
               disabled={submitting}
               onClick={() => { setOtpStep('request'); setOtp(''); setError(''); }}
             >
               {t('otp.back')}
-            </button>
+            </AuthSecondaryButton>
           </form>
         )}
 
-        <p className="login-foot">
+        <p className="auth-2026-foot">
           {t('account.noAccount')}{' '}
           <Link to="/account/register" onClick={handleClose}>
             {t('account.createAccount')}
@@ -269,7 +282,7 @@ export default function CustomerLoginModal({ open, onClose }) {
         </p>
 
         {isStaff && (
-          <p className="login-foot">
+          <p className="auth-2026-foot">
             <Link to="/login" onClick={handleClose}>{t('nav.admin')}</Link>
           </p>
         )}

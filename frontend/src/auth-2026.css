@@ -1,0 +1,452 @@
+/* ==========================================================================
+   Auth 2026 — premium login / register / staff-login experience
+   Used by: AccountLogin.jsx, AccountRegister.jsx, Login.jsx,
+            CustomerLoginModal.jsx
+   Theme-aware: relies entirely on existing CSS vars from themes.css
+   (--primary, --violet, --glass-edge, --bg-card, --text, --text-muted, ...)
+   ========================================================================== */
+
+.auth-2026-shell {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: clamp(1.25rem, 5vw, 2.5rem) 1rem clamp(3rem, 9vw, 5.5rem);
+  overflow: hidden;
+}
+
+.auth-2026-glow {
+  position: absolute;
+  inset: -15% -10%;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(38% 42% at 12% 8%, var(--primary-glow), transparent 70%),
+    radial-gradient(42% 46% at 92% 90%, var(--violet-glow), transparent 70%);
+  filter: blur(6px);
+  opacity: 0.9;
+}
+
+.auth-2026-card {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto;
+  padding: clamp(1.65rem, 5vw, 2.35rem) clamp(1.35rem, 5vw, 2.1rem);
+  border-radius: 28px;
+  border: 1px solid var(--glass-edge);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-modal);
+  isolation: isolate;
+}
+
+.auth-2026-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, var(--primary), var(--violet) 55%, transparent 85%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0.55;
+  pointer-events: none;
+}
+
+.auth-2026-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.1rem;
+}
+
+.auth-2026-brand .brand-logo,
+.auth-2026-modal-head .brand-logo {
+  justify-content: center;
+  margin-bottom: 0.6rem;
+}
+
+.auth-2026-head {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.auth-2026-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 0.5rem;
+}
+
+.auth-2026-title {
+  font-size: clamp(1.35rem, 4.5vw, 1.7rem);
+  font-weight: 800;
+  margin: 0 0 0.4rem;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.auth-2026-subtitle {
+  margin: 0;
+  font-size: 0.9rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+/* Segmented tab control */
+.auth-2026-tabs {
+  position: relative;
+  display: flex;
+  gap: 2px;
+  padding: 4px;
+  margin-bottom: 1.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  background: rgba(127, 127, 148, 0.1);
+}
+
+.auth-2026-tab {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border: none;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.25s ease;
+}
+
+.auth-2026-tab.active {
+  color: #fff;
+}
+
+.auth-2026-tab-highlight {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  background: linear-gradient(135deg, var(--primary), var(--violet));
+  box-shadow: 0 6px 18px var(--primary-glow);
+  z-index: 0;
+}
+
+/* Step indicator (OTP flows) */
+.auth-2026-steps {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.auth-2026-step {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.auth-2026-step-dot {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border: 1px solid var(--glass-edge);
+  background: rgba(127, 127, 148, 0.1);
+  color: var(--text-muted);
+  transition: background 0.25s ease, color 0.25s ease, border-color 0.25s ease;
+}
+
+.auth-2026-step.active .auth-2026-step-dot,
+.auth-2026-step.done .auth-2026-step-dot {
+  background: linear-gradient(135deg, var(--primary), var(--violet));
+  border-color: transparent;
+  color: #fff;
+}
+
+.auth-2026-step-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.auth-2026-step.active .auth-2026-step-label {
+  color: var(--text);
+}
+
+.auth-2026-step-line {
+  width: 26px;
+  height: 2px;
+  border-radius: 1px;
+  background: var(--glass-edge);
+  transition: background 0.25s ease;
+}
+
+.auth-2026-step-line.done {
+  background: linear-gradient(90deg, var(--primary), var(--violet));
+}
+
+/* Fields */
+.auth-2026-field {
+  margin-bottom: 1.05rem;
+}
+
+.auth-2026-field label {
+  display: block;
+  margin-bottom: 0.4rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.01em;
+}
+
+.auth-2026-field input {
+  width: 100%;
+  padding: 0.85rem 1rem;
+  border-radius: 14px;
+  border: 1px solid var(--glass-edge);
+  background: rgba(127, 127, 148, 0.07);
+  color: var(--text);
+  font-size: 0.95rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+}
+
+.auth-2026-field input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.7;
+}
+
+.auth-2026-field input:focus {
+  outline: none;
+  border-color: var(--primary);
+  background: rgba(127, 127, 148, 0.11);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.auth-2026-field-hint {
+  margin: 0.4rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+/* Buttons */
+.auth-2026-submit {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  width: 100%;
+  padding: 0.95rem 1rem;
+  margin-top: 0.35rem;
+  border: none;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--violet));
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 14px 32px var(--primary-glow);
+}
+
+.auth-2026-submit:disabled {
+  opacity: 0.72;
+  cursor: not-allowed;
+}
+
+.auth-2026-secondary {
+  width: 100%;
+  padding: 0.82rem 1rem;
+  margin-top: 0.6rem;
+  border-radius: 14px;
+  border: 1px solid var(--glass-edge);
+  background: transparent;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.auth-2026-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.auth-2026-spinner {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 255, 255, 0.4);
+  border-top-color: #fff;
+  animation: auth2026Spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes auth2026Spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Alerts */
+.auth-2026-alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  padding: 0.75rem 0.9rem;
+  margin-bottom: 1rem;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+}
+
+.auth-2026-alert-icon {
+  flex-shrink: 0;
+  line-height: 1.3;
+}
+
+.auth-2026-alert--error {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  color: #fca5a5;
+}
+
+.auth-2026-alert--info {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.25);
+  color: #93c5fd;
+}
+
+.auth-2026-alert--success {
+  background: rgba(34, 197, 94, 0.12);
+  border: 1px solid rgba(34, 197, 94, 0.25);
+  color: #86efac;
+}
+
+.auth-2026-dev-code {
+  justify-content: center;
+  text-align: center;
+  font-size: 0.9rem;
+  letter-spacing: 0.05em;
+}
+
+/* OTP digits — bigger, on-brand focus ring */
+.auth-2026-card .otp-input-row {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 0.25rem;
+}
+
+.auth-2026-card .otp-digit {
+  width: 2.85rem;
+  height: 3.15rem;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+  border-radius: 12px;
+  border: 1px solid var(--glass-edge);
+  background: rgba(127, 127, 148, 0.07);
+  color: var(--text);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.auth-2026-card .otp-digit:focus {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: 0 0 0 3px var(--primary-glow);
+}
+
+.auth-2026-whatsapp-hint {
+  margin: -0.35rem 0 1rem;
+  text-align: center;
+}
+
+/* Footer links */
+.auth-2026-foot {
+  margin-top: 1.5rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.auth-2026-foot + .auth-2026-foot {
+  margin-top: 0.6rem;
+}
+
+.auth-2026-foot a {
+  color: var(--primary);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.auth-2026-foot a:hover {
+  text-decoration: underline;
+}
+
+/* Modal variant (CustomerLoginModal) */
+.customer-login-modal.auth-2026-modal {
+  max-width: 440px;
+  border-radius: 28px;
+  border: 1px solid var(--glass-edge);
+  background: var(--bg-card);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  box-shadow: var(--shadow-modal);
+  padding: clamp(1.6rem, 5vw, 2.2rem);
+}
+
+.auth-2026-modal-head {
+  text-align: center;
+  margin-bottom: 1.35rem;
+}
+
+/* Staff login accent tweak — violet-forward instead of orange-forward */
+.auth-2026-card--staff .auth-2026-eyebrow {
+  color: var(--violet);
+}
+
+.auth-2026-card--staff .auth-2026-submit {
+  background: linear-gradient(135deg, var(--violet), var(--primary));
+  box-shadow: 0 14px 32px var(--violet-glow);
+}
+
+/* Mobile fine-tuning */
+@media (max-width: 420px) {
+  .auth-2026-card,
+  .customer-login-modal.auth-2026-modal {
+    border-radius: 22px;
+  }
+
+  .auth-2026-card .otp-digit {
+    width: 2.35rem;
+    height: 2.75rem;
+    font-size: 1.1rem;
+  }
+
+  .auth-2026-card .otp-input-row {
+    gap: 0.4rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-2026-spinner {
+    animation-duration: 1.4s;
+  }
+}

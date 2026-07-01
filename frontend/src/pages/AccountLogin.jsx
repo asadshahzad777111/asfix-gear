@@ -3,8 +3,18 @@ import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
-import PageHeader from '../components/PageHeader';
 import OtpInput from '../components/OtpInput';
+import {
+  AuthShell,
+  AuthCard,
+  AuthBrand,
+  AuthHead,
+  AuthAlert,
+  AuthTabs,
+  AuthSteps,
+  AuthSubmitButton,
+  AuthSecondaryButton,
+} from '../components/auth/AuthUI';
 
 export default function AccountLogin() {
   const { login, isCustomer, isStaff, user, loading, completeSession } = useAuth();
@@ -104,37 +114,39 @@ export default function AccountLogin() {
   };
 
   return (
-    <>
-      <PageHeader
-        eyebrow={t('account.loginEyebrow')}
-        title={t('account.loginTitle')}
-        subtitle={t('account.loginSubtitle')}
-      />
+    <AuthShell>
+      <div className="container login-wrap">
+        <AuthCard>
+          <AuthBrand />
+          <AuthHead
+            eyebrow={t('account.loginEyebrow')}
+            title={t('account.loginTitle')}
+            subtitle={t('account.loginSubtitle')}
+          />
 
-      <section className="section auth-section">
-        <div className="container login-wrap">
-          <div className="login-tabs">
-            <button
-              type="button"
-              className={mode === 'password' ? 'active' : ''}
-              onClick={() => { setMode('password'); setError(''); }}
-            >
-              {t('otp.passwordTab')}
-            </button>
-            <button
-              type="button"
-              className={mode === 'otp' ? 'active' : ''}
-              onClick={() => { setMode('otp'); setError(''); setOtpStep('request'); }}
-            >
-              {t('otp.codeTab')}
-            </button>
-          </div>
+          <AuthTabs
+            layoutId="account-login-tab"
+            active={mode}
+            onChange={(next) => { setMode(next); setError(''); setOtpStep('request'); }}
+            tabs={[
+              { id: 'password', label: t('otp.passwordTab') },
+              { id: 'otp', label: t('otp.codeTab') },
+            ]}
+          />
+
+          {mode === 'otp' && (
+            <AuthSteps
+              step={otpStep === 'request' ? 'start' : 'verify'}
+              labelStart={t('otp.loginField')}
+              labelVerify={t('otp.enterCode')}
+            />
+          )}
 
           {mode === 'password' ? (
-            <form className="glass-card login-form" onSubmit={handlePasswordSubmit}>
-              {error && <div className="alert alert-error">{error}</div>}
+            <form onSubmit={handlePasswordSubmit}>
+              {error && <AuthAlert type="error">{error}</AuthAlert>}
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label htmlFor="login">{t('account.loginField')}</label>
                 <input
                   id="login"
@@ -148,7 +160,7 @@ export default function AccountLogin() {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label htmlFor="password">{t('login.password')}</label>
                 <input
                   id="password"
@@ -161,15 +173,15 @@ export default function AccountLogin() {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+              <AuthSubmitButton submitting={submitting}>
                 {submitting ? t('account.signingIn') : t('account.signIn')}
-              </button>
+              </AuthSubmitButton>
             </form>
           ) : otpStep === 'request' ? (
-            <form className="glass-card login-form" onSubmit={handleOtpStart}>
-              {error && <div className="alert alert-error">{error}</div>}
+            <form onSubmit={handleOtpStart}>
+              {error && <AuthAlert type="error">{error}</AuthAlert>}
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label htmlFor="otp-login">{t('otp.loginField')}</label>
                 <input
                   id="otp-login"
@@ -182,56 +194,54 @@ export default function AccountLogin() {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+              <AuthSubmitButton submitting={submitting}>
                 {submitting ? t('otp.sending') : t('otp.sendCode')}
-              </button>
+              </AuthSubmitButton>
             </form>
           ) : (
-            <form className="glass-card login-form" onSubmit={handleOtpVerify}>
-              {error && <div className="alert alert-error">{error}</div>}
-              {otpHint && <div className="alert alert-info">{otpHint}</div>}
+            <form onSubmit={handleOtpVerify}>
+              {error && <AuthAlert type="error">{error}</AuthAlert>}
+              {otpHint && <AuthAlert type="info">{otpHint}</AuthAlert>}
               {devCode && (
-                <div className="alert alert-info otp-dev-code">
+                <AuthAlert type="success" center>
                   {t('otp.devCode')}: <strong>{devCode}</strong>
-                </div>
+                </AuthAlert>
               )}
               {whatsappLink && (
-                <p className="form-hint">
+                <p className="auth-2026-whatsapp-hint">
                   <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
                     {t('otp.openWhatsApp')}
                   </a>
                 </p>
               )}
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label>{t('otp.enterCode')}</label>
                 <OtpInput value={otp} onChange={setOtp} disabled={submitting} idPrefix="login-otp" />
               </div>
 
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting || otp.length !== 6}>
+              <AuthSubmitButton submitting={submitting} disabled={otp.length !== 6}>
                 {submitting ? t('otp.verifying') : t('account.signIn')}
-              </button>
+              </AuthSubmitButton>
 
-              <button
-                type="button"
-                className="btn btn-ghost btn-block"
+              <AuthSecondaryButton
                 disabled={submitting}
                 onClick={() => { setOtpStep('request'); setOtp(''); setError(''); }}
               >
                 {t('otp.back')}
-              </button>
+              </AuthSecondaryButton>
             </form>
           )}
 
-          <p className="login-foot">
+          <p className="auth-2026-foot">
             {t('account.noAccount')}{' '}
             <Link to="/account/register">{t('account.createAccount')}</Link>
           </p>
-          <p className="login-foot">
+          <p className="auth-2026-foot">
             <Link to="/">{t('login.backToStore')}</Link>
           </p>
-        </div>
-      </section>
-    </>
+        </AuthCard>
+      </div>
+    </AuthShell>
   );
 }

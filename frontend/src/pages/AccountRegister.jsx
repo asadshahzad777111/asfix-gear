@@ -3,8 +3,17 @@ import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
-import PageHeader from '../components/PageHeader';
 import OtpInput from '../components/OtpInput';
+import {
+  AuthShell,
+  AuthCard,
+  AuthBrand,
+  AuthHead,
+  AuthAlert,
+  AuthSteps,
+  AuthSubmitButton,
+  AuthSecondaryButton,
+} from '../components/auth/AuthUI';
 
 export default function AccountRegister() {
   const { isCustomer, user, loading, completeSession } = useAuth();
@@ -135,20 +144,27 @@ export default function AccountRegister() {
   };
 
   return (
-    <>
-      <PageHeader
-        eyebrow={t('account.registerEyebrow')}
-        title={t('account.registerTitle')}
-        subtitle={t('account.registerSubtitle')}
-      />
+    <AuthShell>
+      <div className="container login-wrap">
+        <AuthCard>
+          <AuthBrand />
+          <AuthHead
+            eyebrow={t('account.registerEyebrow')}
+            title={t('account.registerTitle')}
+            subtitle={t('account.registerSubtitle')}
+          />
 
-      <section className="section auth-section">
-        <div className="container login-wrap">
+          <AuthSteps
+            step={step === 'form' ? 'start' : 'verify'}
+            labelStart={t('account.createAccount')}
+            labelVerify={t('otp.enterCode')}
+          />
+
           {step === 'form' ? (
-            <form className="glass-card login-form" onSubmit={handleStart}>
-              {error && <div className="alert alert-error">{error}</div>}
+            <form onSubmit={handleStart}>
+              {error && <AuthAlert type="error">{error}</AuthAlert>}
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label htmlFor="name">{t('contact.name')} *</label>
                 <input
                   id="name"
@@ -159,7 +175,7 @@ export default function AccountRegister() {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label htmlFor="username">{t('account.username')} *</label>
                 <input
                   id="username"
@@ -172,10 +188,10 @@ export default function AccountRegister() {
                   pattern="[a-z0-9_]+"
                   required
                 />
-                <p className="form-hint">{t('account.usernameHint')}</p>
+                <p className="auth-2026-field-hint">{t('account.usernameHint')}</p>
               </div>
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label htmlFor="email">{t('account.gmailOptional')}</label>
                 <input
                   id="email"
@@ -187,7 +203,7 @@ export default function AccountRegister() {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label htmlFor="phone">{t('account.phoneOptional')}</label>
                 <input
                   id="phone"
@@ -199,9 +215,9 @@ export default function AccountRegister() {
                 />
               </div>
 
-              <p className="form-hint">{t('account.emailOrPhoneHint')}</p>
+              <p className="auth-2026-field-hint">{t('account.emailOrPhoneHint')}</p>
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label htmlFor="password">{t('login.password')} *</label>
                 <input
                   id="password"
@@ -213,7 +229,7 @@ export default function AccountRegister() {
                 />
               </div>
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label htmlFor="confirmPassword">{t('account.confirmPassword')} *</label>
                 <input
                   id="confirmPassword"
@@ -225,66 +241,59 @@ export default function AccountRegister() {
                 />
               </div>
 
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting}>
+              <AuthSubmitButton submitting={submitting}>
                 {submitting ? t('otp.sending') : t('otp.sendCode')}
-              </button>
+              </AuthSubmitButton>
 
-              <p className="login-foot">
+              <p className="auth-2026-foot">
                 {t('account.haveAccount')}{' '}
                 <Link to="/account/login">{t('account.signIn')}</Link>
               </p>
             </form>
           ) : (
-            <form className="glass-card login-form" onSubmit={handleVerify}>
-              {error && <div className="alert alert-error">{error}</div>}
-              {otpHint && <div className="alert alert-info">{otpHint}</div>}
+            <form onSubmit={handleVerify}>
+              {error && <AuthAlert type="error">{error}</AuthAlert>}
+              {otpHint && <AuthAlert type="info">{otpHint}</AuthAlert>}
               {devCode && (
-                <div className="alert alert-info otp-dev-code">
+                <AuthAlert type="success" center>
                   {t('otp.devCode')}: <strong>{devCode}</strong>
-                </div>
+                </AuthAlert>
               )}
               {whatsappLink && (
-                <p className="form-hint">
+                <p className="auth-2026-whatsapp-hint">
                   <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
                     {t('otp.openWhatsApp')}
                   </a>
                 </p>
               )}
 
-              <div className="form-group">
+              <div className="auth-2026-field">
                 <label>{t('otp.enterCode')}</label>
                 <OtpInput value={otp} onChange={setOtp} disabled={submitting} idPrefix="reg-otp" />
               </div>
 
-              <button type="submit" className="btn btn-primary btn-block" disabled={submitting || otp.length !== 6}>
+              <AuthSubmitButton submitting={submitting} disabled={otp.length !== 6}>
                 {submitting ? t('otp.verifying') : t('account.createAccount')}
-              </button>
+              </AuthSubmitButton>
 
-              <button
-                type="button"
-                className="btn btn-outline btn-block"
-                disabled={submitting}
-                onClick={handleResend}
-              >
+              <AuthSecondaryButton disabled={submitting} onClick={handleResend}>
                 {submitting ? t('otp.sending') : t('otp.resend')}
-              </button>
+              </AuthSecondaryButton>
 
-              <button
-                type="button"
-                className="btn btn-ghost btn-block"
+              <AuthSecondaryButton
                 disabled={submitting}
                 onClick={() => { setStep('form'); setOtp(''); setError(''); }}
               >
                 {t('otp.back')}
-              </button>
+              </AuthSecondaryButton>
             </form>
           )}
 
-          <p className="login-foot" style={{ marginTop: '1rem' }}>
+          <p className="auth-2026-foot">
             <Link to="/">{t('login.backToStore')}</Link>
           </p>
-        </div>
-      </section>
-    </>
+        </AuthCard>
+      </div>
+    </AuthShell>
   );
 }
