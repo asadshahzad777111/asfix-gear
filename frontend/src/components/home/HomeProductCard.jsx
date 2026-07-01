@@ -6,6 +6,7 @@ import { useShopGate } from '../../hooks/useShopGate';
 import { useTranslation } from '../../context/LanguageContext';
 import { DiscountRibbon, ProductPrice } from '../DiscountPicker';
 import { hasDiscount } from '../../utils/pricing';
+import { getStockStatus } from '../../utils/stock';
 import ShopLoginPrompt from '../ShopLoginPrompt';
 import CustomerLoginModal from '../CustomerLoginModal';
 
@@ -22,6 +23,13 @@ export default function HomeProductCard({ product }) {
   const { addItem } = useCart();
   const addRef = useRef(null);
   const onSale = hasDiscount(product);
+  const stockStatus = getStockStatus(product.stock);
+  const stockLabel =
+    stockStatus === 'out'
+      ? t('product.soldOut')
+      : stockStatus === 'low'
+        ? t('product.onlyLeft', { count: product.stock })
+        : t('product.inStockShort');
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -54,9 +62,7 @@ export default function HomeProductCard({ product }) {
             <h3 className="home-product-name">{product.name}</h3>
             <div className="home-product-footer">
               <ProductPrice product={product} size="sm" />
-              <span className={`stock-dot ${product.stock > 0 ? 'in' : 'out'}`}>
-                {product.stock > 0 ? t('product.inStockShort') : t('product.soldOut')}
-              </span>
+              <span className={`stock-dot ${stockStatus}`}>{stockLabel}</span>
             </div>
           </div>
         </Link>

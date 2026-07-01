@@ -34,3 +34,23 @@ export function repairQuoteContactPath(serviceName, modelHint = '') {
 export function generalRepairQuoteContactPath(modelHint = '') {
   return buildContactPath(buildContactPrefill({ type: 'repair-model', modelHint }));
 }
+
+/**
+ * Maps a `SHOP_BRANDS` id (frontend/src/config/products.js) to its matching
+ * `REPAIR_DEVICE_BRANDS` group, so shop UI (e.g. the Shop mega menu) can
+ * reuse the same brand → model data instead of inventing a new device list.
+ */
+export const SHOP_BRAND_TO_REPAIR_BRAND = {
+  iphone: 'Apple iPhone',
+  samsung: 'Samsung',
+  xiaomi: 'Xiaomi / Redmi',
+  oppo: 'Oppo / Vivo / Realme',
+  infinix: 'Infinix / Tecno / Itel',
+  huawei: 'Huawei / Honor',
+};
+
+export function getModelsForShopBrand(shopBrandId) {
+  const brandName = SHOP_BRAND_TO_REPAIR_BRAND[shopBrandId];
+  const group = REPAIR_DEVICE_BRANDS.find((g) => g.brand === brandName);
+  return group ? group.models : [];
+}

@@ -94,7 +94,7 @@ npm run dev
 # Production build (frontend only → frontend/dist)
 npm run build
 
-# i18n key parity check (en / roman / ur must match)
+# i18n key parity check (en / roman must match)
 npm run check:i18n
 
 # Secrets scan before merge
@@ -139,6 +139,16 @@ npm run reset-admin
 
 **Shop owner note:** Phone, email, address, hours sab `shop.js` se aate hain — ek jagah change karein, poori site update ho jati hai.
 
+### Shop mega menu (`ShopMegaMenu.jsx`, desktop only)
+
+Two-level hover/click menu in the navbar's "Shop" trigger, 3 columns:
+
+1. **Categories** — from `SHOP_CATEGORIES` (`products.js`), links to `/shop?category=...`
+2. **Brands** — from `SHOP_BRANDS` (`products.js`); hovering/clicking a brand swaps the 3rd column
+3. **Models** — exact device models for the active brand, sourced via `getModelsForShopBrand()` (`config/repairModels.js`, reuses the same brand→model chip data as the repair models panel); clicking a model navigates to `/shop?search=<model>` (shop intent, not repair)
+
+Mobile keeps the existing accordion pattern in `Navbar.jsx` (unchanged). Hover-open/click-open and outside-click/ESC-close logic from the original menu is preserved; only the brand→model slide-out (3rd column, animated with `framer-motion`) was added.
+
 ---
 
 ## 5. Dual mode: Shop + Gaming
@@ -164,18 +174,18 @@ npm run reset-admin
 
 ## 6. Internationalization (i18n)
 
-**Languages:** `en` (English), `roman` (Roman Urdu), `ur` (Urdu script)
+**Languages:** `en` (English), `roman` (Roman Urdu). Urdu script (`ur`) was removed — the site is English + Roman Urdu only now, LTR everywhere (no `dir="rtl"` anywhere in the codebase).
 
 | File | Role |
 |------|------|
-| `frontend/src/locales/translations.js` | All UI strings (3 langs, same keys) |
-| `frontend/src/context/LanguageContext.jsx` | `useTranslation()`, `t(key, vars)` |
-| `frontend/src/components/LanguageToggle.jsx` | Drawer + desktop toggle |
-| `scripts/check-i18n.js` | CI parity check — run `npm run check:i18n` after translation edits |
+| `frontend/src/locales/translations.js` | All UI strings (2 langs, same keys) |
+| `frontend/src/context/LanguageContext.jsx` | `useTranslation()`, `t(key, vars)` — always sets `dir="ltr"` |
+| `frontend/src/components/LanguageToggle.jsx` | Drawer + desktop toggle (2 options) |
+| `scripts/check-i18n.js` | CI parity check — run `npm run check:i18n` after translation edits, must report 2 languages |
 
 **Nav labels:** Home, Shop, Repair, Gaming, Track, **Rabta** (Contact).
 
-**Shop owner note:** Agar naya button ya message add karein to teeno languages mein key add karna zaroori hai, warna CI fail ho jata hai.
+**Shop owner note:** Agar naya button ya message add karein to dono languages (en + roman) mein key add karna zaroori hai, warna CI fail ho jata hai.
 
 ---
 
@@ -313,6 +323,20 @@ When SMTP/SMS not configured: OTP printed in backend console + returned as `devC
 - `ShopLoginPrompt.jsx` — "login required" prompt before add-to-cart
 
 **Components:** `AccountRegister.jsx`, `AccountLogin.jsx`, `AccountSettings.jsx`, `OtpInput.jsx`
+
+### 2026 auth redesign
+`AccountLogin.jsx`, `AccountRegister.jsx`, `Login.jsx` (staff), and `CustomerLoginModal.jsx` share a common visual system built from `frontend/src/components/auth/AuthUI.jsx` + `frontend/src/auth-2026.css`:
+
+- `AuthShell` / `AuthCard` — glassmorphic, gradient-edge card over a soft radial glow, theme-aware (uses `--primary`, `--violet`, `--glass-edge`, `--bg-card` etc., no hardcoded colors)
+- `AuthBrand` / `AuthHead` — logo mark + eyebrow/title/subtitle header
+- `AuthTabs` — animated pill segmented control (e.g. password vs OTP login), powered by `framer-motion` `layoutId`
+- `AuthSteps` — 2-step progress indicator for OTP flows (enter details → verify code)
+- `AuthAlert` — themed inline error/info/success banners (dev-mode OTP code, WhatsApp fallback, validation errors)
+- `AuthSubmitButton` — gradient CTA with built-in loading spinner while submitting
+- `AuthSecondaryButton` — outline button for resend/back actions
+- Staff login (`Login.jsx`) uses the `staff` accent variant (violet-forward gradient) to visually distinguish it from customer auth
+
+All original logic (API calls, OTP start/verify, validation, WhatsApp fallback links) was preserved — this was a visual/UX-only redesign.
 
 ---
 
@@ -833,8 +857,8 @@ Frontend loads from `GET /api/repairs/services`.
 Admin page or Ops desk → `ShopStatusControl` → override (admin+).  
 Overrides `isShopOpen()` hours check until cleared.
 
-### Change translations / add Urdu text
-**File:** `frontend/src/locales/translations.js` — add key in **all 3** langs.  
+### Change translations / add Roman Urdu text
+**File:** `frontend/src/locales/translations.js` — add key in **both** langs (`en` + `roman`).  
 Run: `npm run check:i18n`
 
 ### Change repair screen quality options
@@ -929,6 +953,7 @@ npm run check:i18n
 
 | Commit | Summary |
 |--------|---------|
+| _pending_ | **i18n cleanup + 2026 auth redesign + shop mega menu:** Removed Urdu script (`ur`) everywhere — site is now English + Roman Urdu only, LTR-only (RTL CSS/fonts removed). Redesigned `AccountLogin`, `AccountRegister`, `Login`, `CustomerLoginModal` with a shared glassmorphic `AuthUI.jsx` component system (`auth-2026.css`) — animated tabs, step indicators, gradient CTAs with loading spinners, theme-aware. `ShopMegaMenu.jsx` upgraded to a true 2-level brand→model slide-out (desktop). Home product cards now show low/out-of-stock badges via `utils/stock.js`. |
 | `9fb61d4` | **Contact prefill:** All WhatsApp intents route through `/contact` with prefilled subject/message (`contactPrefill.js`). WhatsApp float → general contact path. Product, repair, cart, gaming, directions, receipts all prefilled. |
 | `524be2b` | **Home cleanup:** Removed duplicate home CTAs (hero WhatsApp, bottom CTA card). Added initial `WEBSITE-FULL-PROMPT.md`. |
 | `dde1441` | Fix `deploy-hint` workflow empty runs — manual-only guard. |
@@ -959,7 +984,7 @@ Stack: React 19 + Vite frontend, Express + JSON file backend, single Render depl
 
 Features:
 - Dual Shop/Gaming modes with separate UI themes
-- i18n: English, Roman Urdu, Urdu (translations.js, check:i18n)
+- i18n: English + Roman Urdu only, LTR (translations.js, check:i18n)
 - Home: hero, features, repair steps, services, featured products (no gaming), map — no duplicate WhatsApp on hero
 - Shop catalog with categories, search, discounts, stock (low/out badges), login gate for cart
 - Gaming page with PUBG-style UI and Gaming-category products only

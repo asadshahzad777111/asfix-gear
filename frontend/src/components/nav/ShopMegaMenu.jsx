@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../../api/client';
+import { AnimatePresence, motion } from 'framer-motion';
 import { SHOP_BRANDS, SHOP_CATEGORIES } from '../../config/products';
+import { getModelsForShopBrand } from '../../config/repairModels';
 import { useTranslation } from '../../context/LanguageContext';
 
 const HOVER_CLOSE_MS = 220;
@@ -9,24 +10,9 @@ const HOVER_CLOSE_MS = 220;
 export default function ShopMegaMenu() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
-  const [topProducts, setTopProducts] = useState([]);
+  const [activeBrand, setActiveBrand] = useState(SHOP_BRANDS[0]?.id || null);
   const wrapRef = useRef(null);
   const closeTimerRef = useRef(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    api
-      .getProducts({ featured: 'true' })
-      .then((items) => {
-        if (!cancelled) {
-          setTopProducts(items.filter((p) => p.category !== 'Gaming').slice(0, 4));
-        }
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const clearCloseTimer = useCallback(() => {
     if (closeTimerRef.current) {
@@ -70,6 +56,9 @@ export default function ShopMegaMenu() {
     };
   }, [clearCloseTimer]);
 
+  const activeBrandData = SHOP_BRANDS.find((b) => b.id === activeBrand) || SHOP_BRANDS[0];
+  const activeModels = activeBrandData ? getModelsForShopBrand(activeBrandData.id) : [];
+
   return (
     <div
       className={`nav-mega-wrap ${open ? 'is-open' : ''}`}
@@ -96,57 +85,86 @@ export default function ShopMegaMenu() {
       </button>
 
       <div className="nav-mega-panel" hidden={!open} onMouseEnter={openMenu}>
-        <div className="nav-mega-panel-body">
-        <div className="nav-mega-col">
-          <p className="nav-mega-label">{t('nav.categories')}</p>
-          <ul className="nav-mega-list">
-            <li>
-              <Link to="/shop" onClick={() => setOpen(false)}>
-                {t('nav.shopAll')}
-              </Link>
-            </li>
-            {SHOP_CATEGORIES.map((cat) => (
-              <li key={cat}>
-                <Link
-                  to={`/shop?category=${encodeURIComponent(cat)}`}
-                  onClick={() => setOpen(false)}
-                >
-                  {cat}
+        <div className="nav-mega-panel-body nav-mega-panel-body--shop">
+          <div className="nav-mega-col">
+            <p className="nav-mega-label">{t('nav.categories')}</p>
+            <ul className="nav-mega-list">
+              <li>
+                <Link to="/shop" onClick={() => setOpen(false)}>
+                  {t('nav.shopAll')}
                 </Link>
               </li>
-            ))}
-          </ul>
-        </div>
-        <div className="nav-mega-col">
-          <p className="nav-mega-label">{t('nav.topPicks')}</p>
-          <ul className="nav-mega-list nav-mega-list--brands">
-            {SHOP_BRANDS.slice(0, 4).map((brand) => (
-              <li key={brand.id}>
-                <Link
-                  to={`/shop?search=${encodeURIComponent(brand.search)}`}
-                  onClick={() => setOpen(false)}
+              {SHOP_CATEGORIES.map((cat) => (
+                <li key={cat}>
+                  <Link
+                    to={`/shop?category=${encodeURIComponent(cat)}`}
+                    onClick={() => setOpen(false)}
+                  >
+                    {cat}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="nav-mega-col nav-mega-col--brands">
+            <p className="nav-mega-label">{t('nav.topPicks')}</p>
+            <ul className="nav-mega-brand-list">
+              {SHOP_BRANDS.map((brand) => (
+                <li key={brand.id}>
+                  <button
+                    type="button"
+                    className={`nav-mega-brand-item ${activeBrand === brand.id ? 'is-active' : ''}`}
+                    onMouseEnter={() => setActiveBrand(brand.id)}
+                    onFocus={() => setActiveBrand(brand.id)}
+                    onClick={() => setActiveBrand(brand.id)}
+                  >
+                    <span aria-hidden="true">{brand.icon}</span>
+                    <span className="nav-mega-brand-item-label">{brand.label}</span>
+                    <span className="nav-mega-brand-arrow" aria-hidden="true">›</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="nav-mega-col nav-mega-col--models">
+            {activeBrandData && (
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={activeBrandData.id}
+                  initial={{ opacity: 0, x: 8 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: 8 }}
+                  transition={{ duration: 0.16, ease: 'easeOut' }}
                 >
-                  {brand.icon} {brand.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
-          {topProducts.length > 0 && (
-            <>
-              <p className="nav-mega-label nav-mega-label--sub">{t('nav.featuredProducts')}</p>
-              <ul className="nav-mega-products">
-                {topProducts.map((p) => (
-                  <li key={p.id}>
-                    <Link to={`/shop/${p.id}`} onClick={() => setOpen(false)}>
-                      <img src={p.image} alt="" loading="lazy" />
-                      <span>{p.name}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </>
-          )}
-        </div>
+                  <p className="nav-mega-label">
+                    {activeBrandData.icon} {activeBrandData.label}
+                  </p>
+                  <p className="nav-mega-models-sub">{t('home.chooseModelSub')}</p>
+                  <div className="nav-mega-model-chips">
+                    {activeModels.map((model) => (
+                      <Link
+                        key={model}
+                        to={`/shop?search=${encodeURIComponent(model)}`}
+                        className="nav-mega-model-chip"
+                        onClick={() => setOpen(false)}
+                      >
+                        {model}
+                      </Link>
+                    ))}
+                  </div>
+                  <Link
+                    to={`/shop?search=${encodeURIComponent(activeBrandData.search)}`}
+                    className="nav-mega-view-all"
+                    onClick={() => setOpen(false)}
+                  >
+                    {t('nav.viewAllBrand', { brand: activeBrandData.label })}
+                  </Link>
+                </motion.div>
+              </AnimatePresence>
+            )}
+          </div>
         </div>
       </div>
     </div>
