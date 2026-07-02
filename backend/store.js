@@ -1200,3 +1200,8 @@ export function setShopManualOverride(manual_override, userId) {
     return data.settings.shop;
   });
 }
+
+/** Full store snapshot (same shape as data.json) for admin backup export. */
+export function exportFullData() {
+  return readData();
+}
