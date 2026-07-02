@@ -32,6 +32,20 @@ function smtpConfigured() {
   return Boolean(user && pass);
 }
 
+function resendConfigured() {
+  return Boolean(String(process.env.RESEND_API_KEY || '').trim());
+}
+
+function getResendFrom() {
+  const raw = String(process.env.RESEND_FROM || '').trim().replace(/^['"]|['"]$/g, '');
+  if (raw.includes('@')) return raw;
+  return `"${BRAND_NAME}" <onboarding@resend.dev>`;
+}
+
+function emailDeliveryConfigured() {
+  return resendConfigured() || smtpConfigured();
+}
+
 function twilioConfigured() {
   return Boolean(
     process.env.TWILIO_ACCOUNT_SID &&
@@ -100,7 +114,7 @@ function userFacingSmtpError(err) {
 
   const code = String(err?.code || '').toUpperCase();
   if (code === 'ETIMEDOUT' || code === 'ESOCKET' || code === 'ECONNECTION') {
-    return 'Gmail server se connect nahi ho saka (timeout). Dubara try karein — agar masla barhta hai to Render logs check karein.';
+    return 'Gmail SMTP connect nahi ho saka (timeout). Render free tier par ports 587/465 block hain — RESEND_API_KEY set karein ya paid instance use karein. Guide: DEPLOY.md';
   }
   if (code === 'ECONNREFUSED' || code === 'ENOTFOUND') {
     return 'Gmail SMTP network error. Thori der baad dubara try karein.';
@@ -203,6 +217,30 @@ function buildOtpEmailHtml(code, purpose) {
 </html>`;
 }
 
+async function sendViaResend({ to, subject, html, text }) {
+  const apiKey = String(process.env.RESEND_API_KEY || '').trim();
+  const res = await fetch('https://api.resend.com/emails', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${apiKey}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      from: getResendFrom(),
+      to: [to],
+      subject,
+      html,
+      text,
+    }),
+  });
+
+  if (!res.ok) {
+    const body = await res.text();
+    const detail = body.slice(0, 200);
+    throw new Error(`Resend API failed (${res.status}): ${detail}`);
+  }
+}
+
 async function sendMailWithFallback(mailOptions) {
   const transports = createMailTransports();
   let lastErr;
@@ -233,8 +271,15 @@ async function sendMailWithFallback(mailOptions) {
 
 /** Best-effort startup check — logs result to server console, never throws. */
 export async function verifySmtpConnection() {
+  if (resendConfigured()) {
+    console.log(`[OTP] Resend API ready (from ${getResendFrom()})`);
+    return { ok: true, provider: 'resend', from: getResendFrom() };
+  }
+
   if (!smtpConfigured()) {
-    console.warn('[OTP] SMTP not configured — Gmail OTP disabled until GMAIL_USER + GMAIL_APP_PASSWORD are set.');
+    console.warn(
+      '[OTP] Email OTP not configured — set RESEND_API_KEY (Render free tier) or GMAIL_USER + GMAIL_APP_PASSWORD (paid SMTP).'
+    );
     return { ok: false, reason: 'not_configured' };
   }
 
@@ -245,13 +290,15 @@ export async function verifySmtpConnection() {
     try {
       await transport.verify();
       console.log(`[OTP] SMTP ready for ${user} (port ${transport.options?.port})`);
-      return { ok: true, user, port: transport.options?.port };
+      return { ok: true, provider: 'smtp', user, port: transport.options?.port };
     } catch (err) {
       console.warn(`[OTP] SMTP verify failed (port ${transport.options?.port}):`, err.message);
     }
   }
 
-  console.error('[OTP] SMTP verify failed on all transports — OTP emails will not send until credentials/network are fixed.');
+  console.error(
+    '[OTP] SMTP verify failed on all transports — on Render free tier use RESEND_API_KEY instead (SMTP ports 587/465 blocked).'
+  );
   return { ok: false, reason: 'verify_failed' };
 }
 
@@ -387,11 +434,11 @@ export async function deliverEmailOtp(email, code, purpose = 'verification') {
 
   const result = { channel: 'email', sent: false, devCode: null, devMode: false };
 
-  if (!smtpConfigured()) {
+  if (!emailDeliveryConfigured()) {
     console.log(`[OTP dev] Email to ${email}: ${code}`);
     if (isProduction()) {
       throw new OtpDeliveryError(
-        'Email verification is not configured. Set GMAIL_USER and GMAIL_APP_PASSWORD on the server, then try again.',
+        'Email verification is not configured. Set RESEND_API_KEY (recommended on Render free) or GMAIL_USER + GMAIL_APP_PASSWORD, then try again.',
         'EMAIL_NOT_CONFIGURED'
       );
     }
@@ -400,9 +447,30 @@ export async function deliverEmailOtp(email, code, purpose = 'verification') {
     return result;
   }
 
+  const html = buildOtpEmailHtml(code, purpose);
+
+  if (resendConfigured()) {
+    try {
+      await sendViaResend({ to: email, subject, html, text });
+      result.sent = true;
+      return result;
+    } catch (err) {
+      console.error('[OTP] Resend send failed:', err.message);
+      if (isProduction()) {
+        throw new OtpDeliveryError(
+          'Verification email nahi bheji ja saki (Resend API error). RESEND_API_KEY aur RESEND_FROM check karein.',
+          'EMAIL_SEND_FAILED'
+        );
+      }
+      console.log(`[OTP dev fallback] Email to ${email}: ${code}`);
+      result.devMode = true;
+      result.devCode = code;
+      return result;
+    }
+  }
+
   try {
     const from = getEmailFrom();
-    const html = buildOtpEmailHtml(code, purpose);
     await sendMailWithFallback({ from, to: email, subject, text, html });
     result.sent = true;
     return result;

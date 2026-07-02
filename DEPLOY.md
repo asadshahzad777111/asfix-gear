@@ -110,15 +110,36 @@ Agar aapke paas Hostinger ya koi Pakistani hosting hai:
 | Custom domain | Render → Settings → Custom Domains — full guide: [DOMAIN-SETUP.md](./DOMAIN-SETUP.md) |
 | SSL (HTTPS) | Free — Render automatic (DNS verify ke baad) |
 | Production CORS | Render Environment → `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com` (Render `.onrender.com` URL is auto-allowed via `RENDER_EXTERNAL_URL`) |
-| Gmail OTP emails | Render Environment → `GMAIL_USER`, `GMAIL_APP_PASSWORD`, optional `SMTP_FROM` — see [Gmail OTP on Render](#gmail-otp-on-render) |
+| Gmail OTP emails | Render Environment → `RESEND_API_KEY` + `RESEND_FROM` (free tier) **or** `GMAIL_USER` + `GMAIL_APP_PASSWORD` (paid SMTP) — see [Gmail OTP on Render](#gmail-otp-on-render) |
 
 ---
 
 ## Gmail OTP on Render
 
-Customer sign-up and login send a **6-digit code** to `@gmail.com` addresses. Without SMTP env vars, production returns a clear error instead of silently failing.
+Customer sign-up and login send a **6-digit code** to `@gmail.com` addresses. Without email env vars, production returns a clear error instead of silently failing.
 
-### Step 1: Create a Gmail App Password
+### Important: Render free tier blocks SMTP
+
+Since **September 2025**, Render **free** web services block outbound SMTP on ports **25, 465, and 587**. Gmail SMTP (`GMAIL_USER` + `GMAIL_APP_PASSWORD`) will **timeout** on free tier even with correct credentials.
+
+**Fix (free tier):** use **Resend** (HTTP API, port 443):
+
+| Variable | Value |
+|----------|-------|
+| `RESEND_API_KEY` | From [resend.com](https://resend.com) → API Keys |
+| `RESEND_FROM` | `"AsFix Gear" <noreply@asfixgear.com>` after domain verify (or `onboarding@resend.dev` for testing) |
+
+**Fix (paid tier):** upgrade Render to any **paid** instance — Gmail SMTP on ports 587/465 works again.
+
+### Option A: Resend (recommended on Render free)
+
+1. Sign up at [resend.com](https://resend.com).
+2. Add and verify domain **asfixgear.com** (DNS records in Resend dashboard).
+3. Create an API key.
+4. Render → Environment → add `RESEND_API_KEY` and `RESEND_FROM`.
+5. Redeploy.
+
+### Option B: Gmail SMTP (paid Render or local dev)
 
 1. Sign in to the Google account that will send mail (e.g. `asadshahzad777111@gmail.com`).
 2. Enable **2-Step Verification** on the Google account (required for app passwords).
