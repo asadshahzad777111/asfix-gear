@@ -1,0 +1,2 @@
+# Production smoke baseline — 2026-07-02T11:43Z
+# product_count=19 newest_id=19 custom_image_ids=9,11,12,13,10
