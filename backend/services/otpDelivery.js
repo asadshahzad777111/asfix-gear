@@ -15,9 +15,20 @@ function isProduction() {
   return process.env.NODE_ENV === 'production';
 }
 
+/** Trim env values; strip quotes; remove spaces from Google app passwords. */
+function normalizeSmtpCredentials() {
+  const rawUser = process.env.SMTP_USER || process.env.GMAIL_USER || '';
+  const rawPass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD || '';
+  const user = String(rawUser).trim().replace(/^['"]|['"]$/g, '');
+  const pass = String(rawPass)
+    .trim()
+    .replace(/^['"]|['"]$/g, '')
+    .replace(/\s+/g, '');
+  return { user, pass };
+}
+
 function smtpConfigured() {
-  const user = process.env.SMTP_USER || process.env.GMAIL_USER;
-  const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
+  const { user, pass } = normalizeSmtpCredentials();
   return Boolean(user && pass);
 }
 
@@ -42,8 +53,8 @@ function whatsAppCloudConfigured() {
 }
 
 function getEmailFrom() {
-  if (process.env.SMTP_FROM) return process.env.SMTP_FROM;
-  const user = process.env.SMTP_USER || process.env.GMAIL_USER;
+  if (process.env.SMTP_FROM) return String(process.env.SMTP_FROM).trim();
+  const { user } = normalizeSmtpCredentials();
   if (user) return `"${BRAND_NAME}" <${user}>`;
   return `"${BRAND_NAME}" <noreply@asfixgear.com>`;
 }
@@ -117,9 +128,8 @@ function buildOtpEmailHtml(code, purpose) {
 }
 
 function createMailer() {
-  const user = process.env.SMTP_USER || process.env.GMAIL_USER;
-  const pass = process.env.SMTP_PASS || process.env.GMAIL_APP_PASSWORD;
-  const host = process.env.SMTP_HOST;
+  const { user, pass } = normalizeSmtpCredentials();
+  const host = String(process.env.SMTP_HOST || '').trim();
 
   if (host) {
     return nodemailer.createTransport({
@@ -130,8 +140,12 @@ function createMailer() {
     });
   }
 
+  // Explicit Gmail SMTP is more reliable on PaaS hosts than service: 'gmail'.
   return nodemailer.createTransport({
-    service: 'gmail',
+    host: 'smtp.gmail.com',
+    port: 587,
+    secure: false,
+    requireTLS: true,
     auth: { user, pass },
   });
 }
