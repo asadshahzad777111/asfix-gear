@@ -70,12 +70,48 @@ function smtpTransportOptions(host, port, secure) {
     secure,
     requireTLS: !secure,
     auth: normalizeSmtpCredentials(),
-    connectionTimeout: 15_000,
-    greetingTimeout: 10_000,
-    socketTimeout: 20_000,
+    // Keep total send attempt under ~30s so the client (45s OTP timeout) gets a real error.
+    connectionTimeout: 10_000,
+    greetingTimeout: 8_000,
+    socketTimeout: 12_000,
     family: 4,
     tls: { minVersion: 'TLSv1.2' },
   };
+}
+
+function isSmtpAuthError(err) {
+  if (!err) return false;
+  const code = String(err.code || '').toUpperCase();
+  const msg = String(err.message || '').toLowerCase();
+  const responseCode = Number(err.responseCode);
+  return (
+    code === 'EAUTH' ||
+    responseCode === 535 ||
+    responseCode === 534 ||
+    /invalid login|authentication failed|username and password not accepted|bad credentials/.test(msg)
+  );
+}
+
+/** Map nodemailer/Gmail failures to a safe, actionable message for the client. */
+function userFacingSmtpError(err) {
+  if (isSmtpAuthError(err)) {
+    return 'Gmail login fail — app password galat hai ya expire ho gaya. Render par GMAIL_USER aur naya GMAIL_APP_PASSWORD set karein (2-Step Verification + App Password zaroori hai).';
+  }
+
+  const code = String(err?.code || '').toUpperCase();
+  if (code === 'ETIMEDOUT' || code === 'ESOCKET' || code === 'ECONNECTION') {
+    return 'Gmail server se connect nahi ho saka (timeout). Dubara try karein — agar masla barhta hai to Render logs check karein.';
+  }
+  if (code === 'ECONNREFUSED' || code === 'ENOTFOUND') {
+    return 'Gmail SMTP network error. Thori der baad dubara try karein.';
+  }
+
+  const raw = String(err?.message || '').trim();
+  if (raw && raw.length <= 140 && !/password|secret|token|credential/i.test(raw)) {
+    return `Verification email nahi bheji ja saki: ${raw}`;
+  }
+
+  return 'Verification email nahi bheji ja saki. Render par GMAIL_USER aur GMAIL_APP_PASSWORD check karein.';
 }
 
 function createMailTransports() {
@@ -181,7 +217,11 @@ async function sendMailWithFallback(mailOptions) {
     } catch (err) {
       lastErr = err;
       const port = transports[i].options?.port ?? '?';
-      console.warn(`[OTP] SMTP send failed (port ${port}):`, err.message);
+      console.warn(`[OTP] SMTP send failed (port ${port}):`, err.message, err.responseCode || '', err.code || '');
+      if (isSmtpAuthError(err)) {
+        console.warn('[OTP] SMTP auth failed — not retrying alternate port.');
+        break;
+      }
       if (i < transports.length - 1) {
         console.warn('[OTP] Retrying with alternate Gmail SMTP port…');
       }
@@ -369,10 +409,7 @@ export async function deliverEmailOtp(email, code, purpose = 'verification') {
   } catch (err) {
     console.error('[OTP] Email send failed:', err.message, err.responseCode || '', err.code || '');
     if (isProduction()) {
-      throw new OtpDeliveryError(
-        'Could not send verification email. Check GMAIL_USER and GMAIL_APP_PASSWORD, then try again.',
-        'EMAIL_SEND_FAILED'
-      );
+      throw new OtpDeliveryError(userFacingSmtpError(err), 'EMAIL_SEND_FAILED');
     }
     console.log(`[OTP dev fallback] Email to ${email}: ${code}`);
     result.devMode = true;

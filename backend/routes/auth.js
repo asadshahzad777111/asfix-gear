@@ -178,9 +178,12 @@ function buildOtpDevResponse(delivery) {
 function respondOtpDeliveryError(res, err, logTag) {
   console.error(logTag, err);
   if (err instanceof OtpDeliveryError) {
-    return res.status(503).json({ error: err.message });
+    return res.status(503).json({ error: err.message, code: err.code || 'OTP_DELIVERY_FAILED' });
   }
-  return res.status(500).json({ error: 'Could not send verification code. Try again later.' });
+  return res.status(500).json({
+    error: 'Could not send verification code. Try again later.',
+    code: 'OTP_DELIVERY_UNKNOWN',
+  });
 }
 
 router.post('/register/start', registerStartLimiter, async (req, res) => {

@@ -1,5 +1,13 @@
 const API_BASE = '/api';
 const TOKEN_KEY = 'asfix_auth_token';
+const DEFAULT_TIMEOUT_MS = 8000;
+/** OTP send hits Gmail SMTP on the server — can take 15–40s on Render cold start. */
+const OTP_SEND_TIMEOUT_MS = 45000;
+const OTP_SEND_PATHS = [
+  '/auth/register/start',
+  '/auth/login/otp/start',
+  '/auth/password/reset/start',
+];
 
 export function getAuthToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -15,19 +23,27 @@ async function request(path, options = {}) {
   const token = getAuthToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
+  const isOtpSend = OTP_SEND_PATHS.some((otpPath) => path.startsWith(otpPath));
+  const timeoutMs = options.timeoutMs ?? (isOtpSend ? OTP_SEND_TIMEOUT_MS : DEFAULT_TIMEOUT_MS);
+  const { timeoutMs: _ignored, ...fetchOptions } = options;
+
   const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), 8000);
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
   let res;
   try {
     res = await fetch(`${API_BASE}${path}`, {
       headers,
       signal: controller.signal,
-      ...options,
+      ...fetchOptions,
     });
   } catch (err) {
     if (err?.name === 'AbortError') {
-      throw new Error('Server slow hai — thori der baad dubara try karein.');
+      throw new Error(
+        isOtpSend
+          ? 'Verification email bhejne mein waqt lag gaya. Dubara try karein — agar phir fail ho to Render par Gmail app password check karein.'
+          : 'Server slow hai — thori der baad dubara try karein.'
+      );
     }
     throw new Error('Backend server is not running. Start it with: npm run dev (port 5000)');
   } finally {
