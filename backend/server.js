@@ -2,6 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { loadEnv } from '../scripts/load-env.mjs';
 import { getStats, getStorageBackend, initStorage } from './store.js';
 import productsRouter from './routes/products.js';
 import repairsRouter from './routes/repairs.js';
@@ -13,8 +14,10 @@ import adminRouter from './routes/admin.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
 import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
 import { verifySmtpConnection } from './services/otpDelivery.js';
+import { isR2Configured } from './services/r2.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+loadEnv();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -51,7 +54,12 @@ app.use('/api', (req, res, next) => {
 });
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', brand: 'AsFix & Gear', storage: getStorageBackend() });
+  res.json({
+    status: 'ok',
+    brand: 'AsFix & Gear',
+    storage: getStorageBackend(),
+    r2: isR2Configured() ? 'configured' : 'off',
+  });
 });
 
 app.get('/api/stats', (_req, res) => {

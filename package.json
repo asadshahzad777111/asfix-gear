@@ -20,6 +20,8 @@
     "check:registration": "node scripts/registration-smoke.js",
     "backup:data": "node scripts/backup-data-json.mjs",
     "migrate:mongo": "node scripts/migrate-json-to-mongo.mjs",
+    "mongo:ping": "node scripts/mongo-ping.mjs",
+    "setup:check": "node scripts/setup-check.mjs",
     "test:seed-images": "node scripts/test-seed-preserve-images.js"
   },
   "devDependencies": {

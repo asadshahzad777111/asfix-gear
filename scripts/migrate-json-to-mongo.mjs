@@ -3,12 +3,13 @@
  * Migrate backend/data/data.json into MongoDB Atlas (or local Mongo).
  *
  * Usage:
- *   MONGODB_URI="mongodb+srv://..." node scripts/migrate-json-to-mongo.mjs
- *   MONGODB_URI="..." node scripts/migrate-json-to-mongo.mjs --dry-run
+ *   node scripts/migrate-json-to-mongo.mjs --dry-run
+ *   (reads MONGODB_URI from .env when present)
  */
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { loadEnv } from './load-env.mjs';
 import { migrateData, DEFAULT_DATA } from '../backend/store/data-migration.js';
 import { writeFullSnapshot } from '../backend/store/mongo-storage.js';
 import { closeMongo, isMongoEnabled } from '../backend/db/client.js';
@@ -16,6 +17,8 @@ import { closeMongo, isMongoEnabled } from '../backend/db/client.js';
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_FILE = path.join(__dirname, '..', 'backend', 'data', 'data.json');
 const dryRun = process.argv.includes('--dry-run');
+
+loadEnv();
 
 function loadJsonData() {
   if (!fs.existsSync(DATA_FILE)) {
