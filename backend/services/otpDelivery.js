@@ -53,10 +53,52 @@ function whatsAppCloudConfigured() {
 }
 
 function getEmailFrom() {
-  if (process.env.SMTP_FROM) return String(process.env.SMTP_FROM).trim();
+  const raw = String(process.env.SMTP_FROM || '').trim();
+  if (raw) {
+    // Render env values are sometimes pasted with extra wrapping quotes.
+    const unquoted = raw.replace(/^['"]|['"]$/g, '');
+    if (unquoted.includes('@')) return unquoted;
+  }
   const { user } = normalizeSmtpCredentials();
   if (user) return `"${BRAND_NAME}" <${user}>`;
   return `"${BRAND_NAME}" <noreply@asfixgear.com>`;
+}
+
+/** Shared transport options — IPv4 + timeouts help on Render/PaaS hosts. */
+function smtpTransportOptions(host, port, secure) {
+  return {
+    host,
+    port,
+    secure,
+    requireTLS: !secure,
+    auth: normalizeSmtpCredentials(),
+    connectionTimeout: 15_000,
+    greetingTimeout: 10_000,
+    socketTimeout: 20_000,
+    family: 4,
+    tls: { minVersion: 'TLSv1.2' },
+  };
+}
+
+function createMailTransports() {
+  const customHost = String(process.env.SMTP_HOST || '').trim();
+  if (customHost) {
+    return [
+      nodemailer.createTransport(
+        smtpTransportOptions(
+          customHost,
+          Number(process.env.SMTP_PORT) || 587,
+          process.env.SMTP_SECURE === 'true'
+        )
+      ),
+    ];
+  }
+
+  // Try STARTTLS (587) first, then implicit TLS (465) — some networks block one port.
+  return [
+    nodemailer.createTransport(smtpTransportOptions('smtp.gmail.com', 587, false)),
+    nodemailer.createTransport(smtpTransportOptions('smtp.gmail.com', 465, true)),
+  ];
 }
 
 const OTP_COPY = {
@@ -127,27 +169,52 @@ function buildOtpEmailHtml(code, purpose) {
 </html>`;
 }
 
-function createMailer() {
-  const { user, pass } = normalizeSmtpCredentials();
-  const host = String(process.env.SMTP_HOST || '').trim();
+async function sendMailWithFallback(mailOptions) {
+  const transports = createMailTransports();
+  let lastErr;
 
-  if (host) {
-    return nodemailer.createTransport({
-      host,
-      port: Number(process.env.SMTP_PORT) || 587,
-      secure: process.env.SMTP_SECURE === 'true',
-      auth: { user, pass },
-    });
+  for (let i = 0; i < transports.length; i += 1) {
+    try {
+      const info = await transports[i].sendMail(mailOptions);
+      if (i > 0) {
+        console.warn('[OTP] Email sent via fallback SMTP transport (port 465)');
+      }
+      return info;
+    } catch (err) {
+      lastErr = err;
+      const port = transports[i].options?.port ?? '?';
+      console.warn(`[OTP] SMTP send failed (port ${port}):`, err.message);
+      if (i < transports.length - 1) {
+        console.warn('[OTP] Retrying with alternate Gmail SMTP port…');
+      }
+    }
   }
 
-  // Explicit Gmail SMTP is more reliable on PaaS hosts than service: 'gmail'.
-  return nodemailer.createTransport({
-    host: 'smtp.gmail.com',
-    port: 587,
-    secure: false,
-    requireTLS: true,
-    auth: { user, pass },
-  });
+  throw lastErr;
+}
+
+/** Best-effort startup check — logs result to server console, never throws. */
+export async function verifySmtpConnection() {
+  if (!smtpConfigured()) {
+    console.warn('[OTP] SMTP not configured — Gmail OTP disabled until GMAIL_USER + GMAIL_APP_PASSWORD are set.');
+    return { ok: false, reason: 'not_configured' };
+  }
+
+  const { user } = normalizeSmtpCredentials();
+  const transports = createMailTransports();
+
+  for (const transport of transports) {
+    try {
+      await transport.verify();
+      console.log(`[OTP] SMTP ready for ${user} (port ${transport.options?.port})`);
+      return { ok: true, user, port: transport.options?.port };
+    } catch (err) {
+      console.warn(`[OTP] SMTP verify failed (port ${transport.options?.port}):`, err.message);
+    }
+  }
+
+  console.error('[OTP] SMTP verify failed on all transports — OTP emails will not send until credentials/network are fixed.');
+  return { ok: false, reason: 'verify_failed' };
 }
 
 function normalizePhoneE164(phone) {
@@ -296,14 +363,13 @@ export async function deliverEmailOtp(email, code, purpose = 'verification') {
   }
 
   try {
-    const transporter = createMailer();
     const from = getEmailFrom();
     const html = buildOtpEmailHtml(code, purpose);
-    await transporter.sendMail({ from, to: email, subject, text, html });
+    await sendMailWithFallback({ from, to: email, subject, text, html });
     result.sent = true;
     return result;
   } catch (err) {
-    console.error('[OTP] Email send failed:', err.message);
+    console.error('[OTP] Email send failed:', err.message, err.responseCode || '', err.code || '');
     if (isProduction()) {
       throw new OtpDeliveryError(
         'Could not send verification email. Check GMAIL_USER and GMAIL_APP_PASSWORD, then try again.',

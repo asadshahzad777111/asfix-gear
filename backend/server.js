@@ -12,6 +12,7 @@ import shopRouter from './routes/shop.js';
 import adminRouter from './routes/admin.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
 import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
+import { verifySmtpConnection } from './services/otpDelivery.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -128,4 +129,9 @@ app.use((err, _req, res, _next) => {
 app.listen(PORT, () => {
   console.log(`AsFix & Gear API running on http://localhost:${PORT}`);
   console.log('Storage: backend/data/data.json');
+  if (process.env.NODE_ENV === 'production') {
+    verifySmtpConnection().catch((err) => {
+      console.error('[OTP] SMTP startup check error:', err.message);
+    });
+  }
 });
