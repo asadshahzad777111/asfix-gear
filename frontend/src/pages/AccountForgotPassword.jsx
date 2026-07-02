@@ -38,6 +38,14 @@ export default function AccountForgotPassword() {
     if (prefilledLogin) setResetLogin(prefilledLogin);
   }, [prefilledLogin]);
 
+  useEffect(() => {
+    if (resetStep !== 'verify') return undefined;
+    const id = requestAnimationFrame(() => {
+      document.querySelector('.auth-2026-card')?.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+    });
+    return () => cancelAnimationFrame(id);
+  }, [resetStep]);
+
   if (loading) {
     return <div className="loading container">{t('common.loading')}</div>;
   }

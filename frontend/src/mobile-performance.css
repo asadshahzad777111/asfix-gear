@@ -38,7 +38,12 @@
   .staff-access,
   .gaming-mode-btn--trigger,
   .staff-toolbar,
-  .admin-float-desk {
+  .admin-float-desk,
+  /* Auth OTP verify steps grow well past the 480px intrinsic-size hint on
+     .section — without this, mobile Chrome/Safari paint a blank card after
+     "Send code" even though the OTP inputs exist in the DOM. */
+  .auth-section,
+  .auth-2026-shell {
     content-visibility: visible !important;
   }
 

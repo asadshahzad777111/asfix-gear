@@ -30,7 +30,7 @@ export default function CustomerLoginModal({ open, onClose }) {
   const [whatsappLink, setWhatsappLink] = useState(null);
   const [devCode, setDevCode] = useState(null);
 
-  const { closeWithoutHistoryBack } = useModalBehavior(open, onClose);
+  const { navigateAway } = useModalBehavior(open, onClose);
 
   if (!open) return null;
 
@@ -226,9 +226,11 @@ export default function CustomerLoginModal({ open, onClose }) {
               className="auth-2026-forgot-link"
               onClick={() => {
                 const login = loginValue.trim();
-                closeWithoutHistoryBack();
-                handleClose();
-                navigate('/account/forgot-password', { state: login ? { login } : undefined });
+                setError('');
+                setPassword('');
+                navigateAway(navigate, '/account/forgot-password', {
+                  state: login ? { login } : undefined,
+                });
               }}
             >
               {t('otp.forgotPassword')}
@@ -294,9 +296,9 @@ export default function CustomerLoginModal({ open, onClose }) {
           {t('account.noAccount')}{' '}
           <Link
             to="/account/register"
-            onClick={() => {
-              closeWithoutHistoryBack();
-              handleClose();
+            onClick={(e) => {
+              e.preventDefault();
+              navigateAway(navigate, '/account/register');
             }}
           >
             {t('account.createAccount')}
@@ -307,9 +309,9 @@ export default function CustomerLoginModal({ open, onClose }) {
           <p className="auth-2026-foot">
             <Link
               to="/login"
-              onClick={() => {
-                closeWithoutHistoryBack();
-                handleClose();
+              onClick={(e) => {
+                e.preventDefault();
+                navigateAway(navigate, '/login');
               }}
             >
               {t('nav.admin')}

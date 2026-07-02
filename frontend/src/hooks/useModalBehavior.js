@@ -16,11 +16,12 @@ import { useEffect, useRef } from 'react';
  *
  * Usage: call unconditionally in the modal component, gated by `open`.
  *
- * Returns `closeWithoutHistoryBack()` — call it right before navigating
- * elsewhere from inside the modal (e.g. picking a model routes to /shop).
- * Without it, the normal cleanup below would call `history.back()` to undo
- * the modal's pushState and land the user back one entry too many, which
- * cancels out the navigation that was just triggered.
+ * Returns:
+ * - `closeWithoutHistoryBack()` — legacy escape hatch before navigate/onClose.
+ * - `navigateAway(navigate, to, options)` — preferred when leaving the modal
+ *   for another route (forgot password, register, etc.). Replaces the modal
+ *   history entry and closes without the cleanup `history.back()` racing the
+ *   new navigation (which otherwise snaps users back to /account/register).
  */
 export default function useModalBehavior(open, onClose) {
   const closingViaPopRef = useRef(false);
@@ -58,5 +59,12 @@ export default function useModalBehavior(open, onClose) {
     closingViaPopRef.current = true;
   };
 
-  return { closeWithoutHistoryBack };
+  const navigateAway = (navigate, to, options = {}) => {
+    closingViaPopRef.current = true;
+    pushedRef.current = false;
+    navigate(to, { ...options, replace: options.replace ?? true });
+    onClose();
+  };
+
+  return { closeWithoutHistoryBack, navigateAway };
 }

@@ -12,7 +12,9 @@
   align-items: center;
   justify-content: center;
   padding: clamp(1.25rem, 5vw, 2.5rem) 1rem clamp(3rem, 9vw, 5.5rem);
-  overflow: hidden;
+  /* Clip decorative glow only — never clip the growing OTP/password form. */
+  overflow-x: clip;
+  overflow-y: visible;
 }
 
 .auth-2026-glow {
