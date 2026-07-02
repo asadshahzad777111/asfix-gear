@@ -66,6 +66,12 @@ export default function AccountRegister() {
       return;
     }
 
+    if (form.email.trim() && !/^[a-z0-9._%+.-]+@gmail\.com$/i.test(form.email.trim())) {
+      setError(t('otp.invalidGmail'));
+      setSubmitting(false);
+      return;
+    }
+
     try {
       const data = await api.registerStart({
         name: form.name.trim(),
@@ -79,7 +85,7 @@ export default function AccountRegister() {
       if (form.email.trim()) {
         setOtpHint(t('otp.sentEmail', { email: form.email.trim() }));
       } else {
-        setOtpHint(t('otp.sentPhone'));
+        setOtpHint(t('otp.sentPhoneWhatsApp'));
       }
 
       if (data.whatsappLink) setWhatsappLink(data.whatsappLink);
@@ -135,7 +141,7 @@ export default function AccountRegister() {
       if (data.devCode) setDevCode(data.devCode);
       if (data.whatsappLink) setWhatsappLink(data.whatsappLink);
       setOtp('');
-      setOtpHint(form.email.trim() ? t('otp.sentEmail', { email: form.email.trim() }) : t('otp.sentPhone'));
+      setOtpHint(form.email.trim() ? t('otp.sentEmail', { email: form.email.trim() }) : t('otp.sentPhoneWhatsApp'));
     } catch (err) {
       setError(err.message || t('otp.sendFailed'));
     } finally {

@@ -19,6 +19,7 @@ const Gaming = lazy(() => import('../../pages/Gaming'));
 const OrderTrack = lazy(() => import('../../pages/OrderTrack'));
 const Account = lazy(() => import('../../pages/Account'));
 const AccountLogin = lazy(() => import('../../pages/AccountLogin'));
+const AccountForgotPassword = lazy(() => import('../../pages/AccountForgotPassword'));
 const AccountRegister = lazy(() => import('../../pages/AccountRegister'));
 const AccountSettings = lazy(() => import('../../pages/AccountSettings'));
 const NotFound = lazy(() => import('../../pages/NotFound'));
@@ -38,6 +39,7 @@ export default function PageTransition() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/track" element={<OrderTrack />} />
           <Route path="/account/login" element={<AccountLogin />} />
+          <Route path="/account/forgot-password" element={<AccountForgotPassword />} />
           <Route path="/account/register" element={<AccountRegister />} />
           <Route path="/register" element={<Navigate to="/account/register" replace />} />
           <Route

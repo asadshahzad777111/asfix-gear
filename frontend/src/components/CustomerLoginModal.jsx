@@ -224,7 +224,11 @@ export default function CustomerLoginModal({ open, onClose }) {
             <button
               type="button"
               className="auth-2026-forgot-link"
-              onClick={() => { handleClose(); navigate('/account/login'); }}
+              onClick={() => {
+                const login = loginValue.trim();
+                handleClose();
+                navigate('/account/forgot-password', { state: login ? { login } : undefined });
+              }}
             >
               {t('otp.forgotPassword')}
             </button>

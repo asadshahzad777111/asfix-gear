@@ -19,7 +19,7 @@ import http from 'node:http';
 
 const PORT = process.env.SMOKE_PORT || 5099;
 const BASE_URL = `http://localhost:${PORT}`;
-const ROUTES = ['/', '/shop', '/repair', '/contact', '/track', '/account/login', '/account/register'];
+const ROUTES = ['/', '/shop', '/repair', '/contact', '/track', '/account/login', '/account/register', '/account/forgot-password'];
 
 function waitForServer(url, timeoutMs = 30000) {
   const start = Date.now();

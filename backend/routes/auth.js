@@ -59,6 +59,31 @@ function validatePassword(password) {
   return null;
 }
 
+const GMAIL_RE = /^[a-z0-9._%+.-]+@gmail\.com$/;
+
+function validateGmail(email) {
+  const key = String(email || '').trim().toLowerCase();
+  if (!key) return { email: '' };
+  if (!key.includes('@')) {
+    return { error: 'Please enter a valid @gmail.com address' };
+  }
+  if (!key.endsWith('@gmail.com')) {
+    return { error: 'Please use a @gmail.com address' };
+  }
+  if (!GMAIL_RE.test(key)) {
+    return { error: 'Please enter a valid @gmail.com address' };
+  }
+  return { email: key };
+}
+
+function accountNotFoundMessage(login) {
+  const trimmed = String(login || '').trim();
+  if (trimmed.includes('@')) {
+    return 'No account found with this Gmail address';
+  }
+  return 'No account found with this phone number';
+}
+
 function validateUsername(username) {
   const key = String(username || '').trim().toLowerCase();
   if (!key) return { error: 'Username is required' };
@@ -141,8 +166,9 @@ function parseCustomerRegistration(body) {
   if (!email && !phone) {
     return { error: 'Gmail or phone number is required' };
   }
-  if (email && !email.endsWith('@gmail.com')) {
-    return { error: 'Please use a @gmail.com address' };
+  if (email) {
+    const gmailResult = validateGmail(email);
+    if (gmailResult.error) return { error: gmailResult.error };
   }
   const pwErr = validatePassword(password);
   if (pwErr) return { error: pwErr };
@@ -150,7 +176,7 @@ function parseCustomerRegistration(body) {
     return { error: 'Passwords do not match' };
   }
 
-  return { name, email, phone, username: usernameResult.username, password };
+  return { name, email: email ? validateGmail(email).email : '', phone, username: usernameResult.username, password };
 }
 
 router.post('/register', (_req, res) => {
@@ -311,7 +337,7 @@ router.post('/login/otp/start', loginOtpStartLimiter, async (req, res) => {
   if (!login) return res.status(400).json({ error: 'Gmail or phone is required' });
 
   const user = store.findUserByLogin(login);
-  if (!user) return res.status(404).json({ error: 'No account found with this Gmail or phone' });
+  if (!user) return res.status(404).json({ error: accountNotFoundMessage(login) });
   if (user.role !== 'customer') {
     return res.status(403).json({ error: 'Staff accounts must use the admin login page.' });
   }
@@ -325,13 +351,7 @@ router.post('/login/otp/start', loginOtpStartLimiter, async (req, res) => {
 
   const emailKey = String(user.email || '').trim().toLowerCase();
   const phoneKey = String(user.phone || '').replace(/\D/g, '');
-  const loginKey = login.toLowerCase();
-  const loginPhone = login.replace(/\D/g, '');
-
-  const useEmail =
-    emailKey &&
-    (loginKey === emailKey || loginKey === user.username || (!phoneKey && !loginPhone));
-  const target = useEmail ? emailKey : phoneKey || loginPhone;
+  const { useEmail, target } = resolveOtpChannel(user);
 
   if (!target) {
     return res.status(400).json({ error: 'Account has no Gmail or phone for OTP login' });
@@ -350,11 +370,11 @@ router.post('/login/otp/start', loginOtpStartLimiter, async (req, res) => {
         expiresAt,
       });
     } else {
-      delivery = await deliverPhoneOtp(phoneKey || loginPhone, code, 'login');
+      delivery = await deliverPhoneOtp(phoneKey, code, 'login');
       store.createVerificationCode({
         purpose: 'login',
         channel: 'phone',
-        target: phoneKey || loginPhone,
+        target: phoneKey,
         payload: { user_id: user.id },
         codeHash,
         expiresAt,
@@ -373,17 +393,13 @@ router.post('/login/otp/verify', loginOtpVerifyLimiter, (req, res) => {
   const codeResult = validateOtpCode(code);
   if (codeResult.error) return res.status(400).json({ error: codeResult.error });
 
-  const loginKey = login.trim().toLowerCase();
-  const loginPhone = login.replace(/\D/g, '');
   const user = store.findUserByLogin(login.trim());
-  if (!user) return res.status(404).json({ error: 'No account found' });
+  if (!user) return res.status(404).json({ error: accountNotFoundMessage(login) });
 
-  const emailKey = String(user.email || '').trim().toLowerCase();
-  const phoneKey = String(user.phone || '').replace(/\D/g, '');
-  const useEmail =
-    emailKey &&
-    (loginKey === emailKey || loginKey === user.username || (!phoneKey && !loginPhone));
-  const target = useEmail ? emailKey : phoneKey || loginPhone;
+  const { useEmail, target } = resolveOtpChannel(user);
+  if (!target) {
+    return res.status(400).json({ error: 'Account has no Gmail or phone for OTP login' });
+  }
 
   let result;
   try {
@@ -425,15 +441,16 @@ router.post('/login/otp/verify', loginOtpVerifyLimiter, (req, res) => {
   });
 });
 
-function resolveOtpTarget(login, user) {
+function resolveOtpChannel(user) {
   const emailKey = String(user.email || '').trim().toLowerCase();
   const phoneKey = String(user.phone || '').replace(/\D/g, '');
-  const loginKey = login.trim().toLowerCase();
-  const loginPhone = login.replace(/\D/g, '');
-  const useEmail =
-    emailKey &&
-    (loginKey === emailKey || loginKey === user.username || (!phoneKey && !loginPhone));
-  return { useEmail, target: useEmail ? emailKey : phoneKey || loginPhone };
+  if (emailKey) {
+    return { useEmail: true, target: emailKey };
+  }
+  if (phoneKey) {
+    return { useEmail: false, target: phoneKey };
+  }
+  return { useEmail: false, target: null };
 }
 
 router.post('/password/reset/start', resetStartLimiter, async (req, res) => {
@@ -442,13 +459,13 @@ router.post('/password/reset/start', resetStartLimiter, async (req, res) => {
 
   const user = store.findUserByLogin(login);
   if (!user || user.role !== 'customer') {
-    return res.status(404).json({ error: 'No account found with this Gmail or phone' });
+    return res.status(404).json({ error: accountNotFoundMessage(login) });
   }
   if (store.isUserBlocked(user)) {
     return res.status(403).json({ error: 'Your account is blocked. Contact the shop owner.' });
   }
 
-  const { useEmail, target } = resolveOtpTarget(login, user);
+  const { useEmail, target } = resolveOtpChannel(user);
   if (!target) {
     return res.status(400).json({ error: 'Account has no Gmail or phone for password reset' });
   }
@@ -490,9 +507,11 @@ router.post('/password/reset/verify', resetVerifyLimiter, (req, res) => {
   }
 
   const user = store.findUserByLogin(login.trim());
-  if (!user || user.role !== 'customer') return res.status(404).json({ error: 'No account found' });
+  if (!user || user.role !== 'customer') {
+    return res.status(404).json({ error: accountNotFoundMessage(login) });
+  }
 
-  const { target } = resolveOtpTarget(login, user);
+  const { target } = resolveOtpChannel(user);
 
   let result;
   try {

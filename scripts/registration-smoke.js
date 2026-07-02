@@ -136,6 +136,35 @@ async function testPasswordReset(email) {
   }
 }
 
+async function testPhoneRegistration() {
+  const phone = `03${String(Date.now()).slice(-9)}`;
+  const username = `phonesmoke${Date.now()}`.slice(0, 28);
+
+  const start = await call('/auth/register/start', {
+    body: {
+      name: 'Phone Smoke Test',
+      username,
+      email: '',
+      phone,
+      password: 'TestPass123',
+      confirmPassword: 'TestPass123',
+    },
+  });
+  if (!start.data.devCode) {
+    throw new Error('phone register/start did not return devCode in dev mode');
+  }
+
+  const verify = await call('/auth/register/verify', {
+    body: { code: start.data.devCode, email: '', phone },
+  });
+  if (!verify.data.token) {
+    throw new Error('phone register/verify did not return a session token');
+  }
+
+  await call('/auth/logout', { headers: { Authorization: `Bearer ${verify.data.token}` } });
+  return { phone };
+}
+
 async function main() {
   console.log(`Starting dev-mode backend on port ${PORT}...`);
   const server = spawn(process.execPath, ['backend/server.js'], {
@@ -162,6 +191,10 @@ async function main() {
 
     process.stdout.write('Forgot-password flow (reset/start -> verify -> login) ... ');
     await testPasswordReset(email);
+    console.log('OK');
+
+    process.stdout.write('Phone-only signup (WhatsApp OTP path) ... ');
+    await testPhoneRegistration();
     console.log('OK');
 
     console.log('\nRegistration smoke test passed.');

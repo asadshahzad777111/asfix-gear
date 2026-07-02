@@ -41,9 +41,12 @@ async function request(path, options = {}) {
     if (err?.name === 'AbortError') {
       throw new Error(
         isOtpSend
-          ? 'Verification email bhejne mein waqt lag gaya. Dubara try karein — agar phir fail ho to Render par Gmail app password check karein.'
-          : 'Server slow hai — thori der baad dubara try karein.'
+          ? 'Verification code bhejne mein waqt lag gaya. Dubara try karein — agar phir fail ho to Gmail app password ya WhatsApp settings check karein.'
+          : 'Request timed out. Please try again.'
       );
+    }
+    if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
+      throw new Error('Network error — internet ya server check karein aur dubara try karein.');
     }
     throw new Error('Backend server is not running. Start it with: npm run dev (port 5000)');
   } finally {
@@ -67,8 +70,14 @@ async function request(path, options = {}) {
   }
 
   if (!res.ok) {
-    const error = new Error(data.error || 'Something went wrong');
+    const message = data.error || (res.status === 404
+      ? 'No account found with this Gmail or phone'
+      : res.status === 503
+        ? 'Verification service temporarily unavailable. Please try again.'
+        : 'Something went wrong');
+    const error = new Error(message);
     error.status = res.status;
+    error.code = data.code;
     throw error;
   }
   return data;

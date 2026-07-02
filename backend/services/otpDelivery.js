@@ -432,17 +432,6 @@ export async function deliverPhoneOtp(phone, code, purpose = 'verification') {
     whatsappLink: null,
   };
 
-  if (twilioConfigured()) {
-    try {
-      await sendTwilioSms(e164, body);
-      result.sent = true;
-      result.method = 'sms';
-      return result;
-    } catch (err) {
-      console.warn('[OTP] Twilio SMS failed, trying WhatsApp fallback:', err.message);
-    }
-  }
-
   if (twilioWhatsAppConfigured()) {
     try {
       await sendTwilioWhatsApp(e164, body);
@@ -462,6 +451,17 @@ export async function deliverPhoneOtp(phone, code, purpose = 'verification') {
       return result;
     } catch (err) {
       console.warn('[OTP] WhatsApp Cloud failed:', err.message);
+    }
+  }
+
+  if (twilioConfigured()) {
+    try {
+      await sendTwilioSms(e164, body);
+      result.sent = true;
+      result.method = 'sms';
+      return result;
+    } catch (err) {
+      console.warn('[OTP] Twilio SMS failed:', err.message);
     }
   }
 
