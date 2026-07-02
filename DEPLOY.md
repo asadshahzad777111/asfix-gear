@@ -49,6 +49,7 @@ git push -u origin main
    - **Environment:** Node
 
 > **Product images:** `npm run seed` only adds default products when the database is empty. It does **not** run `fix-images.js`, so staff-updated product images survive redeploys. To reset images locally: `npm run seed:images --prefix backend`.
+> **Redeploy note (Jul 2026):** Trigger deploy to verify image persistence + forgot-password modal fix.
 4. **Environment variables:** `CORS_ORIGIN` set karein (deploy ke baad section dekhein). **`NODE_ENV=production` env var mein mat lagayein** — Start Command already production set karti hai. Agar `NODE_ENV=production` build time par set ho to `npm install` devDependencies skip karta hai aur `vite: not found` aata hai.
 5. **Deploy** dabayein
 

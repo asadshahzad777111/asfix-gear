@@ -30,7 +30,7 @@ export default function CustomerLoginModal({ open, onClose }) {
   const [whatsappLink, setWhatsappLink] = useState(null);
   const [devCode, setDevCode] = useState(null);
 
-  useModalBehavior(open, onClose);
+  const { closeWithoutHistoryBack } = useModalBehavior(open, onClose);
 
   if (!open) return null;
 
@@ -226,6 +226,7 @@ export default function CustomerLoginModal({ open, onClose }) {
               className="auth-2026-forgot-link"
               onClick={() => {
                 const login = loginValue.trim();
+                closeWithoutHistoryBack();
                 handleClose();
                 navigate('/account/forgot-password', { state: login ? { login } : undefined });
               }}
@@ -291,14 +292,28 @@ export default function CustomerLoginModal({ open, onClose }) {
 
         <p className="auth-2026-foot">
           {t('account.noAccount')}{' '}
-          <Link to="/account/register" onClick={handleClose}>
+          <Link
+            to="/account/register"
+            onClick={() => {
+              closeWithoutHistoryBack();
+              handleClose();
+            }}
+          >
             {t('account.createAccount')}
           </Link>
         </p>
 
         {isStaff && (
           <p className="auth-2026-foot">
-            <Link to="/login" onClick={handleClose}>{t('nav.admin')}</Link>
+            <Link
+              to="/login"
+              onClick={() => {
+                closeWithoutHistoryBack();
+                handleClose();
+              }}
+            >
+              {t('nav.admin')}
+            </Link>
           </p>
         )}
       </div>
