@@ -1,4 +1,7 @@
 import * as store from './store.js';
+import { initStorage } from './store.js';
+
+await initStorage();
 
 const gamingCount = store.countProductsByCategory('Gaming');
 

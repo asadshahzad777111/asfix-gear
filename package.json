@@ -18,6 +18,8 @@
     "check:secrets": "node scripts/check-secrets.js",
     "check:smoke": "node scripts/smoke-test.js",
     "check:registration": "node scripts/registration-smoke.js",
+    "backup:data": "node scripts/backup-data-json.mjs",
+    "migrate:mongo": "node scripts/migrate-json-to-mongo.mjs",
     "test:seed-images": "node scripts/test-seed-preserve-images.js"
   },
   "devDependencies": {

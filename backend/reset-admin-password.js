@@ -1,4 +1,6 @@
-import { resetSuperAdminPassword, syncSuperAdminEmail } from './store.js';
+import { resetSuperAdminPassword, syncSuperAdminEmail, initStorage } from './store.js';
+
+await initStorage();
 
 const ADMIN_EMAIL = 'asadshahzad777111@gmail.com';
 const password = process.env.ADMIN_PASSWORD || 'AsFix2026!';

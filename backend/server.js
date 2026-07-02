@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getStats } from './store.js';
+import { getStats, getStorageBackend, initStorage } from './store.js';
 import productsRouter from './routes/products.js';
 import repairsRouter from './routes/repairs.js';
 import contactRouter from './routes/contact.js';
@@ -51,7 +51,7 @@ app.use('/api', (req, res, next) => {
 });
 
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', brand: 'AsFix & Gear', storage: 'json' });
+  res.json({ status: 'ok', brand: 'AsFix & Gear', storage: getStorageBackend() });
 });
 
 app.get('/api/stats', (_req, res) => {
@@ -126,12 +126,20 @@ app.use((err, _req, res, _next) => {
   return res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`AsFix & Gear API running on http://localhost:${PORT}`);
-  console.log('Storage: backend/data/data.json');
-  if (process.env.NODE_ENV === 'production') {
-    verifySmtpConnection().catch((err) => {
-      console.error('[OTP] SMTP startup check error:', err.message);
-    });
-  }
+async function startServer() {
+  const storage = await initStorage();
+  app.listen(PORT, () => {
+    console.log(`AsFix & Gear API running on http://localhost:${PORT}`);
+    console.log(`Storage: ${storage === 'mongodb' ? 'MongoDB Atlas' : 'backend/data/data.json'}`);
+    if (process.env.NODE_ENV === 'production') {
+      verifySmtpConnection().catch((err) => {
+        console.error('[OTP] SMTP startup check error:', err.message);
+      });
+    }
+  });
+}
+
+startServer().catch((err) => {
+  console.error('Failed to start server:', err.message);
+  process.exit(1);
 });
