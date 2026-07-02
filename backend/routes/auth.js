@@ -79,9 +79,30 @@ function validateGmail(email) {
 function accountNotFoundMessage(login) {
   const trimmed = String(login || '').trim();
   if (trimmed.includes('@')) {
-    return 'No account found with this Gmail address';
+    return 'Is Gmail se koi customer account nahi mila. Pehle Sign Up karein ya sahi Gmail likhein.';
   }
-  return 'No account found with this phone number';
+  return 'Is phone number se koi customer account nahi mila. Pehle Sign Up karein ya sahi number likhein.';
+}
+
+/** Customer-only flows (forgot password). Staff accounts get a clear message, not "not found". */
+function resolveCustomerUser(login, res) {
+  const user = store.findUserByLogin(login);
+  if (!user) {
+    res.status(404).json({ error: accountNotFoundMessage(login), code: 'ACCOUNT_NOT_FOUND' });
+    return null;
+  }
+  if (user.role !== 'customer') {
+    res.status(403).json({
+      error: 'Yeh staff/admin account hai. Password ke liye shop login par Staff Login use karein — yahan customer reset nahi hota.',
+      code: 'STAFF_ACCOUNT',
+    });
+    return null;
+  }
+  if (store.isUserBlocked(user)) {
+    res.status(403).json({ error: 'Your account is blocked. Contact the shop owner.' });
+    return null;
+  }
+  return user;
 }
 
 function validateUsername(username) {
@@ -457,13 +478,8 @@ router.post('/password/reset/start', resetStartLimiter, async (req, res) => {
   const login = String(req.body.login || '').trim();
   if (!login) return res.status(400).json({ error: 'Gmail or phone is required' });
 
-  const user = store.findUserByLogin(login);
-  if (!user || user.role !== 'customer') {
-    return res.status(404).json({ error: accountNotFoundMessage(login) });
-  }
-  if (store.isUserBlocked(user)) {
-    return res.status(403).json({ error: 'Your account is blocked. Contact the shop owner.' });
-  }
+  const user = resolveCustomerUser(login, res);
+  if (!user) return;
 
   const { useEmail, target } = resolveOtpChannel(user);
   if (!target) {
@@ -506,10 +522,8 @@ router.post('/password/reset/verify', resetVerifyLimiter, (req, res) => {
     return res.status(400).json({ error: 'Passwords do not match' });
   }
 
-  const user = store.findUserByLogin(login.trim());
-  if (!user || user.role !== 'customer') {
-    return res.status(404).json({ error: accountNotFoundMessage(login) });
-  }
+  const user = resolveCustomerUser(login.trim(), res);
+  if (!user) return;
 
   const { target } = resolveOtpChannel(user);
 

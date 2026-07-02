@@ -30,6 +30,7 @@ export default function AccountForgotPassword() {
   const [resetDone, setResetDone] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [errorCode, setErrorCode] = useState('');
   const [otpHint, setOtpHint] = useState('');
   const [whatsappLink, setWhatsappLink] = useState(null);
   const [devCode, setDevCode] = useState(null);
@@ -58,6 +59,7 @@ export default function AccountForgotPassword() {
     e.preventDefault();
     setSubmitting(true);
     setError('');
+    setErrorCode('');
     setOtpHint('');
     setWhatsappLink(null);
     setDevCode(null);
@@ -76,6 +78,7 @@ export default function AccountForgotPassword() {
       setResetCode('');
     } catch (err) {
       setError(err.message || t('otp.sendFailed'));
+      setErrorCode(err.code || '');
     } finally {
       setSubmitting(false);
     }
@@ -143,6 +146,17 @@ export default function AccountForgotPassword() {
           ) : resetStep === 'request' ? (
             <form onSubmit={handleResetStart}>
               {error && <AuthAlert type="error">{error}</AuthAlert>}
+              {errorCode === 'ACCOUNT_NOT_FOUND' && (
+                <p className="auth-2026-field-hint">
+                  {t('otp.noAccountHint')}{' '}
+                  <Link to="/account/register">{t('nav.signUp')}</Link>
+                </p>
+              )}
+              {errorCode === 'STAFF_ACCOUNT' && (
+                <p className="auth-2026-field-hint">
+                  <Link to="/login">{t('otp.staffLoginLink')}</Link>
+                </p>
+              )}
 
               <div className="auth-2026-field">
                 <label htmlFor="reset-login">{t('otp.loginField')}</label>
