@@ -28,6 +28,17 @@ export function canDeleteProducts(user) {
   return Boolean(user?.active && !user?.blocked && ['super_admin', 'admin'].includes(user.role));
 }
 
+/**
+ * A Super Admin can edit/delete any product. Every other staff role may only
+ * touch products they personally added — mirrors the backend check in
+ * backend/routes/products.js so the UI hides actions that would 403 anyway.
+ */
+export function canEditProduct(user, product) {
+  if (!isStaff(user)) return false;
+  if (user.role === 'super_admin') return true;
+  return product?.created_by != null && String(product.created_by) === String(user.id);
+}
+
 export function canManageAdmins(user) {
   return canManageTeam(user);
 }

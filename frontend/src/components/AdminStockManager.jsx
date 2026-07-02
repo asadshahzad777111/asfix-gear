@@ -1,5 +1,6 @@
 import { useMemo, useState } from 'react';
 import { api } from '../api/client';
+import { canEditProduct } from '../config/permissions';
 import { useTranslation } from '../context/LanguageContext';
 import { getStockStatus } from '../utils/stock';
 
@@ -7,9 +8,10 @@ import { getStockStatus } from '../utils/stock';
  * Lets staff quickly deduct stock for items sold offline (walk-in customers
  * who never touch the website checkout) or add stock back after a physical
  * restock — search by name/brand/model, then bump the count up or down
- * without opening the full Edit Product form.
+ * without opening the full Edit Product form. Only the staff member who
+ * added a product (or a Super Admin) can adjust its stock.
  */
-export default function AdminStockManager({ products, onProductUpdated }) {
+export default function AdminStockManager({ products, currentUser, onProductUpdated }) {
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [qtyById, setQtyById] = useState({});
@@ -85,6 +87,7 @@ export default function AdminStockManager({ products, onProductUpdated }) {
         ) : (
           filtered.map((p) => {
             const status = getStockStatus(p.stock);
+            const editable = canEditProduct(currentUser, p);
             return (
               <div key={p.id} className="admin-stock-row">
                 <img src={p.image} alt={p.name} className="admin-stock-row-img" />
@@ -99,36 +102,40 @@ export default function AdminStockManager({ products, onProductUpdated }) {
                     {t('admin.stockLabel', { count: p.stock })}
                   </span>
                 </div>
-                <div className="admin-stock-row-actions">
-                  <input
-                    type="number"
-                    min="1"
-                    max="9999"
-                    className="admin-stock-qty-input"
-                    value={getQty(p.id)}
-                    onChange={(e) => setQty(p.id, e.target.value)}
-                    disabled={busyId === p.id}
-                    aria-label={t('admin.stockQtyLabel')}
-                  />
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm admin-stock-btn admin-stock-btn--minus"
-                    disabled={busyId === p.id || p.stock <= 0}
-                    onClick={() => adjust(p, -1, 'offline_sale')}
-                    title={t('admin.stockSoldOfflineBtn')}
-                  >
-                    − {t('admin.stockSoldOfflineBtn')}
-                  </button>
-                  <button
-                    type="button"
-                    className="btn btn-outline btn-sm admin-stock-btn admin-stock-btn--plus"
-                    disabled={busyId === p.id}
-                    onClick={() => adjust(p, 1, 'restock')}
-                    title={t('admin.stockRestockBtn')}
-                  >
-                    + {t('admin.stockRestockBtn')}
-                  </button>
-                </div>
+                {editable ? (
+                  <div className="admin-stock-row-actions">
+                    <input
+                      type="number"
+                      min="1"
+                      max="9999"
+                      className="admin-stock-qty-input"
+                      value={getQty(p.id)}
+                      onChange={(e) => setQty(p.id, e.target.value)}
+                      disabled={busyId === p.id}
+                      aria-label={t('admin.stockQtyLabel')}
+                    />
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm admin-stock-btn admin-stock-btn--minus"
+                      disabled={busyId === p.id || p.stock <= 0}
+                      onClick={() => adjust(p, -1, 'offline_sale')}
+                      title={t('admin.stockSoldOfflineBtn')}
+                    >
+                      − {t('admin.stockSoldOfflineBtn')}
+                    </button>
+                    <button
+                      type="button"
+                      className="btn btn-outline btn-sm admin-stock-btn admin-stock-btn--plus"
+                      disabled={busyId === p.id}
+                      onClick={() => adjust(p, 1, 'restock')}
+                      title={t('admin.stockRestockBtn')}
+                    >
+                      + {t('admin.stockRestockBtn')}
+                    </button>
+                  </div>
+                ) : (
+                  <span className="admin-product-locked">🔒 {t('admin.ownerOnly')}</span>
+                )}
               </div>
             );
           })

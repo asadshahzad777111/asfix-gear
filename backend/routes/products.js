@@ -26,6 +26,21 @@ function isStaffUser(user) {
   return Boolean(user && STAFF.includes(user.role));
 }
 
+// A Super Admin can edit/delete anything (shop owner override). Every other
+// staff role (admin, editor) may only touch products they personally added —
+// this keeps one staff member from changing someone else's listing, price,
+// stock, or discount by mistake (or on purpose).
+function canEditProduct(user, product) {
+  if (user.role === 'super_admin') return true;
+  return product.created_by != null && String(product.created_by) === String(user.id);
+}
+
+function ownerOnlyResponse(res) {
+  return res.status(403).json({
+    error: 'You can only edit products you added yourself. Ask a Super Admin to change this one.',
+  });
+}
+
 function mapProductsForRequest(products, user) {
   if (isStaffUser(user)) return products;
   return products.map((p) => store.stripProductCost(p));
@@ -80,6 +95,8 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       featured,
       discount_percent,
       warranty,
+      created_by: req.auth.user.id,
+      created_by_name: req.auth.user.name || req.auth.user.username,
     });
 
     res.status(201).json(product);
@@ -91,6 +108,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
 router.put('/:id', requireAuth, requireRole(...STAFF), (req, res) => {
   const existing = store.getProductById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
+  if (!canEditProduct(req.auth.user, existing)) return ownerOnlyResponse(res);
 
   try {
     const body = sanitizeProductBody(req.body);
@@ -105,6 +123,7 @@ router.put('/:id', requireAuth, requireRole(...STAFF), (req, res) => {
 router.patch('/:id/discount', requireAuth, requireRole(...STAFF), (req, res) => {
   const existing = store.getProductById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
+  if (!canEditProduct(req.auth.user, existing)) return ownerOnlyResponse(res);
 
   const product = store.setProductDiscount(req.params.id, req.body.discount_percent);
   res.json(product);
@@ -118,6 +137,7 @@ router.patch('/:id/discount', requireAuth, requireRole(...STAFF), (req, res) => 
 router.patch('/:id/stock', requireAuth, requireRole(...STAFF), (req, res) => {
   const existing = store.getProductById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
+  if (!canEditProduct(req.auth.user, existing)) return ownerOnlyResponse(res);
 
   const delta = Number(req.body.delta);
   if (!Number.isFinite(delta) || delta === 0) {
@@ -140,6 +160,10 @@ router.patch('/:id/stock', requireAuth, requireRole(...STAFF), (req, res) => {
 });
 
 router.delete('/:id', requireAuth, requireRole(...CAN_DELETE), (req, res) => {
+  const existing = store.getProductById(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Product not found' });
+  if (!canEditProduct(req.auth.user, existing)) return ownerOnlyResponse(res);
+
   const deleted = store.deleteProduct(req.params.id);
   if (!deleted) return res.status(404).json({ error: 'Product not found' });
   res.json({ message: 'Product deleted' });

@@ -15,6 +15,12 @@ import { useEffect, useRef } from 'react';
  *    `onClose`.
  *
  * Usage: call unconditionally in the modal component, gated by `open`.
+ *
+ * Returns `closeWithoutHistoryBack()` — call it right before navigating
+ * elsewhere from inside the modal (e.g. picking a model routes to /shop).
+ * Without it, the normal cleanup below would call `history.back()` to undo
+ * the modal's pushState and land the user back one entry too many, which
+ * cancels out the navigation that was just triggered.
  */
 export default function useModalBehavior(open, onClose) {
   const closingViaPopRef = useRef(false);
@@ -28,6 +34,7 @@ export default function useModalBehavior(open, onClose) {
 
     window.history.pushState({ modal: true }, '');
     pushedRef.current = true;
+    closingViaPopRef.current = false;
 
     const handlePopState = () => {
       closingViaPopRef.current = true;
@@ -46,4 +53,10 @@ export default function useModalBehavior(open, onClose) {
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  const closeWithoutHistoryBack = () => {
+    closingViaPopRef.current = true;
+  };
+
+  return { closeWithoutHistoryBack };
 }

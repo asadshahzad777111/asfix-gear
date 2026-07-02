@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import DiscountPicker from './DiscountPicker';
 import { hasDiscount } from '../utils/pricing';
 
-export default function AdminDiscountPanel({ product, onUpdated }) {
+export default function AdminDiscountPanel({ product, onUpdated, canEdit = true }) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [enabled, setEnabled] = useState(hasDiscount(product));
@@ -45,6 +45,14 @@ export default function AdminDiscountPanel({ product, onUpdated }) {
   };
 
   const applyDiscount = (pct) => save(true, pct ?? percent);
+
+  if (!canEdit) {
+    return hasDiscount(product) ? (
+      <span className="btn-discount-admin has-sale" style={{ cursor: 'default' }}>
+        🏷️ {product.discount_percent}% OFF
+      </span>
+    ) : null;
+  }
 
   return (
     <div className="admin-discount-wrap">

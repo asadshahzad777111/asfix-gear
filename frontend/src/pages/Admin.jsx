@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { canDeleteProducts, canManageTeam, canManageShopSettings, canViewSalesReport, roleLabel } from '../config/permissions';
+import { canDeleteProducts, canEditProduct, canManageTeam, canManageShopSettings, canViewSalesReport, roleLabel } from '../config/permissions';
 import PageHeader from '../components/PageHeader';
 import AddProductForm from '../components/AddProductForm';
 import AdminDiscountPanel from '../components/AdminDiscountPanel';
@@ -84,6 +84,11 @@ export default function Admin() {
 
   const handleDeleteProduct = async (id, name) => {
     if (!allowDelete) return;
+    const product = products.find((p) => p.id === id);
+    if (product && !canEditProduct(user, product)) {
+      alert(t('admin.ownerOnly'));
+      return;
+    }
     if (!confirm(t('admin.deleteConfirm', { name }))) return;
     try {
       await api.deleteProduct(id);
@@ -94,6 +99,10 @@ export default function Admin() {
   };
 
   const handleEditProduct = (product) => {
+    if (!canEditProduct(user, product)) {
+      alert(t('admin.ownerOnly'));
+      return;
+    }
     setEditingProduct(product);
     setTab('add');
     window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -199,6 +208,7 @@ export default function Admin() {
           ) : tab === 'stock' ? (
             <AdminStockManager
               products={products}
+              currentUser={user}
               onProductUpdated={(updated) =>
                 setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
               }
@@ -217,7 +227,9 @@ export default function Admin() {
                     <button type="button" className="btn btn-primary" onClick={() => setTab('add')}>➕ Add Product</button>
                   </div>
                 ) : (
-                  products.map((p) => (
+                  products.map((p) => {
+                    const editable = canEditProduct(user, p);
+                    return (
                     <div key={p.id} className={`admin-product-card glass-card ${hasDiscount(p) ? 'on-sale' : ''}`}>
                       <div className="admin-product-img-wrap">
                         <img src={p.image} alt={p.name} />
@@ -243,23 +255,36 @@ export default function Admin() {
                         </p>
                         {p.warranty ? <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>🛡️ {p.warranty}</p> : null}
                         {p.featured ? <span className="featured-tag">⭐ Featured</span> : null}
+                        <p className="admin-product-owner">
+                          {p.created_by_name
+                            ? t('admin.addedBy', { name: p.created_by_name })
+                            : t('admin.addedByLegacy')}
+                        </p>
                         <AdminDiscountPanel
                           product={p}
+                          canEdit={editable}
                           onUpdated={(updated) => setProducts((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))}
                         />
                         <div className="admin-product-actions">
-                          <button type="button" className="btn btn-primary btn-sm" onClick={() => handleEditProduct(p)}>
-                            Edit
-                          </button>
-                          {allowDelete && (
-                            <button type="button" className="btn btn-outline btn-sm" onClick={() => handleDeleteProduct(p.id, p.name)}>
-                              Delete
-                            </button>
+                          {editable ? (
+                            <>
+                              <button type="button" className="btn btn-primary btn-sm" onClick={() => handleEditProduct(p)}>
+                                Edit
+                              </button>
+                              {allowDelete && (
+                                <button type="button" className="btn btn-outline btn-sm" onClick={() => handleDeleteProduct(p.id, p.name)}>
+                                  Delete
+                                </button>
+                              )}
+                            </>
+                          ) : (
+                            <span className="admin-product-locked">🔒 {t('admin.ownerOnly')}</span>
                           )}
                         </div>
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             </>

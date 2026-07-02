@@ -4150,6 +4150,25 @@ img { max-width: 100%; height: auto; display: block; }
   margin-top: 0.5rem;
 }
 
+.admin-product-owner {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+  opacity: 0.85;
+  margin-top: 0.2rem;
+}
+
+.admin-product-locked {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  padding: 0.4rem 0.65rem;
+  border-radius: 999px;
+  background: var(--nav-hover);
+  border: 1px solid var(--border);
+}
+
 .role-badge {
   display: inline-block;
   padding: 0.25rem 0.6rem;

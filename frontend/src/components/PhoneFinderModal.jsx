@@ -17,7 +17,7 @@ export default function PhoneFinderModal({ open, category, onClose }) {
   const navigate = useNavigate();
   const [brand, setBrand] = useState(null);
 
-  useModalBehavior(open, onClose);
+  const { closeWithoutHistoryBack } = useModalBehavior(open, onClose);
 
   if (!open) return null;
 
@@ -25,6 +25,10 @@ export default function PhoneFinderModal({ open, category, onClose }) {
 
   const goToShop = (params) => {
     const search = new URLSearchParams({ category, ...params });
+    // Tell the modal-behavior hook we're navigating away, not just closing
+    // in place — otherwise its cleanup calls history.back() and cancels
+    // this very navigation, bouncing the user back to where they started.
+    closeWithoutHistoryBack();
     navigate(`/shop?${search.toString()}`);
     onClose();
   };

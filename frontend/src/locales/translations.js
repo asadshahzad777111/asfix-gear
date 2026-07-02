@@ -299,6 +299,9 @@ export const translations = {
       stockRestockBtn: 'Restock',
       stockSoldOffline: 'Removed {qty} × "{name}" from stock (sold offline). New stock: {stock}.',
       stockRestocked: 'Added {qty} × "{name}" back to stock. New stock: {stock}.',
+      addedBy: 'Added by {name}',
+      addedByLegacy: 'Added before staff-tracking — Super Admin only',
+      ownerOnly: 'Only the staff member who added this product (or a Super Admin) can change it.',
     },
     sales: {
       tab: 'Sales & Profit',
@@ -1098,6 +1101,9 @@ export const translations = {
       stockRestockBtn: 'Restock',
       stockSoldOffline: '{qty} × "{name}" stock se hata diya (offline sale). Naya stock: {stock}.',
       stockRestocked: '{qty} × "{name}" stock mein wapas add ho gaya. Naya stock: {stock}.',
+      addedBy: '{name} ne add kiya',
+      addedByLegacy: 'Staff-tracking se pehle add hua — sirf Super Admin edit kar sakta hai',
+      ownerOnly: 'Sirf wo staff member jisne ye product add kiya (ya Super Admin) isay change kar sakta hai.',
     },
     sales: {
       tab: 'Sales & Profit',

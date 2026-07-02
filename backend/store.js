@@ -316,6 +316,11 @@ export function createProduct(input) {
       discount_percent: Math.min(90, Math.max(0, Number(input.discount_percent) || 0)),
       warranty: String(input.warranty || '').trim(),
       created_at: now(),
+      // Ownership: whoever adds a product is the only one (besides a Super
+      // Admin) who can edit its details/stock/discount going forward — keeps
+      // staff from stepping on each other's listings.
+      created_by: input.created_by ?? null,
+      created_by_name: String(input.created_by_name || '').trim(),
     };
     data.products.push(product);
     return product;
@@ -448,9 +453,12 @@ export function insertProducts(items) {
   });
 }
 
+// Used for any response that goes to a customer/public request — strips
+// internal-only fields (cost/profit, who added it, offline stock-adjustment
+// history) that have no business being visible outside the staff dashboard.
 export function stripProductCost(product) {
   if (!product) return product;
-  const { cost_price: _omit, ...rest } = product;
+  const { cost_price: _omit, created_by: _cb, created_by_name: _cbn, stock_log: _log, ...rest } = product;
   return rest;
 }
 

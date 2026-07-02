@@ -187,12 +187,18 @@
     z-index: 200;
   }
 
+  /* Repair, staff-login, and chat all share one clean bottom-right row
+     instead of repair floating awkwardly in a row by itself above a
+     staff-login + chat pair — easier to scan and no more "orphan" button. */
   .floating-repair-btn {
-    right: 0.65rem;
-    bottom: calc(var(--float-dock-bottom) + var(--float-dock-size) + 0.55rem);
-    padding: 0.55rem 0.85rem;
-    font-size: 0.8rem;
-    z-index: 197;
+    right: calc(0.65rem + var(--float-dock-size) + var(--float-dock-gap));
+    bottom: var(--float-dock-bottom);
+    width: var(--float-dock-size);
+    height: var(--float-dock-size);
+    padding: 0;
+    justify-content: center;
+    border-radius: 50%;
+    z-index: 198;
   }
 
   .floating-repair-btn-label {
@@ -205,7 +211,7 @@
 
   .staff-access {
     bottom: var(--float-dock-bottom);
-    right: calc(0.65rem + var(--float-dock-size) + var(--float-dock-gap));
+    right: calc(0.65rem + (var(--float-dock-size) + var(--float-dock-gap)) * 2);
     z-index: 198;
   }
 
