@@ -1,4 +1,7 @@
 import { ensureSuperAdmin, syncSuperAdminEmail, resetSuperAdminPassword, initStorage } from './store.js';
+import { exitIfSeedSkipped } from './seed-skip.js';
+
+exitIfSeedSkipped('seed-admin.js');
 
 await initStorage();
 

@@ -13,6 +13,7 @@
     "seed": "npm run seed --prefix backend",
     "reset-admin": "npm run reset-admin --prefix backend",
     "build": "npm run build --prefix frontend",
+    "build:render": "npm run install:prod && npm run build",
     "start:prod": "npm run build && set NODE_ENV=production&& node backend/server.js",
     "check:i18n": "node scripts/check-i18n.js",
     "check:secrets": "node scripts/check-secrets.js",
