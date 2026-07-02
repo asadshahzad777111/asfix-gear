@@ -1,3 +1,5 @@
+// Dev/manual only — resets product images to defaults. NOT run during deploy (npm run seed).
+// Use: npm run seed:images --prefix backend
 import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';

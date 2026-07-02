@@ -5,7 +5,8 @@
   "scripts": {
     "dev": "node --watch server.js",
     "start": "node server.js",
-    "seed": "node seed.js && node seed-gaming.js && node seed-admin.js && node fix-images.js",
+    "seed": "node seed.js && node seed-gaming.js && node seed-admin.js",
+    "seed:images": "node fix-images.js",
     "reset-admin": "node reset-admin-password.js"
   },
   "dependencies": {
