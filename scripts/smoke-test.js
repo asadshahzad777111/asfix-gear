@@ -62,12 +62,35 @@ async function checkRoute(page, route) {
   page.on('console', onConsole);
 
   try {
-    await page.goto(`${BASE_URL}${route}`, { waitUntil: 'networkidle', timeout: 15000 });
+    // Intentionally NOT `waitUntil: 'networkidle'` — this app (like most
+    // real sites) has legitimate long-lived/periodic network activity on
+    // almost every page (shop-status polling, the optional Google
+    // Translate widget script, admin/staff desk polling, etc.), so
+    // "no network for 500ms" can simply never happen and the goto call
+    // times out even though the page rendered fine. `load` + an explicit
+    // wait for real React content (not just the route's Suspense
+    // fallback spinner) is both faster and far more reliable.
+    await page.goto(`${BASE_URL}${route}`, { waitUntil: 'load', timeout: 15000 });
+    let stuckOnFallback = false;
+    try {
+      await page.waitForFunction(
+        () => {
+          const root = document.getElementById('root');
+          if (!root || !root.innerHTML.trim()) return false;
+          return !root.querySelector('.page-fallback');
+        },
+        { timeout: 12000 }
+      );
+    } catch {
+      stuckOnFallback = true;
+    }
     await page.waitForTimeout(300);
 
     const rootHtml = await page.evaluate(() => document.getElementById('root')?.innerHTML || '');
     if (!rootHtml.trim()) {
       fatalErrors.push('Blank page — #root rendered no content');
+    } else if (stuckOnFallback) {
+      fatalErrors.push('Page stuck on loading spinner — lazy route chunk never rendered');
     }
     return { fatalErrors, warnings };
   } finally {

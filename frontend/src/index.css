@@ -956,8 +956,14 @@ img { max-width: 100%; height: auto; display: block; }
 
 .repair-model-group strong {
   display: block;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primary);
   margin-bottom: 0.5rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--border);
 }
 
 .repair-model-group-body {
@@ -2429,6 +2435,24 @@ img { max-width: 100%; height: auto; display: block; }
     width: var(--touch-min);
     height: var(--touch-min);
   }
+
+  .model-multi-picker-trigger {
+    min-height: var(--touch-min);
+  }
+
+  .model-multi-picker-option {
+    min-height: 2.5rem;
+    padding: 0.55rem 0.9rem;
+  }
+
+  .model-multi-picker-selected-chip button {
+    min-width: 1.5rem;
+    min-height: 1.5rem;
+  }
+
+  .model-multi-picker-done {
+    min-height: var(--touch-min);
+  }
 }
 
 /* ── Logo & Brand ── */
@@ -2738,6 +2762,239 @@ img { max-width: 100%; height: auto; display: block; }
   .form-row-2 {
     grid-template-columns: 1fr;
   }
+}
+
+.model-multi-picker {
+  position: relative;
+}
+
+/* Mobile: native <select> path — same styling hook as Brand field */
+.model-multi-picker--native .model-multi-picker-native-select {
+  margin-bottom: 0;
+  min-height: var(--touch-min, 44px);
+  touch-action: manipulation;
+}
+
+.model-multi-picker--native .model-multi-picker-chips {
+  margin-top: 0.5rem;
+}
+
+.model-multi-picker--native .model-multi-picker-custom {
+  margin-top: 0.65rem;
+}
+
+.model-multi-picker-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  padding: 0.65rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--border);
+  background: var(--bg-elevated);
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  cursor: pointer;
+  text-align: left;
+  transition: border-color 0.15s ease;
+}
+
+.model-multi-picker-trigger:hover:not(:disabled) { border-color: var(--primary); }
+.model-multi-picker-trigger:disabled { cursor: not-allowed; opacity: 0.6; }
+.model-multi-picker-trigger.has-value { color: var(--text); font-weight: 600; }
+
+.model-multi-picker-trigger-text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.model-multi-picker-arrow {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  transition: transform 0.15s ease;
+}
+
+.model-multi-picker-arrow.is-open { transform: rotate(180deg); }
+
+.model-multi-picker-panel {
+  position: absolute;
+  top: calc(100% + 0.4rem);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--bg-elevated);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  padding: 0.65rem;
+}
+
+/* Mobile: the Add Product form lives inside `.modal-panel`, a height-limited
+   `overflow-y: auto` scroll container. An absolutely positioned flyout
+   anchored under the trigger gets clipped by that ancestor once its content
+   is taller than the room left below the trigger, which is why the model
+   list could fail to show up on phones even though Brand's native <select>
+   never has this problem. `ModelMultiPicker.jsx` portals the open panel to
+   `document.body` and adds this class instead, turning it into a fixed
+   bottom sheet that always renders on top, full size, regardless of scroll
+   position inside the modal. */
+.model-multi-picker-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 600;
+  background: rgba(10, 10, 15, 0.6);
+  animation: fadeIn 0.15s ease;
+}
+
+.model-multi-picker-panel--sheet {
+  position: fixed;
+  top: auto;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 601;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-height: 78vh;
+  max-height: 78dvh;
+  border-radius: 20px 20px 0 0;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.45);
+  padding: 0.6rem 0.85rem calc(0.85rem + env(safe-area-inset-bottom, 0px));
+  animation: modelSheetUp 0.2s ease;
+}
+
+.model-multi-picker-panel--sheet .model-multi-picker-scroll {
+  flex: 1 1 auto;
+  max-height: none;
+}
+
+.model-multi-picker-sheet-handle {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--border);
+  margin: 0 auto 0.65rem;
+  flex-shrink: 0;
+}
+
+@keyframes modelSheetUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+.model-multi-picker-done {
+  width: 100%;
+  margin-top: 0.65rem;
+  padding: 0.5rem;
+  border-radius: 10px;
+  border: 1px solid var(--primary);
+  background: var(--primary);
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.model-multi-picker-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  margin-top: 0.5rem;
+}
+
+.model-multi-picker-selected-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.model-multi-picker-selected-chip button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0;
+  opacity: 0.85;
+}
+
+.model-multi-picker-selected-chip button:hover { opacity: 1; }
+
+.model-multi-picker-search {
+  width: 100%;
+  margin-bottom: 0.6rem;
+}
+
+.model-multi-picker-scroll {
+  max-height: 220px;
+  overflow-y: auto;
+  padding-right: 0.25rem;
+  border-top: 1px dashed var(--border);
+  padding-top: 0.6rem;
+}
+
+.model-multi-picker-series { margin-bottom: 0.85rem; }
+.model-multi-picker-series:last-child { margin-bottom: 0; }
+
+.model-multi-picker-series-name {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  margin-bottom: 0.4rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.model-multi-picker-options {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.model-multi-picker-option {
+  padding: 0.4rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 0.78rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease;
+}
+
+.model-multi-picker-option:hover {
+  border-color: var(--primary);
+  background: var(--nav-hover);
+}
+
+.model-multi-picker-option.is-selected {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+.model-multi-picker-custom {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.65rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--border);
+}
+
+.model-multi-picker-custom input {
+  flex: 1;
+  min-width: 0;
 }
 
 .input-with-prefix {

@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import DiscountPicker, { DiscountRibbon, ProductPrice } from './DiscountPicker';
 import { CATEGORIES, EMPTY_PRODUCT, DEFAULT_IMAGES, SHOP_BRANDS, getDefaultImage } from '../config/products';
-import { getModelsForShopBrand } from '../config/repairModels';
+import ModelMultiPicker from './ModelMultiPicker';
 import { useTranslation } from '../context/LanguageContext';
 
 const isDefaultImage = (url) => Object.values(DEFAULT_IMAGES).includes(url);
@@ -70,11 +70,6 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
     reader.onload = () => setField('image', reader.result);
     reader.readAsDataURL(file);
   };
-
-  const modelSuggestions = useMemo(
-    () => (product.brand ? getModelsForShopBrand(product.brand) : []),
-    [product.brand]
-  );
 
   const buildPayload = () => ({
     name: product.name.trim(),
@@ -184,18 +179,16 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
             </div>
             <div className="form-group">
               <label>Compatible Model(s)</label>
-              <input
-                list="model-suggestions"
+              <ModelMultiPicker
+                brand={product.brand}
                 value={product.compatible_models}
-                onChange={(e) => setField('compatible_models', e.target.value)}
-                placeholder={product.brand ? 'e.g. iPhone 13, iPhone 13 Pro' : 'Pehle brand select karein'}
+                onChange={(v) => setField('compatible_models', v)}
               />
-              <datalist id="model-suggestions">
-                {modelSuggestions.map((m) => (
-                  <option key={m} value={m} />
-                ))}
-              </datalist>
-              <p className="field-hint">Comma se alag kar ke multiple models likh sakte hain.</p>
+              <p className="field-hint">
+                {product.brand
+                  ? 'Scroll kar ke jitne models fit hon utne tap karein — ya list mein na ho to neeche type karein.'
+                  : 'Brand select karein to yahan scrollable model list aa jayegi.'}
+              </p>
             </div>
           </div>
 
@@ -247,12 +240,11 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
           </div>
 
           <div className="form-group">
-            <label>Description *</label>
+            <label>Description (optional)</label>
             <textarea
               value={product.description}
               onChange={(e) => setField('description', e.target.value)}
-              placeholder="Product ki detail likhein — quality, color, compatibility..."
-              required
+              placeholder="Product ki detail likhein — quality, color, compatibility... (chahen to khaali chor sakte hain)"
               rows={3}
             />
           </div>

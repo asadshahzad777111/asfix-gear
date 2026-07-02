@@ -187,7 +187,7 @@ export default function AccountLogin() {
 
     try {
       const data = await api.loginOtpVerify({ login: loginValue.trim(), code: otp });
-      finishLogin(data);
+      await finishLogin(data);
     } catch (err) {
       setError(err.message || t('otp.verifyFailed'));
     } finally {

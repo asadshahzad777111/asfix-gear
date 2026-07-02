@@ -11,7 +11,7 @@ import ordersRouter from './routes/orders.js';
 import shopRouter from './routes/shop.js';
 import adminRouter from './routes/admin.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
-import { apiLimiter, authLimiter, writeLimiter, otpLimiter } from './middleware/rateLimit.js';
+import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -30,7 +30,24 @@ app.use('/api', (_req, res, next) => {
   res.set('Cache-Control', 'no-store, no-cache, must-revalidate');
   next();
 });
-app.use('/api', apiLimiter);
+// Skip the generic API limiter for /api/auth — those routes already carry
+// their own carefully-tuned per-action limiters (see routes/auth.js). Without
+// this exclusion, a customer typing in a *correct* 6-digit OTP would still
+// get gated by this shared, 60-second, all-of-/api bucket first: on a shared
+// IP (mobile-carrier CGNAT, or a shop's own WiFi shared between the staff
+// admin desk and in-store customer WiFi — both very common for this
+// business), ordinary background traffic (product/category loads, shop
+// status polling, admin desk polling, chat assistant, etc.) from anyone on
+// that IP can exhaust the 120-per-minute budget on its own. The customer's
+// verify request then gets a flat "Too many requests" 429 that never
+// mentions OTP, which looks exactly like "the page just doesn't move
+// forward after entering the code" with no obvious cause — the same failure
+// mode this file's own rate-limit isolation was meant to prevent, just one
+// layer higher than the fix originally covered.
+app.use('/api', (req, res, next) => {
+  if (req.path.startsWith('/auth')) return next();
+  return apiLimiter(req, res, next);
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok', brand: 'AsFix & Gear', storage: 'json' });
@@ -40,12 +57,10 @@ app.get('/api/stats', (_req, res) => {
   res.json(getStats());
 });
 
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/register', authLimiter);
-app.use('/api/auth/register/start', otpLimiter);
-app.use('/api/auth/register/verify', authLimiter);
-app.use('/api/auth/login/otp/start', otpLimiter);
-app.use('/api/auth/login/otp/verify', authLimiter);
+// Auth-specific rate limiters (login, OTP send, OTP verify) are applied
+// directly on each route inside routes/auth.js, not mounted here — see the
+// comment in middleware/rateLimit.js for why a shared/prefix-mounted
+// limiter previously caused correct OTP codes to get silently 429'd.
 app.use('/api/auth', authRouter);
 app.use('/api/products', productsRouter);
 app.use('/api/repairs', writeLimiter, repairsRouter);

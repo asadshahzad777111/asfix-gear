@@ -51,13 +51,6 @@ export function rateLimit({ windowMs = 60_000, max = 60, message = 'Too many req
   };
 }
 
-/** Stricter limits for auth / public write endpoints */
-export const authLimiter = rateLimit({
-  windowMs: 15 * 60_000,
-  max: 20,
-  message: 'Too many login attempts. Wait a few minutes.',
-});
-
 export const writeLimiter = rateLimit({
   windowMs: 60_000,
   max: 15,
@@ -69,8 +62,16 @@ export const apiLimiter = rateLimit({
   max: 120,
 });
 
-export const otpLimiter = rateLimit({
-  windowMs: 15 * 60_000,
-  max: 5,
-  message: 'Too many verification codes requested. Wait a few minutes.',
-});
+// NOTE: auth-specific limiters (login, OTP send, OTP verify for
+// register/login/reset) are created individually in backend/routes/auth.js
+// via the `rateLimit()` factory above — one instance per route. Do NOT
+// reintroduce a single shared "authLimiter" mounted at a parent path
+// (e.g. app.use('/api/auth/login', authLimiter)) in server.js: Express's
+// app.use() prefix-matches sub-paths (so a mount at '/api/auth/login' also
+// runs for '/api/auth/login/otp/start' and '/api/auth/login/otp/verify'),
+// and a single limiter instance reused across multiple mounts/routes shares
+// one bucket per client IP. That combination previously caused unrelated
+// auth actions (password login, OTP send, OTP verify) to silently eat into
+// each other's budget — customers behind a shared/mobile-carrier IP could
+// get 429'd right when submitting a *correct* 6-digit code, which looked
+// like "the page just doesn't move forward" with no obvious cause.

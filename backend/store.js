@@ -149,6 +149,15 @@ function ensureDataFile() {
 
 const LOCK_FILE = path.join(DATA_DIR, '.data.lock');
 const LOCK_MAX_SPINS = 200;
+// If the process holding the lock dies mid-write (Ctrl+C, nodemon restart,
+// terminal closed, crash) without reaching the `finally` cleanup, the lock
+// file is left behind forever. Every future request that mutates data —
+// including OTP verification for signup/login/password-reset — would then
+// spin for the full LOCK_MAX_SPINS window and permanently fail with "Data
+// store is busy", which from a user typing in a *correct* 6-digit code looks
+// exactly like "the page just doesn't move forward", with no code-level bug
+// to find. Treat any lock file older than this as abandoned and reclaim it.
+const LOCK_STALE_MS = 3000;
 
 function sleepSync(ms) {
   const end = Date.now() + ms;
@@ -163,6 +172,15 @@ function acquireDataLock() {
       fs.writeFileSync(LOCK_FILE, String(process.pid), { flag: 'wx' });
       return;
     } catch {
+      try {
+        const stat = fs.statSync(LOCK_FILE);
+        if (Date.now() - stat.mtimeMs > LOCK_STALE_MS) {
+          fs.unlinkSync(LOCK_FILE);
+          continue;
+        }
+      } catch {
+        /* lock file vanished between the failed write and this check — fine, just retry */
+      }
       sleepSync(5);
     }
   }
@@ -309,7 +327,7 @@ export function createProduct(input) {
       compatible_models: String(input.compatible_models || '').trim(),
       price: Number(input.price),
       cost_price: Math.max(0, Number(input.cost_price) || 0),
-      description: input.description,
+      description: String(input.description || '').trim(),
       image: input.image || '',
       stock: Number(input.stock) || 0,
       featured: input.featured ? 1 : 0,

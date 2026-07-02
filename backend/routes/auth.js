@@ -3,8 +3,54 @@ import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { sanitizeUser, generateOtpCode, hashOtp, verifyOtp, otpExpiry, hashPassword } from '../auth/crypto.js';
 import { deliverEmailOtp, deliverPhoneOtp, OtpDeliveryError } from '../services/otpDelivery.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 const router = Router();
 const SUPER_ADMIN = ['super_admin'];
+
+// Each auth action gets its own rate-limit bucket (own `rateLimit()` call =
+// own limiterId), scoped to exactly one route. This intentionally avoids
+// sharing a single limiter instance across multiple endpoints — e.g. a
+// customer requesting a login OTP, then verifying it, should never eat into
+// the budget used for password-login attempts or a totally different flow
+// like password reset. Verify-step limiters allow more attempts than the
+// send-step limiters since users legitimately mistype a 6-digit code now
+// and then; per-code brute-force protection is already enforced separately
+// in store.verifyAndConsumeCode (5 attempts per code, then it's invalidated).
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 20,
+  message: 'Too many login attempts. Wait a few minutes.',
+});
+const registerStartLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 5,
+  message: 'Too many verification codes requested. Wait a few minutes.',
+});
+const registerVerifyLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 15,
+  message: 'Too many attempts. Wait a few minutes and try again.',
+});
+const loginOtpStartLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 5,
+  message: 'Too many verification codes requested. Wait a few minutes.',
+});
+const loginOtpVerifyLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 15,
+  message: 'Too many attempts. Wait a few minutes and try again.',
+});
+const resetStartLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 5,
+  message: 'Too many verification codes requested. Wait a few minutes.',
+});
+const resetVerifyLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 15,
+  message: 'Too many attempts. Wait a few minutes and try again.',
+});
 
 function validatePassword(password) {
   if (!password || String(password).length < 6) {
@@ -56,7 +102,7 @@ function validateStaffPayload(body, requirePassword = true) {
   };
 }
 
-router.post('/login', (req, res) => {
+router.post('/login', loginLimiter, (req, res) => {
   const { login, password } = req.body;
   if (!login?.trim() || !password) {
     return res.status(400).json({ error: 'Login and password are required' });
@@ -137,7 +183,7 @@ function respondOtpDeliveryError(res, err, logTag) {
   return res.status(500).json({ error: 'Could not send verification code. Try again later.' });
 }
 
-router.post('/register/start', async (req, res) => {
+router.post('/register/start', registerStartLimiter, async (req, res) => {
   const parsed = parseCustomerRegistration(req.body);
   if (parsed.error) return res.status(400).json({ error: parsed.error });
 
@@ -208,7 +254,7 @@ function validateOtpCode(code) {
   return { code: codeStr };
 }
 
-router.post('/register/verify', (req, res) => {
+router.post('/register/verify', registerVerifyLimiter, (req, res) => {
   const { code, email, phone } = req.body;
   const codeResult = validateOtpCode(code);
   if (codeResult.error) return res.status(400).json({ error: codeResult.error });
@@ -220,12 +266,18 @@ router.post('/register/verify', (req, res) => {
     return res.status(400).json({ error: 'Email or phone is required' });
   }
 
-  const result = store.verifyAndConsumeCode({
-    purpose: 'register',
-    target,
-    code: codeResult.code,
-    verifyFn: verifyOtp,
-  });
+  let result;
+  try {
+    result = store.verifyAndConsumeCode({
+      purpose: 'register',
+      target,
+      code: codeResult.code,
+      verifyFn: verifyOtp,
+    });
+  } catch (err) {
+    console.error('[register/verify] store error:', err);
+    return res.status(503).json({ error: 'Could not verify the code right now. Please try again.' });
+  }
 
   if (!result.ok) {
     const messages = {
@@ -251,7 +303,7 @@ router.post('/register/verify', (req, res) => {
   }
 });
 
-router.post('/login/otp/start', async (req, res) => {
+router.post('/login/otp/start', loginOtpStartLimiter, async (req, res) => {
   const login = String(req.body.login || '').trim();
   if (!login) return res.status(400).json({ error: 'Gmail or phone is required' });
 
@@ -312,7 +364,7 @@ router.post('/login/otp/start', async (req, res) => {
   }
 });
 
-router.post('/login/otp/verify', (req, res) => {
+router.post('/login/otp/verify', loginOtpVerifyLimiter, (req, res) => {
   const { code, login } = req.body;
   if (!login?.trim()) return res.status(400).json({ error: 'Gmail or phone is required' });
   const codeResult = validateOtpCode(code);
@@ -330,12 +382,18 @@ router.post('/login/otp/verify', (req, res) => {
     (loginKey === emailKey || loginKey === user.username || (!phoneKey && !loginPhone));
   const target = useEmail ? emailKey : phoneKey || loginPhone;
 
-  const result = store.verifyAndConsumeCode({
-    purpose: 'login',
-    target,
-    code: codeResult.code,
-    verifyFn: verifyOtp,
-  });
+  let result;
+  try {
+    result = store.verifyAndConsumeCode({
+      purpose: 'login',
+      target,
+      code: codeResult.code,
+      verifyFn: verifyOtp,
+    });
+  } catch (err) {
+    console.error('[login/otp/verify] store error:', err);
+    return res.status(503).json({ error: 'Could not verify the code right now. Please try again.' });
+  }
 
   if (!result.ok) {
     const messages = {
@@ -375,7 +433,7 @@ function resolveOtpTarget(login, user) {
   return { useEmail, target: useEmail ? emailKey : phoneKey || loginPhone };
 }
 
-router.post('/password/reset/start', async (req, res) => {
+router.post('/password/reset/start', resetStartLimiter, async (req, res) => {
   const login = String(req.body.login || '').trim();
   if (!login) return res.status(400).json({ error: 'Gmail or phone is required' });
 
@@ -417,7 +475,7 @@ router.post('/password/reset/start', async (req, res) => {
   }
 });
 
-router.post('/password/reset/verify', (req, res) => {
+router.post('/password/reset/verify', resetVerifyLimiter, (req, res) => {
   const { code, login, newPassword, confirmPassword } = req.body;
   if (!login?.trim()) return res.status(400).json({ error: 'Gmail or phone is required' });
   const codeResult = validateOtpCode(code);
@@ -433,12 +491,18 @@ router.post('/password/reset/verify', (req, res) => {
 
   const { target } = resolveOtpTarget(login, user);
 
-  const result = store.verifyAndConsumeCode({
-    purpose: 'reset',
-    target,
-    code: codeResult.code,
-    verifyFn: verifyOtp,
-  });
+  let result;
+  try {
+    result = store.verifyAndConsumeCode({
+      purpose: 'reset',
+      target,
+      code: codeResult.code,
+      verifyFn: verifyOtp,
+    });
+  } catch (err) {
+    console.error('[password/reset/verify] store error:', err);
+    return res.status(503).json({ error: 'Could not verify the code right now. Please try again.' });
+  }
 
   if (!result.ok) {
     const messages = {

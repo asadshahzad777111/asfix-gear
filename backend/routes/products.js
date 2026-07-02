@@ -78,7 +78,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       discount_percent,
       warranty,
     } = body;
-    if (!name || !category || price == null || !description) {
+    if (!name || !category || price == null) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 
@@ -89,7 +89,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       compatible_models,
       price,
       cost_price,
-      description,
+      description: description || '',
       image,
       stock,
       featured,
