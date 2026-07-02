@@ -27,6 +27,7 @@ export default function Admin() {
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [backupLoading, setBackupLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
   const showAdminMgmt = canManageTeam(user);
@@ -120,6 +121,17 @@ export default function Admin() {
     setTab('products');
   };
 
+  const handleDownloadBackup = async () => {
+    setBackupLoading(true);
+    try {
+      await api.downloadDataBackup();
+    } catch (err) {
+      alert(err.message || 'Backup download failed');
+    } finally {
+      setBackupLoading(false);
+    }
+  };
+
   return (
     <>
       <PageHeader
@@ -127,6 +139,16 @@ export default function Admin() {
         title="Dashboard"
         subtitle={`Welcome, ${user?.username || 'Staff'} — ${roleLabel(user?.role)}`}
       >
+        {showShopControl && (
+          <button
+            type="button"
+            className="btn btn-outline"
+            onClick={handleDownloadBackup}
+            disabled={backupLoading}
+          >
+            {backupLoading ? 'Downloading…' : 'Download backup'}
+          </button>
+        )}
         <button type="button" className="btn btn-outline" onClick={logout}>
           Logout
         </button>

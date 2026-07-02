@@ -83,6 +83,55 @@ async function request(path, options = {}) {
   return data;
 }
 
+async function downloadDataBackup() {
+  const token = getAuthToken();
+  if (!token) throw new Error('Authentication required');
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 60_000);
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/admin/export-data`, {
+      headers: { Authorization: `Bearer ${token}` },
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error('Backup download timed out. Please try again.');
+    }
+    throw new Error('Network error — could not download backup.');
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  if (!res.ok) {
+    const text = await res.text();
+    let data = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        /* non-JSON error body */
+      }
+    }
+    throw new Error(data.error || 'Export failed');
+  }
+
+  const blob = await res.blob();
+  const disposition = res.headers.get('Content-Disposition');
+  let filename = 'asfix-backup.json';
+  const match = disposition?.match(/filename="([^"]+)"/);
+  if (match) filename = match[1];
+
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
 export const api = {
   login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
@@ -157,6 +206,7 @@ export const api = {
     const query = new URLSearchParams(params).toString();
     return request(`/admin/sales-report${query ? `?${query}` : ''}`);
   },
+  downloadDataBackup: () => downloadDataBackup(),
 
   getStats: () => request('/stats'),
   getShopStatus: () => request('/shop/status'),
