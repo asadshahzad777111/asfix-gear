@@ -91,8 +91,24 @@ app.use((req, res, next) => {
 
 if (process.env.NODE_ENV === 'production') {
   const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
-  app.use(express.static(frontendDist, { maxAge: '1d', index: false, dotfiles: 'deny' }));
+  // Hashed JS/CSS can stay cached; index.html must stay fresh so deploys
+  // swap asset hashes immediately (mobile browsers often keep old index.html
+  // for days and then load stale bundles — looks like "fix didn't deploy").
+  const spaShellHeaders = (_res, filePath) => {
+    if (filePath.endsWith(`${path.sep}index.html`)) {
+      _res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    }
+  };
+  app.use(
+    express.static(frontendDist, {
+      maxAge: '1d',
+      index: false,
+      dotfiles: 'deny',
+      setHeaders: spaShellHeaders,
+    })
+  );
   app.get('*', (_req, res) => {
+    res.set('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(frontendDist, 'index.html'));
   });
 }

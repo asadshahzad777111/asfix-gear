@@ -88,7 +88,7 @@ export default function AccountRegister() {
       setStep('verify');
       setOtp('');
     } catch (err) {
-      setError(err.message || t('account.registerFailed'));
+      setError(err.message || t('otp.sendFailed'));
     } finally {
       setSubmitting(false);
     }
