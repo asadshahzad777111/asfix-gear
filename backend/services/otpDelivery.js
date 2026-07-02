@@ -53,14 +53,12 @@ function whatsAppCloudConfigured() {
 }
 
 function getEmailFrom() {
-  const raw = String(process.env.SMTP_FROM || '').trim();
-  if (raw) {
-    // Render env values are sometimes pasted with extra wrapping quotes.
-    const unquoted = raw.replace(/^['"]|['"]$/g, '');
-    if (unquoted.includes('@')) return unquoted;
-  }
   const { user } = normalizeSmtpCredentials();
+  // Gmail requires the From address to match the authenticated account.
   if (user) return `"${BRAND_NAME}" <${user}>`;
+
+  const raw = String(process.env.SMTP_FROM || '').trim().replace(/^['"]|['"]$/g, '');
+  if (raw.includes('@')) return raw;
   return `"${BRAND_NAME}" <noreply@asfixgear.com>`;
 }
 
