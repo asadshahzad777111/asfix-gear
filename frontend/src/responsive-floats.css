@@ -7,7 +7,12 @@
   --float-dock-bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
   --float-dock-size: 3.15rem;
   --float-dock-gap: 0.55rem;
-  --float-dock-row: calc(var(--float-dock-size) + var(--float-dock-bottom) + 0.85rem);
+  /* Reserve room for the full 3-high vertical stack (staff-login, repair,
+     chat) on the phone breakpoint so page content/footer never sits under
+     the floating buttons. */
+  --float-dock-row: calc(
+    var(--float-dock-bottom) + (var(--float-dock-size) * 3) + (var(--float-dock-gap) * 2) + 0.5rem
+  );
 }
 
 /* ── Sale animations — desktop/tablet only (mobile perf) ── */
@@ -187,12 +192,13 @@
     z-index: 200;
   }
 
-  /* Repair, staff-login, and chat all share one clean bottom-right row
-     instead of repair floating awkwardly in a row by itself above a
-     staff-login + chat pair — easier to scan and no more "orphan" button. */
+  /* Repair, staff-login, and chat all share one clean vertical column at
+     the same right offset — straight top-to-bottom stack, not the old
+     mismatched layout where repair sat in its own row at a different
+     offset than the staff-login + chat pair. */
   .floating-repair-btn {
-    right: calc(0.65rem + var(--float-dock-size) + var(--float-dock-gap));
-    bottom: var(--float-dock-bottom);
+    right: 0.65rem;
+    bottom: calc(var(--float-dock-bottom) + var(--float-dock-size) + var(--float-dock-gap));
     width: var(--float-dock-size);
     height: var(--float-dock-size);
     padding: 0;
@@ -210,8 +216,8 @@
   }
 
   .staff-access {
-    bottom: var(--float-dock-bottom);
-    right: calc(0.65rem + (var(--float-dock-size) + var(--float-dock-gap)) * 2);
+    bottom: calc(var(--float-dock-bottom) + (var(--float-dock-size) + var(--float-dock-gap)) * 2);
+    right: 0.65rem;
     z-index: 198;
   }
 
