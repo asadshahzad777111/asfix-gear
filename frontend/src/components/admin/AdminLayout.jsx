@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../context/LanguageContext';
 import { roleLabel } from '../../config/permissions';
@@ -24,10 +25,12 @@ export default function AdminLayout({
   const { t } = useTranslation();
   const { products = 0, orders = 0, bookings = 0, pendingOrders = 0 } = counts || {};
   const { showSales, showAdminMgmt, showShopControl } = flags || {};
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const goTab = (next) => {
     if (next === 'add' && onEditCancel) onEditCancel();
     setTab(next);
+    setMenuOpen(false);
     window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
   };
 
@@ -47,6 +50,15 @@ export default function AdminLayout({
     <div className="wp-admin-shell">
       <header className="wp-admin-bar">
         <div className="wp-admin-bar-left">
+          <button
+            type="button"
+            className={`wp-admin-menu-toggle ${menuOpen ? 'is-active' : ''}`}
+            aria-expanded={menuOpen}
+            aria-controls="wp-admin-menu"
+            onClick={() => setMenuOpen((open) => !open)}
+          >
+            {menuOpen ? 'Close' : 'Menu'}
+          </button>
           <span className="wp-admin-bar-site">AsFix & Gear</span>
           <span className="wp-admin-bar-live">Live</span>
           <Link to="/" className="wp-admin-bar-link" target="_blank" rel="noreferrer">
@@ -64,7 +76,7 @@ export default function AdminLayout({
       </header>
 
       <div className="wp-admin-frame">
-        <aside className="wp-admin-menu" aria-label="Admin menu">
+        <aside id="wp-admin-menu" className={`wp-admin-menu ${menuOpen ? 'is-open' : ''}`} aria-label="Admin menu">
           <div className="wp-menu-section">
             {navItem('dashboard', 'Dashboard')}
             <p className="wp-menu-heading">Shop</p>
