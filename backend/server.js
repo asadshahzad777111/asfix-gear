@@ -4,7 +4,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadEnv } from '../scripts/load-env.mjs';
 import { getStats, getStorageBackend, initStorage, isStorageReady, countRepairRates, upsertRepairRates } from './store.js';
-import { buildIphoneRepairRateRecords } from './data/iphone-repair-rates.js';
+import { buildIphoneRepairRateRecords } from './rates/iphone-repair-rates.js';
 import productsRouter from './routes/products.js';
 import repairsRouter from './routes/repairs.js';
 import contactRouter from './routes/contact.js';

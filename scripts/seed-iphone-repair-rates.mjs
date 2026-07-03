@@ -4,7 +4,7 @@
  */
 import { loadEnv } from './load-env.mjs';
 import { initStorage } from '../backend/store/storage.js';
-import { buildIphoneRepairRateRecords } from '../backend/data/iphone-repair-rates.js';
+import { buildIphoneRepairRateRecords } from '../backend/rates/iphone-repair-rates.js';
 import * as store from '../backend/store.js';
 
 loadEnv();

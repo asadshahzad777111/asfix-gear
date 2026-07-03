@@ -2,7 +2,7 @@ import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
-import { MAZDORI_KEYWORDS } from '../data/iphone-repair-rates.js';
+import { MAZDORI_KEYWORDS } from '../rates/iphone-repair-rates.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
