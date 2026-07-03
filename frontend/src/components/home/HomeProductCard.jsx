@@ -1,8 +1,9 @@
-import { useRef, useState } from 'react';
+import { useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { getDefaultImage } from '../../config/products';
 import { useCart } from '../../context/CartContext';
 import { useShopGate } from '../../hooks/useShopGate';
+import useProductPop from '../../hooks/useProductPop';
 import { useTranslation } from '../../context/LanguageContext';
 import { DiscountRibbon, ProductPrice } from '../DiscountPicker';
 import { hasDiscount } from '../../utils/pricing';
@@ -20,6 +21,8 @@ export default function HomeProductCard({ product }) {
     loginOpen,
     setLoginOpen,
   } = useShopGate();
+  const { popClass, handleProductLinkClick, linkPopHandlers } = useProductPop();
+  const productPath = `/shop/${product.id}`;
   const { addItem } = useCart();
   const addRef = useRef(null);
   const onSale = hasDiscount(product);
@@ -47,8 +50,13 @@ export default function HomeProductCard({ product }) {
 
   return (
     <>
-      <article className={`home-product-card ${onSale ? 'on-sale' : ''}`}>
-        <Link to={`/shop/${product.id}`} className="home-product-link">
+      <article className={`home-product-card ${onSale ? 'on-sale' : ''} ${popClass}`}>
+        <Link
+          to={productPath}
+          className="home-product-link"
+          {...linkPopHandlers}
+          onClick={(e) => handleProductLinkClick(e, productPath)}
+        >
           <div className="home-product-img-wrap">
             {onSale && <DiscountRibbon percent={product.discount_percent} compact />}
             <img

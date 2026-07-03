@@ -11,8 +11,12 @@ import { hasDiscount } from '../utils/pricing';
 import { useTranslation } from '../context/LanguageContext';
 import { useShopGate } from '../hooks/useShopGate';
 import useScrollReveal from '../hooks/useScrollReveal';
+import useProductPop from '../hooks/useProductPop';
 import ShopLoginPrompt from './ShopLoginPrompt';
 import CustomerLoginModal from './CustomerLoginModal';
+
+const TAP_POP = { scale: 1.06, y: -10, rotateX: -4, z: 40 };
+const TAP_SPRING = { type: 'spring', stiffness: 420, damping: 26 };
 
 export default function ProductCard({ product, inGrid = false, revealIndex = 0 }) {
   const { t } = useTranslation();
@@ -36,6 +40,8 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     delay: revealIndex * 90,
     disabled: !inGrid || revealIndex < 0,
   });
+  const { popClass, handleProductLinkClick, linkPopHandlers } = useProductPop();
+  const productPath = `/shop/${product.id}`;
 
   const animKind = getProductAnimKind(product.category);
 
@@ -63,11 +69,17 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     hovered ? 'is-hovered' : '',
     selected ? 'is-selected' : '',
     inGrid ? 'product-card-wrap--grid' : '',
+    popClass,
   ].filter(Boolean).join(' ');
 
   const inner = (
     <>
-      <Link to={`/shop/${product.id}`} className="product-card glass-card">
+      <Link
+        to={productPath}
+        className="product-card glass-card"
+        {...linkPopHandlers}
+        onClick={(e) => handleProductLinkClick(e, productPath)}
+      >
         <div className="product-image premium-product-image">
           {onSale && <DiscountRibbon percent={product.discount_percent} compact={inGrid} />}
           {!inGrid && (
@@ -167,6 +179,9 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
         className={cardClass}
         onMouseEnter={() => setHovered(true)}
         onMouseLeave={() => setHovered(false)}
+        whileTap={TAP_POP}
+        transition={TAP_SPRING}
+        style={{ transformPerspective: 900 }}
         data-magnetic
       >
         {inner}

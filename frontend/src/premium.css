@@ -551,6 +551,13 @@ body.custom-cursor-active {
   animation: cardSelectPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
+.gaming-product-card.is-popping {
+  z-index: 8;
+  box-shadow:
+    0 24px 48px rgba(0, 0, 0, 0.42),
+    0 0 40px rgba(0, 255, 136, 0.22) !important;
+}
+
 @keyframes cardSelectPop {
   0% { transform: scale(1); }
   40% { transform: scale(0.97); }

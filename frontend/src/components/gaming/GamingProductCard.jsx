@@ -11,6 +11,10 @@ import ShopLoginPrompt from '../ShopLoginPrompt';
 import CustomerLoginModal from '../CustomerLoginModal';
 import { useTranslation } from '../../context/LanguageContext';
 import { getStockStatus } from '../../utils/stock';
+import useProductPop from '../../hooks/useProductPop';
+
+const TAP_POP = { scale: 1.07, y: -12, rotateX: -4, z: 50 };
+const TAP_SPRING = { type: 'spring', stiffness: 420, damping: 26 };
 
 export default function GamingProductCard({ product, index }) {
   const { t } = useTranslation();
@@ -27,6 +31,8 @@ export default function GamingProductCard({ product, index }) {
     loginOpen,
     setLoginOpen,
   } = useShopGate();
+  const { popClass, handleProductLinkClick, linkPopHandlers } = useProductPop();
+  const productPath = `/shop/${product.id}`;
   const [hovered, setHovered] = useState(false);
 
   useEffect(() => {
@@ -71,14 +77,21 @@ export default function GamingProductCard({ product, index }) {
     <>
     <motion.article
       ref={ref}
-      className={`gaming-product-card premium-gaming-card ${onSale ? 'on-sale' : ''} ${hovered ? 'is-hovered' : ''}`}
-      style={{ '--jump-delay': `${index * 0.12}s` }}
+      className={`gaming-product-card premium-gaming-card ${onSale ? 'on-sale' : ''} ${hovered ? 'is-hovered' : ''} ${popClass}`}
+      style={{ '--jump-delay': `${index * 0.12}s`, transformPerspective: 900 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       whileHover={{ y: -6, scale: 1.02 }}
+      whileTap={TAP_POP}
+      transition={TAP_SPRING}
       data-magnetic
     >
-      <Link to={`/shop/${product.id}`} className="gaming-product-inner">
+      <Link
+        to={productPath}
+        className="gaming-product-inner"
+        {...linkPopHandlers}
+        onClick={(e) => handleProductLinkClick(e, productPath)}
+      >
         <div className="gaming-product-img">
           {onSale && <DiscountRibbon percent={product.discount_percent} />}
           <div className="gaming-product-scan" />
