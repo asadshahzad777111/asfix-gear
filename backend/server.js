@@ -13,7 +13,6 @@ import shopRouter from './routes/shop.js';
 import adminRouter from './routes/admin.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
 import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
-import { verifySmtpConnection } from './services/otpDelivery.js';
 import { isR2Configured } from './services/r2.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -49,8 +48,12 @@ app.use('/api', (_req, res, next) => {
 // mode this file's own rate-limit isolation was meant to prevent, just one
 // layer higher than the fix originally covered.
 app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/auth')) return next();
+  if (req.path.startsWith('/auth') || req.path === '/ping' || req.path === '/health') return next();
   return apiLimiter(req, res, next);
+});
+
+app.get('/api/ping', (_req, res) => {
+  res.type('text/plain').send('ok');
 });
 
 app.get('/api/health', (_req, res) => {
@@ -171,9 +174,7 @@ async function startServer() {
     console.log(`AsFix & Gear API running on http://localhost:${PORT}`);
     console.log(`Storage target: ${getStorageBackend()}`);
     if (process.env.NODE_ENV === 'production') {
-      verifySmtpConnection().catch((err) => {
-        console.error('[OTP] SMTP startup check error:', err.message);
-      });
+      // SMTP check deferred — do not slow cold start; OTP routes verify on send.
     }
   });
 
