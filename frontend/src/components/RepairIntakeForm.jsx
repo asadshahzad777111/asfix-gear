@@ -187,7 +187,7 @@ export default function RepairIntakeForm() {
               onChange={(e) => setField('customer_name', e.target.value)}
               required
               autoComplete="name"
-              placeholder="Asad Shahzad"
+              placeholder={t('repairForm.namePlaceholder')}
             />
           </div>
           <div className="form-group">
@@ -200,7 +200,7 @@ export default function RepairIntakeForm() {
               onChange={(e) => setField('phone', e.target.value)}
               required
               autoComplete="tel"
-              placeholder="03039227000"
+              placeholder={t('repairForm.phonePlaceholder')}
             />
           </div>
         </div>

@@ -202,7 +202,7 @@ export default function Contact() {
             </div>
             <div className="form-group">
               <label htmlFor="phone">{t('contact.phone')}</label>
-              <input id="phone" name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder={SHOP.phone} />
+              <input id="phone" name="phone" type="tel" value={form.phone} onChange={handleChange} placeholder={t('contact.phonePlaceholder')} autoComplete="tel" />
             </div>
             <div className="form-group">
               <label htmlFor="subject">{t('contact.subject')}</label>

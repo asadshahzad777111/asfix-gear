@@ -1,3 +1,4 @@
+import { useEffect } from 'react';
 import AmbientBackground from './components/AmbientBackground';
 import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
@@ -18,11 +19,16 @@ import PageTransition from './components/premium/PageTransition';
 import { useLocation } from 'react-router-dom';
 import { useGaming } from './context/GamingContext';
 import { useAuth } from './context/AuthContext';
+import { wakeApiServer } from './api/client';
 
 function AppContent() {
   const { isGamingPage } = useGaming();
   const { isStaff } = useAuth();
   const location = useLocation();
+
+  useEffect(() => {
+    wakeApiServer();
+  }, []);
   const showCart = !location.pathname.startsWith('/admin');
   const showStaffLogin =
     !isStaff &&
