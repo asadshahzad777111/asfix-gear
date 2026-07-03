@@ -21,9 +21,10 @@ export default function AdminLayout({
   children,
   onEditCancel,
   editingProduct,
+  onStockAlertClick,
 }) {
   const { t } = useTranslation();
-  const { products = 0, orders = 0, bookings = 0, pendingOrders = 0 } = counts || {};
+  const { products = 0, orders = 0, bookings = 0, pendingOrders = 0, lowStockCount = 0 } = counts || {};
   const { showSales, showAdminMgmt, showShopControl } = flags || {};
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -61,6 +62,15 @@ export default function AdminLayout({
           </button>
           <span className="wp-admin-bar-site">AsFix & Gear</span>
           <span className="wp-admin-bar-live">Live</span>
+          {lowStockCount > 0 ? (
+            <button
+              type="button"
+              className="wp-admin-bar-stock-alert"
+              onClick={() => (onStockAlertClick ? onStockAlertClick() : goTab('stock'))}
+            >
+              {t('admin.stockAlertBar', { count: lowStockCount })}
+            </button>
+          ) : null}
           <Link to="/" className="wp-admin-bar-link" target="_blank" rel="noreferrer">
             View site
           </Link>
@@ -97,7 +107,10 @@ export default function AdminLayout({
                     className={`wp-submenu-link ${tab === item.id ? 'is-active' : ''}`}
                     onClick={() => goTab(item.id)}
                   >
-                    {item.id === 'add' && editingProduct ? 'Edit product' : item.label}
+                    <span>{item.id === 'add' && editingProduct ? 'Edit product' : item.label}</span>
+                    {item.id === 'stock' && lowStockCount > 0 ? (
+                      <span className="wp-menu-badge wp-menu-badge--warn">{lowStockCount}</span>
+                    ) : null}
                   </button>
                 ))}
               </div>

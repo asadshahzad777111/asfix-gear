@@ -7,6 +7,16 @@ export function getStockStatus(stock) {
   return 'in';
 }
 
+/** True when stock is out (≤0) or low (1…threshold). */
+export function needsStockAlert(stock) {
+  return getStockStatus(stock) !== 'in';
+}
+
+export function getStockAlertProducts(products) {
+  if (!Array.isArray(products)) return [];
+  return products.filter((p) => needsStockAlert(p.stock));
+}
+
 export function maxCartQty(product, currentQty = 0) {
   return Math.max(0, Number(product?.stock) || 0);
 }

@@ -16,7 +16,8 @@ import AdminOrderCard, { ORDER_STATUSES } from '../components/AdminOrderCard';
 import AdminStockManager from '../components/AdminStockManager';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
-import { getStockStatus, LOW_STOCK_THRESHOLD } from '../utils/stock';
+import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts } from '../utils/stock';
+import AdminStockAlert from '../components/admin/AdminStockAlert';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 
 export default function Admin() {
@@ -62,6 +63,9 @@ export default function Admin() {
   };
 
   const pendingOrders = orders.filter((o) => o.shipping_status === 'pending').length;
+
+  const stockAlertProducts = getStockAlertProducts(products);
+  const lowStockCount = stockAlertProducts.length;
 
   const productCategories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
 
@@ -239,10 +243,17 @@ export default function Admin() {
       setTab={setTab}
       editingProduct={editingProduct}
       onEditCancel={() => setEditingProduct(null)}
-      counts={{ products: products.length, orders: orders.length, bookings: bookings.length, pendingOrders }}
+      counts={{ products: products.length, orders: orders.length, bookings: bookings.length, pendingOrders, lowStockCount }}
       flags={{ showSales, showAdminMgmt, showShopControl }}
       pageTitle={pageTitle}
+      onStockAlertClick={() => setTab('stock')}
     >
+      <AdminStockAlert
+        products={stockAlertProducts}
+        ready={!loading}
+        onViewStock={() => setTab('stock')}
+        onEditProduct={handleEditProduct}
+      />
       {loading && !['add', 'admins', 'messages', 'sales', 'dashboard', 'settings', 'payments'].includes(tab) ? (
         <div className="wp-loading">{t('common.loading')}</div>
       ) : tab === 'dashboard' ? (
