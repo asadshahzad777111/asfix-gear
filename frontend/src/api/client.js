@@ -3,11 +3,23 @@ const TOKEN_KEY = 'asfix_auth_token';
 const DEFAULT_TIMEOUT_MS = 8000;
 /** OTP send hits Gmail SMTP on the server — can take 15–40s on Render cold start. */
 const OTP_SEND_TIMEOUT_MS = 45000;
+/** Public catalog GETs on Render free tier — cold wake can exceed 8s. */
+const COLD_START_TIMEOUT_MS = 45000;
 const OTP_SEND_PATHS = [
   '/auth/register/start',
   '/auth/login/otp/start',
   '/auth/password/reset/start',
 ];
+const COLD_START_GET_PREFIXES = ['/products', '/shop/status'];
+
+const COLD_START_MSG =
+  'Server start ho raha hai — 30–60 sec wait karein aur refresh karein. / Server is waking up — wait 30–60 seconds and refresh.';
+
+function isColdStartGet(path, method) {
+  const m = (method || 'GET').toUpperCase();
+  if (m !== 'GET') return false;
+  return COLD_START_GET_PREFIXES.some((p) => path === p || path.startsWith(`${p}?`) || path.startsWith(`${p}/`));
+}
 
 export function getAuthToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -24,7 +36,10 @@ async function request(path, options = {}) {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const isOtpSend = OTP_SEND_PATHS.some((otpPath) => path.startsWith(otpPath));
-  const timeoutMs = options.timeoutMs ?? (isOtpSend ? OTP_SEND_TIMEOUT_MS : DEFAULT_TIMEOUT_MS);
+  const isColdStart = isColdStartGet(path, options.method);
+  const timeoutMs =
+    options.timeoutMs ??
+    (isOtpSend ? OTP_SEND_TIMEOUT_MS : isColdStart ? COLD_START_TIMEOUT_MS : DEFAULT_TIMEOUT_MS);
   const { timeoutMs: _ignored, ...fetchOptions } = options;
 
   const controller = new AbortController();
@@ -42,7 +57,9 @@ async function request(path, options = {}) {
       throw new Error(
         isOtpSend
           ? 'Verification code bhejne mein waqt lag gaya. Dubara try karein — agar phir fail ho to Gmail app password ya WhatsApp settings check karein.'
-          : 'Request timed out. Please try again.'
+          : isColdStart
+            ? COLD_START_MSG
+            : 'Request timed out. Please try again.'
       );
     }
     if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
@@ -73,7 +90,9 @@ async function request(path, options = {}) {
     const message = data.error || (res.status === 404
       ? 'No account found with this Gmail or phone'
       : res.status === 503
-        ? 'Verification service temporarily unavailable. Please try again.'
+        ? isColdStart
+          ? COLD_START_MSG
+          : 'Verification service temporarily unavailable. Please try again.'
         : 'Something went wrong');
     const error = new Error(message);
     error.status = res.status;

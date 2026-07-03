@@ -55,17 +55,19 @@ app.use('/api', (req, res, next) => {
 
 app.get('/api/health', (_req, res) => {
   const ready = isStorageReady();
+  const starting = ready == null || ready === false;
   res.json({
-    status: ready === false ? 'starting' : 'ok',
+    status: starting ? 'starting' : 'ok',
     brand: 'AsFix & Gear',
     storage: getStorageBackend(),
-    ready,
+    ready: ready ?? false,
     r2: isR2Configured() ? 'configured' : 'off',
   });
 });
 
 app.get('/api/stats', (_req, res) => {
-  if (isStorageReady() === false) {
+  const ready = isStorageReady();
+  if (ready == null || ready === false) {
     return res.status(503).json({ error: 'Database is starting — retry in a few seconds' });
   }
   res.json(getStats());
@@ -139,6 +141,26 @@ app.use((err, _req, res, _next) => {
   return res.status(500).json({ error: 'Internal server error' });
 });
 
+const INIT_RETRY_MS = 30_000;
+const INIT_MAX_RETRIES = 20;
+
+async function initStorageWithRetry(attempt = 1) {
+  try {
+    const storage = await initStorage();
+    console.log(`Storage: ${storage === 'mongodb' ? 'MongoDB Atlas' : 'backend/data/data.json'}`);
+    return storage;
+  } catch (err) {
+    console.error(`Failed to init storage (attempt ${attempt}/${INIT_MAX_RETRIES}):`, err.message);
+    if (attempt >= INIT_MAX_RETRIES) {
+      console.error('Storage init gave up — /api/health stays starting until manual restart');
+      return null;
+    }
+    console.log(`Retrying storage init in ${INIT_RETRY_MS / 1000}s...`);
+    await new Promise((r) => setTimeout(r, INIT_RETRY_MS));
+    return initStorageWithRetry(attempt + 1);
+  }
+}
+
 async function startServer() {
   app.listen(PORT, () => {
     console.log(`AsFix & Gear API running on http://localhost:${PORT}`);
@@ -150,15 +172,9 @@ async function startServer() {
     }
   });
 
-  try {
-    const storage = await initStorage();
-    console.log(`Storage: ${storage === 'mongodb' ? 'MongoDB Atlas' : 'backend/data/data.json'}`);
-  } catch (err) {
-    console.error('Failed to init storage:', err.message);
-    if (process.env.NODE_ENV === 'production') {
-      process.exit(1);
-    }
-  }
+  initStorageWithRetry().catch((err) => {
+    console.error('Unexpected storage init error:', err.message);
+  });
 }
 
 startServer().catch((err) => {

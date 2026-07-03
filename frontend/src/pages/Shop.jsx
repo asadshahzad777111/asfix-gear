@@ -9,8 +9,13 @@ import { api } from '../api/client';
 import { SHOP_BRANDS } from '../config/products';
 import { useTranslation } from '../context/LanguageContext';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
+import { readProductsCache, writeProductsCache } from '../utils/productCache';
 
 const STOCK_POLL_MS = 25_000;
+
+function productCacheKey(params) {
+  return JSON.stringify(params);
+}
 
 export default function Shop() {
   const { isStaff } = useAuth();
@@ -23,18 +28,45 @@ export default function Shop() {
   const [showSaleOnly, setShowSaleOnly] = useState(false);
   const [search, setSearch] = useState(() => searchParams.get('search') || '');
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
 
   const activeBrandData = SHOP_BRANDS.find((b) => b.id === activeBrand);
 
-  const loadProducts = (silent = false) => {
-    if (!silent) setLoading(true);
+  const buildParams = () => {
     const params = {};
     if (activeCategory !== 'all') params.category = activeCategory;
     if (activeBrand !== 'all') params.brand = activeBrand;
     if (showSaleOnly) params.on_sale = 'true';
     if (search.trim()) params.search = search.trim();
-    api.getProducts(params).then(setProducts).catch(console.error).finally(() => setLoading(false));
+    return params;
+  };
+
+  const loadProducts = (silent = false) => {
+    const params = buildParams();
+    const cacheKey = productCacheKey(params);
+    if (!silent) {
+      const cached = readProductsCache(cacheKey);
+      if (cached?.length) {
+        setProducts(cached);
+        setLoading(false);
+      } else {
+        setLoading(true);
+      }
+    }
+    setLoadError(null);
+    api
+      .getProducts(params)
+      .then((data) => {
+        setProducts(data);
+        writeProductsCache(cacheKey, data);
+        setLoadError(null);
+      })
+      .catch((err) => {
+        console.error(err);
+        setLoadError(err.message || t('shop.serverStarting'));
+      })
+      .finally(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -132,7 +164,14 @@ export default function Shop() {
             )}
           </div>
 
-          {loading ? (
+          {loadError && products.length === 0 ? (
+            <div className="empty-state">
+              <p>{t('shop.serverStarting')}</p>
+              <button type="button" className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => loadProducts()}>
+                {t('shop.retryLoad')}
+              </button>
+            </div>
+          ) : loading && products.length === 0 ? (
             <div className="loading">{t('shop.loadingProducts')}</div>
           ) : products.length === 0 ? (
             <div className="empty-state">
