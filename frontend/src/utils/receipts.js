@@ -1,4 +1,5 @@
 import { SHOP, whatsappLink } from '../config/shop';
+import { mergePaymentSettings } from '../config/payments';
 
 function formatAmount(amount) {
   return `Rs. ${Number(amount).toLocaleString('en-PK')}`;
@@ -46,6 +47,23 @@ export function buildOrderReceipt(order, { showCost = false } = {}) {
         })()
       : '';
 
+  const pay = mergePaymentSettings();
+  const paymentBlock =
+    order.payment_mode === 'bank'
+      ? [
+          `💳 *Pay via:* Bank Transfer (${pay.bank.bankName})`,
+          `👤 *Account:* ${pay.bank.accountName}`,
+          `🔢 *A/C:* ${pay.bank.accountNumber}`,
+          `🏦 *IBAN:* ${pay.bank.iban}`,
+        ].join('\n')
+      : order.payment_mode === 'jazzcash' || order.payment_mode === 'easypaisa'
+        ? [
+            `💳 *Pay via:* ${order.payment_mode === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}`,
+            `📱 *Number:* ${pay[order.payment_mode].number}`,
+            `👤 *Name:* ${pay[order.payment_mode].accountName}`,
+          ].join('\n')
+        : null;
+
   const text = [
     '📦 *ASFIX GEAR — ORDER RECEIPT*',
     '─────────────────────',
@@ -54,6 +72,7 @@ export function buildOrderReceipt(order, { showCost = false } = {}) {
     `👤 *Customer:* ${order.customer_name}`,
     `📞 *Phone:* ${order.phone}`,
     `📍 *Delivery:* ${deliveryLine(order.city, order.payment_mode)}`,
+    ...(paymentBlock ? ['─────────────────────', paymentBlock] : []),
     '─────────────────────',
     '*Items*',
     items || '—',

@@ -159,6 +159,10 @@ async function initStorageWithRetry(attempt = 1) {
   try {
     const storage = await initStorage();
     console.log(`Storage: ${storage === 'mongodb' ? 'MongoDB Atlas' : 'backend/data/data.json'}`);
+    const demoted = fixMisassignedShopClients();
+    if (demoted > 0) {
+      console.log(`[users] Demoted ${demoted} misassigned shop client(s) from staff to customer`);
+    }
     if (process.env.NODE_ENV !== 'test' && countRepairRates() === 0) {
       const seeded = upsertRepairRates(buildIphoneRepairRateRecords());
       console.log(`[rates] Seeded ${seeded.total} iPhone repair rates`);
