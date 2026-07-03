@@ -1,8 +1,10 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { getSeriesForShopBrand } from '../config/repairModels';
 
 const MOBILE_QUERY = '(max-width: 768px)';
 const OPEN_GUARD_MS = 450;
+const PANEL_GAP_PX = 6;
 
 function parseModels(value) {
   return String(value || '')
@@ -18,20 +20,24 @@ function parseModels(value) {
  * Brand field beside it. iOS/Android render the OS picker (scrollable list,
  * no typing). Each pick adds a chip; custom models via text field below.
  *
- * Desktop: searchable dropdown with series-grouped chips. On mobile the Add
- * Product form lives inside `.modal-panel` (`overflow-y: auto`), so a plain
- * absolute flyout gets clipped; desktop has enough room for the inline panel.
+ * Desktop: searchable dropdown with series-grouped chips. The panel is
+ * portalled to `document.body` with `position: fixed` coords derived from the
+ * trigger on every open (and kept in sync on scroll/resize) so reopening never
+ * inherits a stale position from a scrolled `.modal-panel` ancestor.
  */
 export default function ModelMultiPicker({ brand, value, onChange }) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [customInput, setCustomInput] = useState('');
+  const [panelPos, setPanelPos] = useState(null);
   const [isMobile, setIsMobile] = useState(
     () => typeof window !== 'undefined' && window.matchMedia(MOBILE_QUERY).matches
   );
   const wrapRef = useRef(null);
   const panelRef = useRef(null);
+  const searchRef = useRef(null);
   const openedAtRef = useRef(0);
+  const [openToken, setOpenToken] = useState(0);
 
   const selected = useMemo(() => parseModels(value), [value]);
   const series = useMemo(() => (brand ? getSeriesForShopBrand(brand) : []), [brand]);
@@ -60,11 +66,50 @@ export default function ModelMultiPicker({ brand, value, onChange }) {
     };
   }, []);
 
+  const updatePanelPos = useCallback(() => {
+    const trigger = wrapRef.current;
+    if (!trigger) return;
+    const rect = trigger.getBoundingClientRect();
+    const viewportPad = 12;
+    const maxHeight = Math.max(160, window.innerHeight - rect.bottom - PANEL_GAP_PX - viewportPad);
+    setPanelPos({
+      top: rect.bottom + PANEL_GAP_PX,
+      left: rect.left,
+      width: rect.width,
+      maxHeight,
+    });
+  }, []);
+
+  useLayoutEffect(() => {
+    if (!open || isMobile || !brand) {
+      setPanelPos(null);
+      return undefined;
+    }
+    updatePanelPos();
+    const sync = () => updatePanelPos();
+    window.addEventListener('scroll', sync, true);
+    window.addEventListener('resize', sync);
+    return () => {
+      window.removeEventListener('scroll', sync, true);
+      window.removeEventListener('resize', sync);
+    };
+  }, [open, isMobile, brand, updatePanelPos]);
+
+  useEffect(() => {
+    if (!open || isMobile) return undefined;
+    const id = window.requestAnimationFrame(() => {
+      searchRef.current?.focus({ preventScroll: true });
+    });
+    return () => window.cancelAnimationFrame(id);
+  }, [open, isMobile, openToken]);
+
   const canDismiss = () => Date.now() - openedAtRef.current > OPEN_GUARD_MS;
 
   const dismiss = () => {
     if (!canDismiss()) return;
     setOpen(false);
+    setQuery('');
+    setPanelPos(null);
   };
 
   useEffect(() => {
@@ -74,7 +119,11 @@ export default function ModelMultiPicker({ brand, value, onChange }) {
       (panelRef.current && panelRef.current.contains(target));
     const onDocInteract = (e) => {
       if (!canDismiss()) return;
-      if (!isInside(e.target)) setOpen(false);
+      if (!isInside(e.target)) {
+        setOpen(false);
+        setQuery('');
+        setPanelPos(null);
+      }
     };
     const onKey = (e) => {
       if (e.key === 'Escape') dismiss();
@@ -117,6 +166,8 @@ export default function ModelMultiPicker({ brand, value, onChange }) {
     if (!brand) return;
     if (e?.pointerType === 'touch') e.preventDefault();
     openedAtRef.current = Date.now();
+    updatePanelPos();
+    setOpenToken((token) => token + 1);
     setOpen(true);
   };
 
@@ -200,15 +251,25 @@ export default function ModelMultiPicker({ brand, value, onChange }) {
       ? selected.join(', ')
       : `${selected.length} models selected`;
 
-  const panel = open && brand && (
-    <div className="model-multi-picker-panel" ref={panelRef}>
+  const panelBody = open && brand && panelPos && (
+    <div
+      key={openToken}
+      className="model-multi-picker-panel model-multi-picker-panel--fixed"
+      ref={panelRef}
+      style={{
+        top: panelPos.top,
+        left: panelPos.left,
+        width: panelPos.width,
+        maxHeight: panelPos.maxHeight,
+      }}
+    >
       <input
+        ref={searchRef}
         type="search"
         className="model-multi-picker-search"
         placeholder="Model search karein... e.g. iPhone 13"
         value={query}
         onChange={(e) => setQuery(e.target.value)}
-        autoFocus
       />
 
       <div className="model-multi-picker-scroll">
@@ -244,6 +305,11 @@ export default function ModelMultiPicker({ brand, value, onChange }) {
     </div>
   );
 
+  const portaledPanel =
+    panelBody && typeof document !== 'undefined'
+      ? createPortal(panelBody, document.body)
+      : null;
+
   return (
     <div className="model-multi-picker" ref={wrapRef}>
       <button
@@ -265,7 +331,7 @@ export default function ModelMultiPicker({ brand, value, onChange }) {
 
       {chips}
 
-      {panel}
+      {portaledPanel}
     </div>
   );
 }

@@ -61,6 +61,7 @@ export default function PhoneFinderModal({ open, category, onClose, onNavigate }
           />
         ) : (
           <PhoneFinderModelStep
+            key={brand.id}
             brand={brand}
             series={series}
             onBack={() => setBrand(null)}

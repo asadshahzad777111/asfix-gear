@@ -10,6 +10,7 @@ import { SHOP_BRANDS } from '../config/products';
 import { useTranslation } from '../context/LanguageContext';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import { readProductsCache, writeProductsCache } from '../utils/productCache';
+import ShopModelPicker from '../components/shop/ShopModelPicker';
 
 const STOCK_POLL_MS = 25_000;
 
@@ -113,17 +114,43 @@ export default function Shop() {
 
   const clearBrand = () => {
     setActiveBrand('all');
+    setSearch('');
     const next = new URLSearchParams(searchParams);
     next.delete('brand');
+    next.delete('search');
     setSearchParams(next, { replace: true });
   };
+
+  const handleModelSelect = (model) => {
+    setSearch(model);
+    const next = new URLSearchParams(searchParams);
+    if (activeBrand !== 'all') next.set('brand', activeBrand);
+    next.set('search', model);
+    setSearchParams(next, { replace: true });
+  };
+
+  const handleViewAllBrandModels = () => {
+    setSearch('');
+    const next = new URLSearchParams(searchParams);
+    next.delete('search');
+    setSearchParams(next, { replace: true });
+  };
+
+  const selectedModelLabel = activeBrandData && search.trim() ? search.trim() : '';
 
   const handleBrandSelect = (e) => {
     const value = e.target.value;
     setActiveBrand(value);
     const next = new URLSearchParams(searchParams);
-    if (value === 'all') next.delete('brand');
-    else next.set('brand', value);
+    if (value === 'all') {
+      next.delete('brand');
+      next.delete('search');
+      setSearch('');
+    } else {
+      next.set('brand', value);
+      next.delete('search');
+      setSearch('');
+    }
     setSearchParams(next, { replace: true });
   };
 
@@ -172,6 +199,14 @@ export default function Shop() {
                 <option key={b.id} value={b.id}>{b.icon} {b.label}</option>
               ))}
             </select>
+            {activeBrandData && (
+              <ShopModelPicker
+                brand={activeBrandData}
+                selectedModel={selectedModelLabel}
+                onSelectModel={handleModelSelect}
+                onViewAllBrand={handleViewAllBrandModels}
+              />
+            )}
             <div className="search-box">
               <input type="search" placeholder={t('shop.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>

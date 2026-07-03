@@ -1736,6 +1736,55 @@ img { max-width: 100%; height: auto; display: block; }
   max-width: 11rem;
 }
 
+.shop-model-picker {
+  position: relative;
+}
+
+.shop-model-picker-trigger {
+  max-width: 14rem;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.shop-model-picker-trigger.has-value {
+  font-weight: 600;
+  border-color: var(--primary);
+}
+
+/* Portalled under trigger — same reopen fix as `.model-multi-picker-panel--fixed` */
+.shop-model-picker-panel {
+  position: fixed;
+  right: auto;
+  z-index: 650;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  margin: 0;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--bg-elevated);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+.shop-model-picker-panel .phone-finder-model-search {
+  margin-top: 0;
+}
+
+.shop-model-picker-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
+}
+
+.shop-model-picker-panel .phone-finder-model-chip.is-selected {
+  border-color: var(--primary);
+  background: var(--nav-hover);
+  font-weight: 600;
+}
+
 .active-brand-chip {
   display: inline-flex;
   align-items: center;
@@ -2829,6 +2878,25 @@ img { max-width: 100%; height: auto; display: block; }
   background: var(--bg-elevated);
   box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
   padding: 0.65rem;
+}
+
+/* Desktop reopen fix: panel is portalled to <body> with coords from the
+   trigger's getBoundingClientRect on every open, so a scrolled `.modal-panel`
+   (Add Product) can never leave a stale absolute anchor that jumps up on the
+   second open and overlaps the site header. */
+.model-multi-picker-panel--fixed {
+  position: fixed;
+  right: auto;
+  z-index: 650;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.model-multi-picker-panel--fixed .model-multi-picker-scroll {
+  flex: 1 1 auto;
+  max-height: none;
+  min-height: 0;
 }
 
 /* Mobile: the Add Product form lives inside `.modal-panel`, a height-limited
