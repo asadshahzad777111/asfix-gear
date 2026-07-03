@@ -1,9 +1,9 @@
 import { createToken, hashPassword, sessionExpiry, verifyPassword } from './auth/crypto.js';
 import { formatOrderId, formatBookingRef } from './store/data-migration.js';
-import { readData, withData, getStorageBackend, initStorage } from './store/storage.js';
+import { readData, withData, getStorageBackend, initStorage, isStorageReady } from './store/storage.js';
 
+export { getStorageBackend, initStorage, isStorageReady };
 export { formatOrderId, formatBookingRef };
-export { getStorageBackend, initStorage };
 
 export const LOW_STOCK_THRESHOLD = 5;
 

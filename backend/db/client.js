@@ -15,7 +15,12 @@ export function getStorageBackend() {
 }
 
 function mongoClientOptions(uri, extra = {}) {
-  const opts = { maxPoolSize: 10, serverSelectionTimeoutMS: 15000, ...extra };
+  const prod = process.env.NODE_ENV === 'production';
+  const opts = {
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: prod ? 8000 : 15000,
+    ...extra,
+  };
   const hostPart = String(uri || '').replace(/^mongodb(\+srv)?:\/\/[^@]+@/, '').split('/')[0];
   if (!hostPart.includes(',')) {
     opts.directConnection = true;
@@ -120,7 +125,9 @@ export async function connectMongo() {
   connectPromise = (async () => {
     client = await connectWritableClient(process.env.MONGODB_URI);
     db = client.db(DB_NAME);
-    await ensureIndexes(db);
+    ensureIndexes(db).catch((err) => {
+      console.error('[MongoDB] index setup:', err.message);
+    });
     return db;
   })();
 

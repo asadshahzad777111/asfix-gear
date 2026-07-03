@@ -3,7 +3,7 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadEnv } from '../scripts/load-env.mjs';
-import { getStats, getStorageBackend, initStorage } from './store.js';
+import { getStats, getStorageBackend, initStorage, isStorageReady } from './store.js';
 import productsRouter from './routes/products.js';
 import repairsRouter from './routes/repairs.js';
 import contactRouter from './routes/contact.js';
@@ -54,15 +54,20 @@ app.use('/api', (req, res, next) => {
 });
 
 app.get('/api/health', (_req, res) => {
+  const ready = isStorageReady();
   res.json({
-    status: 'ok',
+    status: ready === false ? 'starting' : 'ok',
     brand: 'AsFix & Gear',
     storage: getStorageBackend(),
+    ready,
     r2: isR2Configured() ? 'configured' : 'off',
   });
 });
 
 app.get('/api/stats', (_req, res) => {
+  if (isStorageReady() === false) {
+    return res.status(503).json({ error: 'Database is starting — retry in a few seconds' });
+  }
   res.json(getStats());
 });
 
@@ -135,16 +140,25 @@ app.use((err, _req, res, _next) => {
 });
 
 async function startServer() {
-  const storage = await initStorage();
   app.listen(PORT, () => {
     console.log(`AsFix & Gear API running on http://localhost:${PORT}`);
-    console.log(`Storage: ${storage === 'mongodb' ? 'MongoDB Atlas' : 'backend/data/data.json'}`);
+    console.log(`Storage target: ${getStorageBackend()}`);
     if (process.env.NODE_ENV === 'production') {
       verifySmtpConnection().catch((err) => {
         console.error('[OTP] SMTP startup check error:', err.message);
       });
     }
   });
+
+  try {
+    const storage = await initStorage();
+    console.log(`Storage: ${storage === 'mongodb' ? 'MongoDB Atlas' : 'backend/data/data.json'}`);
+  } catch (err) {
+    console.error('Failed to init storage:', err.message);
+    if (process.env.NODE_ENV === 'production') {
+      process.exit(1);
+    }
+  }
 }
 
 startServer().catch((err) => {
