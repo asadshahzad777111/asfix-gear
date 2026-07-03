@@ -25,23 +25,24 @@ function AppContent() {
   const { isGamingPage } = useGaming();
   const { isStaff } = useAuth();
   const location = useLocation();
+  const isAdminRoute = location.pathname.startsWith('/admin');
 
   useEffect(() => {
     wakeApiServer();
   }, []);
-  const showCart = !location.pathname.startsWith('/admin');
+  const showCart = !isAdminRoute;
   const showStaffLogin =
     !isStaff &&
     !isGamingPage &&
-    !location.pathname.startsWith('/admin');
-  const showAdminDesk = isStaff && !isGamingPage;
+    !isAdminRoute;
+  const showAdminDesk = isStaff && !isGamingPage && !isAdminRoute;
 
   return (
-    <div className={`app ${isGamingPage ? 'app--gaming' : ''}`}>
-      {!isGamingPage && <AmbientBackground />}
-      <Navbar />
-      <GuestWelcomeBanner />
-      <main className="app-main">
+    <div className={`app ${isGamingPage ? 'app--gaming' : ''} ${isAdminRoute ? 'app--admin' : ''}`}>
+      {!isGamingPage && !isAdminRoute && <AmbientBackground />}
+      {!isAdminRoute && <Navbar />}
+      {!isAdminRoute && <GuestWelcomeBanner />}
+      <main className={`app-main ${isAdminRoute ? 'app-main--admin' : ''}`}>
         <ErrorBoundary key={location.pathname}>
           <PageTransition />
         </ErrorBoundary>
@@ -51,9 +52,9 @@ function AppContent() {
       {showAdminDesk && <AdminFloatingDashboard />}
       {showAdminDesk && <StaffToolbar />}
 
-      {!isGamingPage && <Footer />}
-      {!isGamingPage && <ChatAssistant />}
-      {!isGamingPage && <FloatingRepairButton />}
+      {!isAdminRoute && !isGamingPage && <Footer />}
+      {!isAdminRoute && !isGamingPage && <ChatAssistant />}
+      {!isAdminRoute && !isGamingPage && <FloatingRepairButton />}
       {showCart && <FloatingCart />}
       <FlyToCart />
       {!isGamingPage && <GamingModeButton variant="trigger" />}

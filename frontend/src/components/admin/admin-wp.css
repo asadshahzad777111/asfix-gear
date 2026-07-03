@@ -1,0 +1,402 @@
+/* WordPress-style admin shell — light content, dark sidebar */
+.wp-admin-shell {
+  min-height: 100vh;
+  background: #f0f0f1;
+  color: #1d2327;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
+}
+
+.app--admin {
+  background: #f0f0f1;
+}
+
+.app-main--admin {
+  padding: 0;
+  max-width: none;
+  width: 100%;
+}
+
+.wp-admin-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  min-height: 46px;
+  padding: 0 1rem;
+  background: #1d2327;
+  color: #f0f0f1;
+  position: sticky;
+  top: 0;
+  z-index: 1000;
+}
+
+.wp-admin-bar-left,
+.wp-admin-bar-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.wp-admin-bar-site {
+  font-weight: 600;
+}
+
+.wp-admin-bar-live {
+  font-size: 0.72rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 4px;
+  background: #00a32a;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.wp-admin-bar-link {
+  background: none;
+  border: none;
+  color: #72aee6;
+  font: inherit;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.wp-admin-bar-link:hover {
+  color: #fff;
+}
+
+.wp-admin-bar-user {
+  font-size: 0.88rem;
+  color: #c3c4c7;
+}
+
+.wp-admin-frame {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  min-height: calc(100vh - 46px);
+}
+
+.wp-admin-menu {
+  background: #1d2327;
+  color: #f0f0f1;
+  padding: 0.75rem 0 2rem;
+  border-right: 1px solid #2c3338;
+}
+
+.wp-menu-section + .wp-menu-section {
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #2c3338;
+}
+
+.wp-menu-heading {
+  margin: 0 0 0.35rem;
+  padding: 0 1rem;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8c8f94;
+}
+
+.wp-menu-link,
+.wp-submenu-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  border: none;
+  background: transparent;
+  color: #c3c4c7;
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+}
+
+.wp-menu-link {
+  padding: 0.55rem 1rem;
+}
+
+.wp-submenu-link {
+  padding: 0.45rem 1rem 0.45rem 2rem;
+  font-size: 0.88rem;
+}
+
+.wp-menu-link:hover,
+.wp-submenu-link:hover {
+  background: #2c3338;
+  color: #fff;
+}
+
+.wp-menu-link.is-active,
+.wp-submenu-link.is-active {
+  background: #2271b1;
+  color: #fff;
+}
+
+.wp-menu-badge {
+  min-width: 1.25rem;
+  padding: 0.05rem 0.35rem;
+  border-radius: 999px;
+  background: #d63638;
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-align: center;
+}
+
+.wp-admin-content {
+  padding: 1.25rem 1.5rem 2rem;
+}
+
+.wp-admin-page-title {
+  margin: 0;
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: #1d2327;
+}
+
+.wp-admin-content-head {
+  margin-bottom: 1rem;
+}
+
+.wp-postbox {
+  background: #fff;
+  border: 1px solid #c3c4c7;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+  margin-bottom: 1rem;
+}
+
+.wp-postbox-head {
+  padding: 0.65rem 0.85rem;
+  border-bottom: 1px solid #dcdcde;
+  font-weight: 600;
+  font-size: 0.88rem;
+}
+
+.wp-postbox-body {
+  padding: 0.85rem;
+}
+
+.wp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.wp-toolbar-left,
+.wp-toolbar-right {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.wp-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.35rem;
+  padding: 0.35rem 0.75rem;
+  border: 1px solid #2271b1;
+  border-radius: 3px;
+  background: #2271b1;
+  color: #fff;
+  font: inherit;
+  font-size: 0.84rem;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.wp-button:hover {
+  background: #135e96;
+  border-color: #135e96;
+  color: #fff;
+}
+
+.wp-button--secondary {
+  background: #f6f7f7;
+  border-color: #c3c4c7;
+  color: #2c3338;
+}
+
+.wp-button--secondary:hover {
+  background: #f0f0f1;
+  border-color: #8c8f94;
+  color: #1d2327;
+}
+
+.wp-button--link {
+  background: transparent;
+  border-color: transparent;
+  color: #2271b1;
+  padding-left: 0;
+  padding-right: 0;
+}
+
+.wp-search {
+  min-width: 220px;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid #8c8f94;
+  border-radius: 3px;
+  font: inherit;
+}
+
+.wp-table-wrap {
+  background: #fff;
+  border: 1px solid #c3c4c7;
+  overflow-x: auto;
+}
+
+.wp-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.84rem;
+}
+
+.wp-table th,
+.wp-table td {
+  padding: 0.65rem 0.75rem;
+  border-bottom: 1px solid #dcdcde;
+  text-align: left;
+  vertical-align: top;
+}
+
+.wp-table th {
+  background: #f6f7f7;
+  color: #50575e;
+  font-weight: 600;
+}
+
+.wp-table tr:hover td {
+  background: #f6f7f7;
+}
+
+.wp-table-thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid #dcdcde;
+  background: #fff;
+}
+
+.wp-row-title {
+  font-weight: 600;
+  color: #2271b1;
+}
+
+.wp-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-top: 0.25rem;
+  font-size: 0.78rem;
+}
+
+.wp-row-actions button {
+  background: none;
+  border: none;
+  padding: 0;
+  color: #2271b1;
+  cursor: pointer;
+  font: inherit;
+}
+
+.wp-row-actions button:hover {
+  color: #135e96;
+}
+
+.wp-row-actions span {
+  color: #c3c4c7;
+}
+
+.wp-stock-in {
+  color: #00a32a;
+  font-weight: 600;
+}
+
+.wp-stock-out {
+  color: #d63638;
+  font-weight: 600;
+}
+
+.wp-post-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 1rem;
+  align-items: start;
+}
+
+.wp-post-main .wp-postbox-body .form-group label,
+.wp-post-main .add-product-fields .form-group label {
+  font-weight: 600;
+  color: #1d2327;
+}
+
+.wp-post-main .add-product-fields input,
+.wp-post-main .add-product-fields select,
+.wp-post-main .add-product-fields textarea {
+  background: #fff;
+  border: 1px solid #8c8f94;
+  border-radius: 3px;
+  color: #1d2327;
+}
+
+.wp-post-main .add-product-header {
+  display: none;
+}
+
+.wp-post-main .add-product-layout {
+  display: block;
+}
+
+.wp-post-main .add-product-preview {
+  display: none;
+}
+
+.wp-empty {
+  padding: 2rem;
+  text-align: center;
+  background: #fff;
+  border: 1px solid #c3c4c7;
+  color: #50575e;
+}
+
+.wp-loading {
+  padding: 2rem;
+  text-align: center;
+  color: #50575e;
+}
+
+@media (max-width: 960px) {
+  .wp-admin-frame {
+    grid-template-columns: 1fr;
+  }
+
+  .wp-admin-menu {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.25rem;
+    padding: 0.5rem;
+  }
+
+  .wp-menu-section {
+    display: contents;
+  }
+
+  .wp-menu-heading {
+    display: none;
+  }
+
+  .wp-submenu {
+    display: none;
+  }
+
+  .wp-post-layout {
+    grid-template-columns: 1fr;
+  }
+}

@@ -7,6 +7,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ShopStatusProvider } from './context/ShopStatusContext';
+import './components/admin/admin-wp.css';
 import App from './App.jsx';
 import './themes.css';
 import './index.css';

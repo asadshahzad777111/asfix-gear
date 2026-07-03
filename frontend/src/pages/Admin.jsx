@@ -2,10 +2,10 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { canDeleteProducts, canEditProduct, canManageTeam, canManageShopSettings, canViewSalesReport, roleLabel } from '../config/permissions';
-import PageHeader from '../components/PageHeader';
+import { canDeleteProducts, canEditProduct, canManageTeam, canManageShopSettings, canViewSalesReport } from '../config/permissions';
+import AdminLayout from '../components/admin/AdminLayout';
+import '../components/admin/admin-wp.css';
 import AddProductForm from '../components/AddProductForm';
-import AdminDiscountPanel from '../components/AdminDiscountPanel';
 import AdminManagement from '../components/AdminManagement';
 import AdminChatInbox from '../components/AdminChatInbox';
 import AdminSalesReport from '../components/AdminSalesReport';
@@ -14,7 +14,6 @@ import AdminStockManager from '../components/AdminStockManager';
 import ShopStatusControl from '../components/ShopStatusControl';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
-import { hasDiscount } from '../utils/pricing';
 import { getStockStatus } from '../utils/stock';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 
@@ -132,84 +131,94 @@ export default function Admin() {
     }
   };
 
+  const pageTitle = (() => {
+    if (tab === 'add') return editingProduct ? 'Edit product' : 'Add new product';
+    if (tab === 'products') return 'Products';
+    if (tab === 'stock') return 'Stock';
+    if (tab === 'orders') return 'Orders';
+    if (tab === 'bookings') return 'Repair Intake';
+    if (tab === 'messages') return t('admin.messages');
+    if (tab === 'sales') return t('sales.tab');
+    if (tab === 'admins') return t('team.manageTeam');
+    return 'Dashboard';
+  })();
+
   return (
-    <>
-      <PageHeader
-        eyebrow="⚙️ Admin"
-        title="Dashboard"
-        subtitle={`Welcome, ${user?.username || 'Staff'} — ${roleLabel(user?.role)}`}
-      >
-        {showShopControl && (
-          <button
-            type="button"
-            className="btn btn-outline"
-            onClick={handleDownloadBackup}
-            disabled={backupLoading}
-          >
-            {backupLoading ? 'Downloading…' : 'Download backup'}
-          </button>
-        )}
-        <button type="button" className="btn btn-outline" onClick={logout}>
-          Logout
-        </button>
-      </PageHeader>
-
-      <section className="section" style={{ paddingTop: 0 }}>
-        <div className="container">
-          {showShopControl && <ShopStatusControl />}
-
-          <div className="admin-tabs">
-            <button type="button" className={`admin-tab admin-tab-add ${tab === 'add' ? 'active' : ''}`} onClick={() => { setTab('add'); setEditingProduct(null); }}>
-              {editingProduct ? '✏️ Edit Product' : '➕ Add Product'}
-            </button>
-            <button type="button" className={`admin-tab ${tab === 'products' ? 'active' : ''}`} onClick={() => setTab('products')}>
-              Products ({products.length})
-            </button>
-            <button type="button" className={`admin-tab ${tab === 'stock' ? 'active' : ''}`} onClick={() => setTab('stock')}>
-              📦 {t('admin.stockTab')}
-            </button>
-            <button type="button" className={`admin-tab ${tab === 'orders' ? 'active' : ''}`} onClick={() => setTab('orders')}>
-              Orders ({orders.length}){pendingOrders > 0 ? ` · ${pendingOrders} new` : ''}
-            </button>
-            <button type="button" className={`admin-tab ${tab === 'bookings' ? 'active' : ''}`} onClick={() => setTab('bookings')}>
-              Repair Intake ({bookings.length})
-            </button>
-            <button type="button" className={`admin-tab ${tab === 'messages' ? 'active' : ''}`} onClick={() => setTab('messages')}>
-              {t('admin.messages')}
-            </button>
-            {showSales && (
-              <button type="button" className={`admin-tab ${tab === 'sales' ? 'active' : ''}`} onClick={() => setTab('sales')}>
-                {t('sales.tab')}
+    <AdminLayout
+      user={user}
+      logout={logout}
+      tab={tab}
+      setTab={setTab}
+      editingProduct={editingProduct}
+      onEditCancel={() => setEditingProduct(null)}
+      counts={{ products: products.length, orders: orders.length, bookings: bookings.length, pendingOrders }}
+      flags={{ showSales, showAdminMgmt, showShopControl }}
+      pageTitle={pageTitle}
+    >
+      {showShopControl && (
+        <div className="wp-postbox">
+          <div className="wp-postbox-head">Shop status</div>
+          <div className="wp-postbox-body">
+            <ShopStatusControl />
+            <div style={{ marginTop: '0.75rem' }}>
+              <button
+                type="button"
+                className="wp-button wp-button--secondary"
+                onClick={handleDownloadBackup}
+                disabled={backupLoading}
+              >
+                {backupLoading ? 'Downloading…' : 'Download backup'}
               </button>
-            )}
-            {showAdminMgmt && (
-              <button type="button" className={`admin-tab ${tab === 'admins' ? 'active' : ''}`} onClick={() => setTab('admins')}>
-                {t('team.manageTeam')}
-              </button>
-            )}
-          </div>
-
-          {loading && !['add', 'admins', 'messages', 'sales'].includes(tab) ? (
-            <div className="loading">{t('common.loading')}</div>
-          ) : tab === 'messages' ? (
-            <AdminChatInbox />
-          ) : tab === 'sales' && showSales ? (
-            <AdminSalesReport />
-          ) : tab === 'add' ? (
-            <div className="glass-card admin-add-wrap">
-              {editingProduct && (
-                <button type="button" className="btn btn-outline btn-sm" style={{ marginBottom: '1rem' }} onClick={() => setEditingProduct(null)}>
-                  ← Cancel Edit
-                </button>
-              )}
-              <AddProductForm
-                editProduct={editingProduct}
-                onSuccess={handleFormSuccess}
-              />
             </div>
-          ) : tab === 'admins' && showAdminMgmt ? (
-            <AdminManagement />
-          ) : tab === 'orders' ? (
+          </div>
+        </div>
+      )}
+
+      {loading && !['add', 'admins', 'messages', 'sales'].includes(tab) ? (
+        <div className="wp-loading">{t('common.loading')}</div>
+      ) : tab === 'messages' ? (
+        <div className="wp-postbox">
+          <div className="wp-postbox-body"><AdminChatInbox /></div>
+        </div>
+      ) : tab === 'sales' && showSales ? (
+        <AdminSalesReport />
+      ) : tab === 'add' ? (
+        <div className="wp-post-layout">
+          <div className="wp-post-main">
+            {editingProduct && (
+              <button type="button" className="wp-button wp-button--secondary" style={{ marginBottom: '0.75rem' }} onClick={() => setEditingProduct(null)}>
+                ← Cancel edit
+              </button>
+            )}
+            <div className="wp-postbox">
+              <div className="wp-postbox-head">Product data</div>
+              <div className="wp-postbox-body">
+                <AddProductForm editProduct={editingProduct} onSuccess={handleFormSuccess} />
+              </div>
+            </div>
+          </div>
+          <aside className="wp-post-sidebar">
+            <div className="wp-postbox">
+              <div className="wp-postbox-head">Publish</div>
+              <div className="wp-postbox-body">
+                <p style={{ fontSize: '0.84rem', color: '#50575e', margin: 0 }}>
+                  Form ke neeche <strong>Save Changes</strong> dabayein — product shop par live ho jayega.
+                </p>
+              </div>
+            </div>
+            <div className="wp-postbox">
+              <div className="wp-postbox-head">Tip</div>
+              <div className="wp-postbox-body">
+                <p style={{ fontSize: '0.84rem', color: '#50575e', margin: 0 }}>
+                  Brand + model select karein taake customer shop filter se product dhundh sakein.
+                </p>
+              </div>
+            </div>
+          </aside>
+        </div>
+      ) : tab === 'admins' && showAdminMgmt ? (
+        <AdminManagement />
+      ) : tab === 'orders' ? (
             <div className="admin-orders-list">
               {orders.length === 0 ? (
                 <div className="empty-state glass-card">Abhi koi order nahi.</div>
@@ -237,78 +246,82 @@ export default function Admin() {
             />
           ) : tab === 'products' ? (
             <>
-              <div className="admin-toolbar">
-                <button type="button" className="btn btn-primary" onClick={() => { setEditingProduct(null); setTab('add'); }}>
-                  ➕ Naya Product
-                </button>
+              <div className="wp-toolbar">
+                <div className="wp-toolbar-left">
+                  <button type="button" className="wp-button" onClick={() => { setEditingProduct(null); setTab('add'); }}>
+                    Add new product
+                  </button>
+                </div>
+                <div className="wp-toolbar-right">
+                  <span style={{ fontSize: '0.84rem', color: '#50575e' }}>{products.length} items</span>
+                </div>
               </div>
-              <div className="admin-products-grid">
-                {products.length === 0 ? (
-                  <div className="empty-state">
-                    <p>{t('admin.noProducts')}</p>
-                    <button type="button" className="btn btn-primary" onClick={() => setTab('add')}>➕ Add Product</button>
-                  </div>
-                ) : (
-                  products.map((p) => {
-                    const editable = canEditProduct(user, p);
-                    return (
-                    <div key={p.id} className={`admin-product-card glass-card ${hasDiscount(p) ? 'on-sale' : ''}`}>
-                      <div className="admin-product-img-wrap">
-                        <img src={p.image} alt={p.name} />
-                        {hasDiscount(p) && <span className="admin-sale-tag">-{p.discount_percent}%</span>}
-                        {getStockStatus(p.stock) === 'out' && (
-                          <span className="admin-stock-badge admin-stock-badge--out">{t('admin.outOfStock')}</span>
-                        )}
-                        {getStockStatus(p.stock) === 'low' && (
-                          <span className="admin-stock-badge admin-stock-badge--low">{t('admin.lowStock')}: {p.stock}</span>
-                        )}
-                      </div>
-                      <div className="admin-product-info">
-                        <span className="preview-cat">{p.category}</span>
-                        <h3>{p.name}</h3>
-                        <ProductPrice product={p} size="sm" />
-                        {p.cost_price > 0 && (
-                          <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.15rem' }}>
-                            {t('sales.costPrice')}: Rs. {Number(p.cost_price).toLocaleString('en-PK')}
-                          </p>
-                        )}
-                        <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-                          {t('admin.stockLabel', { count: p.stock })}
-                        </p>
-                        {p.warranty ? <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>🛡️ {p.warranty}</p> : null}
-                        {p.featured ? <span className="featured-tag">⭐ Featured</span> : null}
-                        <p className="admin-product-owner">
-                          {p.created_by_name
-                            ? t('admin.addedBy', { name: p.created_by_name })
-                            : t('admin.addedByLegacy')}
-                        </p>
-                        <AdminDiscountPanel
-                          product={p}
-                          canEdit={editable}
-                          onUpdated={(updated) => setProducts((prev) => prev.map((x) => (x.id === updated.id ? updated : x)))}
-                        />
-                        <div className="admin-product-actions">
-                          {editable ? (
-                            <>
-                              <button type="button" className="btn btn-primary btn-sm" onClick={() => handleEditProduct(p)}>
-                                Edit
-                              </button>
-                              {allowDelete && (
-                                <button type="button" className="btn btn-outline btn-sm" onClick={() => handleDeleteProduct(p.id, p.name)}>
-                                  Delete
-                                </button>
+              {products.length === 0 ? (
+                <div className="wp-empty">
+                  <p>{t('admin.noProducts')}</p>
+                  <button type="button" className="wp-button" style={{ marginTop: '0.75rem' }} onClick={() => setTab('add')}>
+                    Add new product
+                  </button>
+                </div>
+              ) : (
+                <div className="wp-table-wrap">
+                  <table className="wp-table">
+                    <thead>
+                      <tr>
+                        <th style={{ width: 56 }} />
+                        <th>Name</th>
+                        <th>Stock</th>
+                        <th>Price</th>
+                        <th>Categories</th>
+                        <th>Date</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {products.map((p) => {
+                        const editable = canEditProduct(user, p);
+                        const stockStatus = getStockStatus(p.stock);
+                        return (
+                          <tr key={p.id}>
+                            <td>
+                              <img className="wp-table-thumb" src={p.image} alt="" />
+                            </td>
+                            <td>
+                              <div className="wp-row-title">{p.name}</div>
+                              <div className="wp-row-actions">
+                                {editable ? (
+                                  <>
+                                    <button type="button" onClick={() => handleEditProduct(p)}>Edit</button>
+                                    <span>|</span>
+                                    {allowDelete && (
+                                      <button type="button" onClick={() => handleDeleteProduct(p.id, p.name)}>Delete</button>
+                                    )}
+                                  </>
+                                ) : (
+                                  <span>🔒 {t('admin.ownerOnly')}</span>
+                                )}
+                              </div>
+                            </td>
+                            <td>
+                              {stockStatus === 'out' ? (
+                                <span className="wp-stock-out">{t('admin.outOfStock')}</span>
+                              ) : stockStatus === 'low' ? (
+                                <span className="wp-stock-out">{t('admin.lowStock')}: {p.stock}</span>
+                              ) : (
+                                <span className="wp-stock-in">In stock ({p.stock})</span>
                               )}
-                            </>
-                          ) : (
-                            <span className="admin-product-locked">🔒 {t('admin.ownerOnly')}</span>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                    );
-                  })
-                )}
-              </div>
+                            </td>
+                            <td>
+                              <ProductPrice product={p} size="sm" />
+                            </td>
+                            <td>{p.category}{p.brand ? ` · ${p.brand}` : ''}</td>
+                            <td>{p.created_at ? new Date(p.created_at).toLocaleString() : '—'}</td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </>
           ) : (
             <>
@@ -404,8 +417,6 @@ export default function Admin() {
               </div>
             </>
           )}
-        </div>
-      </section>
-    </>
+    </AdminLayout>
   );
 }
