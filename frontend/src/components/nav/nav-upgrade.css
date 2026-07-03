@@ -737,6 +737,30 @@ body {
   z-index: 500;
 }
 
+/* Portalled under trigger — fixed coords from getBoundingClientRect on every
+   open so scroll on /shop never leaves a stale absolute anchor that jumps up
+   over the header on the second open. */
+.nav-mega-panel--fixed {
+  position: fixed;
+  top: auto;
+  left: auto;
+  right: auto;
+  bottom: auto;
+  padding-top: 0;
+  min-width: 0;
+  max-width: none;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: auto;
+}
+
+.nav-mega-panel--fixed .nav-mega-panel-body--stepped {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+}
+
 .nav-mega-panel-body--stepped {
   grid-template-columns: 1fr !important;
   width: min(320px, 92vw) !important;
