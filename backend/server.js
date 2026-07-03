@@ -16,7 +16,8 @@ import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
 import { isR2Configured } from './services/r2.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-loadEnv();
+// In test/smoke runs, keep spawn-provided PORT (loadEnv would otherwise overwrite from .env).
+loadEnv({ override: process.env.NODE_ENV !== 'test' });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
