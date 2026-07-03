@@ -36,7 +36,7 @@ export async function ensureApiReady(maxWaitMs = 90000) {
       const res = await fetch(`${API_BASE}/health`, { signal: controller.signal });
       clearTimeout(timeoutId);
       const data = await res.json().catch(() => ({}));
-      if (res.ok && (data.ready === true || data.status === 'ok')) {
+      if (res.ok && data.status === 'ok' && data.ready) {
         return true;
       }
       lastErr = new Error(data.error || COLD_START_MSG);

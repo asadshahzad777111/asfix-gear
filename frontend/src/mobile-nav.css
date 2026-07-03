@@ -327,12 +327,13 @@
   .nav-drawer .lang-toggle--drawer {
     display: none;
     flex-shrink: 0;
-    width: 100%;
+    width: auto;
+    max-width: 100%;
     justify-content: center;
-    flex-wrap: wrap;
-    gap: 0.2rem;
-    margin: 0 0 0.5rem;
-    padding: 0.35rem 0.45rem;
+    flex-wrap: nowrap;
+    gap: 0.1rem;
+    margin: 0 0 0.3rem;
+    padding: 0.2rem 0.3rem 0.2rem 0.35rem;
   }
 
   .nav-drawer.open .lang-toggle--drawer {
@@ -340,11 +341,30 @@
   }
 
   .nav-drawer .lang-toggle-btn {
-    min-width: 2.5rem;
-    min-height: 2.25rem;
-    padding: 0.4rem 0.55rem;
-    font-size: 0.72rem;
+    min-width: 2.15rem;
+    min-height: 2rem;
+    padding: 0.32rem 0.45rem;
+    font-size: 0.68rem;
     touch-action: manipulation;
+  }
+
+  .nav-links-account {
+    display: flex;
+    flex-direction: column;
+    gap: 0.35rem;
+    width: 100%;
+  }
+
+  /* Keep bottom dock from overlapping drawer account links */
+  body.nav-open .floating-cart-trigger,
+  body.nav-open .gaming-mode-btn--trigger,
+  body.nav-open .whatsapp-float,
+  body.nav-open .floating-repair-btn,
+  body.nav-open .staff-access {
+    visibility: hidden;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
   }
 
   .nav-drawer a:not(.nav-drawer-accordion-link),

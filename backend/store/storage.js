@@ -13,6 +13,7 @@ export async function initStorage() {
   if (storageReady === 'mongodb') return 'mongodb';
   if (!initPromise) {
     initPromise = connectMongo()
+      .then(() => mongoStorage.warmCache())
       .then(() => {
         storageReady = 'mongodb';
         return 'mongodb';

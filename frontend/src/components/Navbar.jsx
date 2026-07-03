@@ -119,7 +119,6 @@ export default function Navbar() {
             </div>
 
             <LanguageToggle className="lang-toggle--drawer" />
-            <GoogleTranslateWidget className="gtranslate-wrap--drawer" />
 
             <span className="nav-drawer-section-label">{t('nav.explore')}</span>
 

@@ -1,6 +1,7 @@
 import { createToken, hashPassword, sessionExpiry, verifyPassword } from './auth/crypto.js';
 import { formatOrderId, formatBookingRef } from './store/data-migration.js';
 import { readData, withData, getStorageBackend, initStorage, isStorageReady } from './store/storage.js';
+import { productMatchesSearch } from './utils/product-search.js';
 
 export { getStorageBackend, initStorage, isStorageReady };
 export { formatOrderId, formatBookingRef };
@@ -73,14 +74,7 @@ export function getProducts(filters = {}) {
     products = products.filter((p) => Number(p.discount_percent) > 0);
   }
   if (search) {
-    const term = String(search).toLowerCase();
-    products = products.filter(
-      (p) =>
-        String(p.name).toLowerCase().includes(term) ||
-        String(p.description).toLowerCase().includes(term) ||
-        String(p.brand || '').toLowerCase().includes(term) ||
-        String(p.compatible_models || '').toLowerCase().includes(term)
-    );
+    products = products.filter((p) => productMatchesSearch(p, search));
   }
 
   return sortProducts(products);

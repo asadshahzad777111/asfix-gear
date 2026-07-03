@@ -120,7 +120,7 @@ Agar aapke paas Hostinger ya koi Pakistani hosting hai:
 
 ## MongoDB Atlas migration
 
-Phase 1 adds optional MongoDB storage on branch `feature/mongodb-store`. Without `MONGODB_URI`, the app keeps using `backend/data/data.json` (same as before).
+Phase 1 adds optional MongoDB storage on **`main`**. Without `MONGODB_URI`, the app keeps using `backend/data/data.json` (same as before).
 
 ### Local backup before migration
 
@@ -161,8 +161,8 @@ Health check: `GET /api/health` returns `"storage": "mongodb"`.
 1. Run `npm run backup:data` on current production (download `data.json` from Render shell if needed).
 2. Migrate to Atlas with the script above.
 3. Add `MONGODB_URI` to Render Environment.
-4. Redeploy from `feature/mongodb-store` (do **not** merge to `main` until tested).
-5. Verify products, login, orders, and OTP flows on staging first.
+4. Redeploy from **`main`** (Render dashboard → branch `main`, then Manual Deploy if needed).
+5. Verify products, login, orders, and OTP flows after deploy.
 
 Collections: `users`, `sessions`, `products`, `repair_services`, `repair_bookings`, `contact_messages`, `orders`, `verification_codes`, `settings`, `meta`.
 

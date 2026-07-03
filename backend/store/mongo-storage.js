@@ -1,4 +1,4 @@
-import { connectMongo, getDb, runSync } from '../db/client.js';
+import { connectMongo, getDb } from '../db/client.js';
 import { DEFAULT_DATA, migrateData } from './data-migration.js';
 
 const COLLECTIONS = [
@@ -24,6 +24,9 @@ function sleepSync(ms) {
 }
 
 let writeLock = false;
+/** In-memory snapshot — sync store API reads/writes here; Mongo I/O stays async. */
+let memoryCache = null;
+let persistChain = Promise.resolve();
 
 function acquireWriteLock() {
   for (let i = 0; i < LOCK_MAX_SPINS; i += 1) {
@@ -142,16 +145,43 @@ async function writeDataAsync(data) {
   );
 }
 
+function requireCache() {
+  if (!memoryCache) {
+    throw new Error('MongoDB cache not warm — storage still starting');
+  }
+  return memoryCache;
+}
+
+function schedulePersist(data) {
+  const snapshot = structuredClone(data);
+  persistChain = persistChain
+    .then(() => writeDataAsync(snapshot))
+    .catch((err) => {
+      console.error('[MongoDB] persist failed:', err.message);
+    });
+}
+
+/** Load MongoDB into memory — must complete before sync store calls. */
+export async function warmCache() {
+  memoryCache = await readDataAsync();
+  return memoryCache;
+}
+
+export function isCacheWarm() {
+  return memoryCache != null;
+}
+
 export function readData() {
-  return runSync(readDataAsync());
+  return structuredClone(requireCache());
 }
 
 export function withData(mutator) {
   acquireWriteLock();
   try {
-    const data = runSync(readDataAsync());
+    const data = structuredClone(requireCache());
     const result = mutator(data);
-    runSync(writeDataAsync(data));
+    memoryCache = migrateData(data);
+    schedulePersist(memoryCache);
     return result;
   } finally {
     releaseWriteLock();
@@ -163,9 +193,15 @@ export async function writeFullSnapshot(data) {
   await connectMongo();
   const migrated = migrateData(structuredClone(data));
   await writeDataAsync(migrated);
+  memoryCache = migrated;
   return migrated;
 }
 
 export async function readFullSnapshot() {
   return readDataAsync();
+}
+
+/** Flush pending writes — for tests and graceful shutdown. */
+export async function flushPersistQueue() {
+  await persistChain;
 }

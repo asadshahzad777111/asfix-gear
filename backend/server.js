@@ -66,7 +66,7 @@ app.get('/api/health', (_req, res) => {
     status: starting ? 'starting' : 'ok',
     brand: 'AsFix & Gear',
     storage: getStorageBackend(),
-    ready: ready ?? false,
+    ready: ready != null && ready !== false,
     r2: isR2Configured() ? 'configured' : 'off',
   });
 });
