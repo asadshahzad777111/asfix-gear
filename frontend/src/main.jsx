@@ -22,6 +22,9 @@ import './components/home/home.css';
 import './components/nav/nav-upgrade.css';
 import './components/chat-assistant.css';
 import './auth-2026.css';
+import { registerSW } from 'virtual:pwa-register';
+
+registerSW({ immediate: true });
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

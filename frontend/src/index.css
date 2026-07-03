@@ -3085,6 +3085,10 @@ img { max-width: 100%; height: auto; display: block; }
   margin-top: 0.35rem;
 }
 
+.field-hint-ok {
+  color: var(--green, #22c55e);
+}
+
 .checkbox-row {
   display: flex;
   align-items: center;

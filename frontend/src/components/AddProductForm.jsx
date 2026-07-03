@@ -4,8 +4,23 @@ import DiscountPicker, { DiscountRibbon, ProductPrice } from './DiscountPicker';
 import { CATEGORIES, EMPTY_PRODUCT, DEFAULT_IMAGES, SHOP_BRANDS, getDefaultImage } from '../config/products';
 import ModelMultiPicker from './ModelMultiPicker';
 import { useTranslation } from '../context/LanguageContext';
+import { compressImageForUpload } from '../utils/compressImage';
 
 const isDefaultImage = (url) => Object.values(DEFAULT_IMAGES).includes(url);
+const MAX_INLINE_IMAGE_BYTES = 120 * 1024;
+
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('File read nahi ho saki'));
+    reader.readAsDataURL(file);
+  });
+}
+
+function isTransientImageUrl(url) {
+  return String(url || '').startsWith('blob:') || String(url || '').startsWith('data:');
+}
 
 function productToForm(editProduct) {
   if (!editProduct) return { ...EMPTY_PRODUCT, image: getDefaultImage('Cases') };
@@ -31,11 +46,15 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
   const isEdit = Boolean(editProduct?.id);
   const [product, setProduct] = useState(() => productToForm(editProduct));
   const [submitting, setSubmitting] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [imageUploadHint, setImageUploadHint] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
     setProduct(productToForm(editProduct));
-  }, [editProduct]);
+    setImageUploadHint('');
+    setMessage({ type: '', text: '' });
+  }, [editProduct?.id]);
 
   const setField = (field, value) => {
     setProduct((prev) => {
@@ -55,20 +74,74 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
     }));
   };
 
-  const handleImageFile = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (!file.type.startsWith('image/')) {
+  const handleImageFile = async (e) => {
+    const picked = e.target.files?.[0];
+    if (!picked) return;
+    if (!picked.type.startsWith('image/')) {
       setMessage({ type: 'error', text: 'Sirf image files upload karein.' });
+      setImageUploadHint('');
       return;
     }
-    if (file.size > 150 * 1024) {
-      setMessage({ type: 'error', text: 'Image 150KB se chhoti honi chahiye (ya image URL use karein).' });
+    if (picked.size > 8 * 1024 * 1024) {
+      setMessage({ type: 'error', text: 'Image 8MB se chhoti honi chahiye.' });
+      setImageUploadHint('');
       return;
     }
-    const reader = new FileReader();
-    reader.onload = () => setField('image', reader.result);
-    reader.readAsDataURL(file);
+
+    const previousImage = product.image;
+    let blobUrl = null;
+    setUploadingImage(true);
+    setMessage({ type: '', text: '' });
+    setImageUploadHint('Photo compress/upload ho rahi hai…');
+
+    try {
+      const file = await compressImageForUpload(picked);
+      if (!file) {
+        setMessage({
+          type: 'error',
+          text: 'Image bahut bari hai — chhoti file use karein ya Photo URL paste karein.',
+        });
+        setImageUploadHint('');
+        return;
+      }
+
+      blobUrl = URL.createObjectURL(file);
+      setField('image', blobUrl);
+
+      try {
+        const { url } = await api.uploadProductImage(file);
+        setField('image', url);
+        setImageUploadHint('Photo cloud par save ✓ Ab Save Changes dabayein.');
+        setMessage({ type: 'success', text: 'Photo upload ho gayi ✓' });
+        return;
+      } catch (uploadErr) {
+        if (file.size <= MAX_INLINE_IMAGE_BYTES) {
+          const dataUrl = await readFileAsDataUrl(file);
+          setField('image', dataUrl);
+          setImageUploadHint('Photo set ho gayi ✓ Ab Save Changes zaroor dabayein.');
+          setMessage({
+            type: 'success',
+            text:
+              uploadErr.message?.includes('503') || uploadErr.message?.includes('configure')
+                ? 'R2 abhi off hai — photo save ke liye Save Changes dabayein.'
+                : 'Photo preview update ✓ Save Changes dabayein.',
+          });
+          return;
+        }
+        throw uploadErr;
+      }
+    } catch (err) {
+      setField('image', previousImage);
+      setImageUploadHint('');
+      setMessage({
+        type: 'error',
+        text: err.message || 'Upload fail — Photo URL paste karein.',
+      });
+    } finally {
+      if (blobUrl) URL.revokeObjectURL(blobUrl);
+      setUploadingImage(false);
+      e.target.value = '';
+    }
   };
 
   const buildPayload = () => ({
@@ -88,6 +161,11 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (uploadingImage || product.image.startsWith('blob:')) {
+      setMessage({ type: 'error', text: 'Photo upload complete hone ka wait karein.' });
+      return;
+    }
+
     setSubmitting(true);
     setMessage({ type: '', text: '' });
 
@@ -261,16 +339,23 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
           <div className="form-group">
             <label>Photo URL</label>
             <input
-              value={product.image.startsWith('data:') ? '' : product.image}
-              onChange={(e) => setField('image', e.target.value)}
+              value={isTransientImageUrl(product.image) ? '' : product.image}
+              onChange={(e) => {
+                setImageUploadHint('');
+                setField('image', e.target.value);
+              }}
               placeholder="https://... ya neeche se file upload karein"
             />
           </div>
 
           <div className="form-group">
-            <label>Photo Upload (optional)</label>
-            <input type="file" accept="image/*" onChange={handleImageFile} />
-            <p className="field-hint">Max 2MB. Upload ya URL — dono mein se koi ek use karein.</p>
+            <label>Photo Upload</label>
+            <input type="file" accept="image/*" onChange={handleImageFile} disabled={uploadingImage} />
+            <p className={`field-hint${imageUploadHint.includes('✓') ? ' field-hint-ok' : ''}`}>
+              {uploadingImage
+                ? 'Compress + upload… preview change honi chahiye.'
+                : imageUploadHint || 'Koi bhi size — auto compress. File choose karein, phir Save Changes.'}
+            </p>
           </div>
 
           <DiscountPicker
@@ -331,7 +416,7 @@ export default function AddProductForm({ onSuccess, onCancel, compact = false, e
             Cancel
           </button>
         )}
-        <button type="submit" className="btn btn-primary btn-add-submit" disabled={submitting}>
+        <button type="submit" className="btn btn-primary btn-add-submit" disabled={submitting || uploadingImage}>
           {submitting ? (isEdit ? 'Saving...' : 'Adding...') : isEdit ? '✓ Save Changes' : '✓ Product Add Karein'}
         </button>
       </div>

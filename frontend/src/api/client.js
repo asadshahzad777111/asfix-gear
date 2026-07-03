@@ -1,13 +1,25 @@
-const API_BASE = '/api';
+const API_BASE = String(import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '');
 const TOKEN_KEY = 'asfix_auth_token';
 const DEFAULT_TIMEOUT_MS = 8000;
 /** OTP send hits Gmail SMTP on the server — can take 15–40s on Render cold start. */
 const OTP_SEND_TIMEOUT_MS = 45000;
+/** Public catalog GETs on Render free tier — cold wake can exceed 8s. */
+const COLD_START_TIMEOUT_MS = 45000;
 const OTP_SEND_PATHS = [
   '/auth/register/start',
   '/auth/login/otp/start',
   '/auth/password/reset/start',
 ];
+const COLD_START_GET_PREFIXES = ['/products', '/shop/status'];
+
+const COLD_START_MSG =
+  'Server start ho raha hai — 30–60 sec wait karein aur refresh karein. / Server is waking up — wait 30–60 seconds and refresh.';
+
+function isColdStartGet(path, method) {
+  const m = (method || 'GET').toUpperCase();
+  if (m !== 'GET') return false;
+  return COLD_START_GET_PREFIXES.some((p) => path === p || path.startsWith(`${p}?`) || path.startsWith(`${p}/`));
+}
 
 export function getAuthToken() {
   return localStorage.getItem(TOKEN_KEY);
@@ -24,7 +36,10 @@ async function request(path, options = {}) {
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const isOtpSend = OTP_SEND_PATHS.some((otpPath) => path.startsWith(otpPath));
-  const timeoutMs = options.timeoutMs ?? (isOtpSend ? OTP_SEND_TIMEOUT_MS : DEFAULT_TIMEOUT_MS);
+  const isColdStart = isColdStartGet(path, options.method);
+  const timeoutMs =
+    options.timeoutMs ??
+    (isOtpSend ? OTP_SEND_TIMEOUT_MS : isColdStart ? COLD_START_TIMEOUT_MS : DEFAULT_TIMEOUT_MS);
   const { timeoutMs: _ignored, ...fetchOptions } = options;
 
   const controller = new AbortController();
@@ -42,7 +57,9 @@ async function request(path, options = {}) {
       throw new Error(
         isOtpSend
           ? 'Verification code bhejne mein waqt lag gaya. Dubara try karein — agar phir fail ho to Gmail app password ya WhatsApp settings check karein.'
-          : 'Request timed out. Please try again.'
+          : isColdStart
+            ? COLD_START_MSG
+            : 'Request timed out. Please try again.'
       );
     }
     if (err?.message?.includes('Failed to fetch') || err?.message?.includes('NetworkError')) {
@@ -73,13 +90,65 @@ async function request(path, options = {}) {
     const message = data.error || (res.status === 404
       ? 'No account found with this Gmail or phone'
       : res.status === 503
-        ? 'Verification service temporarily unavailable. Please try again.'
+        ? isColdStart
+          ? COLD_START_MSG
+          : 'Verification service temporarily unavailable. Please try again.'
         : 'Something went wrong');
     const error = new Error(message);
     error.status = res.status;
     error.code = data.code;
     throw error;
   }
+  return data;
+}
+
+async function uploadProductImage(file, { timeoutMs = 45000 } = {}) {
+  const token = getAuthToken();
+  if (!token) throw new Error('Staff login required to upload images');
+
+  const form = new FormData();
+  form.append('image', file);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/products/upload-image`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error('Image upload timed out. Try a smaller file or check your connection.');
+    }
+    throw new Error('Network error — could not upload image.');
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  const text = await res.text();
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      /* non-JSON */
+    }
+  }
+
+  if (!res.ok) {
+    if (res.status === 503) {
+      throw new Error('Server par R2 abhi configure nahi hai');
+    }
+    if (res.status === 404) {
+      throw new Error('Upload route server par nahi hai — latest code deploy karein');
+    }
+    throw new Error(data.error || 'Image upload failed');
+  }
+  if (!data.url) throw new Error('Upload succeeded but no URL was returned');
   return data;
 }
 
@@ -177,6 +246,7 @@ export const api = {
   adjustProductStock: (id, delta, opts = {}) =>
     request(`/products/${id}/stock`, { method: 'PATCH', body: JSON.stringify({ delta, ...opts }) }),
   deleteProduct: (id) => request(`/products/${id}`, { method: 'DELETE' }),
+  uploadProductImage: (file) => uploadProductImage(file),
 
   getRepairServices: () => request('/repairs/services'),
   bookRepair: (body) => request('/repairs/book', { method: 'POST', body: JSON.stringify(body) }),
