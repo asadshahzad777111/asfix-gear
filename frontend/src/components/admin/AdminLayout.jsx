@@ -5,6 +5,7 @@ import { roleLabel } from '../../config/permissions';
 const PRODUCT_SUB = [
   { id: 'products', label: 'All Products' },
   { id: 'add', label: 'Add new product' },
+  { id: 'categories', label: 'Categories' },
   { id: 'stock', label: 'Stock' },
 ];
 
@@ -65,11 +66,12 @@ export default function AdminLayout({
       <div className="wp-admin-frame">
         <aside className="wp-admin-menu" aria-label="Admin menu">
           <div className="wp-menu-section">
+            {navItem('dashboard', 'Dashboard')}
             <p className="wp-menu-heading">Shop</p>
-            <div className={`wp-menu-item ${['products', 'add', 'stock'].includes(tab) ? 'is-open' : ''}`}>
+            <div className={`wp-menu-item ${['products', 'add', 'stock', 'categories'].includes(tab) ? 'is-open' : ''}`}>
               <button
                 type="button"
-                className={`wp-menu-link wp-menu-link--parent ${['products', 'add', 'stock'].includes(tab) ? 'is-active' : ''}`}
+                className={`wp-menu-link wp-menu-link--parent ${['products', 'add', 'stock', 'categories'].includes(tab) ? 'is-active' : ''}`}
                 onClick={() => goTab('products')}
               >
                 <span className="wp-menu-text">Products</span>
@@ -98,6 +100,8 @@ export default function AdminLayout({
               <p className="wp-menu-heading">Manage</p>
               {showSales && navItem('sales', t('sales.tab'))}
               {showAdminMgmt && navItem('admins', t('team.manageTeam'))}
+              {showShopControl && navItem('settings', 'Settings')}
+              {showShopControl && navItem('payments', 'Payments')}
             </div>
           )}
         </aside>

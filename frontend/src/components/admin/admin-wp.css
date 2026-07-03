@@ -396,7 +396,241 @@
     display: none;
   }
 
-  .wp-post-layout {
-    grid-template-columns: 1fr;
-  }
+.wp-post-layout {
+  grid-template-columns: 1fr;
+}
+
+/* Dashboard */
+.wp-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 0.75rem;
+}
+
+.wp-dashboard-card {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+  padding: 1rem;
+  border: 1px solid #c3c4c7;
+  border-radius: 4px;
+  background: #fff;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  color: inherit;
+}
+
+.wp-dashboard-card:hover {
+  border-color: #2271b1;
+  box-shadow: 0 0 0 1px #2271b1;
+}
+
+.wp-dashboard-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.1;
+  color: #1d2327;
+}
+
+.wp-dashboard-label {
+  font-size: 0.88rem;
+  color: #50575e;
+}
+
+.wp-dashboard-hint {
+  font-size: 0.75rem;
+  color: #787c82;
+}
+
+.wp-dashboard-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+/* Filters & bulk */
+.wp-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  margin-bottom: 0.75rem;
+}
+
+.wp-filter-bar input,
+.wp-filter-bar select {
+  min-height: 32px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #8c8f94;
+  border-radius: 4px;
+  font: inherit;
+  background: #fff;
+}
+
+.wp-filter-bar input {
+  min-width: 180px;
+}
+
+.wp-bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  margin-bottom: 0.5rem;
+  background: #f6f7f7;
+  border: 1px solid #c3c4c7;
+  border-radius: 4px;
+}
+
+.wp-button--small {
+  padding: 0.2rem 0.55rem;
+  font-size: 0.8rem;
+}
+
+.wp-order-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.75rem;
+}
+
+.wp-order-filter {
+  padding: 0.3rem 0.65rem;
+  border: 1px solid #c3c4c7;
+  border-radius: 999px;
+  background: #fff;
+  font: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.wp-order-filter.is-active {
+  background: #2271b1;
+  border-color: #2271b1;
+  color: #fff;
+}
+
+.wp-notice {
+  padding: 0.65rem 0.85rem;
+  border-left: 4px solid #2271b1;
+  background: #fff;
+  margin-bottom: 0.75rem;
+}
+
+.wp-notice--error {
+  border-left-color: #d63638;
+}
+
+.wp-settings .wp-postbox + .wp-postbox {
+  margin-top: 1rem;
+}
+
+/* Comments / messages table */
+.wp-table--comments tr.is-unread td {
+  background: #f0f6fc;
+}
+
+.wp-comment-author strong {
+  display: block;
+  margin-bottom: 0.15rem;
+}
+
+.wp-comment-meta {
+  font-size: 0.78rem;
+  color: #646970;
+}
+
+.wp-comment-text {
+  margin-bottom: 0.35rem;
+  white-space: pre-wrap;
+}
+
+.wp-comment-reply {
+  margin: 0.35rem 0;
+  padding: 0.45rem 0.6rem;
+  background: #f6f7f7;
+  border-left: 3px solid #2271b1;
+  font-size: 0.84rem;
+}
+
+.wp-comment-edit textarea {
+  width: 100%;
+  min-height: 80px;
+  padding: 0.5rem;
+  border: 1px solid #8c8f94;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.wp-comment-edit-actions {
+  display: flex;
+  gap: 0.35rem;
+  margin-top: 0.35rem;
+}
+
+.wp-row-actions .is-danger {
+  color: #b32d2e;
+}
+
+.wp-comment-response {
+  font-size: 0.84rem;
+  color: #2271b1;
+}
+
+/* Payments settings */
+.wp-payments-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.wp-payments-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 400;
+}
+
+.wp-payments-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.65rem;
+}
+
+.wp-payments-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.82rem;
+}
+
+.wp-payments-field input {
+  min-height: 32px;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid #8c8f94;
+  border-radius: 4px;
+  font: inherit;
+}
+
+.wp-payments-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.wp-payments-msg {
+  margin-top: 0.75rem;
+  font-size: 0.88rem;
+  color: #2271b1;
+}
+
+.wp-payments .wp-postbox + .wp-postbox {
+  margin-top: 0.75rem;
+}
 }

@@ -16,10 +16,11 @@ import { useTranslation } from '../../context/LanguageContext';
 import { useAuth } from '../../context/AuthContext';
 
 import { Link } from 'react-router-dom';
-import { SHOP } from '../../config/shop';
 import { buildContactPath, buildContactPrefill } from '../../utils/contactPrefill';
 
 import OrderSuccessPanel from '../OrderSuccessPanel';
+import PaymentInstructions from '../PaymentInstructions';
+import { enabledPaymentMethods, mergePaymentSettings } from '../../config/payments';
 
 import ShopLoginPrompt from '../ShopLoginPrompt';
 
@@ -33,10 +34,6 @@ const CITIES = ['Lahore', 'Karachi', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'M
 
 const CHECKOUT_STEPS = ['cart', 'delivery', 'payment', 'confirm'];
 
-const MERCHANT_NAME = 'ASAD SHAHZAD';
-
-
-
 const PAYMENT_METHODS = [
 
   { id: 'jazzcash', icon: '📱', brandClass: 'checkout-payment-card--jazzcash' },
@@ -49,57 +46,7 @@ const PAYMENT_METHODS = [
 
 
 
-const MOBILE_WALLETS = new Set(['jazzcash', 'easypaisa']);
-
-
-
-function PaymentInstructions({ t, amount, orderId }) {
-
-  return (
-
-    <div className="checkout-payment-instructions glass-card">
-
-      <h4 className="checkout-payment-instructions-title">{t('cart.paymentInstructionsTitle')}</h4>
-
-      <ol className="checkout-payment-instructions-steps">
-
-        <li>{t('cart.paymentStepSend', { amount })}</li>
-
-        <li>
-
-          <span className="checkout-payment-instructions-label">{t('cart.paymentMerchantNumber')}</span>
-
-          <strong className="checkout-payment-instructions-value">{SHOP.phone}</strong>
-
-        </li>
-
-        <li>
-
-          <span className="checkout-payment-instructions-label">{t('cart.paymentMerchantName')}</span>
-
-          <strong className="checkout-payment-instructions-value">{MERCHANT_NAME}</strong>
-
-        </li>
-
-        <li>
-
-          {orderId
-
-            ? t('cart.paymentIncludeOrderIdWith', { orderId })
-
-            : t('cart.paymentIncludeOrderId')}
-
-        </li>
-
-      </ol>
-
-    </div>
-
-  );
-
-}
-
-
+const PAYMENT_INSTRUCTION_MODES = new Set(['jazzcash', 'easypaisa', 'bank']);
 
 export default function FloatingCart() {
 
@@ -129,6 +76,7 @@ export default function FloatingCart() {
   const [orderSuccess, setOrderSuccess] = useState(null);
 
   const [successPhone, setSuccessPhone] = useState('');
+  const [paymentSettings, setPaymentSettings] = useState(null);
 
   const [form, setForm] = useState({
 
@@ -149,8 +97,23 @@ export default function FloatingCart() {
   const total = items.reduce((sum, i) => sum + getSalePrice(i) * i.qty, 0);
 
   const itemCount = items.reduce((sum, i) => sum + i.qty, 0);
+  const activePaymentIds = enabledPaymentMethods(paymentSettings);
+  const checkoutPaymentMethods = PAYMENT_METHODS.filter(({ id }) => activePaymentIds.includes(id));
+  const showPaymentInstructions = PAYMENT_INSTRUCTION_MODES.has(form.payment_mode);
 
-  const showWalletInstructions = MOBILE_WALLETS.has(form.payment_mode);
+  useEffect(() => {
+    api.getPaymentSettings()
+      .then((data) => setPaymentSettings(mergePaymentSettings(data)))
+      .catch(() => setPaymentSettings(mergePaymentSettings()));
+  }, []);
+
+  useEffect(() => {
+    if (!activePaymentIds.includes(form.payment_mode) && activePaymentIds[0]) {
+      setForm((prev) => ({ ...prev, payment_mode: activePaymentIds[0] }));
+    }
+  }, [activePaymentIds, form.payment_mode]);
+
+  const showWalletInstructions = showPaymentInstructions;
 
 
 
@@ -596,7 +559,7 @@ export default function FloatingCart() {
 
                         <div className="checkout-payment-grid" role="radiogroup" aria-label={t('cart.paymentTitle')}>
 
-                          {PAYMENT_METHODS.map(({ id, icon, brandClass }) => {
+                          {checkoutPaymentMethods.map(({ id, icon, brandClass }) => {
 
                             const selected = form.payment_mode === id;
 
@@ -636,7 +599,7 @@ export default function FloatingCart() {
 
                         {showWalletInstructions && (
 
-                          <PaymentInstructions t={t} amount={formatPrice(total)} />
+                          <PaymentInstructions t={t} amount={formatPrice(total)} paymentMode={form.payment_mode} settings={paymentSettings} />
 
                         )}
 
@@ -706,7 +669,7 @@ export default function FloatingCart() {
 
                             <p className="checkout-payment-reminder">{t('cart.paymentAfterPlace')}</p>
 
-                            <PaymentInstructions t={t} amount={formatPrice(total)} />
+                            <PaymentInstructions t={t} amount={formatPrice(total)} paymentMode={form.payment_mode} settings={paymentSettings} />
 
                           </>
 

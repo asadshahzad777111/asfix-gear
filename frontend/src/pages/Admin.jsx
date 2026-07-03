@@ -4,30 +4,39 @@ import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { canDeleteProducts, canEditProduct, canManageTeam, canManageShopSettings, canViewSalesReport } from '../config/permissions';
 import AdminLayout from '../components/admin/AdminLayout';
+import AdminDashboard from '../components/admin/AdminDashboard';
+import AdminCategories from '../components/admin/AdminCategories';
+import AdminSettings from '../components/admin/AdminSettings';
 import '../components/admin/admin-wp.css';
 import AddProductForm from '../components/AddProductForm';
 import AdminManagement from '../components/AdminManagement';
 import AdminChatInbox from '../components/AdminChatInbox';
 import AdminSalesReport from '../components/AdminSalesReport';
-import AdminOrderCard from '../components/AdminOrderCard';
+import AdminOrderCard, { ORDER_STATUSES } from '../components/AdminOrderCard';
 import AdminStockManager from '../components/AdminStockManager';
-import ShopStatusControl from '../components/ShopStatusControl';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
-import { getStockStatus } from '../utils/stock';
+import { getStockStatus, LOW_STOCK_THRESHOLD } from '../utils/stock';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 
 export default function Admin() {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
   const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState(searchParams.get('tab') || 'add');
+  const [tab, setTab] = useState(searchParams.get('tab') || 'dashboard');
   const [bookings, setBookings] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [backupLoading, setBackupLoading] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [productSearch, setProductSearch] = useState('');
+  const [productCategory, setProductCategory] = useState('all');
+  const [productStockFilter, setProductStockFilter] = useState('all');
+  const [productOnSale, setProductOnSale] = useState(false);
+  const [selectedProductIds, setSelectedProductIds] = useState([]);
+  const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [bulkLoading, setBulkLoading] = useState(false);
 
   const showAdminMgmt = canManageTeam(user);
   const showSales = canViewSalesReport(user);
@@ -53,6 +62,81 @@ export default function Admin() {
   };
 
   const pendingOrders = orders.filter((o) => o.shipping_status === 'pending').length;
+
+  const productCategories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
+
+  const filteredProducts = products.filter((p) => {
+    if (productCategory !== 'all' && p.category !== productCategory) return false;
+    if (productOnSale && !(Number(p.discount_percent) > 0)) return false;
+    const stock = Number(p.stock) || 0;
+    if (productStockFilter === 'out_of_stock' && stock > 0) return false;
+    if (productStockFilter === 'low_stock' && (stock <= 0 || stock > LOW_STOCK_THRESHOLD)) return false;
+    if (productStockFilter === 'in_stock' && stock <= LOW_STOCK_THRESHOLD) return false;
+    if (productSearch.trim()) {
+      const q = productSearch.trim().toLowerCase();
+      const hay = `${p.name} ${p.category} ${p.brand || ''}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  const filteredOrders = orderStatusFilter === 'all'
+    ? orders
+    : orders.filter((o) => o.shipping_status === orderStatusFilter);
+
+  const navigateAdmin = (nextTab, filter = {}) => {
+    if (filter.category) setProductCategory(filter.category);
+    if (filter.onSale === 'true') setProductOnSale(true);
+    if (filter.onSale === 'false') setProductOnSale(false);
+    setEditingProduct(null);
+    setTab(nextTab);
+  };
+
+  const toggleProductSelect = (id) => {
+    setSelectedProductIds((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
+  };
+
+  const toggleSelectAllProducts = () => {
+    const editableIds = filteredProducts
+      .filter((p) => canEditProduct(user, p))
+      .map((p) => p.id);
+    const allSelected = editableIds.length > 0 && editableIds.every((id) => selectedProductIds.includes(id));
+    setSelectedProductIds(allSelected ? [] : editableIds);
+  };
+
+  const handleDuplicateProduct = async (product) => {
+    if (!canEditProduct(user, product)) {
+      alert(t('admin.ownerOnly'));
+      return;
+    }
+    try {
+      const copy = await api.duplicateProduct(product.id);
+      setProducts((prev) => [copy, ...prev]);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (!allowDelete || !selectedProductIds.length) return;
+    if (!confirm(`Delete ${selectedProductIds.length} selected product(s)?`)) return;
+    setBulkLoading(true);
+    try {
+      const ids = [...selectedProductIds];
+      const result = await api.bulkDeleteProducts(ids);
+      setProducts((prev) => prev.filter((p) => !ids.includes(p.id)));
+      setSelectedProductIds([]);
+      if (result.deleted < ids.length) {
+        alert(`${result.deleted} deleted. Some items were skipped (not yours or not found).`);
+      }
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setBulkLoading(false);
+    }
+  };
 
   const updateOrderStatus = async (id, shipping_status) => {
     try {
@@ -132,14 +216,18 @@ export default function Admin() {
   };
 
   const pageTitle = (() => {
+    if (tab === 'dashboard') return 'Dashboard';
     if (tab === 'add') return editingProduct ? 'Edit product' : 'Add new product';
     if (tab === 'products') return 'Products';
+    if (tab === 'categories') return 'Categories';
     if (tab === 'stock') return 'Stock';
     if (tab === 'orders') return 'Orders';
     if (tab === 'bookings') return 'Repair Intake';
     if (tab === 'messages') return t('admin.messages');
     if (tab === 'sales') return t('sales.tab');
     if (tab === 'admins') return t('team.manageTeam');
+    if (tab === 'settings') return 'Settings';
+    if (tab === 'payments') return 'Payments';
     return 'Dashboard';
   })();
 
@@ -155,27 +243,24 @@ export default function Admin() {
       flags={{ showSales, showAdminMgmt, showShopControl }}
       pageTitle={pageTitle}
     >
-      {showShopControl && (
-        <div className="wp-postbox">
-          <div className="wp-postbox-head">Shop status</div>
-          <div className="wp-postbox-body">
-            <ShopStatusControl />
-            <div style={{ marginTop: '0.75rem' }}>
-              <button
-                type="button"
-                className="wp-button wp-button--secondary"
-                onClick={handleDownloadBackup}
-                disabled={backupLoading}
-              >
-                {backupLoading ? 'Downloading…' : 'Download backup'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {loading && !['add', 'admins', 'messages', 'sales'].includes(tab) ? (
+      {loading && !['add', 'admins', 'messages', 'sales', 'dashboard', 'settings', 'payments'].includes(tab) ? (
         <div className="wp-loading">{t('common.loading')}</div>
+      ) : tab === 'dashboard' ? (
+        <AdminDashboard onNavigate={navigateAdmin} />
+      ) : tab === 'settings' && showShopControl ? (
+        <AdminSettings
+          onDownloadBackup={handleDownloadBackup}
+          backupLoading={backupLoading}
+          showBackup
+          section="general"
+        />
+      ) : tab === 'payments' && showShopControl ? (
+        <AdminSettings section="payments" />
+      ) : tab === 'categories' ? (
+        <AdminCategories
+          products={products}
+          onViewCategory={(name) => navigateAdmin('products', { category: name })}
+        />
       ) : tab === 'messages' ? (
         <div className="wp-postbox">
           <div className="wp-postbox-body"><AdminChatInbox /></div>
@@ -219,11 +304,35 @@ export default function Admin() {
       ) : tab === 'admins' && showAdminMgmt ? (
         <AdminManagement />
       ) : tab === 'orders' ? (
+            <>
+              <div className="wp-order-filters">
+                <button
+                  type="button"
+                  className={`wp-order-filter ${orderStatusFilter === 'all' ? 'is-active' : ''}`}
+                  onClick={() => setOrderStatusFilter('all')}
+                >
+                  All ({orders.length})
+                </button>
+                {ORDER_STATUSES.map((status) => {
+                  const count = orders.filter((o) => o.shipping_status === status).length;
+                  if (!count && orderStatusFilter !== status) return null;
+                  return (
+                    <button
+                      key={status}
+                      type="button"
+                      className={`wp-order-filter ${orderStatusFilter === status ? 'is-active' : ''}`}
+                      onClick={() => setOrderStatusFilter(status)}
+                    >
+                      {status.replace(/_/g, ' ')} ({count})
+                    </button>
+                  );
+                })}
+              </div>
             <div className="admin-orders-list">
-              {orders.length === 0 ? (
-                <div className="empty-state glass-card">Abhi koi order nahi.</div>
+              {filteredOrders.length === 0 ? (
+                <div className="empty-state glass-card">Is filter mein koi order nahi.</div>
               ) : (
-                orders
+                filteredOrders
                   .slice()
                   .reverse()
                   .map((o) => (
@@ -236,6 +345,7 @@ export default function Admin() {
                   ))
               )}
             </div>
+            </>
           ) : tab === 'stock' ? (
             <AdminStockManager
               products={products}
@@ -253,21 +363,86 @@ export default function Admin() {
                   </button>
                 </div>
                 <div className="wp-toolbar-right">
-                  <span style={{ fontSize: '0.84rem', color: '#50575e' }}>{products.length} items</span>
+                  <span style={{ fontSize: '0.84rem', color: '#50575e' }}>{filteredProducts.length} of {products.length}</span>
                 </div>
               </div>
-              {products.length === 0 ? (
-                <div className="wp-empty">
-                  <p>{t('admin.noProducts')}</p>
-                  <button type="button" className="wp-button" style={{ marginTop: '0.75rem' }} onClick={() => setTab('add')}>
-                    Add new product
+              <div className="wp-filter-bar">
+                <input
+                  type="search"
+                  placeholder="Search products…"
+                  value={productSearch}
+                  onChange={(e) => setProductSearch(e.target.value)}
+                  aria-label="Search products"
+                />
+                <select value={productCategory} onChange={(e) => setProductCategory(e.target.value)} aria-label="Filter by category">
+                  <option value="all">All categories</option>
+                  {productCategories.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+                <select value={productStockFilter} onChange={(e) => setProductStockFilter(e.target.value)} aria-label="Filter by stock">
+                  <option value="all">All stock</option>
+                  <option value="in_stock">In stock</option>
+                  <option value="low_stock">Low stock</option>
+                  <option value="out_of_stock">Out of stock</option>
+                </select>
+                <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.84rem' }}>
+                  <input type="checkbox" checked={productOnSale} onChange={(e) => setProductOnSale(e.target.checked)} />
+                  On sale only
+                </label>
+                {(productSearch || productCategory !== 'all' || productStockFilter !== 'all' || productOnSale) && (
+                  <button
+                    type="button"
+                    className="wp-button wp-button--secondary wp-button--small"
+                    onClick={() => {
+                      setProductSearch('');
+                      setProductCategory('all');
+                      setProductStockFilter('all');
+                      setProductOnSale(false);
+                    }}
+                  >
+                    Clear filters
                   </button>
+                )}
+              </div>
+              {allowDelete && selectedProductIds.length > 0 && (
+                <div className="wp-bulk-bar">
+                  <span>{selectedProductIds.length} selected</span>
+                  <button type="button" className="wp-button wp-button--secondary wp-button--small" onClick={() => setSelectedProductIds([])}>
+                    Clear selection
+                  </button>
+                  <button type="button" className="wp-button wp-button--small" onClick={handleBulkDelete} disabled={bulkLoading}>
+                    {bulkLoading ? 'Deleting…' : 'Delete selected'}
+                  </button>
+                </div>
+              )}
+              {filteredProducts.length === 0 ? (
+                <div className="wp-empty">
+                  <p>{products.length === 0 ? t('admin.noProducts') : 'No products match these filters.'}</p>
+                  {products.length === 0 ? (
+                    <button type="button" className="wp-button" style={{ marginTop: '0.75rem' }} onClick={() => setTab('add')}>
+                      Add new product
+                    </button>
+                  ) : null}
                 </div>
               ) : (
                 <div className="wp-table-wrap">
                   <table className="wp-table">
                     <thead>
                       <tr>
+                        {allowDelete ? (
+                          <th style={{ width: 36 }}>
+                            <input
+                              type="checkbox"
+                              aria-label="Select all"
+                              checked={
+                                filteredProducts.filter((p) => canEditProduct(user, p)).length > 0
+                                && filteredProducts.filter((p) => canEditProduct(user, p)).every((p) => selectedProductIds.includes(p.id))
+                              }
+                              onChange={toggleSelectAllProducts}
+                            />
+                          </th>
+                        ) : null}
                         <th style={{ width: 56 }} />
                         <th>Name</th>
                         <th>Stock</th>
@@ -277,11 +452,23 @@ export default function Admin() {
                       </tr>
                     </thead>
                     <tbody>
-                      {products.map((p) => {
+                      {filteredProducts.map((p) => {
                         const editable = canEditProduct(user, p);
                         const stockStatus = getStockStatus(p.stock);
                         return (
                           <tr key={p.id}>
+                            {allowDelete ? (
+                              <td>
+                                {editable ? (
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedProductIds.includes(p.id)}
+                                    onChange={() => toggleProductSelect(p.id)}
+                                    aria-label={`Select ${p.name}`}
+                                  />
+                                ) : null}
+                              </td>
+                            ) : null}
                             <td>
                               <img className="wp-table-thumb" src={p.image} alt="" />
                             </td>
@@ -291,6 +478,8 @@ export default function Admin() {
                                 {editable ? (
                                   <>
                                     <button type="button" onClick={() => handleEditProduct(p)}>Edit</button>
+                                    <span>|</span>
+                                    <button type="button" onClick={() => handleDuplicateProduct(p)}>Duplicate</button>
                                     <span>|</span>
                                     {allowDelete && (
                                       <button type="button" onClick={() => handleDeleteProduct(p.id, p.name)}>Delete</button>

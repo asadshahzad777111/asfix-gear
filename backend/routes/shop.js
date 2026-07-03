@@ -42,4 +42,14 @@ router.patch('/status', requireAuth, requireRole(...SHOP_MANAGERS), (req, res) =
   res.json(statusPayload(shop));
 });
 
+router.get('/payments', (_req, res) => {
+  res.json(store.getPaymentSettings());
+});
+
+router.patch('/payments', requireAuth, requireRole(...SHOP_MANAGERS), (req, res) => {
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const payments = store.setPaymentSettings(body, req.auth.user.id);
+  res.json(payments);
+});
+
 export default router;

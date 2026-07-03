@@ -58,7 +58,7 @@ export function getStats() {
 }
 
 export function getProducts(filters = {}) {
-  const { category, featured, search, on_sale, brand } = filters;
+  const { category, featured, search, on_sale, brand, stock_status } = filters;
   let products = readData().products;
 
   if (category && category !== 'all') {
@@ -72,6 +72,16 @@ export function getProducts(filters = {}) {
   }
   if (on_sale === 'true') {
     products = products.filter((p) => Number(p.discount_percent) > 0);
+  }
+  if (stock_status === 'out_of_stock') {
+    products = products.filter((p) => (Number(p.stock) || 0) <= 0);
+  } else if (stock_status === 'low_stock') {
+    products = products.filter((p) => {
+      const n = Number(p.stock) || 0;
+      return n > 0 && n <= LOW_STOCK_THRESHOLD;
+    });
+  } else if (stock_status === 'in_stock') {
+    products = products.filter((p) => (Number(p.stock) || 0) > LOW_STOCK_THRESHOLD);
   }
   if (search) {
     products = products.filter((p) => productMatchesSearch(p, search));
@@ -213,6 +223,59 @@ export function deleteProduct(id) {
     data.products = data.products.filter((p) => p.id !== numId);
     return before !== data.products.length;
   });
+}
+
+export function duplicateProduct(id, input = {}) {
+  return withData((data) => {
+    const existing = data.products.find((p) => p.id === Number(id));
+    if (!existing) return null;
+    const newId = data.meta.nextProductId++;
+    const copy = {
+      ...existing,
+      id: newId,
+      name: `${existing.name} (Copy)`,
+      featured: 0,
+      created_at: now(),
+      created_by: input.created_by ?? existing.created_by,
+      created_by_name: String(input.created_by_name || existing.created_by_name || '').trim(),
+      stock_log: [],
+    };
+    data.products.push(copy);
+    return copy;
+  });
+}
+
+export function bulkDeleteProducts(ids = []) {
+  const idSet = new Set(ids.map((id) => Number(id)).filter((id) => Number.isFinite(id)));
+  if (!idSet.size) return 0;
+  return withData((data) => {
+    const before = data.products.length;
+    data.products = data.products.filter((p) => !idSet.has(p.id));
+    return before - data.products.length;
+  });
+}
+
+export function getAdminDashboardStats() {
+  const data = readData();
+  const products = data.products;
+  const orders = data.orders || [];
+  const bookings = data.repair_bookings || [];
+  const lowStock = products.filter((p) => {
+    const n = Number(p.stock) || 0;
+    return n > 0 && n <= LOW_STOCK_THRESHOLD;
+  }).length;
+  return {
+    products: products.length,
+    orders: orders.length,
+    pendingOrders: orders.filter((o) => o.shipping_status === 'pending').length,
+    lowStock,
+    outOfStock: products.filter((p) => (Number(p.stock) || 0) <= 0).length,
+    onSale: products.filter((p) => Number(p.discount_percent) > 0).length,
+    featured: products.filter((p) => Number(p.featured) === 1).length,
+    bookings: bookings.length,
+    pendingBookings: bookings.filter((b) => b.status === 'pending').length,
+    unreadMessages: (data.contact_messages || []).filter((m) => !m.staff_reply).length,
+  };
 }
 
 export function countProducts() {
@@ -541,6 +604,34 @@ export function replyContactMessage(id, staff_reply) {
       replied_at: now(),
     };
     return data.contact_messages[index];
+  });
+}
+
+export function updateContactMessage(id, input = {}) {
+  return withData((data) => {
+    const index = data.contact_messages.findIndex((m) => m.id === Number(id));
+    if (index === -1) return null;
+    const existing = data.contact_messages[index];
+    const next = { ...existing };
+    if (input.message != null) {
+      next.message = String(input.message).trim().slice(0, 2000);
+    }
+    if (input.staff_reply != null) {
+      const reply = String(input.staff_reply).trim();
+      next.staff_reply = reply;
+      next.replied_at = reply ? now() : null;
+    }
+    data.contact_messages[index] = next;
+    return next;
+  });
+}
+
+export function deleteContactMessage(id) {
+  return withData((data) => {
+    const numId = Number(id);
+    const before = data.contact_messages.length;
+    data.contact_messages = data.contact_messages.filter((m) => m.id !== numId);
+    return before !== data.contact_messages.length;
   });
 }
 
@@ -1322,6 +1413,65 @@ export function setShopManualOverride(manual_override, userId) {
     data.settings.shop.updated_at = now();
     data.settings.shop.updated_by = userId ?? null;
     return data.settings.shop;
+  });
+}
+
+const DEFAULT_PAYMENT_SETTINGS = {
+  jazzcash: { enabled: true, number: '03039227000', accountName: 'ASAD SHAHZAD' },
+  easypaisa: { enabled: true, number: '03039227000', accountName: 'ASAD SHAHZAD' },
+  bank: {
+    enabled: true,
+    accountName: 'ASAD SHAHZAD',
+    accountNumber: '11590105485732',
+    iban: 'PK81MEZN0011590105485732',
+    bankName: 'Meezan Bank',
+    branch: 'BATAPUR BRANCH LHR',
+  },
+};
+
+export function getPaymentSettings() {
+  const saved = readData().settings?.payments || {};
+  return {
+    jazzcash: { ...DEFAULT_PAYMENT_SETTINGS.jazzcash, ...(saved.jazzcash || {}) },
+    easypaisa: { ...DEFAULT_PAYMENT_SETTINGS.easypaisa, ...(saved.easypaisa || {}) },
+    bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
+    updated_at: saved.updated_at ?? null,
+    updated_by: saved.updated_by ?? null,
+  };
+}
+
+export function setPaymentSettings(input, userId) {
+  return withData((data) => {
+    if (!data.settings) data.settings = {};
+    const saved = data.settings.payments || {};
+    const next = {
+      jazzcash: { ...DEFAULT_PAYMENT_SETTINGS.jazzcash, ...(saved.jazzcash || {}) },
+      easypaisa: { ...DEFAULT_PAYMENT_SETTINGS.easypaisa, ...(saved.easypaisa || {}) },
+      bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
+    };
+
+    for (const key of ['jazzcash', 'easypaisa', 'bank']) {
+      if (!input[key]) continue;
+      const patch = input[key];
+      next[key] = {
+        ...next[key],
+        ...(patch.enabled != null ? { enabled: Boolean(patch.enabled) } : {}),
+        ...(patch.number != null ? { number: String(patch.number).trim().slice(0, 20) } : {}),
+        ...(patch.accountName != null ? { accountName: String(patch.accountName).trim().slice(0, 120) } : {}),
+        ...(patch.accountNumber != null ? { accountNumber: String(patch.accountNumber).trim().slice(0, 30) } : {}),
+        ...(patch.iban != null ? { iban: String(patch.iban).trim().slice(0, 40) } : {}),
+        ...(patch.bankName != null ? { bankName: String(patch.bankName).trim().slice(0, 80) } : {}),
+        ...(patch.branch != null ? { branch: String(patch.branch).trim().slice(0, 120) } : {}),
+      };
+    }
+
+    const payload = {
+      ...next,
+      updated_at: now(),
+      updated_by: userId ?? null,
+    };
+    data.settings.payments = payload;
+    return payload;
   });
 }
 

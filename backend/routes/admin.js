@@ -20,6 +20,10 @@ router.get('/export-data', requireAuth, requireRole(...BACKUP_EXPORTERS), (_req,
   }
 });
 
+router.get('/dashboard-stats', requireAuth, requireRole(...SALES_VIEWERS), (_req, res) => {
+  res.json(store.getAdminDashboardStats());
+});
+
 router.get('/sales-report', requireAuth, requireRole(...SALES_VIEWERS), (req, res) => {
   const period = String(req.query.period || 'day').trim().toLowerCase();
   if (!VALID_PERIODS.includes(period)) {

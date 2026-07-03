@@ -302,6 +302,9 @@ export const api = {
   adjustProductStock: (id, delta, opts = {}) =>
     request(`/products/${id}/stock`, { method: 'PATCH', body: JSON.stringify({ delta, ...opts }) }),
   deleteProduct: (id) => request(`/products/${id}`, { method: 'DELETE' }),
+  duplicateProduct: (id) => request(`/products/${id}/duplicate`, { method: 'POST' }),
+  bulkDeleteProducts: (ids) =>
+    request('/products/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
   uploadProductImage: (file) => uploadProductImage(file),
 
   getRepairServices: () => request('/repairs/services'),
@@ -331,16 +334,23 @@ export const api = {
   getContactMessages: () => request('/contact'),
   replyContactMessage: (id, reply) =>
     request(`/contact/${id}/reply`, { method: 'PATCH', body: JSON.stringify({ reply }) }),
+  updateContactMessage: (id, body) =>
+    request(`/contact/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteContactMessage: (id) => request(`/contact/${id}`, { method: 'DELETE' }),
   getSalesReport: (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return request(`/admin/sales-report${query ? `?${query}` : ''}`);
   },
+  getAdminDashboardStats: () => request('/admin/dashboard-stats'),
   downloadDataBackup: () => downloadDataBackup(),
 
   getStats: () => request('/stats'),
   getShopStatus: () => request('/shop/status'),
   setShopStatus: (manual_override) =>
     request('/shop/status', { method: 'PATCH', body: JSON.stringify({ manual_override }) }),
+  getPaymentSettings: () => request('/shop/payments'),
+  setPaymentSettings: (body) =>
+    request('/shop/payments', { method: 'PATCH', body: JSON.stringify(body) }),
 };
 
 export function formatPrice(amount) {

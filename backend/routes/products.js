@@ -217,4 +217,30 @@ router.delete('/:id', requireAuth, requireRole(...CAN_DELETE), (req, res) => {
   res.json({ message: 'Product deleted' });
 });
 
+router.post('/:id/duplicate', requireAuth, requireRole(...STAFF), (req, res) => {
+  const existing = store.getProductById(req.params.id);
+  if (!existing) return res.status(404).json({ error: 'Product not found' });
+
+  const copy = store.duplicateProduct(req.params.id, {
+    created_by: req.auth.user.id,
+    created_by_name: req.auth.user.name || req.auth.user.username,
+  });
+  if (!copy) return res.status(404).json({ error: 'Product not found' });
+  res.status(201).json(copy);
+});
+
+router.post('/bulk-delete', requireAuth, requireRole(...CAN_DELETE), (req, res) => {
+  const ids = Array.isArray(req.body?.ids) ? req.body.ids : [];
+  if (!ids.length) return res.status(400).json({ error: 'No product IDs provided' });
+
+  let deleted = 0;
+  for (const id of ids) {
+    const existing = store.getProductById(id);
+    if (!existing) continue;
+    if (!canEditProduct(req.auth.user, existing)) continue;
+    if (store.deleteProduct(id)) deleted += 1;
+  }
+  res.json({ deleted });
+});
+
 export default router;

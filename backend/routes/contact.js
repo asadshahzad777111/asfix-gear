@@ -78,4 +78,26 @@ router.patch('/:id/reply', requireAuth, requireRole(...STAFF), (req, res) => {
   res.json(updated);
 });
 
+router.patch('/:id', requireAuth, requireRole(...STAFF), (req, res) => {
+  const { message, reply } = req.body;
+  if (message == null && reply == null) {
+    return res.status(400).json({ error: 'Provide message or reply to update' });
+  }
+  if (message != null && String(message).trim().length > MAX_MESSAGE) {
+    return res.status(400).json({ error: 'Message too long' });
+  }
+  const updated = store.updateContactMessage(req.params.id, {
+    message: message != null ? String(message).trim() : undefined,
+    staff_reply: reply != null ? String(reply).trim() : undefined,
+  });
+  if (!updated) return res.status(404).json({ error: 'Message not found' });
+  res.json(updated);
+});
+
+router.delete('/:id', requireAuth, requireRole(...STAFF), (req, res) => {
+  const deleted = store.deleteContactMessage(req.params.id);
+  if (!deleted) return res.status(404).json({ error: 'Message not found' });
+  res.json({ message: 'Message deleted' });
+});
+
 export default router;
