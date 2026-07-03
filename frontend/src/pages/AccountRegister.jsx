@@ -14,6 +14,7 @@ import {
   AuthSubmitButton,
   AuthSecondaryButton,
 } from '../components/auth/AuthUI';
+import PasswordField from '../components/auth/PasswordField';
 
 export default function AccountRegister() {
   const { isCustomer, user, loading, completeSession } = useAuth();
@@ -84,6 +85,8 @@ export default function AccountRegister() {
 
       if (form.email.trim()) {
         setOtpHint(t('otp.sentEmail', { email: form.email.trim() }));
+      } else if (data.method === 'whatsapp_manual') {
+        setOtpHint(t('otp.whatsappManualHint'));
       } else {
         setOtpHint(t('otp.sentPhoneWhatsApp'));
       }
@@ -141,7 +144,13 @@ export default function AccountRegister() {
       if (data.devCode) setDevCode(data.devCode);
       if (data.whatsappLink) setWhatsappLink(data.whatsappLink);
       setOtp('');
-      setOtpHint(form.email.trim() ? t('otp.sentEmail', { email: form.email.trim() }) : t('otp.sentPhoneWhatsApp'));
+      setOtpHint(
+        form.email.trim()
+          ? t('otp.sentEmail', { email: form.email.trim() })
+          : data.method === 'whatsapp_manual'
+            ? t('otp.whatsappManualHint')
+            : t('otp.sentPhoneWhatsApp')
+      );
     } catch (err) {
       setError(err.message || t('otp.sendFailed'));
     } finally {
@@ -225,9 +234,8 @@ export default function AccountRegister() {
 
               <div className="auth-2026-field">
                 <label htmlFor="password">{t('login.password')} *</label>
-                <input
+                <PasswordField
                   id="password"
-                  type="password"
                   value={form.password}
                   onChange={(e) => setField('password', e.target.value)}
                   minLength={6}
@@ -237,9 +245,8 @@ export default function AccountRegister() {
 
               <div className="auth-2026-field">
                 <label htmlFor="confirmPassword">{t('account.confirmPassword')} *</label>
-                <input
+                <PasswordField
                   id="confirmPassword"
-                  type="password"
                   value={form.confirmPassword}
                   onChange={(e) => setField('confirmPassword', e.target.value)}
                   minLength={6}

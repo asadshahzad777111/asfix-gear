@@ -1,0 +1,10 @@
+# Render Blueprint — optional; update dashboard Build Command to match if service already exists.
+services:
+  - type: web
+    name: asfix-gear
+    runtime: node
+    buildCommand: npm run build:render
+    startCommand: NODE_ENV=production node backend/server.js
+    envVars:
+      - key: MONGODB_DB
+        value: asfix_gear

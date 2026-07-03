@@ -1,10 +1,25 @@
 import { Router } from 'express';
+import multer from 'multer';
 import * as store from '../store.js';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
+import { isR2Configured, uploadProductImage } from '../services/r2.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
 const MAX_IMAGE_DATA_URL = 180_000;
+const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_UPLOAD_BYTES, files: 1 },
+  fileFilter(_req, file, cb) {
+    if (!file.mimetype?.startsWith('image/')) {
+      cb(new Error('Only image files are allowed'));
+      return;
+    }
+    cb(null, true);
+  },
+});
 
 function validateProductImage(image) {
   if (image == null) return image;
@@ -53,6 +68,39 @@ router.get('/', optionalAuth, (req, res) => {
 
 router.get('/categories', (_req, res) => {
   res.json(store.getProductCategories());
+});
+
+router.post('/upload-image', requireAuth, requireRole(...STAFF), (req, res, next) => {
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Image must be 5MB or smaller' });
+      }
+      return res.status(400).json({ error: err.message || 'Invalid upload' });
+    }
+    next();
+  });
+}, async (req, res) => {
+  if (!isR2Configured()) {
+    return res.status(503).json({
+      error: 'Image upload is not configured. Add Cloudflare R2 env vars on the server.',
+    });
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image file provided (field name: image)' });
+  }
+
+  try {
+    const url = await uploadProductImage(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype
+    );
+    res.status(201).json({ url });
+  } catch (err) {
+    console.error('[R2] upload failed:', err.message);
+    res.status(500).json({ error: 'Image upload failed' });
+  }
 });
 
 router.get('/:id', optionalAuth, (req, res) => {

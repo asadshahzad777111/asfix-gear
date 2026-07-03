@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
-import { isStaff as checkStaff, isCustomer as checkCustomer } from '../config/permissions';
+import { isStaff as checkStaff, isCustomer as checkCustomer, isValidStaffGmail } from '../config/permissions';
 import {
   AuthShell,
   AuthCard,
@@ -11,9 +11,10 @@ import {
   AuthAlert,
   AuthSubmitButton,
 } from '../components/auth/AuthUI';
+import PasswordField from '../components/auth/PasswordField';
 
 export default function Login() {
-  const { login, isStaff, user, loading } = useAuth();
+  const { login, isStaff, user, loading, logout } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,12 +42,20 @@ export default function Login() {
     setSubmitting(true);
     setError('');
 
+    const trimmed = loginValue.trim();
+    if (!isValidStaffGmail(trimmed)) {
+      setError(t('team.errGmail'));
+      setSubmitting(false);
+      return;
+    }
+
     try {
-      const loggedIn = await login(loginValue.trim(), password);
+      const loggedIn = await login(trimmed, password);
       if (checkStaff(loggedIn)) {
         navigate(from, { replace: true });
       } else if (checkCustomer(loggedIn)) {
-        navigate('/account', { replace: true });
+        await logout();
+        setError(t('account.staffUseAdminLogin'));
       } else {
         navigate(from, { replace: true });
       }
@@ -75,7 +84,7 @@ export default function Login() {
               <label htmlFor="login">{t('team.gmail')}</label>
               <input
                 id="login"
-                type="text"
+                type="email"
                 inputMode="email"
                 value={loginValue}
                 onChange={(e) => setLoginValue(e.target.value)}
@@ -88,9 +97,8 @@ export default function Login() {
 
             <div className="auth-2026-field">
               <label htmlFor="password">{t('login.password')}</label>
-              <input
+              <PasswordField
                 id="password"
-                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder={t('login.passwordPlaceholder')}

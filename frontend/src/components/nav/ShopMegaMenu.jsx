@@ -1,179 +1,190 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { AnimatePresence, motion } from 'framer-motion';
-import { SHOP_BRANDS, SHOP_CATEGORIES } from '../../config/products';
+import { SHOP_BRANDS, SHOP_CATEGORIES, MODEL_SPECIFIC_CATEGORIES } from '../../config/products';
 import { getSeriesForShopBrand } from '../../config/repairModels';
 import { useTranslation } from '../../context/LanguageContext';
+import PhoneFinderModal from '../PhoneFinderModal';
 
-const HOVER_CLOSE_MS = 220;
-
+/** Click-only levels: 1 categories → 2 brands → 3 models */
 export default function ShopMegaMenu() {
   const { t } = useTranslation();
   const [open, setOpen] = useState(false);
+  const [level, setLevel] = useState(1);
   const [activeBrand, setActiveBrand] = useState(SHOP_BRANDS[0]?.id || null);
+  const [finderCategory, setFinderCategory] = useState(null);
   const wrapRef = useRef(null);
-  const closeTimerRef = useRef(null);
 
-  const clearCloseTimer = useCallback(() => {
-    if (closeTimerRef.current) {
-      clearTimeout(closeTimerRef.current);
-      closeTimerRef.current = null;
-    }
+  const closeMenu = useCallback(() => {
+    setOpen(false);
+    setLevel(1);
   }, []);
 
-  const openMenu = useCallback(() => {
-    clearCloseTimer();
-    setOpen(true);
-  }, [clearCloseTimer]);
-
-  const scheduleClose = useCallback(() => {
-    clearCloseTimer();
-    closeTimerRef.current = window.setTimeout(() => {
-      setOpen(false);
-      closeTimerRef.current = null;
-    }, HOVER_CLOSE_MS);
-  }, [clearCloseTimer]);
+  const toggleOpen = useCallback(() => {
+    setOpen((was) => {
+      if (was) {
+        setLevel(1);
+        return false;
+      }
+      return true;
+    });
+  }, []);
 
   useEffect(() => {
     const onDocClick = (e) => {
       if (wrapRef.current && !wrapRef.current.contains(e.target)) {
-        clearCloseTimer();
-        setOpen(false);
+        closeMenu();
       }
     };
     const onKey = (e) => {
-      if (e.key === 'Escape') {
-        clearCloseTimer();
-        setOpen(false);
-      }
+      if (e.key === 'Escape') closeMenu();
     };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onKey);
     return () => {
       document.removeEventListener('mousedown', onDocClick);
       document.removeEventListener('keydown', onKey);
-      clearCloseTimer();
     };
-  }, [clearCloseTimer]);
+  }, [closeMenu]);
 
   const activeBrandData = SHOP_BRANDS.find((b) => b.id === activeBrand) || SHOP_BRANDS[0];
   const activeSeries = activeBrandData ? getSeriesForShopBrand(activeBrandData.id) : [];
 
+  const handleCategoryClick = (cat) => {
+    if (MODEL_SPECIFIC_CATEGORIES.includes(cat)) {
+      closeMenu();
+      setFinderCategory(cat);
+    }
+  };
+
   return (
-    <div
-      className={`nav-mega-wrap ${open ? 'is-open' : ''}`}
-      ref={wrapRef}
-      onMouseEnter={openMenu}
-      onMouseLeave={scheduleClose}
-    >
-      <button
-        type="button"
-        className="nav-mega-trigger"
-        aria-expanded={open}
-        aria-haspopup="true"
-        onClick={() => {
-          clearCloseTimer();
-          // Hover already opens the panel on desktop — clicking must never
-          // toggle it closed (that raced with hover-open and made the menu
-          // vanish the instant the mouse moved toward it). Click always
-          // opens; closing stays owned by mouseleave / outside-click / ESC.
-          setOpen(true);
-        }}
-      >
-        🛍️ {t('nav.shop')}
-        <span className="nav-mega-chevron" aria-hidden="true">▾</span>
-      </button>
+    <>
+      <div className={`nav-mega-wrap nav-mega-wrap--click ${open ? 'is-open' : ''}`} ref={wrapRef}>
+        <button
+          type="button"
+          className="nav-mega-trigger"
+          aria-expanded={open}
+          aria-haspopup="true"
+          onClick={toggleOpen}
+        >
+          🛍️ {t('nav.shop')}
+          <span className="nav-mega-chevron" aria-hidden="true">▾</span>
+        </button>
 
-      <div className="nav-mega-panel" hidden={!open} onMouseEnter={openMenu}>
-        <div className="nav-mega-panel-body nav-mega-panel-body--shop">
-          <div className="nav-mega-col">
-            <p className="nav-mega-label">{t('nav.categories')}</p>
-            <ul className="nav-mega-list">
-              <li>
-                <Link to="/shop" onClick={() => setOpen(false)}>
-                  {t('nav.shopAll')}
-                </Link>
-              </li>
-              {SHOP_CATEGORIES.map((cat) => (
-                <li key={cat}>
-                  <Link
-                    to={`/shop?category=${encodeURIComponent(cat)}`}
-                    onClick={() => setOpen(false)}
-                  >
-                    {cat}
-                  </Link>
-                </li>
-              ))}
-            </ul>
-          </div>
+        <div className="nav-mega-panel nav-mega-panel--solid" hidden={!open}>
+          <div className="nav-mega-panel-body nav-mega-panel-body--shop nav-mega-panel-body--stepped">
+            {level > 1 && (
+              <button
+                type="button"
+                className="nav-mega-back"
+                onClick={() => setLevel((l) => Math.max(1, l - 1))}
+              >
+                ← {level === 2 ? t('nav.categories') : t('nav.topPicks')}
+              </button>
+            )}
 
-          <div className="nav-mega-col nav-mega-col--brands">
-            <p className="nav-mega-label">{t('nav.topPicks')}</p>
-            <ul className="nav-mega-brand-list">
-              {SHOP_BRANDS.map((brand) => (
-                <li key={brand.id}>
-                  <button
-                    type="button"
-                    className={`nav-mega-brand-item ${activeBrand === brand.id ? 'is-active' : ''}`}
-                    onMouseEnter={() => setActiveBrand(brand.id)}
-                    onFocus={() => setActiveBrand(brand.id)}
-                    onClick={() => setActiveBrand(brand.id)}
-                  >
-                    <span aria-hidden="true">{brand.icon}</span>
-                    <span className="nav-mega-brand-item-label">{brand.label}</span>
-                    <span className="nav-mega-brand-arrow" aria-hidden="true">›</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          </div>
+            {level === 1 && (
+              <div className="nav-mega-step nav-mega-step--categories">
+                <p className="nav-mega-label">{t('nav.categories')}</p>
+                <ul className="nav-mega-list">
+                  <li>
+                    <Link to="/shop" onClick={closeMenu}>
+                      {t('nav.shopAll')}
+                    </Link>
+                  </li>
+                  {SHOP_CATEGORIES.map((cat) => (
+                    <li key={cat}>
+                      {MODEL_SPECIFIC_CATEGORIES.includes(cat) ? (
+                        <button
+                          type="button"
+                          className="nav-mega-list-btn"
+                          onClick={() => handleCategoryClick(cat)}
+                        >
+                          {cat}
+                        </button>
+                      ) : (
+                        <Link
+                          to={`/shop?category=${encodeURIComponent(cat)}`}
+                          onClick={closeMenu}
+                        >
+                          {cat}
+                        </Link>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+                <button type="button" className="nav-mega-next" onClick={() => setLevel(2)}>
+                  {t('nav.topPicks')} →
+                </button>
+              </div>
+            )}
 
-          <div className="nav-mega-col nav-mega-col--models">
-            {activeBrandData && (
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={activeBrandData.id}
-                  initial={{ opacity: 0, x: 8 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: 8 }}
-                  transition={{ duration: 0.16, ease: 'easeOut' }}
-                >
-                  <p className="nav-mega-label">
-                    {activeBrandData.icon} {activeBrandData.label}
-                  </p>
-                  <p className="nav-mega-models-sub">{t('home.chooseModelSub')}</p>
-                  <div className="nav-mega-model-series-scroll">
-                    {activeSeries.map((series) => (
-                      <div key={series.name} className="nav-mega-model-series">
-                        <p className="nav-mega-model-series-name">{series.name}</p>
-                        <div className="nav-mega-model-chips">
-                          {series.models.map((model) => (
-                            <Link
-                              key={model}
-                              to={`/shop?brand=${encodeURIComponent(activeBrandData.id)}&search=${encodeURIComponent(model)}`}
-                              className="nav-mega-model-chip"
-                              onClick={() => setOpen(false)}
-                            >
-                              {model}
-                            </Link>
-                          ))}
-                        </div>
+            {level === 2 && (
+              <div className="nav-mega-step nav-mega-step--brands">
+                <p className="nav-mega-label">{t('nav.topPicks')}</p>
+                <ul className="nav-mega-brand-list">
+                  {SHOP_BRANDS.map((brand) => (
+                    <li key={brand.id}>
+                      <button
+                        type="button"
+                        className="nav-mega-brand-item"
+                        onClick={() => {
+                          setActiveBrand(brand.id);
+                          setLevel(3);
+                        }}
+                      >
+                        <span aria-hidden="true">{brand.icon}</span>
+                        <span className="nav-mega-brand-item-label">{brand.label}</span>
+                        <span className="nav-mega-brand-arrow" aria-hidden="true">›</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {level === 3 && activeBrandData && (
+              <div className="nav-mega-step nav-mega-step--models">
+                <p className="nav-mega-label">
+                  {activeBrandData.icon} {activeBrandData.label}
+                </p>
+                <p className="nav-mega-models-sub">{t('home.chooseModelSub')}</p>
+                <div className="nav-mega-model-series-scroll">
+                  {activeSeries.map((series) => (
+                    <div key={series.name} className="nav-mega-model-series">
+                      <p className="nav-mega-model-series-name">{series.name}</p>
+                      <div className="nav-mega-model-chips">
+                        {series.models.map((model) => (
+                          <Link
+                            key={model}
+                            to={`/shop?brand=${encodeURIComponent(activeBrandData.id)}&search=${encodeURIComponent(model)}`}
+                            className="nav-mega-model-chip"
+                            onClick={closeMenu}
+                          >
+                            {model}
+                          </Link>
+                        ))}
                       </div>
-                    ))}
-                  </div>
-                  <Link
-                    to={`/shop?brand=${encodeURIComponent(activeBrandData.id)}`}
-                    className="nav-mega-view-all"
-                    onClick={() => setOpen(false)}
-                  >
-                    {t('nav.viewAllBrand', { brand: activeBrandData.label })}
-                  </Link>
-                </motion.div>
-              </AnimatePresence>
+                    </div>
+                  ))}
+                </div>
+                <Link
+                  to={`/shop?brand=${encodeURIComponent(activeBrandData.id)}`}
+                  className="nav-mega-view-all"
+                  onClick={closeMenu}
+                >
+                  {t('nav.viewAllBrand', { brand: activeBrandData.label })}
+                </Link>
+              </div>
             )}
           </div>
         </div>
       </div>
-    </div>
+
+      <PhoneFinderModal
+        open={Boolean(finderCategory)}
+        category={finderCategory}
+        onClose={() => setFinderCategory(null)}
+      />
+    </>
   );
 }

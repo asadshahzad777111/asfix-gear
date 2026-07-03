@@ -452,11 +452,15 @@
   text-decoration: none;
   color: var(--text);
   min-width: 72px;
-  background: none;
+  position: relative;
+  z-index: 1;
   border: none;
+  background: transparent;
   padding: 0;
-  font: inherit;
   cursor: pointer;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 .home-trending-circle {

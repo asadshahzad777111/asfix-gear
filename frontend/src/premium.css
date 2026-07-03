@@ -256,6 +256,24 @@ body.custom-cursor-active {
 
 /* Mobile float positions → responsive-floats.css */
 
+@media (min-width: 769px) {
+  .staff-access {
+    bottom: 10rem;
+    z-index: 210;
+  }
+
+  .staff-access.is-open {
+    flex-direction: column-reverse;
+  }
+
+  .staff-access-panel {
+    margin-bottom: 0.15rem;
+    background: var(--nav-menu-solid, var(--bg-card)) !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 /* ── Premium buttons ── */
 .premium-btn {
   position: relative;

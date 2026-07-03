@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import PageHeader from '../components/PageHeader';
+import PasswordField from '../components/auth/PasswordField';
 
 export default function AccountSettings() {
   const { user, logout, refreshUser } = useAuth();
@@ -121,9 +122,8 @@ export default function AccountSettings() {
 
                 <div className="form-group">
                   <label htmlFor="current-pw">{t('settings.currentPassword')}</label>
-                  <input
+                  <PasswordField
                     id="current-pw"
-                    type="password"
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     autoComplete="current-password"
@@ -133,9 +133,8 @@ export default function AccountSettings() {
 
                 <div className="form-group">
                   <label htmlFor="new-pw">{t('settings.newPassword')}</label>
-                  <input
+                  <PasswordField
                     id="new-pw"
-                    type="password"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     minLength={6}
@@ -146,9 +145,8 @@ export default function AccountSettings() {
 
                 <div className="form-group">
                   <label htmlFor="confirm-pw">{t('account.confirmPassword')}</label>
-                  <input
+                  <PasswordField
                     id="confirm-pw"
-                    type="password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     minLength={6}

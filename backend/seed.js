@@ -1,4 +1,10 @@
 import * as store from './store.js';
+import { initStorage } from './store.js';
+import { exitIfSeedSkipped } from './seed-skip.js';
+
+exitIfSeedSkipped('seed.js');
+
+await initStorage();
 
 const productCount = store.countProducts();
 const serviceCount = store.countRepairServices();
@@ -147,4 +153,4 @@ if (serviceCount === 0) {
   console.log(`Seeded ${services.length} repair services.`);
 }
 
-console.log('Data seed complete (data.json).');
+console.log('Data seed complete.');

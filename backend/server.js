@@ -2,7 +2,8 @@ import express from 'express';
 import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { getStats } from './store.js';
+import { loadEnv } from '../scripts/load-env.mjs';
+import { getStats, getStorageBackend, initStorage, isStorageReady } from './store.js';
 import productsRouter from './routes/products.js';
 import repairsRouter from './routes/repairs.js';
 import contactRouter from './routes/contact.js';
@@ -12,9 +13,10 @@ import shopRouter from './routes/shop.js';
 import adminRouter from './routes/admin.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
 import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
-import { verifySmtpConnection } from './services/otpDelivery.js';
+import { isR2Configured } from './services/r2.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+loadEnv();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -46,15 +48,31 @@ app.use('/api', (_req, res, next) => {
 // mode this file's own rate-limit isolation was meant to prevent, just one
 // layer higher than the fix originally covered.
 app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/auth')) return next();
+  if (req.path.startsWith('/auth') || req.path === '/ping' || req.path === '/health') return next();
   return apiLimiter(req, res, next);
 });
 
+app.get('/api/ping', (_req, res) => {
+  res.type('text/plain').send('ok');
+});
+
 app.get('/api/health', (_req, res) => {
-  res.json({ status: 'ok', brand: 'AsFix & Gear', storage: 'json' });
+  const ready = isStorageReady();
+  const starting = ready == null || ready === false;
+  res.json({
+    status: starting ? 'starting' : 'ok',
+    brand: 'AsFix & Gear',
+    storage: getStorageBackend(),
+    ready: ready ?? false,
+    r2: isR2Configured() ? 'configured' : 'off',
+  });
 });
 
 app.get('/api/stats', (_req, res) => {
+  const ready = isStorageReady();
+  if (ready == null || ready === false) {
+    return res.status(503).json({ error: 'Database is starting — retry in a few seconds' });
+  }
   res.json(getStats());
 });
 
@@ -96,8 +114,13 @@ if (process.env.NODE_ENV === 'production') {
   // swap asset hashes immediately (mobile browsers often keep old index.html
   // for days and then load stale bundles — looks like "fix didn't deploy").
   const spaShellHeaders = (_res, filePath) => {
-    if (filePath.endsWith(`${path.sep}index.html`)) {
+    const base = path.basename(filePath);
+    if (filePath.endsWith(`${path.sep}index.html`) || base === 'sw.js' || base.startsWith('workbox-')) {
       _res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return;
+    }
+    if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+      _res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
   };
   app.use(
@@ -126,12 +149,41 @@ app.use((err, _req, res, _next) => {
   return res.status(500).json({ error: 'Internal server error' });
 });
 
-app.listen(PORT, () => {
-  console.log(`AsFix & Gear API running on http://localhost:${PORT}`);
-  console.log('Storage: backend/data/data.json');
-  if (process.env.NODE_ENV === 'production') {
-    verifySmtpConnection().catch((err) => {
-      console.error('[OTP] SMTP startup check error:', err.message);
-    });
+const INIT_RETRY_MS = 30_000;
+const INIT_MAX_RETRIES = 20;
+
+async function initStorageWithRetry(attempt = 1) {
+  try {
+    const storage = await initStorage();
+    console.log(`Storage: ${storage === 'mongodb' ? 'MongoDB Atlas' : 'backend/data/data.json'}`);
+    return storage;
+  } catch (err) {
+    console.error(`Failed to init storage (attempt ${attempt}/${INIT_MAX_RETRIES}):`, err.message);
+    if (attempt >= INIT_MAX_RETRIES) {
+      console.error('Storage init gave up — /api/health stays starting until manual restart');
+      return null;
+    }
+    console.log(`Retrying storage init in ${INIT_RETRY_MS / 1000}s...`);
+    await new Promise((r) => setTimeout(r, INIT_RETRY_MS));
+    return initStorageWithRetry(attempt + 1);
   }
+}
+
+async function startServer() {
+  app.listen(PORT, () => {
+    console.log(`AsFix & Gear API running on http://localhost:${PORT}`);
+    console.log(`Storage target: ${getStorageBackend()}`);
+    if (process.env.NODE_ENV === 'production') {
+      // SMTP check deferred — do not slow cold start; OTP routes verify on send.
+    }
+  });
+
+  initStorageWithRetry().catch((err) => {
+    console.error('Unexpected storage init error:', err.message);
+  });
+}
+
+startServer().catch((err) => {
+  console.error('Failed to start server:', err.message);
+  process.exit(1);
 });

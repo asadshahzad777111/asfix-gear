@@ -534,18 +534,17 @@ export async function deliverPhoneOtp(phone, code, purpose = 'verification') {
   }
 
   result.method = 'whatsapp_manual';
-  console.log(`[OTP dev] Phone ${phone}: ${code}`);
+  result.whatsappLink = whatsappManualLink(code);
 
   if (!isProduction()) {
+    console.log(`[OTP dev] Phone ${phone}: ${code}`);
     result.devMode = true;
     result.devCode = code;
-    result.whatsappLink = whatsappManualLink(code);
-  } else {
-    throw new OtpDeliveryError(
-      'SMS verification is not configured. Please register with Gmail or contact us.',
-      'PHONE_NOT_CONFIGURED'
-    );
+    return result;
   }
 
+  console.warn(
+    '[OTP] Auto WhatsApp/SMS not configured — returning manual WhatsApp link for customer verification.'
+  );
   return result;
 }

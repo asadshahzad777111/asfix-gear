@@ -1,4 +1,10 @@
 import * as store from './store.js';
+import { initStorage } from './store.js';
+import { exitIfSeedSkipped } from './seed-skip.js';
+
+exitIfSeedSkipped('seed-gaming.js');
+
+await initStorage();
 
 const gamingCount = store.countProductsByCategory('Gaming');
 

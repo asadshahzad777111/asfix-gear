@@ -3,8 +3,6 @@ import { api } from '../api/client';
 import { hasDiscount } from '../utils/pricing';
 import { readProductsCache, writeProductsCache } from '../utils/productCache';
 import HomeHero from '../components/home/HomeHero';
-import BrandGrid from '../components/home/BrandGrid';
-import ModelGrid from '../components/home/ModelGrid';
 import CollectionGrid from '../components/home/CollectionGrid';
 import PromoBanners from '../components/home/PromoBanners';
 import ProductCarousel from '../components/home/ProductCarousel';
@@ -73,8 +71,6 @@ export default function Home() {
   return (
     <>
       <HomeHero product={heroProduct} />
-      <BrandGrid />
-      <ModelGrid />
       <CollectionGrid />
       <PromoBanners products={saleProducts} />
       {loadError && !topSelling.length ? (

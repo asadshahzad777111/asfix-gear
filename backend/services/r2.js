@@ -1,0 +1,72 @@
+import { randomUUID } from 'crypto';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
+
+const EXT_BY_TYPE = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+  'image/gif': '.gif',
+};
+
+let client = null;
+
+export function isR2Configured() {
+  return Boolean(
+    String(process.env.R2_ACCOUNT_ID || '').trim() &&
+      String(process.env.R2_ACCESS_KEY_ID || '').trim() &&
+      String(process.env.R2_SECRET_ACCESS_KEY || '').trim() &&
+      String(process.env.R2_BUCKET_NAME || '').trim() &&
+      String(process.env.R2_PUBLIC_BASE_URL || '').trim()
+  );
+}
+
+function getClient() {
+  if (!isR2Configured()) {
+    throw new Error('Cloudflare R2 is not configured');
+  }
+  if (!client) {
+    client = new S3Client({
+      region: 'auto',
+      endpoint: `https://${process.env.R2_ACCOUNT_ID.trim()}.r2.cloudflarestorage.com`,
+      credentials: {
+        accessKeyId: process.env.R2_ACCESS_KEY_ID.trim(),
+        secretAccessKey: process.env.R2_SECRET_ACCESS_KEY.trim(),
+      },
+    });
+  }
+  return client;
+}
+
+function pickExtension(mimetype, originalName) {
+  const fromType = EXT_BY_TYPE[String(mimetype || '').toLowerCase()];
+  if (fromType) return fromType;
+  const fromName = String(originalName || '').match(/\.(jpe?g|png|webp|gif)$/i);
+  if (fromName) return `.${fromName[1].toLowerCase().replace('jpeg', 'jpg')}`;
+  return '.jpg';
+}
+
+export function buildProductImageKey(originalName, mimetype) {
+  return `products/${randomUUID()}${pickExtension(mimetype, originalName)}`;
+}
+
+export async function uploadProductImage(buffer, originalName, mimetype) {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw new Error('Empty image file');
+  }
+
+  const key = buildProductImageKey(originalName, mimetype);
+  const bucket = process.env.R2_BUCKET_NAME.trim();
+  const publicBase = process.env.R2_PUBLIC_BASE_URL.trim().replace(/\/$/, '');
+
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: mimetype || 'application/octet-stream',
+      CacheControl: 'public, max-age=31536000, immutable',
+    })
+  );
+
+  return `${publicBase}/${key}`;
+}

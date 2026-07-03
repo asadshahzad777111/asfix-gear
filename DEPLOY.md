@@ -114,6 +114,57 @@ Agar aapke paas Hostinger ya koi Pakistani hosting hai:
 | SSL (HTTPS) | Free — Render automatic (DNS verify ke baad) |
 | Production CORS | Render Environment → `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com` (Render `.onrender.com` URL is auto-allowed via `RENDER_EXTERNAL_URL`) |
 | Gmail OTP emails | Render Environment → `RESEND_API_KEY` + `RESEND_FROM` (free tier) **or** `GMAIL_USER` + `GMAIL_APP_PASSWORD` (paid SMTP) — see [Gmail OTP on Render](#gmail-otp-on-render) |
+| MongoDB Atlas (optional) | Render Environment → `MONGODB_URI` — see [MongoDB Atlas migration](#mongodb-atlas-migration) |
+
+---
+
+## MongoDB Atlas migration
+
+Phase 1 adds optional MongoDB storage on branch `feature/mongodb-store`. Without `MONGODB_URI`, the app keeps using `backend/data/data.json` (same as before).
+
+### Local backup before migration
+
+```powershell
+npm run backup:data
+```
+
+Backup saves to `backups/data-<timestamp>.json`.
+
+### Migrate JSON → MongoDB
+
+1. Create a free cluster at [MongoDB Atlas](https://www.mongodb.com/atlas).
+2. Add a database user and allow your IP (or `0.0.0.0/0` for Render).
+3. Copy the connection string and set:
+
+```powershell
+$env:MONGODB_URI="mongodb+srv://USER:PASS@cluster.mongodb.net/asfix_gear?retryWrites=true&w=majority"
+node scripts/migrate-json-to-mongo.mjs
+```
+
+Dry run (no writes):
+
+```powershell
+node scripts/migrate-json-to-mongo.mjs --dry-run
+```
+
+### Run locally with MongoDB
+
+```powershell
+$env:MONGODB_URI="mongodb+srv://..."
+npm run dev:backend
+```
+
+Health check: `GET /api/health` returns `"storage": "mongodb"`.
+
+### Render production cutover
+
+1. Run `npm run backup:data` on current production (download `data.json` from Render shell if needed).
+2. Migrate to Atlas with the script above.
+3. Add `MONGODB_URI` to Render Environment.
+4. Redeploy from `feature/mongodb-store` (do **not** merge to `main` until tested).
+5. Verify products, login, orders, and OTP flows on staging first.
+
+Collections: `users`, `sessions`, `products`, `repair_services`, `repair_bookings`, `contact_messages`, `orders`, `verification_codes`, `settings`, `meta`.
 
 ---
 

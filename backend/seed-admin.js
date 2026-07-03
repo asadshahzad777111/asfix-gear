@@ -1,4 +1,9 @@
-import { ensureSuperAdmin, syncSuperAdminEmail, resetSuperAdminPassword } from './store.js';
+import { ensureSuperAdmin, syncSuperAdminEmail, resetSuperAdminPassword, initStorage } from './store.js';
+import { exitIfSeedSkipped } from './seed-skip.js';
+
+exitIfSeedSkipped('seed-admin.js');
+
+await initStorage();
 
 const DEFAULT = {
   email: 'asadshahzad777111@gmail.com',

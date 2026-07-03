@@ -12,7 +12,7 @@ import useModalBehavior from '../hooks/useModalBehavior';
  * these categories, so they land on accessories that actually fit their
  * phone instead of scrolling through every brand's inventory.
  */
-export default function PhoneFinderModal({ open, category, onClose }) {
+export default function PhoneFinderModal({ open, category, onClose, onNavigate }) {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [brand, setBrand] = useState(null);
@@ -30,6 +30,7 @@ export default function PhoneFinderModal({ open, category, onClose }) {
     // this very navigation, bouncing the user back to where they started.
     closeWithoutHistoryBack();
     navigate(`/shop?${search.toString()}`);
+    onNavigate?.();
     onClose();
   };
 

@@ -9,10 +9,15 @@ const CATEGORY_ICONS = {
   Chargers: '🔌',
   Cables: '🔗',
   'Screen Guards': '🛡️',
+  'Back Covers': '📱',
   Audio: '🎧',
   'Power Banks': '🔋',
   Accessories: '✨',
 };
+
+function scrollPageTop() {
+  window.scrollTo({ top: 0, left: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+}
 
 export default function TrendingCategories() {
   const { t } = useTranslation();
@@ -22,13 +27,19 @@ export default function TrendingCategories() {
   const handleClick = (category) => {
     if (MODEL_SPECIFIC_CATEGORIES.includes(category)) {
       setFinderCategory(category);
-    } else {
-      navigate(`/shop?category=${encodeURIComponent(category)}`);
+      return;
     }
+    navigate(`/shop?category=${encodeURIComponent(category)}`);
+    requestAnimationFrame(scrollPageTop);
+  };
+
+  const handleFinderClose = (didNavigate) => {
+    setFinderCategory(null);
+    if (didNavigate) requestAnimationFrame(scrollPageTop);
   };
 
   return (
-    <section className="home-section">
+    <section className="home-section home-section--trending">
       <div className="container">
         <div className="home-section-head">
           <span className="eyebrow">{t('home.trendingEyebrow')}</span>
@@ -55,7 +66,8 @@ export default function TrendingCategories() {
       <PhoneFinderModal
         open={Boolean(finderCategory)}
         category={finderCategory}
-        onClose={() => setFinderCategory(null)}
+        onClose={() => handleFinderClose(false)}
+        onNavigate={() => handleFinderClose(true)}
       />
     </section>
   );
