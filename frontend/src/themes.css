@@ -331,3 +331,19 @@ html.theme-transitioning *::after {
   }
 }
 
+@media (max-width: 768px) {
+  .gtranslate-wrap,
+  .goog-te-gadget,
+  .goog-te-combo,
+  iframe.goog-te-menu-frame,
+  iframe.goog-te-banner-frame,
+  body > .skiptranslate {
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
+    max-height: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+}
+

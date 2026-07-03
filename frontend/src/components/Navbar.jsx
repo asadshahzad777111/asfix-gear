@@ -317,7 +317,7 @@ export default function Navbar() {
               </div>
             )}
             <LanguageToggle className="lang-toggle--toolbar" />
-            <GoogleTranslateWidget className="gtranslate-wrap--toolbar" />
+            <GoogleTranslateWidget className="gtranslate-wrap--toolbar" desktopOnly />
             <ThemeToggle className="theme-toggle--nav" />
             <button
               type="button"

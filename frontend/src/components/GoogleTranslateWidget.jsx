@@ -1,5 +1,7 @@
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { useTranslation } from '../context/LanguageContext';
+
+const DESKTOP_MIN_WIDTH = '(min-width: 769px)';
 
 const SCRIPT_ID = 'google-translate-script';
 const CALLBACK_NAME = 'googleTranslateElementInit';
@@ -20,13 +22,28 @@ function runPendingInits() {
  * Can be rendered more than once on a page (desktop toolbar + mobile
  * drawer), each gets its own DOM id so Google's widget mounts cleanly.
  */
-export default function GoogleTranslateWidget({ className = '' }) {
+export default function GoogleTranslateWidget({ className = '', desktopOnly = false }) {
   const { t } = useTranslation();
   const hostRef = useRef(null);
   const rawId = useId().replace(/[^a-zA-Z0-9]/g, '');
   const elementId = `google_translate_element_${rawId}`;
+  const [active, setActive] = useState(() => {
+    if (!desktopOnly || typeof window === 'undefined') return true;
+    return window.matchMedia(DESKTOP_MIN_WIDTH).matches;
+  });
 
   useEffect(() => {
+    if (!desktopOnly || typeof window === 'undefined') return undefined;
+    const mq = window.matchMedia(DESKTOP_MIN_WIDTH);
+    const sync = () => setActive(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, [desktopOnly]);
+
+  useEffect(() => {
+    if (!active) return undefined;
+
     const init = () => {
       if (!hostRef.current || hostRef.current.childElementCount > 0) return;
       if (!window.google?.translate?.TranslateElement) return;
@@ -56,7 +73,9 @@ export default function GoogleTranslateWidget({ className = '' }) {
       script.async = true;
       document.body.appendChild(script);
     }
-  }, [elementId]);
+  }, [active, elementId]);
+
+  if (!active) return null;
 
   return (
     <div className={`gtranslate-wrap ${className}`.trim()} title={t('nav.translatePage')}>
