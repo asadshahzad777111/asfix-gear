@@ -1,5 +1,4 @@
-# Render free tier sleeps after ~15 min idle — first refresh then waits 30–90s
-# for the server to wake (browser tab keeps spinning). Ping every 5 min keeps it warm.
+# Render free tier sleeps after ~15 min idle — wake can take 60–120s on cold start.
 name: Keep Render awake
 
 on:
@@ -10,9 +9,25 @@ on:
 jobs:
   ping:
     runs-on: ubuntu-latest
-    timeout-minutes: 2
+    timeout-minutes: 8
     steps:
-      - name: Ping production health
+      - name: Wake production (retry — cold start is slow)
         run: |
-          curl -sf --max-time 45 "https://asfixgear.com/api/health" | grep -q '"brand":"AsFix & Gear"'
-          echo "asfixgear.com is awake"
+          set -e
+          URLS="https://asfix-gear.onrender.com/api/health https://asfixgear.com/api/health"
+          for url in $URLS; do
+            for attempt in 1 2 3; do
+              echo "=== $url attempt $attempt/3 ==="
+              if resp=$(curl -sS --connect-timeout 30 --max-time 120 "$url" 2>/dev/null); then
+                if echo "$resp" | grep -q 'AsFix'; then
+                  echo "OK: $url"
+                  echo "$resp"
+                  exit 0
+                fi
+              fi
+              echo "No response yet — waiting 20s before retry..."
+              sleep 20
+            done
+          done
+          echo "Failed to wake Render after all attempts"
+          exit 1
