@@ -202,7 +202,7 @@ img { max-width: 100%; height: auto; display: block; }
 .navbar {
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: 900;
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
   background: var(--nav-glass);
@@ -1757,7 +1757,7 @@ img { max-width: 100%; height: auto; display: block; }
 .shop-model-picker-panel {
   position: fixed;
   right: auto;
-  z-index: 650;
+  z-index: 750;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -1769,14 +1769,28 @@ img { max-width: 100%; height: auto; display: block; }
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
 }
 
+.shop-model-picker-brand {
+  font-family: var(--font-display);
+  font-size: 1rem;
+  font-weight: 800;
+  margin: 0 0 0.35rem;
+  color: var(--text);
+}
+
 .shop-model-picker-panel .phone-finder-model-search {
   margin-top: 0;
+  margin-bottom: 0.65rem;
 }
 
 .shop-model-picker-scroll {
   flex: 1 1 auto;
   min-height: 0;
-  max-height: none;
+  max-height: none !important;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: 0.75rem;
+  padding-right: 0.25rem;
 }
 
 .shop-model-picker-panel .phone-finder-model-chip.is-selected {

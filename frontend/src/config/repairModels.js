@@ -285,8 +285,22 @@ export const REPAIR_DEVICE_BRANDS = [
     brand: 'Motorola',
     series: [
       {
-        name: 'All Models',
-        models: ['Edge 50 Ultra', 'Edge 50 Pro', 'Edge 40', 'G85', 'G54', 'Moto G Play'],
+        name: 'Edge Series',
+        models: [
+          'Edge 50 Ultra', 'Edge 50 Pro', 'Edge 50 Fusion', 'Edge 50', 'Edge 40 Pro', 'Edge 40',
+          'Edge 30 Pro', 'Edge 30 Fusion', 'Edge 30',
+        ],
+      },
+      {
+        name: 'Moto G Series',
+        models: [
+          'Moto G85', 'Moto G84', 'Moto G73', 'Moto G54', 'Moto G34', 'Moto G24', 'Moto G14',
+          'Moto G Play', 'Moto G Power', 'Moto G Stylus',
+        ],
+      },
+      {
+        name: 'Razr / Fold',
+        models: ['Razr 50 Ultra', 'Razr 40 Ultra', 'Razr 40'],
       },
     ],
   },

@@ -6,6 +6,12 @@ import { useTranslation } from '../../context/LanguageContext';
 const OPEN_GUARD_MS = 450;
 const PANEL_GAP_PX = 6;
 
+function getNavbarBottom() {
+  if (typeof document === 'undefined') return 0;
+  const nav = document.querySelector('.navbar');
+  return nav ? nav.getBoundingClientRect().bottom : 0;
+}
+
 /**
  * Shop filter model dropdown — same catalog + copy as PhoneFinder model step,
  * anchored under the trigger via a portalled fixed panel so every reopen
@@ -18,6 +24,7 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
   const [panelPos, setPanelPos] = useState(null);
   const wrapRef = useRef(null);
   const panelRef = useRef(null);
+  const scrollRef = useRef(null);
   const searchRef = useRef(null);
   const openedAtRef = useRef(0);
   const [openToken, setOpenToken] = useState(0);
@@ -43,14 +50,17 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
     if (left + width > window.innerWidth - viewportPad) {
       left = Math.max(viewportPad, window.innerWidth - viewportPad - width);
     }
-    const maxHeight = Math.max(180, window.innerHeight - rect.bottom - PANEL_GAP_PX - viewportPad);
-    setPanelPos({ top: rect.bottom + PANEL_GAP_PX, left, width, maxHeight });
+    const navBottom = getNavbarBottom();
+    const top = Math.max(rect.bottom + PANEL_GAP_PX, navBottom + PANEL_GAP_PX);
+    const maxHeight = Math.max(240, window.innerHeight - top - viewportPad);
+    setPanelPos({ top, left, width, maxHeight });
   }, []);
 
   const closePanel = useCallback(() => {
     setOpen(false);
     setQuery('');
     setPanelPos(null);
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, []);
 
   useLayoutEffect(() => {
@@ -59,6 +69,7 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
       return undefined;
     }
     updatePanelPos();
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
     const sync = () => updatePanelPos();
     window.addEventListener('scroll', sync, true);
     window.addEventListener('resize', sync);
@@ -66,7 +77,7 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
       window.removeEventListener('scroll', sync, true);
       window.removeEventListener('resize', sync);
     };
-  }, [open, brand, updatePanelPos]);
+  }, [open, brand, openToken, updatePanelPos]);
 
   useEffect(() => {
     if (!open) return undefined;
@@ -123,13 +134,12 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
   };
 
   const label = selectedModel
-    ? selectedModel
-    : t('phoneFinder.modelSearchPlaceholder');
+    ? `${brand.icon} ${selectedModel}`
+    : `${brand.icon} ${brand.label}`;
 
   const panelBody =
     open && brand && panelPos ? (
       <div
-        key={openToken}
         className="shop-model-picker-panel phone-finder-panel"
         ref={panelRef}
         style={{
@@ -141,6 +151,9 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
         role="dialog"
         aria-label={t('phoneFinder.modelQuestion')}
       >
+        <p className="shop-model-picker-brand">
+          {brand.icon} {brand.label}
+        </p>
         <input
           ref={searchRef}
           type="search"
@@ -150,7 +163,7 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
           onChange={(e) => setQuery(e.target.value)}
         />
 
-        <div className="phone-finder-model-scroll shop-model-picker-scroll">
+        <div className="phone-finder-model-scroll shop-model-picker-scroll" ref={scrollRef}>
           {filteredSeries.length === 0 ? (
             <p className="phone-finder-no-match">{t('phoneFinder.noModelMatch')}</p>
           ) : (
@@ -201,7 +214,7 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
         aria-expanded={open}
         aria-haspopup="dialog"
       >
-        {brand.icon} {label} <span aria-hidden="true">▾</span>
+        {label} <span aria-hidden="true">▾</span>
       </button>
       {portaledPanel}
     </div>

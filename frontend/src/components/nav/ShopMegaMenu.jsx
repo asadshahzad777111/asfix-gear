@@ -8,6 +8,12 @@ import PhoneFinderModal from '../PhoneFinderModal';
 
 const PANEL_GAP_PX = 6;
 
+function getNavbarBottom() {
+  if (typeof document === 'undefined') return 0;
+  const nav = document.querySelector('.navbar');
+  return nav ? nav.getBoundingClientRect().bottom : 0;
+}
+
 /** Click-only levels: 1 categories → 2 brands → 3 models */
 export default function ShopMegaMenu() {
   const { t } = useTranslation();
@@ -31,8 +37,10 @@ export default function ShopMegaMenu() {
     if (left + width > window.innerWidth - viewportPad) {
       left = Math.max(viewportPad, window.innerWidth - viewportPad - width);
     }
-    const maxHeight = Math.max(200, window.innerHeight - rect.bottom - PANEL_GAP_PX - viewportPad);
-    setPanelPos({ top: rect.bottom + PANEL_GAP_PX, left, width, maxHeight });
+    const navBottom = getNavbarBottom();
+    const top = Math.max(rect.bottom + PANEL_GAP_PX, navBottom + PANEL_GAP_PX);
+    const maxHeight = Math.max(240, window.innerHeight - top - viewportPad);
+    setPanelPos({ top, left, width, maxHeight });
   }, []);
 
   const closeMenu = useCallback(() => {
