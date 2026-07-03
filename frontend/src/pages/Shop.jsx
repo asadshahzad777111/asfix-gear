@@ -5,7 +5,7 @@ import ProductCard from '../components/ProductCard';
 import PageHeader from '../components/PageHeader';
 import AddProductModal from '../components/AddProductModal';
 import { useAuth } from '../context/AuthContext';
-import { api } from '../api/client';
+import { api, ensureApiReady } from '../api/client';
 import { SHOP_BRANDS } from '../config/products';
 import { useTranslation } from '../context/LanguageContext';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
@@ -59,18 +59,30 @@ export default function Shop() {
       }
     }
     setLoadError(null);
-    api
-      .getProducts(params)
-      .then((data) => {
-        setProducts(data);
-        writeProductsCache(cacheKey, data);
-        setLoadError(null);
-      })
+    const fetchProducts = () =>
+      api
+        .getProducts(params)
+        .then((data) => {
+          setProducts(data);
+          writeProductsCache(cacheKey, data);
+          setLoadError(null);
+        })
+        .catch((err) => {
+          console.error(err);
+          setLoadError(err.message || t('shop.serverStarting'));
+        })
+        .finally(() => setLoading(false));
+
+    if (silent) {
+      fetchProducts();
+      return;
+    }
+    ensureApiReady(90000)
+      .then(fetchProducts)
       .catch((err) => {
-        console.error(err);
         setLoadError(err.message || t('shop.serverStarting'));
-      })
-      .finally(() => setLoading(false));
+        setLoading(false);
+      });
   };
 
   useEffect(() => {

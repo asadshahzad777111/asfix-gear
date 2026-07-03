@@ -13,6 +13,7 @@ import ordersRouter from './routes/orders.js';
 import shopRouter from './routes/shop.js';
 import adminRouter from './routes/admin.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
+import { requireStorageReady } from './middleware/storageReady.js';
 import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
 import { isR2Configured } from './services/r2.js';
 
@@ -82,13 +83,13 @@ app.get('/api/stats', (_req, res) => {
 // directly on each route inside routes/auth.js, not mounted here — see the
 // comment in middleware/rateLimit.js for why a shared/prefix-mounted
 // limiter previously caused correct OTP codes to get silently 429'd.
-app.use('/api/auth', authRouter);
-app.use('/api/products', productsRouter);
-app.use('/api/repairs', writeLimiter, repairsRouter);
-app.use('/api/contact', writeLimiter, contactRouter);
-app.use('/api/orders', writeLimiter, ordersRouter);
-app.use('/api/shop', shopRouter);
-app.use('/api/admin', adminRouter);
+app.use('/api/auth', requireStorageReady, authRouter);
+app.use('/api/products', requireStorageReady, productsRouter);
+app.use('/api/repairs', writeLimiter, requireStorageReady, repairsRouter);
+app.use('/api/contact', writeLimiter, requireStorageReady, contactRouter);
+app.use('/api/orders', writeLimiter, requireStorageReady, ordersRouter);
+app.use('/api/shop', requireStorageReady, shopRouter);
+app.use('/api/admin', requireStorageReady, adminRouter);
 
 // Common automated-scanner probe paths (WordPress, phpMyAdmin, env/git
 // leaks, PHP info pages, etc.) — this app is a static React SPA + JSON API
