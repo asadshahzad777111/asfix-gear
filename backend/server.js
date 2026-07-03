@@ -111,8 +111,13 @@ if (process.env.NODE_ENV === 'production') {
   // swap asset hashes immediately (mobile browsers often keep old index.html
   // for days and then load stale bundles — looks like "fix didn't deploy").
   const spaShellHeaders = (_res, filePath) => {
-    if (filePath.endsWith(`${path.sep}index.html`)) {
+    const base = path.basename(filePath);
+    if (filePath.endsWith(`${path.sep}index.html`) || base === 'sw.js' || base.startsWith('workbox-')) {
       _res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      return;
+    }
+    if (filePath.includes(`${path.sep}assets${path.sep}`)) {
+      _res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
     }
   };
   app.use(
