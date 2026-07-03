@@ -10,10 +10,31 @@ const OTP_SEND_PATHS = [
   '/auth/login/otp/start',
   '/auth/password/reset/start',
 ];
-const COLD_START_GET_PREFIXES = ['/products', '/shop/status'];
+/** Staff/customer login + session check — Render cold wake often exceeds 8s. */
+const AUTH_COLD_PATHS = ['/auth/login', '/auth/me'];
+const COLD_START_GET_PREFIXES = ['/products', '/shop/status', '/ping'];
 
 const COLD_START_MSG =
   'Server start ho raha hai — 30–60 sec wait karein aur refresh karein. / Server is waking up — wait 30–60 seconds and refresh.';
+
+function isAuthCold(path, method) {
+  const m = (method || 'GET').toUpperCase();
+  if (m === 'POST' && path === '/auth/login') return true;
+  if (m === 'GET' && path === '/auth/me') return true;
+  return AUTH_COLD_PATHS.some((p) => path === p || path.startsWith(`${p}?`));
+}
+
+/** Best-effort wake for Render free tier before auth POST (no-op if already warm). */
+export async function wakeApiServer() {
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), COLD_START_TIMEOUT_MS);
+    await fetch(`${API_BASE}/ping`, { signal: controller.signal });
+    clearTimeout(timeoutId);
+  } catch {
+    /* server may still be starting — login retry uses extended timeout */
+  }
+}
 
 function isColdStartGet(path, method) {
   const m = (method || 'GET').toUpperCase();
@@ -37,9 +58,14 @@ async function request(path, options = {}) {
 
   const isOtpSend = OTP_SEND_PATHS.some((otpPath) => path.startsWith(otpPath));
   const isColdStart = isColdStartGet(path, options.method);
+  const isAuthColdPath = isAuthCold(path, options.method);
   const timeoutMs =
     options.timeoutMs ??
-    (isOtpSend ? OTP_SEND_TIMEOUT_MS : isColdStart ? COLD_START_TIMEOUT_MS : DEFAULT_TIMEOUT_MS);
+    (isOtpSend || isAuthColdPath
+      ? OTP_SEND_TIMEOUT_MS
+      : isColdStart
+        ? COLD_START_TIMEOUT_MS
+        : DEFAULT_TIMEOUT_MS);
   const { timeoutMs: _ignored, ...fetchOptions } = options;
 
   const controller = new AbortController();
@@ -57,7 +83,7 @@ async function request(path, options = {}) {
       throw new Error(
         isOtpSend
           ? 'Verification code bhejne mein waqt lag gaya. Dubara try karein — agar phir fail ho to Gmail app password ya WhatsApp settings check karein.'
-          : isColdStart
+          : isColdStart || isAuthColdPath
             ? COLD_START_MSG
             : 'Request timed out. Please try again.'
       );
@@ -202,7 +228,10 @@ async function downloadDataBackup() {
 }
 
 export const api = {
-  login: (body) => request('/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  login: async (body) => {
+    await wakeApiServer();
+    return request('/auth/login', { method: 'POST', body: JSON.stringify(body) });
+  },
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   registerStart: (body) => request('/auth/register/start', { method: 'POST', body: JSON.stringify(body) }),
   registerVerify: (body) => request('/auth/register/verify', { method: 'POST', body: JSON.stringify(body) }),
