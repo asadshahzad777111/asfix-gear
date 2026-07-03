@@ -60,6 +60,7 @@ export function roleLabel(role) {
     super_admin: 'Super Admin',
     admin: 'Admin',
     editor: 'Staff Editor',
+    customer: 'Client',
   };
   return labels[role] || role;
 }

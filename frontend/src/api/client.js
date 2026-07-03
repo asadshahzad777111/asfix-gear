@@ -274,6 +274,7 @@ export const api = {
   getMyMessages: () => request('/auth/my-messages'),
   getAdmins: () => request('/auth/users'),
   getTeam: () => request('/auth/users'),
+  getCustomers: () => request('/auth/customers'),
   createAdmin: (body) => request('/auth/users', { method: 'POST', body: JSON.stringify(body) }),
   createTeamMember: (body) => request('/auth/users', { method: 'POST', body: JSON.stringify(body) }),
   updateAdmin: (id, body) =>

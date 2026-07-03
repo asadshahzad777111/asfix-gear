@@ -4525,6 +4525,15 @@ img { max-width: 100%; height: auto; display: block; }
   color: #fbbf24;
 }
 
+.role-badge.role-client {
+  background: rgba(34, 113, 177, 0.12);
+  color: #2271b1;
+}
+
+.team-clients-list {
+  margin-top: 1rem;
+}
+
 .status-pill {
   display: inline-block;
   padding: 0.2rem 0.55rem;

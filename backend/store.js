@@ -997,6 +997,36 @@ export function listUsers() {
     .sort((a, b) => a.id - b.id);
 }
 
+export const STAFF_ROLES = ['super_admin', 'admin', 'editor'];
+
+export function listStaffUsers() {
+  return readData()
+    .users.filter((u) => STAFF_ROLES.includes(u.role))
+    .map(({ password_hash, ...rest }) => rest)
+    .sort((a, b) => a.id - b.id);
+}
+
+export function listCustomerUsers() {
+  return readData()
+    .users.filter((u) => u.role === 'customer')
+    .map(({ password_hash, ...rest }) => rest)
+    .sort((a, b) => a.id - b.id);
+}
+
+/** Demote known shop clients that were wrongly saved as staff (persists to Mongo). */
+export function fixMisassignedShopClients() {
+  const emails = ['bossp0926@gmail.com', 'bintenaeem398@gmail.com'];
+  let fixed = 0;
+  for (const email of emails) {
+    const user = readData().users.find((u) => String(u.email || '').toLowerCase() === email);
+    if (user && ['admin', 'editor'].includes(user.role)) {
+      updateUser(user.id, { role: 'customer' });
+      fixed += 1;
+    }
+  }
+  return fixed;
+}
+
 export function createCustomer({ name, email, phone, username, password, password_hash }) {
   return withData((data) => {
     const emailKey = String(email || '').trim().toLowerCase();
@@ -1104,7 +1134,13 @@ export function updateUser(id, patch) {
     if (index === -1) return null;
 
     const user = data.users[index];
-    if (patch.role != null) user.role = patch.role;
+    if (patch.role != null) {
+      const wasStaff = STAFF_ROLES.includes(user.role);
+      user.role = patch.role;
+      if (wasStaff && user.role === 'customer') {
+        data.sessions = data.sessions.filter((s) => s.user_id !== user.id);
+      }
+    }
     if (patch.name != null) user.name = String(patch.name).trim();
     if (patch.active != null) {
       user.active = Boolean(patch.active);

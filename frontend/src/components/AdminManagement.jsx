@@ -27,7 +27,9 @@ function formatLastLogin(iso, t) {
 export default function AdminManagement({ compact = false }) {
   const { t } = useTranslation();
   const [staff, setStaff] = useState([]);
+  const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [clientsLoading, setClientsLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
   const [form, setForm] = useState(INITIAL_FORM);
@@ -47,9 +49,22 @@ export default function AdminManagement({ compact = false }) {
     }
   };
 
+  const loadClients = async () => {
+    setClientsLoading(true);
+    try {
+      const data = await api.getCustomers();
+      setClients(data);
+    } catch (err) {
+      setMessage({ type: 'error', text: err.message });
+    } finally {
+      setClientsLoading(false);
+    }
+  };
+
   useEffect(() => {
     loadStaff();
-  }, []);
+    if (!compact) loadClients();
+  }, [compact]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -137,6 +152,18 @@ export default function AdminManagement({ compact = false }) {
     try {
       const updated = await api.updateTeamMember(member.id, { role });
       setStaff((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const makeClient = async (member) => {
+    if (member.role === 'super_admin') return;
+    if (!window.confirm(t('team.makeClientConfirm', { name: member.name }))) return;
+    try {
+      const updated = await api.updateTeamMember(member.id, { role: 'customer' });
+      setStaff((prev) => prev.filter((s) => s.id !== updated.id));
+      setClients((prev) => [...prev.filter((c) => c.id !== updated.id), updated].sort((a, b) => a.id - b.id));
     } catch (err) {
       alert(err.message);
     }
@@ -281,6 +308,13 @@ export default function AdminManagement({ compact = false }) {
                             </button>
                             <button
                               type="button"
+                              className="btn btn-outline btn-sm"
+                              onClick={() => makeClient(member)}
+                            >
+                              {t('team.makeClient')}
+                            </button>
+                            <button
+                              type="button"
                               className="btn btn-outline btn-sm team-btn-remove"
                               onClick={() => removeStaff(member)}
                             >
@@ -351,6 +385,47 @@ export default function AdminManagement({ compact = false }) {
             </div>
           )}
           <p className="field-hint">{t('team.compactHint')}</p>
+        </div>
+      )}
+
+      {!compact && (
+        <div className="glass-card admin-mgmt-list-wrap team-access-list team-clients-list">
+          <h3>{t('team.clientsTitle')}</h3>
+          <p className="field-hint">{t('team.clientsHint')}</p>
+          {clientsLoading ? (
+            <div className="loading">{t('team.clientsLoading')}</div>
+          ) : clients.length === 0 ? (
+            <p className="field-hint">{t('team.clientsEmpty')}</p>
+          ) : (
+            <div className="admin-mgmt-table-wrap team-table-wrap">
+              <table className="admin-table team-table">
+                <thead>
+                  <tr>
+                    <th>{t('team.colName')}</th>
+                    <th>{t('team.colGmail')}</th>
+                    <th>{t('team.colRole')}</th>
+                    <th>{t('team.colStatus')}</th>
+                    <th>{t('team.colLastLogin')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {clients.map((member) => (
+                    <tr key={member.id} className={member.blocked ? 'team-row-blocked' : ''}>
+                      <td><strong>{member.name}</strong></td>
+                      <td><small>{member.email || member.phone || '—'}</small></td>
+                      <td><span className="role-badge role-client">{roleLabel('customer')}</span></td>
+                      <td>
+                        <span className={`status-pill ${member.blocked ? 'blocked' : 'active'}`}>
+                          {member.blocked ? t('team.statusBlocked') : t('team.statusActive')}
+                        </span>
+                      </td>
+                      <td><small>{formatLastLogin(member.last_login, t)}</small></td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       )}
 

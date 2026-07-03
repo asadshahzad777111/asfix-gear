@@ -621,11 +621,15 @@ router.get('/me', requireAuth, (req, res) => {
 });
 
 router.get('/users', requireAuth, requireRole(...SUPER_ADMIN), (_req, res) => {
-  res.json(store.listUsers().map((u) => sanitizeUser(u)));
+  res.json(store.listStaffUsers().map((u) => sanitizeUser(u)));
+});
+
+router.get('/customers', requireAuth, requireRole(...SUPER_ADMIN), (_req, res) => {
+  res.json(store.listCustomerUsers().map((u) => sanitizeUser(u)));
 });
 
 router.get('/admins', requireAuth, requireRole(...SUPER_ADMIN), (_req, res) => {
-  res.json(store.listUsers().map((u) => sanitizeUser(u)));
+  res.json(store.listStaffUsers().map((u) => sanitizeUser(u)));
 });
 
 router.post('/users', requireAuth, requireRole(...SUPER_ADMIN), (req, res) => {
@@ -711,8 +715,11 @@ router.patch('/admins/:id', requireAuth, requireRole(...SUPER_ADMIN), (req, res)
   }
 
   const { role, active, blocked, name } = req.body;
-  if (role && !['admin', 'editor'].includes(role)) {
+  if (role && !['admin', 'editor', 'customer'].includes(role)) {
     return res.status(400).json({ error: 'Invalid role' });
+  }
+  if (role === 'customer' && !['admin', 'editor'].includes(target.role)) {
+    return res.status(400).json({ error: 'Only staff accounts can be changed to client' });
   }
 
   if (blocked != null) {

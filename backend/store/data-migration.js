@@ -106,6 +106,18 @@ export function migrateData(data) {
     if (user.created_by == null) user.created_by = null;
   }
 
+  // Shop clients that were accidentally added as staff — keep them as customers only.
+  const SHOP_CLIENT_EMAILS = new Set([
+    'bossp0926@gmail.com',
+    'bintenaeem398@gmail.com',
+  ]);
+  for (const user of data.users) {
+    const email = String(user.email || '').trim().toLowerCase();
+    if (SHOP_CLIENT_EMAILS.has(email) && ['admin', 'editor'].includes(user.role)) {
+      user.role = 'customer';
+    }
+  }
+
   for (const order of data.orders) {
     if (order.customer_user_id == null) order.customer_user_id = null;
     if (order.stock_deducted == null) order.stock_deducted = false;
