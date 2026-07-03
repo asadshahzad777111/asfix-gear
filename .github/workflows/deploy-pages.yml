@@ -3,7 +3,7 @@ name: Deploy frontend to GitHub Pages
 
 on:
   push:
-    branches: [feature/mongodb-store, main]
+    branches: [main]
     paths:
       - 'frontend/**'
       - '.github/workflows/deploy-pages.yml'
