@@ -69,6 +69,7 @@ export function migrateData(data) {
   for (const product of data.products) {
     if (product.warranty == null) product.warranty = '';
     if (product.cost_price == null) product.cost_price = 0;
+    if (!Array.isArray(product.gallery)) product.gallery = [];
   }
 
   const nowIso = new Date().toISOString();

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { api, formatPrice } from '../api/client';
@@ -19,6 +19,7 @@ export default function ProductDetail() {
   const { t } = useTranslation();
   const { id } = useParams();
   const [product, setProduct] = useState(null);
+  const [activeImage, setActiveImage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const { addItem } = useCart();
@@ -32,8 +33,20 @@ export default function ProductDetail() {
   } = useShopGate();
 
   useEffect(() => {
-    api.getProduct(id).then(setProduct).catch((err) => setError(err.message)).finally(() => setLoading(false));
+    api.getProduct(id)
+      .then((data) => {
+        setProduct(data);
+        setActiveImage(data.image);
+      })
+      .catch((err) => setError(err.message))
+      .finally(() => setLoading(false));
   }, [id]);
+
+  const galleryImages = useMemo(() => {
+    if (!product) return [];
+    const extra = Array.isArray(product.gallery) ? product.gallery : [];
+    return [product.image, ...extra.filter((url) => url && url !== product.image)];
+  }, [product]);
 
   if (loading) return <div className="loading container">{t('product.loading')}</div>;
 
@@ -86,7 +99,21 @@ export default function ProductDetail() {
               {onSale && <DiscountRibbon percent={product.discount_percent} />}
               {animKind === 'gaming' && <span className="premium-rgb-wave premium-rgb-wave--gaming" />}
               {animKind === 'charger' && <span className="premium-charge-ring premium-charge-ring--lg" />}
-              <img src={product.image} alt={product.name} />
+              <img src={activeImage || product.image} alt={product.name} />
+              {galleryImages.length > 1 ? (
+                <div className="product-detail-gallery">
+                  {galleryImages.map((url) => (
+                    <button
+                      key={url}
+                      type="button"
+                      className={`product-detail-gallery-thumb ${activeImage === url ? 'is-active' : ''}`}
+                      onClick={() => setActiveImage(url)}
+                    >
+                      <img src={url} alt="" />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
             </div>
           )}
 

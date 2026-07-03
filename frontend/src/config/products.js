@@ -43,6 +43,29 @@ export const HOME_COLLECTIONS = ['Cases', 'Chargers', 'Screen Guards', 'Audio'];
 
 export const SHOP_CATEGORIES = CATEGORIES.filter((c) => c !== 'Gaming');
 
+/** WP-style grouped category tree for admin product editor. */
+export const CATEGORY_TREE = [
+  {
+    label: 'Phone Protection',
+    items: ['Cases', 'Back Covers', 'Screen Guards'],
+  },
+  {
+    label: 'Charging & Power',
+    items: ['Chargers', 'Cables', 'Power Banks'],
+  },
+  {
+    label: 'Shop',
+    items: ['Audio', 'Accessories', 'Gaming'],
+  },
+];
+
+export function flattenCategoryTree(extra = []) {
+  const fromTree = CATEGORY_TREE.flatMap((group) => group.items);
+  return [...new Set([...fromTree, ...extra, ...CATEGORIES])];
+}
+
+export const MAX_GALLERY_IMAGES = 8;
+
 /**
  * Categories where the product only fits one exact phone model — for these,
  * clicking the category should guide the customer through "which company? →
@@ -74,6 +97,7 @@ export const EMPTY_PRODUCT = {
   cost_price: '',
   description: '',
   image: DEFAULT_IMAGES.Cases,
+  gallery: [],
   stock: '10',
   featured: false,
   discount_enabled: false,

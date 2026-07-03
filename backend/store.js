@@ -100,6 +100,16 @@ export function getProductById(id) {
   return readData().products.find((p) => p.id === numId) || null;
 }
 
+const MAX_GALLERY_IMAGES = 8;
+
+export function normalizeGallery(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item || '').trim())
+    .filter(Boolean)
+    .slice(0, MAX_GALLERY_IMAGES);
+}
+
 export function createProduct(input) {
   return withData((data) => {
     const id = data.meta.nextProductId++;
@@ -113,6 +123,7 @@ export function createProduct(input) {
       cost_price: Math.max(0, Number(input.cost_price) || 0),
       description: String(input.description || '').trim(),
       image: input.image || '',
+      gallery: normalizeGallery(input.gallery),
       stock: Number(input.stock) || 0,
       featured: input.featured ? 1 : 0,
       discount_percent: Math.min(90, Math.max(0, Number(input.discount_percent) || 0)),
@@ -155,6 +166,7 @@ export function updateProduct(id, input) {
         input.cost_price != null ? Math.max(0, Number(input.cost_price) || 0) : existing.cost_price ?? 0,
       description: input.description ?? existing.description,
       image: input.image ?? existing.image,
+      gallery: input.gallery != null ? normalizeGallery(input.gallery) : existing.gallery ?? [],
       stock: input.stock != null ? Number(input.stock) : existing.stock,
       featured:
         input.featured != null ? (input.featured ? 1 : 0) : existing.featured,
@@ -235,6 +247,7 @@ export function duplicateProduct(id, input = {}) {
       id: newId,
       name: `${existing.name} (Copy)`,
       featured: 0,
+      gallery: Array.isArray(existing.gallery) ? [...existing.gallery] : [],
       created_at: now(),
       created_by: input.created_by ?? existing.created_by,
       created_by_name: String(input.created_by_name || existing.created_by_name || '').trim(),

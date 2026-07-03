@@ -30,9 +30,21 @@ function validateProductImage(image) {
   return value;
 }
 
+function sanitizeGallery(gallery) {
+  if (gallery == null) return gallery;
+  if (!Array.isArray(gallery)) {
+    throw new Error('Gallery must be an array of image URLs');
+  }
+  if (gallery.length > 8) {
+    throw new Error('Gallery can have at most 8 images');
+  }
+  return gallery.map((item) => validateProductImage(item)).filter(Boolean);
+}
+
 function sanitizeProductBody(body) {
   const next = { ...body };
   if (next.image != null) next.image = validateProductImage(next.image);
+  if (next.gallery != null) next.gallery = sanitizeGallery(next.gallery);
   return next;
 }
 const CAN_DELETE = ['super_admin', 'admin'];
@@ -121,6 +133,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       cost_price,
       description,
       image,
+      gallery,
       stock,
       featured,
       discount_percent,
@@ -139,6 +152,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       cost_price,
       description: description || '',
       image,
+      gallery,
       stock,
       featured,
       discount_percent,

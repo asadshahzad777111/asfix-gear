@@ -279,39 +279,14 @@ export default function Admin() {
       ) : tab === 'sales' && showSales ? (
         <AdminSalesReport />
       ) : tab === 'add' ? (
-        <div className="wp-post-layout">
-          <div className="wp-post-main">
-            {editingProduct && (
-              <button type="button" className="wp-button wp-button--secondary" style={{ marginBottom: '0.75rem' }} onClick={() => setEditingProduct(null)}>
-                ← Cancel edit
-              </button>
-            )}
-            <div className="wp-postbox">
-              <div className="wp-postbox-head">Product data</div>
-              <div className="wp-postbox-body">
-                <AddProductForm editProduct={editingProduct} onSuccess={handleFormSuccess} />
-              </div>
-            </div>
-          </div>
-          <aside className="wp-post-sidebar">
-            <div className="wp-postbox">
-              <div className="wp-postbox-head">Publish</div>
-              <div className="wp-postbox-body">
-                <p style={{ fontSize: '0.84rem', color: '#50575e', margin: 0 }}>
-                  Form ke neeche <strong>Save Changes</strong> dabayein — product shop par live ho jayega.
-                </p>
-              </div>
-            </div>
-            <div className="wp-postbox">
-              <div className="wp-postbox-head">Tip</div>
-              <div className="wp-postbox-body">
-                <p style={{ fontSize: '0.84rem', color: '#50575e', margin: 0 }}>
-                  Brand + model select karein taake customer shop filter se product dhundh sakein.
-                </p>
-              </div>
-            </div>
-          </aside>
-        </div>
+        <>
+          {editingProduct && (
+            <button type="button" className="wp-button wp-button--secondary" style={{ marginBottom: '0.75rem' }} onClick={() => setEditingProduct(null)}>
+              ← Cancel edit
+            </button>
+          )}
+          <AddProductForm editProduct={editingProduct} onSuccess={handleFormSuccess} wpLayout />
+        </>
       ) : tab === 'admins' && showAdminMgmt ? (
         <AdminManagement />
       ) : tab === 'orders' ? (
