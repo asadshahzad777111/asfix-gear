@@ -2,10 +2,28 @@
    Navbar — search bar + shop mega menu
    ═══════════════════════════════════════════════════════════ */
 
-/* Google Translate widget — hide Google's own banner/branding chrome and
-   restyle the bare <select> it injects to match our pill buttons. */
-.goog-te-banner-frame.skiptranslate {
+/* Google Translate removed — hide any legacy/cached widget chrome globally. */
+.goog-te-banner-frame.skiptranslate,
+.goog-te-gadget,
+.goog-te-combo,
+.goog-te-menu-value,
+.goog-te-menu-frame,
+.goog-te-balloon-frame,
+iframe.goog-te-menu-frame,
+iframe.goog-te-banner-frame,
+#google_translate_element,
+#goog-gt-tt,
+.gtranslate-wrap,
+body > .skiptranslate,
+.skiptranslate {
   display: none !important;
+  visibility: hidden !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  width: 0 !important;
+  overflow: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
 
 body {
@@ -20,43 +38,6 @@ body {
 .goog-text-highlight {
   background: none !important;
   box-shadow: none !important;
-}
-
-.gtranslate-wrap {
-  display: flex;
-  align-items: center;
-  gap: 0.3rem;
-  position: relative;
-}
-
-.gtranslate-icon {
-  font-size: 0.85rem;
-  opacity: 0.85;
-}
-
-.gtranslate-wrap .goog-te-gadget {
-  font-size: 0 !important;
-  color: transparent !important;
-}
-
-.gtranslate-wrap .goog-te-gadget > span > a {
-  display: none !important;
-}
-
-.gtranslate-wrap .goog-te-combo {
-  font-family: inherit;
-  font-size: 0.74rem;
-  font-weight: 600;
-  color: var(--text);
-  background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  padding: 0.3rem 0.5rem;
-  cursor: pointer;
-  max-width: 108px;
-  color-scheme: light dark;
-  appearance: none;
-  -webkit-appearance: none;
 }
 
 .nav-search-wrap {
@@ -816,34 +797,6 @@ body {
 .nav-mega-col + .nav-mega-col {
   border-left: none;
   padding-left: 0;
-}
-
-/* Drawer Google Translate — native dark/light styling */
-.gtranslate-wrap--drawer {
-  flex-direction: column;
-  align-items: stretch;
-  gap: 0.35rem;
-  padding: 0.55rem 0.65rem;
-  border-radius: 12px;
-  background: var(--nav-menu-solid);
-  border: 1px solid var(--nav-menu-border);
-}
-
-.gtranslate-wrap--drawer .gtranslate-icon {
-  font-size: 0.72rem;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  color: var(--text-muted);
-}
-
-.gtranslate-wrap--drawer .goog-te-combo {
-  max-width: none;
-  width: 100%;
-  padding: 0.45rem 0.65rem;
-  background: var(--bg-elevated, var(--bg-card));
-  border: 1px solid var(--border);
-  color: var(--text);
 }
 
 .nav-drawer-shop-panel {

@@ -11,7 +11,6 @@ import AddProductModal from './AddProductModal';
 import AccountMenu from './AccountMenu';
 import CustomerLoginModal from './CustomerLoginModal';
 import PhoneFinderModal from './PhoneFinderModal';
-import GoogleTranslateWidget from './GoogleTranslateWidget';
 import GamingModeButton from './gaming/GamingModeButton';
 import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
@@ -317,7 +316,6 @@ export default function Navbar() {
               </div>
             )}
             <LanguageToggle className="lang-toggle--toolbar" />
-            <GoogleTranslateWidget className="gtranslate-wrap--toolbar" desktopOnly />
             <ThemeToggle className="theme-toggle--nav" />
             <button
               type="button"
