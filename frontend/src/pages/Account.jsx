@@ -10,6 +10,8 @@ import { useTranslation } from '../context/LanguageContext';
 
 import PageHeader from '../components/PageHeader';
 
+import RepairRateBot from '../components/account/RepairRateBot';
+
 
 
 const COMPLETED_STATUSES = new Set(['delivered']);
@@ -238,15 +240,33 @@ export default function Account() {
 
               </button>
 
+              <button
+
+                type="button"
+
+                className={tab === 'rates' ? 'active' : ''}
+
+                onClick={() => setTab('rates')}
+
+              >
+
+                {t('account.ratesTab')}
+
+              </button>
+
             </div>
 
 
 
-            {error && <div className="alert alert-error">{error}</div>}
+            {error && tab !== 'rates' && <div className="alert alert-error">{error}</div>}
 
 
 
-            {loading ? (
+            {tab === 'rates' ? (
+
+              <RepairRateBot />
+
+            ) : loading ? (
 
               <p className="loading">{t('common.loading')}</p>
 

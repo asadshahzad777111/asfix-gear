@@ -4608,3 +4608,104 @@ img { max-width: 100%; height: auto; display: block; }
   color: var(--mint);
   line-height: 1.4;
 }
+
+/* ── Account repair rate bot ── */
+.rate-bot-intro {
+  margin: 0 0 1rem;
+  color: var(--text-muted);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.rate-bot-form {
+  display: grid;
+  gap: 0.85rem;
+  margin-bottom: 1.25rem;
+}
+
+.rate-bot-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.rate-bot-field span {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.rate-bot-field select {
+  width: 100%;
+  padding: 0.75rem 0.9rem;
+  border-radius: 12px;
+  border: 1px solid var(--glass-edge);
+  background: var(--input-bg, rgba(127, 127, 148, 0.07));
+  color: var(--text);
+  font: inherit;
+}
+
+.rate-bot-submit {
+  width: 100%;
+}
+
+.rate-bot-thread {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.rate-bot-msg {
+  padding: 1rem 1.1rem;
+  border-radius: 16px;
+  border: 1px solid var(--glass-edge);
+  background: var(--section-tint, rgba(255, 255, 255, 0.03));
+}
+
+.rate-bot-msg-badge {
+  display: inline-block;
+  margin-bottom: 0.45rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--primary);
+}
+
+.rate-bot-price-range {
+  margin: 0.5rem 0 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--price-color, var(--mint));
+}
+
+.rate-bot-disclaimer {
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-muted);
+}
+
+.rate-bot-wa {
+  display: inline-flex;
+  margin-top: 0.75rem;
+  text-decoration: none;
+}
+
+.rate-bot-footnote {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--text-muted);
+}
+
+.rate-bot-footnote a {
+  color: var(--primary);
+}
+
+.rate-bot-empty {
+  text-align: center;
+  padding: 1.5rem 0;
+}
+
+.account-muted {
+  color: var(--text-muted);
+}

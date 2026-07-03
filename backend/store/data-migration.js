@@ -7,12 +7,16 @@ export const DEFAULT_DATA = {
     nextUserId: 1,
     nextOrderId: 1,
     nextVerificationCodeId: 1,
+    nextRepairRateId: 1,
+    nextRepairRateQueryId: 1,
   },
   users: [],
   sessions: [],
   products: [],
   repair_services: [],
   repair_bookings: [],
+  repair_rates: [],
+  repair_rate_queries: [],
   contact_messages: [],
   orders: [],
   verification_codes: [],
@@ -40,6 +44,8 @@ export function migrateData(data) {
   data.products = data.products || [];
   data.repair_services = data.repair_services || [];
   data.repair_bookings = data.repair_bookings || [];
+  data.repair_rates = data.repair_rates || [];
+  data.repair_rate_queries = data.repair_rate_queries || [];
   data.contact_messages = data.contact_messages || [];
   data.orders = data.orders || [];
   data.verification_codes = data.verification_codes || [];
@@ -52,6 +58,8 @@ export function migrateData(data) {
   if (!data.meta.nextUserId) data.meta.nextUserId = 1;
   if (!data.meta.nextOrderId) data.meta.nextOrderId = 1;
   if (!data.meta.nextVerificationCodeId) data.meta.nextVerificationCodeId = 1;
+  if (!data.meta.nextRepairRateId) data.meta.nextRepairRateId = 1;
+  if (!data.meta.nextRepairRateQueryId) data.meta.nextRepairRateQueryId = 1;
 
   for (const msg of data.contact_messages) {
     if (msg.staff_reply == null) msg.staff_reply = '';

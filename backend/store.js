@@ -1178,6 +1178,136 @@ export function changeCustomerPassword(userId, currentPassword, newPassword) {
   });
 }
 
+/* ── iPhone repair rates ── */
+
+function normalizeRateModel(model) {
+  return String(model || '')
+    .trim()
+    .replace(/\s+/g, ' ');
+}
+
+export function getRepairRates(filters = {}) {
+  let rates = readData().repair_rates.filter((r) => r.active !== false);
+  if (filters.model) {
+    const m = normalizeRateModel(filters.model);
+    rates = rates.filter((r) => normalizeRateModel(r.model) === m);
+  }
+  if (filters.part_type) {
+    rates = rates.filter((r) => r.part_type === filters.part_type);
+  }
+  return rates.sort((a, b) => {
+    const modelCmp = String(a.model).localeCompare(String(b.model));
+    if (modelCmp !== 0) return modelCmp;
+    return String(a.part_label).localeCompare(String(b.part_label));
+  });
+}
+
+export function lookupRepairRate(model, part_type) {
+  const m = normalizeRateModel(model);
+  const pt = String(part_type || '').trim();
+  return getRepairRates().find(
+    (r) => normalizeRateModel(r.model) === m && r.part_type === pt
+  ) || null;
+}
+
+export function countRepairRates() {
+  return readData().repair_rates.length;
+}
+
+/** Idempotent seed — upsert by model + part_type key. */
+export function upsertRepairRates(items) {
+  const ts = now();
+  return withData((data) => {
+    data.repair_rates = data.repair_rates || [];
+    if (!data.meta.nextRepairRateId) data.meta.nextRepairRateId = 1;
+
+    let inserted = 0;
+    let updated = 0;
+
+    for (const item of items) {
+      const model = normalizeRateModel(item.model);
+      const part_type = String(item.part_type || '').trim();
+      const existing = data.repair_rates.find(
+        (r) => normalizeRateModel(r.model) === model && r.part_type === part_type
+      );
+
+      const payload = {
+        brand: item.brand || 'Apple iPhone',
+        model,
+        part_type,
+        part_label: item.part_label || part_type,
+        purchase_price: Number(item.purchase_price) || 0,
+        fitting_labor_charges: Number(item.fitting_labor_charges) || 0,
+        min_selling_price: Number(item.min_selling_price) || 0,
+        max_selling_price: Number(item.max_selling_price) || 0,
+        active: item.active !== false,
+        updated_at: ts,
+      };
+
+      if (existing) {
+        Object.assign(existing, payload);
+        updated += 1;
+      } else {
+        data.repair_rates.push({ id: data.meta.nextRepairRateId++, ...payload });
+        inserted += 1;
+      }
+    }
+
+    return { inserted, updated, total: data.repair_rates.length };
+  });
+}
+
+export function getRepairRateCatalog() {
+  const rates = getRepairRates();
+  const byModel = new Map();
+
+  for (const rate of rates) {
+    if (!byModel.has(rate.model)) {
+      byModel.set(rate.model, []);
+    }
+    byModel.get(rate.model).push({
+      part_type: rate.part_type,
+      part_label: rate.part_label,
+    });
+  }
+
+  return [...byModel.entries()]
+    .sort(([a], [b]) => a.localeCompare(b, undefined, { numeric: true }))
+    .map(([model, parts]) => ({
+      model,
+      brand: 'Apple iPhone',
+      parts: parts.sort((a, b) => a.part_label.localeCompare(b.part_label)),
+    }));
+}
+
+export function logRepairRateQuery(input) {
+  return withData((data) => {
+    data.repair_rate_queries = data.repair_rate_queries || [];
+    if (!data.meta.nextRepairRateQueryId) data.meta.nextRepairRateQueryId = 1;
+
+    const entry = {
+      id: data.meta.nextRepairRateQueryId++,
+      customer_user_id: input.customer_user_id ?? null,
+      customer_name: input.customer_name || '',
+      model: normalizeRateModel(input.model),
+      part_type: input.part_type || '',
+      part_label: input.part_label || '',
+      response_type: input.response_type || 'rate',
+      created_at: now(),
+    };
+
+    data.repair_rate_queries.push(entry);
+    return entry;
+  });
+}
+
+export function getRepairRateQueriesByCustomer(userId, limit = 30) {
+  return readData()
+    .repair_rate_queries.filter((q) => q.customer_user_id === userId)
+    .sort((a, b) => new Date(b.created_at) - new Date(a.created_at))
+    .slice(0, limit);
+}
+
 /* ── Shop status ── */
 
 export function getShopSettings() {
