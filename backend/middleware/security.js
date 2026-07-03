@@ -52,12 +52,17 @@ export function securityHeaders(_req, res, next) {
 }
 
 function getAllowedOrigins() {
+  const defaults = [
+    'https://asfixgear.com',
+    'https://www.asfixgear.com',
+    'https://asadshahzad777111.github.io',
+  ];
   const fromEnv = (process.env.CORS_ORIGIN || '')
     .split(',')
     .map((s) => s.trim())
     .filter(Boolean);
   const renderUrl = process.env.RENDER_EXTERNAL_URL?.trim();
-  return [...new Set([...fromEnv, renderUrl].filter(Boolean))];
+  return [...new Set([...defaults, ...fromEnv, renderUrl].filter(Boolean))];
 }
 
 export function getCorsOptions() {

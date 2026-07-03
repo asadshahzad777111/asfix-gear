@@ -1,4 +1,4 @@
-const API_BASE = '/api';
+const API_BASE = String(import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '');
 const TOKEN_KEY = 'asfix_auth_token';
 const DEFAULT_TIMEOUT_MS = 8000;
 /** OTP send hits Gmail SMTP on the server — can take 15–40s on Render cold start. */
