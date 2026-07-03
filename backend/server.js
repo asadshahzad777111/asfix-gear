@@ -3,7 +3,8 @@ import cors from 'cors';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { loadEnv } from '../scripts/load-env.mjs';
-import { getStats, getStorageBackend, initStorage, isStorageReady } from './store.js';
+import { getStats, getStorageBackend, initStorage, isStorageReady, countRepairRates, upsertRepairRates } from './store.js';
+import { buildIphoneRepairRateRecords } from './rates/iphone-repair-rates.js';
 import productsRouter from './routes/products.js';
 import repairsRouter from './routes/repairs.js';
 import contactRouter from './routes/contact.js';
@@ -16,7 +17,8 @@ import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
 import { isR2Configured } from './services/r2.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-loadEnv();
+// In test/smoke runs, keep spawn-provided PORT (loadEnv would otherwise overwrite from .env).
+loadEnv({ override: process.env.NODE_ENV !== 'test' });
 const app = express();
 const PORT = process.env.PORT || 5000;
 
@@ -156,6 +158,10 @@ async function initStorageWithRetry(attempt = 1) {
   try {
     const storage = await initStorage();
     console.log(`Storage: ${storage === 'mongodb' ? 'MongoDB Atlas' : 'backend/data/data.json'}`);
+    if (process.env.NODE_ENV !== 'test' && countRepairRates() === 0) {
+      const seeded = upsertRepairRates(buildIphoneRepairRateRecords());
+      console.log(`[rates] Seeded ${seeded.total} iPhone repair rates`);
+    }
     return storage;
   } catch (err) {
     console.error(`Failed to init storage (attempt ${attempt}/${INIT_MAX_RETRIES}):`, err.message);

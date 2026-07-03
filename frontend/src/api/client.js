@@ -249,6 +249,9 @@ export const api = {
   uploadProductImage: (file) => uploadProductImage(file),
 
   getRepairServices: () => request('/repairs/services'),
+  getRepairRateCatalog: () => request('/repairs/rates/catalog'),
+  repairRateQuery: (body) =>
+    request('/repairs/rate-query', { method: 'POST', body: JSON.stringify(body) }),
   bookRepair: (body) => request('/repairs/book', { method: 'POST', body: JSON.stringify(body) }),
   getBookings: () => request('/repairs/bookings'),
   updateBookingStatus: (id, status) =>

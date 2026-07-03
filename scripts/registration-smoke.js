@@ -167,9 +167,12 @@ async function testPhoneRegistration() {
 
 async function main() {
   console.log(`Starting dev-mode backend on port ${PORT}...`);
+  const smokeEnv = { ...process.env, NODE_ENV: 'test', PORT: String(PORT), MONGODB_URI: '' };
+  delete smokeEnv.MONGODB_DB;
+
   const server = spawn(process.execPath, ['backend/server.js'], {
     stdio: 'inherit',
-    env: { ...process.env, NODE_ENV: 'test', PORT: String(PORT) },
+    env: smokeEnv,
   });
 
   let exited = false;
