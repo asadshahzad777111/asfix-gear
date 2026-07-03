@@ -177,16 +177,13 @@ async function initStorageWithRetry(attempt = 1) {
 }
 
 async function startServer() {
-  app.listen(PORT, () => {
-    console.log(`AsFix & Gear API running on http://localhost:${PORT}`);
-    console.log(`Storage target: ${getStorageBackend()}`);
-    if (process.env.NODE_ENV === 'production') {
-      // SMTP check deferred — do not slow cold start; OTP routes verify on send.
-    }
-  });
-
   initStorageWithRetry().catch((err) => {
     console.error('Unexpected storage init error:', err.message);
+  });
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log(`AsFix & Gear API running on http://0.0.0.0:${PORT}`);
+    console.log(`Storage target: ${getStorageBackend()}`);
   });
 }
 

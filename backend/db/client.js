@@ -14,67 +14,26 @@ export function getStorageBackend() {
   return isMongoEnabled() ? 'mongodb' : 'json';
 }
 
-function mongoClientOptions(uri, extra = {}) {
-  const prod = process.env.NODE_ENV === 'production';
-  const opts = {
-    maxPoolSize: 10,
-    serverSelectionTimeoutMS: prod ? 8000 : 15000,
-    ...extra,
-  };
-  const hostPart = String(uri || '').replace(/^mongodb(\+srv)?:\/\/[^@]+@/, '').split('/')[0];
-  if (!hostPart.includes(',')) {
-    opts.directConnection = true;
-  }
-  return opts;
-}
-
-function parseMongoUri(uri) {
-  const m = String(uri || '').match(/^(mongodb(?:\+srv)?:\/\/)([^@]+@)?(.+)$/);
-  if (!m) return null;
-  return { prefix: m[1], auth: m[2] || '', rest: m[3] };
-}
-
-function buildDirectUri(uri, host) {
-  const parsed = parseMongoUri(uri);
-  if (!parsed) return uri;
-  const slashIdx = parsed.rest.indexOf('/');
-  const path = slashIdx >= 0 ? parsed.rest.slice(slashIdx) : '';
-  const dbPath = path.split('?')[0] || '';
-  const params = new URLSearchParams(path.includes('?') ? path.split('?')[1] : '');
-  params.delete('replicaSet');
-  const q = params.toString();
-  return `${parsed.prefix}${parsed.auth}${host}${dbPath}${q ? `?${q}` : ''}`;
-}
-
-function listSeedHosts(uri) {
-  const parsed = parseMongoUri(uri);
-  if (!parsed) return [];
-  const slashIdx = parsed.rest.indexOf('/');
-  const hostPart = slashIdx >= 0 ? parsed.rest.slice(0, slashIdx) : parsed.rest;
-  return hostPart.split(',').filter(Boolean);
-}
-
 async function connectWritableClient(uri) {
-  const seeds = listSeedHosts(uri);
-  if (!seeds.length) throw new Error('MONGODB_URI has no hosts');
-  let lastError;
+  const normalized = String(uri || '').trim();
+  if (!normalized) throw new Error('MONGODB_URI is empty');
 
-  for (const host of seeds) {
-    const directUri = seeds.length > 1 ? buildDirectUri(uri, host) : uri;
-    const candidate = new MongoClient(directUri, mongoClientOptions(directUri));
-    try {
-      await candidate.connect();
-      const hello = await candidate.db('admin').command({ hello: 1 });
-      if (hello.isWritablePrimary) return candidate;
-      await candidate.close();
-      lastError = new Error(`Host ${host} is not primary`);
-    } catch (err) {
-      lastError = err;
-      await candidate.close().catch(() => {});
-    }
+  const clientOptions = {
+    maxPoolSize: 10,
+    serverSelectionTimeoutMS: 30000,
+    connectTimeoutMS: 20000,
+  };
+
+  // Standard driver discovery — works with Atlas SRV and seed-list URIs on Render.
+  const candidate = new MongoClient(normalized, clientOptions);
+  try {
+    await candidate.connect();
+    await candidate.db('admin').command({ ping: 1 });
+    return candidate;
+  } catch (err) {
+    await candidate.close().catch(() => {});
+    throw err;
   }
-
-  throw lastError || new Error('Could not reach a writable MongoDB primary');
 }
 
 /** Block the main thread until a promise settles (keeps store API synchronous). */
