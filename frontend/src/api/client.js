@@ -24,15 +24,36 @@ function isAuthCold(path, method) {
   return AUTH_COLD_PATHS.some((p) => path === p || path.startsWith(`${p}?`));
 }
 
-/** Best-effort wake for Render free tier before auth POST (no-op if already warm). */
+/** Best-effort wake for Render free tier — retries until /health reports ready or timeout. */
+export async function ensureApiReady(maxWaitMs = 90000) {
+  const started = Date.now();
+  let lastErr = null;
+
+  while (Date.now() - started < maxWaitMs) {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 15000);
+      const res = await fetch(`${API_BASE}/health`, { signal: controller.signal });
+      clearTimeout(timeoutId);
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && (data.ready === true || data.status === 'ok')) {
+        return true;
+      }
+      lastErr = new Error(data.error || COLD_START_MSG);
+    } catch (err) {
+      lastErr = err;
+    }
+    await new Promise((r) => setTimeout(r, 2500));
+  }
+
+  throw lastErr instanceof Error && lastErr.message ? lastErr : new Error(COLD_START_MSG);
+}
+
 export async function wakeApiServer() {
   try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), COLD_START_TIMEOUT_MS);
-    await fetch(`${API_BASE}/ping`, { signal: controller.signal });
-    clearTimeout(timeoutId);
+    await ensureApiReady(90000);
   } catch {
-    /* server may still be starting — login retry uses extended timeout */
+    /* login/register will surface a clear message */
   }
 }
 
@@ -116,7 +137,7 @@ async function request(path, options = {}) {
     const message = data.error || (res.status === 404
       ? 'No account found with this Gmail or phone'
       : res.status === 503
-        ? isColdStart
+        ? data.code === 'STORAGE_STARTING' || isColdStart || isAuthColdPath
           ? COLD_START_MSG
           : 'Verification service temporarily unavailable. Please try again.'
         : 'Something went wrong');
@@ -229,13 +250,19 @@ async function downloadDataBackup() {
 
 export const api = {
   login: async (body) => {
-    await wakeApiServer();
+    await ensureApiReady(90000);
     return request('/auth/login', { method: 'POST', body: JSON.stringify(body) });
   },
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
-  registerStart: (body) => request('/auth/register/start', { method: 'POST', body: JSON.stringify(body) }),
+  registerStart: async (body) => {
+    await ensureApiReady(90000);
+    return request('/auth/register/start', { method: 'POST', body: JSON.stringify(body) });
+  },
   registerVerify: (body) => request('/auth/register/verify', { method: 'POST', body: JSON.stringify(body) }),
-  loginOtpStart: (body) => request('/auth/login/otp/start', { method: 'POST', body: JSON.stringify(body) }),
+  loginOtpStart: async (body) => {
+    await ensureApiReady(90000);
+    return request('/auth/login/otp/start', { method: 'POST', body: JSON.stringify(body) });
+  },
   loginOtpVerify: (body) => request('/auth/login/otp/verify', { method: 'POST', body: JSON.stringify(body) }),
   passwordResetStart: (body) => request('/auth/password/reset/start', { method: 'POST', body: JSON.stringify(body) }),
   passwordResetVerify: (body) => request('/auth/password/reset/verify', { method: 'POST', body: JSON.stringify(body) }),
