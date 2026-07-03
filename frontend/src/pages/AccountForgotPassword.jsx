@@ -14,6 +14,7 @@ import {
   AuthSubmitButton,
   AuthSecondaryButton,
 } from '../components/auth/AuthUI';
+import PasswordField from '../components/auth/PasswordField';
 
 export default function AccountForgotPassword() {
   const { isCustomer, user, loading } = useAuth();
@@ -69,6 +70,8 @@ export default function AccountForgotPassword() {
       const loginTrim = resetLogin.trim();
       if (loginTrim.includes('@')) {
         setOtpHint(t('otp.sentEmail', { email: loginTrim }));
+      } else if (data.method === 'whatsapp_manual') {
+        setOtpHint(t('otp.whatsappManualHint'));
       } else {
         setOtpHint(t('otp.sentPhoneWhatsApp'));
       }
@@ -206,9 +209,8 @@ export default function AccountForgotPassword() {
 
               <div className="auth-2026-field">
                 <label htmlFor="reset-new-password">{t('otp.newPassword')}</label>
-                <input
+                <PasswordField
                   id="reset-new-password"
-                  type="password"
                   value={resetPassword}
                   onChange={(e) => setResetPassword(e.target.value)}
                   placeholder={t('login.passwordPlaceholder')}
@@ -219,9 +221,8 @@ export default function AccountForgotPassword() {
 
               <div className="auth-2026-field">
                 <label htmlFor="reset-confirm-password">{t('otp.confirmNewPassword')}</label>
-                <input
+                <PasswordField
                   id="reset-confirm-password"
-                  type="password"
                   value={resetConfirm}
                   onChange={(e) => setResetConfirm(e.target.value)}
                   placeholder={t('login.passwordPlaceholder')}

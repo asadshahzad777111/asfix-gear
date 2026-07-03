@@ -15,9 +15,10 @@ import {
   AuthSubmitButton,
   AuthSecondaryButton,
 } from '../components/auth/AuthUI';
+import PasswordField from '../components/auth/PasswordField';
 
 export default function AccountLogin() {
-  const { login, isCustomer, isStaff, user, loading, completeSession } = useAuth();
+  const { login, isCustomer, isStaff, user, loading, completeSession, logout } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -61,6 +62,7 @@ export default function AccountLogin() {
       if (loggedIn.role === 'customer') {
         navigate(from, { replace: true });
       } else {
+        await logout();
         setError(t('account.staffUseAdminLogin'));
       }
     } catch (err) {
@@ -82,6 +84,8 @@ export default function AccountLogin() {
       const data = await api.loginOtpStart({ login: loginValue.trim() });
       if (data.channel === 'email') {
         setOtpHint(t('otp.sentEmail', { email: loginValue.trim() }));
+      } else if (data.method === 'whatsapp_manual') {
+        setOtpHint(t('otp.whatsappManualHint'));
       } else {
         setOtpHint(t('otp.sentPhoneWhatsApp'));
       }
@@ -171,9 +175,8 @@ export default function AccountLogin() {
 
               <div className="auth-2026-field">
                 <label htmlFor="password">{t('login.password')}</label>
-                <input
+                <PasswordField
                   id="password"
-                  type="password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder={t('login.passwordPlaceholder')}

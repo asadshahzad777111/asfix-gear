@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { generalContactPath } from '../config/shop';
-import { MODEL_SPECIFIC_CATEGORIES, SHOP_CATEGORIES } from '../config/products';
+import { MODEL_SPECIFIC_CATEGORIES, SHOP_BRANDS, SHOP_CATEGORIES } from '../config/products';
+import { getSeriesForShopBrand } from '../config/repairModels';
 import { useAuth } from '../context/AuthContext';
 import useNavDrawerThumb from '../hooks/useNavDrawerThumb';
 import OpenBadge from './OpenBadge';
@@ -29,6 +30,8 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [menuOpen, setMenuOpen] = useState(false);
   const [shopAccordionOpen, setShopAccordionOpen] = useState(false);
+  const [shopMobileLevel, setShopMobileLevel] = useState(1);
+  const [shopMobileBrand, setShopMobileBrand] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [finderCategory, setFinderCategory] = useState(null);
@@ -49,7 +52,11 @@ export default function Navbar() {
   }, [menuOpen]);
 
   useEffect(() => {
-    if (!menuOpen) setShopAccordionOpen(false);
+    if (!menuOpen) {
+      setShopAccordionOpen(false);
+      setShopMobileLevel(1);
+      setShopMobileBrand(null);
+    }
   }, [menuOpen]);
 
   const toggleShopAccordion = (e) => {
@@ -138,33 +145,102 @@ export default function Navbar() {
                   className="nav-drawer-accordion-panel"
                   aria-hidden={!shopAccordionOpen}
                 >
-                  <div className="nav-drawer-accordion-panel-inner">
-                    <Link to="/shop" className="nav-drawer-accordion-link" onClick={closeMenu}>
-                      {t('nav.shopAll')}
-                    </Link>
-                    {SHOP_CATEGORIES.map((cat) =>
-                      MODEL_SPECIFIC_CATEGORIES.includes(cat) ? (
+                  <div className="nav-drawer-accordion-panel-inner nav-drawer-shop-panel">
+                    {shopMobileLevel > 1 && (
+                      <button
+                        type="button"
+                        className="nav-drawer-accordion-link nav-drawer-accordion-link--btn nav-drawer-shop-back"
+                        onClick={() => {
+                          if (shopMobileLevel === 3) {
+                            setShopMobileLevel(2);
+                            setShopMobileBrand(null);
+                          } else {
+                            setShopMobileLevel(1);
+                          }
+                        }}
+                      >
+                        ← {shopMobileLevel === 2 ? t('nav.categories') : t('nav.topPicks')}
+                      </button>
+                    )}
+
+                    {shopMobileLevel === 1 && (
+                      <>
+                        <Link to="/shop" className="nav-drawer-accordion-link" onClick={closeMenu}>
+                          {t('nav.shopAll')}
+                        </Link>
+                        {SHOP_CATEGORIES.map((cat) =>
+                          MODEL_SPECIFIC_CATEGORIES.includes(cat) ? (
+                            <button
+                              key={cat}
+                              type="button"
+                              className="nav-drawer-accordion-link nav-drawer-accordion-link--btn"
+                              onClick={() => {
+                                closeMenu();
+                                setFinderCategory(cat);
+                              }}
+                            >
+                              {cat}
+                            </button>
+                          ) : (
+                            <Link
+                              key={cat}
+                              className="nav-drawer-accordion-link"
+                              to={`/shop?category=${encodeURIComponent(cat)}`}
+                              onClick={closeMenu}
+                            >
+                              {cat}
+                            </Link>
+                          )
+                        )}
                         <button
-                          key={cat}
+                          type="button"
+                          className="nav-drawer-accordion-link nav-drawer-accordion-link--btn nav-drawer-shop-next"
+                          onClick={() => setShopMobileLevel(2)}
+                        >
+                          {t('nav.topPicks')} →
+                        </button>
+                      </>
+                    )}
+
+                    {shopMobileLevel === 2 &&
+                      SHOP_BRANDS.map((brand) => (
+                        <button
+                          key={brand.id}
                           type="button"
                           className="nav-drawer-accordion-link nav-drawer-accordion-link--btn"
                           onClick={() => {
-                            closeMenu();
-                            setFinderCategory(cat);
+                            setShopMobileBrand(brand.id);
+                            setShopMobileLevel(3);
                           }}
                         >
-                          {cat}
+                          {brand.icon} {brand.label} ›
                         </button>
-                      ) : (
+                      ))}
+
+                    {shopMobileLevel === 3 && shopMobileBrand && (
+                      <>
+                        {getSeriesForShopBrand(shopMobileBrand).flatMap((series) =>
+                          series.models.map((model) => (
+                            <Link
+                              key={`${series.name}-${model}`}
+                              className="nav-drawer-accordion-link"
+                              to={`/shop?brand=${encodeURIComponent(shopMobileBrand)}&search=${encodeURIComponent(model)}`}
+                              onClick={closeMenu}
+                            >
+                              {model}
+                            </Link>
+                          ))
+                        )}
                         <Link
-                          key={cat}
                           className="nav-drawer-accordion-link"
-                          to={`/shop?category=${encodeURIComponent(cat)}`}
+                          to={`/shop?brand=${encodeURIComponent(shopMobileBrand)}`}
                           onClick={closeMenu}
                         >
-                          {cat}
+                          {t('nav.viewAllBrand', {
+                            brand: SHOP_BRANDS.find((b) => b.id === shopMobileBrand)?.label || '',
+                          })}
                         </Link>
-                      )
+                      </>
                     )}
                   </div>
                 </div>

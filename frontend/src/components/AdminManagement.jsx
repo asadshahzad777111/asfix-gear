@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import { roleLabel, isValidStaffGmail } from '../config/permissions';
 import { useTranslation } from '../context/LanguageContext';
 import PasswordRevealModal from './PasswordRevealModal';
+import PasswordField from './auth/PasswordField';
 
 const INITIAL_FORM = {
   name: '',
@@ -179,8 +180,7 @@ export default function AdminManagement({ compact = false }) {
           <div className="form-row-2">
             <div className="form-group">
               <label>{t('team.password')} *</label>
-              <input
-                type="password"
+              <PasswordField
                 value={form.password}
                 onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                 placeholder={t('team.passwordPh')}
@@ -190,8 +190,7 @@ export default function AdminManagement({ compact = false }) {
             </div>
             <div className="form-group">
               <label>{t('team.confirmPassword')} *</label>
-              <input
-                type="password"
+              <PasswordField
                 value={form.confirmPassword}
                 onChange={(e) => setForm((f) => ({ ...f, confirmPassword: e.target.value }))}
                 placeholder={t('team.confirmPasswordPh')}
@@ -362,8 +361,7 @@ export default function AdminManagement({ compact = false }) {
             <form onSubmit={submitResetPassword}>
               <div className="form-group">
                 <label>{t('team.newPassword')}</label>
-                <input
-                  type="password"
+                <PasswordField
                   value={resetPassword}
                   onChange={(e) => setResetPassword(e.target.value)}
                   minLength={6}

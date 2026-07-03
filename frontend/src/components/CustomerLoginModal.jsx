@@ -13,6 +13,7 @@ import {
   AuthSubmitButton,
   AuthSecondaryButton,
 } from './auth/AuthUI';
+import PasswordField from './auth/PasswordField';
 
 export default function CustomerLoginModal({ open, onClose }) {
   const { login, isCustomer, isStaff, user, completeSession, logout } = useAuth();
@@ -56,6 +57,7 @@ export default function CustomerLoginModal({ open, onClose }) {
         handleClose();
         navigate('/account');
       } else {
+        await logout();
         setError(t('account.staffUseAdminLogin'));
       }
     } catch (err) {
@@ -75,7 +77,13 @@ export default function CustomerLoginModal({ open, onClose }) {
 
     try {
       const data = await api.loginOtpStart({ login: loginValue.trim() });
-      setOtpHint(t('otp.sentLogin'));
+      if (data.channel === 'email') {
+        setOtpHint(t('otp.sentEmail', { email: loginValue.trim() }));
+      } else if (data.method === 'whatsapp_manual') {
+        setOtpHint(t('otp.whatsappManualHint'));
+      } else {
+        setOtpHint(t('otp.sentPhoneWhatsApp'));
+      }
       if (data.whatsappLink) setWhatsappLink(data.whatsappLink);
       if (data.devCode) setDevCode(data.devCode);
       setOtpStep('verify');
@@ -207,9 +215,8 @@ export default function CustomerLoginModal({ open, onClose }) {
 
             <div className="auth-2026-field">
               <label htmlFor="modal-password">{t('login.password')}</label>
-              <input
+              <PasswordField
                 id="modal-password"
-                type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"

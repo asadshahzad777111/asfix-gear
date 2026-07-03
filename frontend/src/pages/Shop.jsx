@@ -42,6 +42,10 @@ export default function Shop() {
     return params;
   };
 
+  useEffect(() => {
+    window.scrollTo({ top: 0, left: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+  }, [searchParams]);
+
   const loadProducts = (silent = false) => {
     const params = buildParams();
     const cacheKey = productCacheKey(params);

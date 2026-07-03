@@ -731,3 +731,104 @@ body {
     flex-wrap: wrap;
   }
 }
+
+/* ── Click-only shop mega menu (opaque, themed) ── */
+.nav-mega-wrap--click .nav-mega-panel--solid {
+  z-index: 500;
+}
+
+.nav-mega-panel-body--stepped {
+  grid-template-columns: 1fr !important;
+  width: min(320px, 92vw) !important;
+  background: var(--nav-menu-solid) !important;
+  border: 1px solid var(--nav-menu-border) !important;
+  box-shadow: var(--shadow-elevated) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  opacity: 1 !important;
+}
+
+.nav-mega-back,
+.nav-mega-next,
+.nav-mega-list-btn {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  padding: 0.45rem 0.5rem;
+  margin-bottom: 0.35rem;
+  border: none;
+  border-radius: 8px;
+  background: var(--nav-hover);
+  color: var(--text);
+  font: inherit;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: left;
+}
+
+.nav-mega-list-btn {
+  background: transparent;
+  margin-bottom: 0;
+}
+
+.nav-mega-list-btn:hover {
+  background: var(--nav-hover);
+}
+
+.nav-mega-next {
+  margin-top: 0.65rem;
+  justify-content: center;
+  color: var(--primary);
+}
+
+.nav-mega-step {
+  min-width: 0;
+}
+
+.nav-mega-col + .nav-mega-col {
+  border-left: none;
+  padding-left: 0;
+}
+
+/* Drawer Google Translate — native dark/light styling */
+.gtranslate-wrap--drawer {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.35rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 12px;
+  background: var(--nav-menu-solid);
+  border: 1px solid var(--nav-menu-border);
+}
+
+.gtranslate-wrap--drawer .gtranslate-icon {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.gtranslate-wrap--drawer .goog-te-combo {
+  max-width: none;
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  background: var(--bg-elevated, var(--bg-card));
+  border: 1px solid var(--border);
+  color: var(--text);
+}
+
+.nav-drawer-shop-panel {
+  max-height: min(52vh, 440px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+.nav-drawer-shop-back,
+.nav-drawer-shop-next {
+  font-weight: 700;
+  color: var(--primary) !important;
+}
+

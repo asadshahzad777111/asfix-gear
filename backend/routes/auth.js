@@ -166,6 +166,14 @@ router.post('/login', loginLimiter, (req, res) => {
 
   store.recordLastLogin(result.user.id);
   const session = store.createSession(result.user.id);
+  const STAFF_ROLES = ['super_admin', 'admin', 'editor'];
+  if (STAFF_ROLES.includes(result.user.role)) {
+    const staffEmail = String(result.user.email || login).trim().toLowerCase();
+    if (!staffEmail.endsWith('@gmail.com')) {
+      store.deleteSession(session.token);
+      return res.status(403).json({ error: 'Staff must sign in with a @gmail.com address' });
+    }
+  }
   res.json({
     token: session.token,
     expires_at: session.expires_at,
@@ -207,12 +215,17 @@ router.post('/register', (_req, res) => {
 });
 
 function buildOtpDevResponse(delivery) {
+  const manualWhatsApp = delivery.method === 'whatsapp_manual';
   const payload = {
-    message: delivery.sent ? 'Verification code sent' : 'Verification code generated',
+    message: delivery.sent
+      ? 'Verification code sent'
+      : manualWhatsApp
+        ? 'Open WhatsApp to send your code to the shop, then enter it below.'
+        : 'Verification code generated',
     channel: delivery.channel,
     method: delivery.method || delivery.channel,
   };
-  if (delivery.whatsappLink && process.env.NODE_ENV !== 'production') {
+  if (delivery.whatsappLink && (manualWhatsApp || process.env.NODE_ENV !== 'production')) {
     payload.whatsappLink = delivery.whatsappLink;
   }
   if (process.env.NODE_ENV !== 'production' && delivery.devCode) {

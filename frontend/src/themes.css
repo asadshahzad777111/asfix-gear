@@ -35,6 +35,8 @@
   --bg-elevated: rgba(28, 28, 38, 0.72);
   --nav-glass: rgba(18, 18, 26, 0.72);
   --drawer-bg: rgba(16, 16, 24, 0.92);
+  --nav-menu-solid: #101018;
+  --nav-menu-border: rgba(255, 255, 255, 0.12);
   --cart-panel-bg: rgba(14, 14, 22, 0.94);
   --glass: rgba(255, 255, 255, 0.05);
   --glass-edge: rgba(255, 255, 255, 0.15);
@@ -68,6 +70,8 @@
   --bg-elevated: rgba(255, 255, 255, 0.88);
   --nav-glass: rgba(255, 255, 255, 0.72);
   --drawer-bg: rgba(255, 255, 255, 0.94);
+  --nav-menu-solid: #ffffff;
+  --nav-menu-border: rgba(0, 0, 0, 0.08);
   --cart-panel-bg: rgba(255, 255, 255, 0.96);
   --glass: rgba(255, 255, 255, 0.55);
   --glass-edge: rgba(255, 255, 255, 0.85);
@@ -305,6 +309,16 @@ html.theme-transitioning *::after {
   }
 }
 
+@media (max-width: 1024px) {
+  .nav-drawer.open .lang-toggle--drawer,
+  .nav-links.open .lang-toggle--drawer {
+    display: flex;
+    width: 100%;
+    justify-content: center;
+    margin: 0.25rem 0 0.65rem;
+  }
+}
+
 .gtranslate-wrap--toolbar {
   display: none;
 }
@@ -326,6 +340,17 @@ html.theme-transitioning *::after {
     width: 100%;
     justify-content: center;
     margin: 0 0 0.65rem;
+  }
+}
+
+@media (max-width: 1024px) {
+  .nav-drawer.open .gtranslate-wrap--drawer,
+  .nav-links.open .gtranslate-wrap--drawer {
+    display: flex;
+    width: 100%;
+    justify-content: stretch;
+    margin: 0 0 0.65rem;
+    padding: 0 0.45rem;
   }
 }
 

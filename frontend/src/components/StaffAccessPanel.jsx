@@ -1,14 +1,16 @@
 import { useState } from 'react';
 
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
 
-import { canManageTeam, roleLabel } from '../config/permissions';
+import { canManageTeam, isStaff as checkStaff, isValidStaffGmail, roleLabel } from '../config/permissions';
 
 import { useTranslation } from '../context/LanguageContext';
 
 import { SHOP } from '../config/shop';
+
+import PasswordField from './auth/PasswordField';
 
 
 
@@ -17,6 +19,8 @@ export default function StaffAccessPanel() {
   const { user, isStaff, login, logout } = useAuth();
 
   const { t } = useTranslation();
+
+  const navigate = useNavigate();
 
   const [open, setOpen] = useState(false);
 
@@ -44,11 +48,30 @@ export default function StaffAccessPanel() {
 
 
 
+    const trimmed = loginValue.trim();
+    if (!isValidStaffGmail(trimmed)) {
+      setLoginError(t('team.errGmail'));
+      setLoginSubmitting(false);
+      return;
+    }
+
+
+
     try {
 
-      await login(loginValue.trim(), password);
+      const loggedIn = await login(trimmed, password);
+
+      if (!checkStaff(loggedIn)) {
+        await logout();
+        setLoginError(t('account.staffUseAdminLogin'));
+        return;
+      }
 
       setPassword('');
+
+      setOpen(false);
+
+      navigate('/admin');
 
     } catch (err) {
 
@@ -180,11 +203,9 @@ export default function StaffAccessPanel() {
 
                 <label htmlFor="staff-password">{t('login.password')}</label>
 
-                <input
+                <PasswordField
 
                   id="staff-password"
-
-                  type="password"
 
                   value={password}
 
