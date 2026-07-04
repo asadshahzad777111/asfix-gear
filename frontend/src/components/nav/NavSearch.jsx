@@ -5,6 +5,8 @@ import { getDefaultImage } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
 import useRecentSearches from '../../hooks/useRecentSearches';
 import { filterPublishedProducts } from '../../utils/productStatus';
+import SearchBrandIcon from './SearchBrandIcon';
+import { getBrandMeta } from '../../utils/brandIcon';
 
 const SUGGEST_DEBOUNCE_MS = 250;
 const MAX_SUGGESTIONS = 6;
@@ -184,7 +186,16 @@ export default function NavSearch({ className = '' }) {
                           setOpen(false);
                         }}
                       >
+                        <SearchBrandIcon brandId={p.brand} />
+                        <span className="nav-search-product-info">
+                          <strong>{p.name}</strong>
+                          {getBrandMeta(p.brand)?.label ? (
+                            <span className="nav-search-product-brand">{getBrandMeta(p.brand).label}</span>
+                          ) : null}
+                          <span className="nav-search-product-price">{formatPrice(p.price)}</span>
+                        </span>
                         <img
+                          className="nav-search-product-thumb"
                           src={p.image || getDefaultImage(p.category)}
                           alt=""
                           onError={(e) => {
@@ -192,10 +203,6 @@ export default function NavSearch({ className = '' }) {
                             e.target.src = getDefaultImage(p.category);
                           }}
                         />
-                        <span className="nav-search-product-info">
-                          <strong>{p.name}</strong>
-                          <span>{formatPrice(p.price)}</span>
-                        </span>
                       </button>
                     </li>
                   ))}

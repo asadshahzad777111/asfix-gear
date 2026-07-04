@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import { getSeriesForShopBrand } from '../../config/repairModels';
 import { useTranslation } from '../../context/LanguageContext';
+import SearchBrandIcon from '../nav/SearchBrandIcon';
 
 const OPEN_GUARD_MS = 450;
 const PANEL_GAP_PX = 6;
@@ -133,9 +134,12 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
     closePanel();
   };
 
-  const label = selectedModel
-    ? `${brand.icon} ${selectedModel}`
-    : `${brand.icon} ${brand.label}`;
+  const label = (
+    <span className="shop-model-picker-trigger-label">
+      <SearchBrandIcon brandId={brand.id} />
+      <span>{selectedModel || brand.label}</span>
+    </span>
+  );
 
   const panelBody =
     open && brand && panelPos ? (
@@ -152,7 +156,8 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
         aria-label={t('phoneFinder.modelQuestion')}
       >
         <p className="shop-model-picker-brand">
-          {brand.icon} {brand.label}
+          <SearchBrandIcon brandId={brand.id} />
+          <span>{brand.label}</span>
         </p>
         <input
           ref={searchRef}

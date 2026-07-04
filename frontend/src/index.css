@@ -954,8 +954,11 @@ img { max-width: 100%; height: auto; display: block; }
   margin-bottom: 1.25rem;
 }
 
-.repair-model-group strong {
-  display: block;
+.repair-model-group strong,
+.repair-model-group-brand {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
   font-size: 0.78rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -2926,7 +2929,17 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 .phone-finder-brand-icon {
-  font-size: 1.8rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
+}
+
+.phone-finder-brand-icon .nav-search-brand-icon,
+.phone-finder-brand-icon .nav-search-brand-fallback {
+  width: 28px;
+  height: 28px;
+  font-size: 1.4rem;
 }
 
 .phone-finder-skip {

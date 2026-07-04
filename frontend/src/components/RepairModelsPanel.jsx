@@ -1,6 +1,8 @@
 import { REPAIR_DEVICE_BRANDS, generalRepairQuoteContactPath } from '../config/repairModels';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../context/LanguageContext';
+import SearchBrandIcon from './nav/SearchBrandIcon';
+import { getShopBrandIdFromRepairBrand } from '../utils/brandIcon';
 
 export default function RepairModelsPanel() {
   const { t } = useTranslation();
@@ -16,7 +18,10 @@ export default function RepairModelsPanel() {
       <div className="repair-models-grid">
         {REPAIR_DEVICE_BRANDS.map((group) => (
           <div key={group.brand} className="repair-model-group">
-            <strong>{group.brand}</strong>
+            <strong className="repair-model-group-brand">
+              <SearchBrandIcon brandId={getShopBrandIdFromRepairBrand(group.brand)} />
+              <span>{group.brand}</span>
+            </strong>
             <div className="repair-model-group-body">
               {group.series.map((series) => (
                 <div key={series.name} className="repair-model-series">

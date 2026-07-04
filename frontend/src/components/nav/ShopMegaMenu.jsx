@@ -5,6 +5,7 @@ import { SHOP_BRANDS, SHOP_CATEGORIES, MODEL_SPECIFIC_CATEGORIES } from '../../c
 import { getSeriesForShopBrand } from '../../config/repairModels';
 import { useTranslation } from '../../context/LanguageContext';
 import PhoneFinderModal from '../PhoneFinderModal';
+import SearchBrandIcon from './SearchBrandIcon';
 
 const PANEL_GAP_PX = 6;
 
@@ -32,7 +33,8 @@ export default function ShopMegaMenu() {
     if (!trigger) return;
     const rect = trigger.getBoundingClientRect();
     const viewportPad = 12;
-    const width = Math.min(320, window.innerWidth - viewportPad * 2);
+    const panelWidth = window.innerWidth >= 1024 ? 400 : 320;
+    const width = Math.min(panelWidth, window.innerWidth - viewportPad * 2);
     let left = rect.left;
     if (left + width > window.innerWidth - viewportPad) {
       left = Math.max(viewportPad, window.innerWidth - viewportPad - width);
@@ -181,7 +183,7 @@ export default function ShopMegaMenu() {
                     setLevel(3);
                   }}
                 >
-                  <span aria-hidden="true">{brand.icon}</span>
+                  <SearchBrandIcon brandId={brand.id} />
                   <span className="nav-mega-brand-item-label">{brand.label}</span>
                   <span className="nav-mega-brand-arrow" aria-hidden="true">›</span>
                 </button>
@@ -193,8 +195,9 @@ export default function ShopMegaMenu() {
 
       {level === 3 && activeBrandData && (
         <div key={`${activeBrand}-models`} className="nav-mega-step nav-mega-step--models">
-          <p className="nav-mega-label">
-            {activeBrandData.icon} {activeBrandData.label}
+          <p className="nav-mega-label nav-mega-label--brand">
+            <SearchBrandIcon brandId={activeBrandData.id} />
+            <span>{activeBrandData.label}</span>
           </p>
           <p className="nav-mega-models-sub">{t('home.chooseModelSub')}</p>
           <div className="nav-mega-model-series-scroll" ref={modelScrollRef}>

@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { SHOP_BRANDS } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
+import SearchBrandIcon from '../nav/SearchBrandIcon';
 
 export default function BrandGrid() {
   const { t } = useTranslation();
@@ -20,7 +21,9 @@ export default function BrandGrid() {
               to={`/shop?brand=${encodeURIComponent(brand.id)}`}
               className="home-brand-card"
             >
-              <span className="home-brand-icon" aria-hidden="true">{brand.icon}</span>
+              <span className="home-brand-icon" aria-hidden="true">
+                <SearchBrandIcon brandId={brand.id} />
+              </span>
               <span className="home-brand-label">{brand.label}</span>
             </Link>
           ))}

@@ -366,7 +366,13 @@
   }
 
   .premium-product.gaming.is-hovered .premium-rgb-wave,
-  .premium-product.gaming.is-hovered .premium-particle {
+  .premium-product.gaming.scroll-revealed .premium-rgb-wave,
+  .premium-gaming-card.is-hovered .premium-rgb-wave,
+  .premium-gaming-card.jumped .premium-rgb-wave,
+  .premium-product.gaming.is-hovered .premium-particle,
+  .premium-product.gaming.scroll-revealed .premium-particle,
+  .premium-gaming-card.is-hovered .premium-particle,
+  .premium-gaming-card.jumped .premium-particle {
     opacity: 0.35;
   }
 }

@@ -4,6 +4,7 @@ import { SHOP_BRANDS } from '../config/products';
 import { getSeriesForShopBrand } from '../config/repairModels';
 import { useTranslation } from '../context/LanguageContext';
 import useModalBehavior from '../hooks/useModalBehavior';
+import SearchBrandIcon from './nav/SearchBrandIcon';
 
 /**
  * Guided "which company? → which model?" picker for model-specific
@@ -90,7 +91,9 @@ function PhoneFinderBrandStep({ category, onSelectBrand, onSkip, t }) {
             className="phone-finder-brand-btn"
             onClick={() => onSelectBrand(b)}
           >
-            <span className="phone-finder-brand-icon" aria-hidden="true">{b.icon}</span>
+            <span className="phone-finder-brand-icon" aria-hidden="true">
+              <SearchBrandIcon brandId={b.id} />
+            </span>
             <span>{b.label}</span>
           </button>
         ))}
@@ -120,8 +123,9 @@ function PhoneFinderModelStep({ brand, series, onBack, onSelectModel, onViewAllB
         ← {t('phoneFinder.changeBrand')}
       </button>
 
-      <p className="phone-finder-eyebrow">
-        {brand.icon} {brand.label}
+      <p className="phone-finder-eyebrow phone-finder-eyebrow--brand">
+        <SearchBrandIcon brandId={brand.id} />
+        <span>{brand.label}</span>
       </p>
       <h2 className="phone-finder-title">{t('phoneFinder.modelQuestion')}</h2>
 

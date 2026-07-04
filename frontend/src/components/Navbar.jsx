@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { generalContactPath } from '../config/shop';
 import { MODEL_SPECIFIC_CATEGORIES, SHOP_BRANDS, SHOP_CATEGORIES } from '../config/products';
 import { getSeriesForShopBrand } from '../config/repairModels';
+import SearchBrandIcon from './nav/SearchBrandIcon';
 import { useAuth } from '../context/AuthContext';
 import useNavDrawerThumb from '../hooks/useNavDrawerThumb';
 import OpenBadge from './OpenBadge';
@@ -216,7 +217,9 @@ export default function Navbar() {
                             setShopMobileLevel(3);
                           }}
                         >
-                          {brand.icon} {brand.label} ›
+                          <SearchBrandIcon brandId={brand.id} />
+                          <span>{brand.label}</span>
+                          <span aria-hidden="true">›</span>
                         </button>
                       ))}
 

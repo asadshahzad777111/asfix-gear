@@ -100,8 +100,18 @@
 }
 
 .home-brand-icon {
-  font-size: 1.75rem;
+  display: grid;
+  place-items: center;
+  width: 2rem;
+  height: 2rem;
   line-height: 1;
+}
+
+.home-brand-icon .nav-search-brand-icon,
+.home-brand-icon .nav-search-brand-fallback {
+  width: 28px;
+  height: 28px;
+  font-size: 1.4rem;
 }
 
 .home-brand-label {

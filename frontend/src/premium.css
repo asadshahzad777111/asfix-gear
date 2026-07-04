@@ -472,17 +472,26 @@ body.custom-cursor-active {
   background: conic-gradient(from 0deg, #00ff88, #00d4ff, #bf00ff, #ff0044, #00ff88);
   opacity: 0;
   animation: rgbSpin 4s linear infinite;
+  animation-play-state: paused;
   transition: opacity 0.35s;
   z-index: 1;
   filter: blur(28px);
 }
 
 .premium-rgb-wave--gaming {
-  opacity: 0.35;
+  opacity: 0;
 }
 
 .premium-product.gaming.is-hovered .premium-rgb-wave,
-.premium-gaming-card.is-hovered .premium-rgb-wave {
+.premium-product.gaming.scroll-revealed .premium-rgb-wave,
+.premium-gaming-card.is-hovered .premium-rgb-wave,
+.premium-gaming-card.jumped .premium-rgb-wave {
+  opacity: 0.55;
+  animation-play-state: running;
+}
+
+.premium-gaming-card.is-hovered .premium-rgb-wave--gaming,
+.premium-gaming-card.jumped .premium-rgb-wave--gaming {
   opacity: 0.55;
 }
 
@@ -500,12 +509,16 @@ body.custom-cursor-active {
   opacity: 0;
   z-index: 4;
   box-shadow: 0 0 8px currentColor;
+  animation: particleFloat 2.5s ease-in-out infinite;
+  animation-play-state: paused;
 }
 
 .premium-product.gaming.is-hovered .premium-particle,
-.premium-gaming-card.is-hovered .premium-particle {
+.premium-product.gaming.scroll-revealed .premium-particle,
+.premium-gaming-card.is-hovered .premium-particle,
+.premium-gaming-card.jumped .premium-particle {
   opacity: 1;
-  animation: particleFloat 2.5s ease-in-out infinite;
+  animation-play-state: running;
 }
 
 .premium-particle--1 { top: 20%; left: 15%; animation-delay: 0s; background: #00ff88; }
