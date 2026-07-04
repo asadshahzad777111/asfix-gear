@@ -10,7 +10,7 @@ export default function ProtectedRoute({ children, requireStaff = true }) {
   }
 
   if (!user) {
-    return <Navigate to="/login" replace state={{ from: location.pathname }} />;
+    return <Navigate to="/account/login" replace state={{ from: location.pathname }} />;
   }
 
   if (requireStaff && !isStaff) {

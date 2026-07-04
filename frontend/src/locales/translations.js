@@ -646,7 +646,7 @@ export const translations = {
       resetSubtitle: 'Enter your Gmail or phone — we will send a 6-digit code.',
       accountNotFoundEmail: 'No account found with this Gmail address',
       noAccountHint: 'New customer? Create an account first:',
-      staffLoginLink: 'Staff? Open staff login',
+      staffLoginLink: 'Staff? Sign in with your password',
       accountNotFoundPhone: 'No account found with this phone number',
       invalidGmail: 'Please enter a valid @gmail.com address',
       sentReset: 'We sent a reset code to your Gmail or phone.',
@@ -780,6 +780,7 @@ export const translations = {
       admin: 'Admin',
       editor: 'Editor',
       staffAuthorized: '{email} authorized as {role}.',
+      notStaffAccount: 'This account is not authorized for staff access. Use Sign In for customer accounts.',
     },
     team: {
       addTitle: 'Team Access — Add Staff',
@@ -1500,7 +1501,7 @@ export const translations = {
       resetSubtitle: 'Gmail ya phone likhein — hum 6-digit code bhejenge.',
       accountNotFoundEmail: 'Is Gmail se koi account nahi mila',
       noAccountHint: 'Naye customer? Pehle account banayein:',
-      staffLoginLink: 'Staff ho? Staff login kholein',
+      staffLoginLink: 'Staff ho? Password se sign in karein',
       accountNotFoundPhone: 'Is phone number se koi account nahi mila',
       invalidGmail: 'Sahi @gmail.com address likhein',
       sentReset: 'Reset code aapke Gmail ya phone par bhej diya.',
@@ -1634,6 +1635,7 @@ export const translations = {
       admin: 'Admin',
       editor: 'Editor',
       staffAuthorized: '{email} ko {role} ke tor par authorize kar diya gaya.',
+      notStaffAccount: 'Yeh account staff access ke liye authorized nahi hai. Customer accounts ke liye Sign In use karein.',
     },
     team: {
       addTitle: 'Team Access — Staff Add Karein',

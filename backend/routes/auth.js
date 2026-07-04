@@ -372,9 +372,6 @@ router.post('/login/otp/start', loginOtpStartLimiter, async (req, res) => {
 
   const user = store.findUserByLogin(login);
   if (!user) return res.status(404).json({ error: accountNotFoundMessage(login) });
-  if (user.role !== 'customer') {
-    return res.status(403).json({ error: 'Staff accounts must use the admin login page.' });
-  }
   if (store.isUserBlocked(user)) {
     return res.status(403).json({ error: 'Your account is blocked. Contact the shop owner.' });
   }
@@ -459,7 +456,7 @@ router.post('/login/otp/verify', loginOtpVerifyLimiter, (req, res) => {
   }
 
   const verifiedUser = store.getUserById(result.payload.user_id);
-  if (!verifiedUser || verifiedUser.role !== 'customer') {
+  if (!verifiedUser) {
     return res.status(403).json({ error: 'Invalid account' });
   }
   if (store.isUserBlocked(verifiedUser)) {

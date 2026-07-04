@@ -16,9 +16,10 @@ import {
   AuthSecondaryButton,
 } from '../components/auth/AuthUI';
 import PasswordField from '../components/auth/PasswordField';
+import { getPostLoginPath } from '../utils/authRedirect';
 
 export default function AccountLogin() {
-  const { login, isCustomer, isStaff, user, loading, completeSession, logout } = useAuth();
+  const { login, user, loading, completeSession } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -39,17 +40,13 @@ export default function AccountLogin() {
     return <div className="loading container">{t('common.loading')}</div>;
   }
 
-  if (user && isCustomer) {
-    return <Navigate to={from} replace />;
-  }
-
-  if (user && isStaff) {
-    return <Navigate to="/admin" replace />;
+  if (user) {
+    return <Navigate to={getPostLoginPath(user, from)} replace />;
   }
 
   const finishLogin = async (data) => {
-    await completeSession(data);
-    navigate(from, { replace: true });
+    const loggedIn = await completeSession(data);
+    navigate(getPostLoginPath(loggedIn, from), { replace: true });
   };
 
   const handlePasswordSubmit = async (e) => {
@@ -59,12 +56,7 @@ export default function AccountLogin() {
 
     try {
       const loggedIn = await login(loginValue.trim(), password);
-      if (loggedIn.role === 'customer') {
-        navigate(from, { replace: true });
-      } else {
-        await logout();
-        setError(t('account.staffUseAdminLogin'));
-      }
+      navigate(getPostLoginPath(loggedIn, from), { replace: true });
     } catch (err) {
       setError(err.message || t('account.loginFailed'));
     } finally {

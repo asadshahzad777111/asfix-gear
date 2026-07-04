@@ -63,7 +63,7 @@ export default function StaffAccessPanel() {
 
       if (!checkStaff(loggedIn)) {
         await logout();
-        setLoginError(t('account.staffUseAdminLogin'));
+        setLoginError(t('staffForm.notStaffAccount'));
         return;
       }
 

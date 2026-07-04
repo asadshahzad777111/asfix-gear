@@ -14,9 +14,10 @@ import {
   AuthSecondaryButton,
 } from './auth/AuthUI';
 import PasswordField from './auth/PasswordField';
+import { getPostLoginPath } from '../utils/authRedirect';
 
 export default function CustomerLoginModal({ open, onClose }) {
-  const { login, isCustomer, isStaff, user, completeSession, logout } = useAuth();
+  const { login, completeSession } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -51,15 +52,10 @@ export default function CustomerLoginModal({ open, onClose }) {
 
     try {
       const loggedIn = await login(loginValue.trim(), password);
-      if (loggedIn.role === 'customer') {
-        setLoginValue('');
-        setPassword('');
-        handleClose();
-        navigate('/account');
-      } else {
-        await logout();
-        setError(t('account.staffUseAdminLogin'));
-      }
+      setLoginValue('');
+      setPassword('');
+      handleClose();
+      navigate(getPostLoginPath(loggedIn, '/account'));
     } catch (err) {
       setError(err.message || t('account.loginFailed'));
     } finally {
@@ -108,11 +104,11 @@ export default function CustomerLoginModal({ open, onClose }) {
 
     try {
       const data = await api.loginOtpVerify({ login: loginValue.trim(), code: otp });
-      await completeSession(data);
+      const loggedIn = await completeSession(data);
       setLoginValue('');
       setOtp('');
       handleClose();
-      navigate('/account');
+      navigate(getPostLoginPath(loggedIn, '/account'));
     } catch (err) {
       setError(err.message || t('otp.verifyFailed'));
     } finally {
@@ -311,20 +307,6 @@ export default function CustomerLoginModal({ open, onClose }) {
             {t('account.createAccount')}
           </Link>
         </p>
-
-        {isStaff && (
-          <p className="auth-2026-foot">
-            <Link
-              to="/login"
-              onClick={(e) => {
-                e.preventDefault();
-                navigateAway(navigate, '/login');
-              }}
-            >
-              {t('nav.admin')}
-            </Link>
-          </p>
-        )}
       </div>
     </div>
   );
