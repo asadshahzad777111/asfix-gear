@@ -276,6 +276,7 @@ export const translations = {
     footer: {
       tagline: 'Pakistan\'s trusted mobile repair & accessories destination. Quality parts, expert hands, honest prices.',
       crafted: 'Crafted with ⚡ in Pakistan.',
+      staffLogin: 'Staff login',
     },
     testimonials: {
       r1: 'Screen replaced same day — fair price. Asad guided me well.',
@@ -1129,6 +1130,7 @@ export const translations = {
     footer: {
       tagline: 'Pakistan ka trusted mobile repair aur accessories destination. Quality parts, expert hands, honest prices.',
       crafted: 'Pakistan mein ⚡ ke sath banaya gaya.',
+      staffLogin: 'Staff login',
     },
     testimonials: {
       r1: 'Screen change same day ho gaya — price bhi fair thi. Asad bhai ne achha guide kiya.',

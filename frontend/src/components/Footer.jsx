@@ -61,7 +61,14 @@ export default function Footer() {
       </div>
 
       <div className="container footer-bottom">
-        © {new Date().getFullYear()} {SHOP.name} — {SHOP.owner}. {t('footer.crafted')}
+        <p className="footer-bottom-copy">
+          © {new Date().getFullYear()} {SHOP.name} — {SHOP.owner}. {t('footer.crafted')}
+        </p>
+        {!isStaff && (
+          <Link to="/login" className="footer-staff-login">
+            {t('footer.staffLogin')}
+          </Link>
+        )}
       </div>
     </footer>
   );

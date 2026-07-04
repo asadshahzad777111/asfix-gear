@@ -2319,6 +2319,26 @@ img { max-width: 100%; height: auto; display: block; }
   font-size: 0.8rem;
 }
 
+.footer-bottom-copy {
+  margin: 0;
+}
+
+.footer-staff-login {
+  display: inline-block;
+  margin-top: 0.65rem;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  opacity: 0.65;
+  text-decoration: none;
+  transition: color 0.2s, opacity 0.2s;
+}
+
+.footer-staff-login:hover {
+  color: var(--mint);
+  opacity: 1;
+}
+
 /* WhatsApp float */
 .whatsapp-float {
   position: fixed;
