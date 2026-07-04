@@ -94,7 +94,7 @@ export default function Admin() {
     try {
       const [bookingData, productData, orderData] = await Promise.all([
         api.getBookings(),
-        api.getProducts(),
+        api.getProducts({ status: 'all' }),
         api.getOrders(),
       ]);
       setBookings(bookingData);

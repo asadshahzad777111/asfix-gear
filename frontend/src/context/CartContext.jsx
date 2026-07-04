@@ -1,5 +1,6 @@
 import { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { maxCartQty } from '../utils/stock';
+import { isPublishedProduct } from '../utils/productStatus';
 
 const CartContext = createContext(null);
 
@@ -9,7 +10,7 @@ export function CartProvider({ children }) {
   const [fly, setFly] = useState(null);
 
   const addItem = useCallback((product, fromRect) => {
-    if (!product || Number(product.stock) <= 0) return;
+    if (!product || !isPublishedProduct(product) || Number(product.stock) <= 0) return;
     setFly({
       product,
       fromRect,
@@ -18,6 +19,10 @@ export function CartProvider({ children }) {
   }, []);
 
   const completeFly = useCallback((product) => {
+    if (!isPublishedProduct(product)) {
+      setFly(null);
+      return;
+    }
     const limit = maxCartQty(product);
     if (limit <= 0) {
       setFly(null);

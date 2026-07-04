@@ -83,14 +83,19 @@ function mapProductsForRequest(products, user) {
 router.get('/', optionalAuth, (req, res) => {
   const staff = isStaffUser(req.auth?.user);
   let products = store.getProducts(req.query);
-  if (!staff) {
+  // Public shop always hides drafts — even when a staff token is present in the
+  // browser. Admin passes ?status=all to list draft + published inventory.
+  const adminCatalog = staff && String(req.query.status || '').toLowerCase() === 'all';
+  if (!adminCatalog) {
     products = products.filter((p) => store.isPublishedProduct(p));
   }
   res.json(mapProductsForRequest(products, req.auth?.user));
 });
 
 router.get('/categories', optionalAuth, (req, res) => {
-  const includeDrafts = isStaffUser(req.auth?.user);
+  const staff = isStaffUser(req.auth?.user);
+  const includeDrafts =
+    staff && String(req.query.include_drafts || '').toLowerCase() === 'true';
   res.json(store.getProductCategories({ includeDrafts }));
 });
 

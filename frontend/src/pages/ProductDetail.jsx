@@ -6,6 +6,7 @@ import { orderProductContactPath, restockInquiryContactPath } from '../config/sh
 import { useCart } from '../context/CartContext';
 import { useTranslation } from '../context/LanguageContext';
 import { useShopGate } from '../hooks/useShopGate';
+import { isPublishedProduct } from '../utils/productStatus';
 import ShopLoginPrompt from '../components/ShopLoginPrompt';
 import CustomerLoginModal from '../components/CustomerLoginModal';
 import { getProductAnimKind } from '../utils/productAnimation';
@@ -35,6 +36,11 @@ export default function ProductDetail() {
   useEffect(() => {
     api.getProduct(id)
       .then((data) => {
+        if (!isPublishedProduct(data)) {
+          setError(t('product.notFound'));
+          setProduct(null);
+          return;
+        }
         setProduct(data);
         setActiveImage(data.image);
       })

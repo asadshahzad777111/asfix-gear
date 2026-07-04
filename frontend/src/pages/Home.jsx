@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { hasDiscount } from '../utils/pricing';
 import { readProductsCache, writeProductsCache } from '../utils/productCache';
+import { filterPublishedProducts } from '../utils/productStatus';
 import HomeHero from '../components/home/HomeHero';
 import CollectionGrid from '../components/home/CollectionGrid';
 import PromoBanners from '../components/home/PromoBanners';
@@ -11,7 +12,7 @@ import LocationSection from '../components/LocationSection';
 import { useTranslation } from '../context/LanguageContext';
 
 function filterShopProducts(products) {
-  return products.filter((p) => p.category !== 'Gaming');
+  return filterPublishedProducts(products).filter((p) => p.category !== 'Gaming');
 }
 
 export default function Home() {
@@ -49,7 +50,7 @@ export default function Home() {
       setLoadError(null);
 
       try {
-        const all = await api.getProducts();
+        const all = filterPublishedProducts(await api.getProducts());
         if (cancelled) return;
         applyProducts(all);
         writeProductsCache(cacheKey, all);

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import PremiumButton from '../components/premium/PremiumButton';
 import ProductCard from '../components/ProductCard';
@@ -10,6 +10,7 @@ import { SHOP_BRANDS } from '../config/products';
 import { useTranslation } from '../context/LanguageContext';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import { readProductsCache, writeProductsCache } from '../utils/productCache';
+import { filterPublishedProducts } from '../utils/productStatus';
 import ShopModelPicker from '../components/shop/ShopModelPicker';
 
 const STOCK_POLL_MS = 25_000;
@@ -31,6 +32,7 @@ export default function Shop() {
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState(null);
   const [addOpen, setAddOpen] = useState(false);
+  const requestIdRef = useRef(0);
 
   const activeBrandData = SHOP_BRANDS.find((b) => b.id === activeBrand);
 
@@ -50,12 +52,14 @@ export default function Shop() {
   const loadProducts = (silent = false) => {
     const params = buildParams();
     const cacheKey = productCacheKey(params);
+    const requestId = ++requestIdRef.current;
     if (!silent) {
       const cached = readProductsCache(cacheKey);
       if (cached?.length) {
         setProducts(cached);
         setLoading(false);
       } else {
+        setProducts([]);
         setLoading(true);
       }
     }
@@ -64,8 +68,10 @@ export default function Shop() {
       api
         .getProducts(params)
         .then((data) => {
-          setProducts(data);
-          writeProductsCache(cacheKey, data);
+          if (requestId !== requestIdRef.current) return;
+          const published = filterPublishedProducts(data);
+          setProducts(published);
+          writeProductsCache(cacheKey, published);
           setLoadError(null);
         })
         .catch((err) => {
@@ -111,6 +117,16 @@ export default function Shop() {
     }, STOCK_POLL_MS);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeCategory, activeBrand, showSaleOnly, search]);
+
+  const handleCategorySelect = (cat) => {
+    setActiveCategory(cat);
+    setSearch('');
+    const next = new URLSearchParams(searchParams);
+    if (cat === 'all') next.delete('category');
+    else next.set('category', cat);
+    next.delete('search');
+    setSearchParams(next, { replace: true });
+  };
 
   const clearBrand = () => {
     setActiveBrand('all');
@@ -186,9 +202,9 @@ export default function Shop() {
             </div>
           )}
           <div className="filters-bar">
-            <button type="button" className={`filter-btn ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => setActiveCategory('all')}>{t('shop.all')}</button>
+            <button type="button" className={`filter-btn ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => handleCategorySelect('all')}>{t('shop.all')}</button>
             {categories.map((cat) => (
-              <button key={cat} type="button" className={`filter-btn ${activeCategory === cat ? 'active' : ''}`} onClick={() => setActiveCategory(cat)}>{cat}</button>
+              <button key={cat} type="button" className={`filter-btn ${activeCategory === cat ? 'active' : ''}`} onClick={() => handleCategorySelect(cat)}>{cat}</button>
             ))}
             <button type="button" className={`filter-btn filter-sale ${showSaleOnly ? 'active' : ''}`} onClick={() => setShowSaleOnly((s) => !s)}>
               🏷️ {t('shop.sale')}

@@ -4,6 +4,7 @@ import { api, formatPrice } from '../../api/client';
 import { getDefaultImage } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
 import useRecentSearches from '../../hooks/useRecentSearches';
+import { filterPublishedProducts } from '../../utils/productStatus';
 
 const SUGGEST_DEBOUNCE_MS = 250;
 const MAX_SUGGESTIONS = 6;
@@ -39,7 +40,7 @@ export default function NavSearch({ className = '' }) {
         .getProducts({ search: term })
         .then((results) => {
           if (requestSeqRef.current !== seq) return;
-          setSuggestions(results.slice(0, MAX_SUGGESTIONS));
+          setSuggestions(filterPublishedProducts(results).slice(0, MAX_SUGGESTIONS));
         })
         .catch(() => {
           if (requestSeqRef.current === seq) setSuggestions([]);

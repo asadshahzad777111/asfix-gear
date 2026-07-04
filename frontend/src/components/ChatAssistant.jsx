@@ -6,6 +6,7 @@ import { generalRepairQuoteContactPath } from '../config/repairModels';
 import { getDefaultImage } from '../config/products';
 import { hasDiscount, getSalePrice } from '../utils/pricing';
 import { detectIntent, parseOrderTrackInfo } from '../utils/chatEngine';
+import { filterPublishedProducts } from '../utils/productStatus';
 import { useTranslation } from '../context/LanguageContext';
 
 let nextId = 1;
@@ -125,7 +126,7 @@ export default function ChatAssistant() {
   async function resolveProductSearch(term) {
     setThinking(true);
     try {
-      const all = await api.getProducts({ search: term });
+      const all = filterPublishedProducts(await api.getProducts({ search: term }));
       const results = all.filter((p) => p.category !== 'Gaming').slice(0, 3);
       if (results.length === 0) {
         pushBot(t('chatbot.replies.productNotFound'), null, [

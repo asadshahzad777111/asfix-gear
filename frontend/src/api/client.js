@@ -295,7 +295,10 @@ export const api = {
     return request(`/products${query ? `?${query}` : ''}`);
   },
   getProduct: (id) => request(`/products/${id}`),
-  getCategories: () => request('/products/categories'),
+  getCategories: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/products/categories${query ? `?${query}` : ''}`);
+  },
   createProduct: (body) => request('/products', { method: 'POST', body: JSON.stringify(body) }),
   updateProduct: (id, body) => request(`/products/${id}`, { method: 'PUT', body: JSON.stringify(body) }),
   setProductDiscount: (id, discount_percent) =>

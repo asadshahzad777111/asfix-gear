@@ -10,7 +10,10 @@ export default function ProductCategoriesPanel({ category, onCategoryChange, onM
   const [productCounts, setProductCounts] = useState(new Map());
 
   useEffect(() => {
-    Promise.all([api.getCategories(), api.getProducts()])
+    Promise.all([
+      api.getCategories({ include_drafts: 'true' }),
+      api.getProducts({ status: 'all' }),
+    ])
       .then(([names, products]) => {
         setCategoryRows(Array.isArray(names) ? names : []);
         const map = new Map();

@@ -79,7 +79,10 @@ export function getProducts(filters = {}) {
   }
 
   if (category && category !== 'all') {
-    products = products.filter((p) => p.category === category);
+    const cat = String(category).trim().toLowerCase();
+    products = products.filter(
+      (p) => String(p.category || '').trim().toLowerCase() === cat
+    );
   }
   if (brand && brand !== 'all') {
     products = products.filter((p) => String(p.brand || '').toLowerCase() === String(brand).toLowerCase());
@@ -380,6 +383,9 @@ function prepareOrderItems(rawItems, products) {
     const product = products.find((p) => p.id === productId);
     if (!product) {
       throw new StockError(`Product not found: ${String(item.name || productId).trim()}`);
+    }
+    if (!isPublishedProduct(product)) {
+      throw new StockError(`"${product.name}" is no longer available`);
     }
     if (Number(product.stock || 0) < qty) {
       throw new StockError(

@@ -8,6 +8,7 @@ import GamingLogo from '../components/gaming/GamingLogo';
 import GamingProductCard from '../components/gaming/GamingProductCard';
 import { gamingContactPath, SHOP } from '../config/shop';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
+import { filterPublishedProducts } from '../utils/productStatus';
 
 const PUBG_TAGS = ['PUBG Mobile', 'Battle Royale', 'Triggers', 'Claw Grip', 'Low Latency', 'RGB Gear'];
 const STOCK_POLL_MS = 20_000;
@@ -22,7 +23,7 @@ export default function Gaming() {
   useEffect(() => {
     const load = () => {
       api.getProducts({ category: 'Gaming' })
-        .then(setProducts)
+        .then((data) => setProducts(filterPublishedProducts(data)))
         .catch(console.error)
         .finally(() => setLoading(false));
     };
