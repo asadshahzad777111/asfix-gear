@@ -64,11 +64,19 @@ export default function Navbar() {
     }
   }, [menuOpen]);
 
+  const resetShopMobileNav = () => {
+    setShopMobileLevel(1);
+    setShopMobileBrand(null);
+  };
+
   const toggleShopAccordion = (e) => {
     e?.currentTarget?.blur();
     const drawer = document.getElementById('main-nav');
     const scrollTop = drawer?.scrollTop ?? 0;
-    setShopAccordionOpen((open) => !open);
+    setShopAccordionOpen((open) => {
+      if (open) resetShopMobileNav();
+      return !open;
+    });
     // Double rAF: some mobile browsers (esp. iOS Safari) re-apply their own
     // focus/layout-driven scroll adjustment one frame after ours, so we
     // pin scrollTop again after that frame too — prevents the drawer from
@@ -154,14 +162,7 @@ export default function Navbar() {
                       <button
                         type="button"
                         className="nav-drawer-accordion-link nav-drawer-accordion-link--btn nav-drawer-shop-back"
-                        onClick={() => {
-                          if (shopMobileLevel === 3) {
-                            setShopMobileLevel(2);
-                            setShopMobileBrand(null);
-                          } else {
-                            setShopMobileLevel(1);
-                          }
-                        }}
+                        onClick={() => setShopMobileLevel((level) => Math.max(1, level - 1))}
                       >
                         ← {shopMobileLevel === 2 ? t('nav.categories') : t('nav.topPicks')}
                       </button>
@@ -211,20 +212,26 @@ export default function Navbar() {
                         <button
                           key={brand.id}
                           type="button"
-                          className="nav-drawer-accordion-link nav-drawer-accordion-link--btn"
+                          className="nav-drawer-accordion-link nav-drawer-accordion-link--btn nav-drawer-accordion-link--brand"
                           onClick={() => {
                             setShopMobileBrand(brand.id);
                             setShopMobileLevel(3);
                           }}
                         >
                           <SearchBrandIcon brandId={brand.id} />
-                          <span>{brand.label}</span>
-                          <span aria-hidden="true">›</span>
+                          <span className="nav-drawer-brand-label">{brand.label}</span>
+                          <span className="nav-drawer-brand-arrow" aria-hidden="true">›</span>
                         </button>
                       ))}
 
                     {shopMobileLevel === 3 && shopMobileBrand && (
                       <>
+                        <div className="nav-drawer-shop-brand-head">
+                          <SearchBrandIcon brandId={shopMobileBrand} />
+                          <span className="nav-drawer-brand-label">
+                            {SHOP_BRANDS.find((b) => b.id === shopMobileBrand)?.label || shopMobileBrand}
+                          </span>
+                        </div>
                         {getSeriesForShopBrand(shopMobileBrand).flatMap((series) =>
                           series.models.map((model) => (
                             <Link

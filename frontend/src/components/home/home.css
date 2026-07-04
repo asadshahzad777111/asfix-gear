@@ -500,8 +500,8 @@
 }
 
 .home-trending-circle {
-  width: 64px;
-  height: 64px;
+  width: 72px;
+  height: 72px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -509,12 +509,25 @@
   font-size: 1.5rem;
   background: var(--bg-card);
   border: 2px solid var(--border);
-  transition: transform 0.2s ease, border-color 0.2s ease;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  overflow: hidden;
+}
+
+.home-trending-circle--photo {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+}
+
+.home-trending-circle img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .home-trending-chip:hover .home-trending-circle {
   transform: scale(1.06);
   border-color: var(--primary);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.16);
 }
 
 .home-trending-label {

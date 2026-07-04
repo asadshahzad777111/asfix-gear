@@ -28,6 +28,13 @@ export default function ShopMegaMenu() {
   const panelRef = useRef(null);
   const modelScrollRef = useRef(null);
 
+  const resetMenuState = useCallback(() => {
+    setLevel(1);
+    setActiveBrand(SHOP_BRANDS[0]?.id || null);
+    setPanelPos(null);
+    if (modelScrollRef.current) modelScrollRef.current.scrollTop = 0;
+  }, []);
+
   const updatePanelPos = useCallback(() => {
     const trigger = wrapRef.current;
     if (!trigger) return;
@@ -40,36 +47,34 @@ export default function ShopMegaMenu() {
       left = Math.max(viewportPad, window.innerWidth - viewportPad - width);
     }
     const navBottom = getNavbarBottom();
-    const top = Math.max(rect.bottom + PANEL_GAP_PX, navBottom + PANEL_GAP_PX);
+    const anchorBottom = navBottom > 0 ? navBottom : rect.bottom;
+    const top = anchorBottom + PANEL_GAP_PX;
     const maxHeight = Math.max(240, window.innerHeight - top - viewportPad);
     setPanelPos({ top, left, width, maxHeight });
   }, []);
 
   const closeMenu = useCallback(() => {
     setOpen(false);
-    setLevel(1);
-    setPanelPos(null);
-    if (modelScrollRef.current) modelScrollRef.current.scrollTop = 0;
+    resetMenuState();
     if (document.activeElement instanceof HTMLElement) {
       document.activeElement.blur();
     }
-  }, []);
+  }, [resetMenuState]);
 
   const toggleOpen = useCallback(() => {
     setOpen((was) => {
       if (was) {
-        setLevel(1);
-        setPanelPos(null);
-        if (modelScrollRef.current) modelScrollRef.current.scrollTop = 0;
+        resetMenuState();
         if (document.activeElement instanceof HTMLElement) {
           document.activeElement.blur();
         }
         return false;
       }
+      resetMenuState();
       setOpenToken((token) => token + 1);
       return true;
     });
-  }, []);
+  }, [resetMenuState]);
 
   useLayoutEffect(() => {
     if (!open) {
@@ -105,10 +110,12 @@ export default function ShopMegaMenu() {
   }, [closeMenu]);
 
   useEffect(() => {
-    if (!open || level !== 3) return;
+    if (!open) return;
+    const panelBody = panelRef.current?.querySelector('.nav-mega-panel-body--stepped');
+    if (panelBody) panelBody.scrollTop = 0;
+    if (level !== 3) return;
     const scrollEl = modelScrollRef.current;
-    if (!scrollEl) return;
-    scrollEl.scrollTop = 0;
+    if (scrollEl) scrollEl.scrollTop = 0;
   }, [open, level, activeBrand]);
 
   const activeBrandData = SHOP_BRANDS.find((b) => b.id === activeBrand) || SHOP_BRANDS[0];

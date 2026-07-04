@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MODEL_SPECIFIC_CATEGORIES, SHOP_CATEGORIES } from '../../config/products';
+import {
+  getCategoryThumb,
+  MODEL_SPECIFIC_CATEGORIES,
+  SHOP_CATEGORIES,
+} from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
 import PhoneFinderModal from '../PhoneFinderModal';
 
 const CATEGORY_ICONS = {
-  Cases: '📱',
-  Chargers: '🔌',
   Cables: '🔗',
   'Screen Guards': '🛡️',
-  'Back Covers': '📱',
-  Audio: '🎧',
   'Power Banks': '🔋',
   Accessories: '✨',
 };
@@ -54,8 +54,15 @@ export default function TrendingCategories() {
               onClick={() => handleClick(category)}
               className="home-trending-chip"
             >
-              <span className="home-trending-circle" aria-hidden="true">
-                {CATEGORY_ICONS[category] || '📦'}
+              <span
+                className={`home-trending-circle${getCategoryThumb(category) ? ' home-trending-circle--photo' : ''}`}
+                aria-hidden="true"
+              >
+                {getCategoryThumb(category) ? (
+                  <img src={getCategoryThumb(category)} alt="" loading="lazy" draggable={false} />
+                ) : (
+                  CATEGORY_ICONS[category] || '📦'
+                )}
               </span>
               <span className="home-trending-label">{category}</span>
             </button>
