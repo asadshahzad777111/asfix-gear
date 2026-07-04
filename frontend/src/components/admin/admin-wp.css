@@ -95,6 +95,7 @@
   display: grid;
   grid-template-columns: 220px minmax(0, 1fr);
   min-height: calc(100vh - 46px);
+  min-height: calc(100dvh - 46px);
 }
 
 .wp-admin-menu {
@@ -655,16 +656,45 @@
 
 /* ── Mobile / tablet admin (full width, drawer menu) ── */
 @media (max-width: 960px) {
+  .app--admin {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .app-main--admin {
+    display: flex;
+    flex-direction: column;
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .app-main--admin .page-transition-shell {
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  body.wp-admin-nav-open {
+    overflow: hidden;
+  }
+
   .wp-admin-shell {
     width: 100%;
     max-width: 100%;
-    min-height: 100dvh;
-    overflow-x: hidden;
+    min-height: 100%;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+    overflow-x: clip;
   }
 
   .wp-admin-bar {
     padding: 0 0.65rem;
     gap: 0.35rem;
+    flex-shrink: 0;
   }
 
   .wp-admin-bar-left,
@@ -704,6 +734,7 @@
     font: inherit;
     font-size: 0.82rem;
     cursor: pointer;
+    flex-shrink: 0;
   }
 
   .wp-admin-menu-toggle.is-active {
@@ -711,28 +742,40 @@
     border-color: #2271b1;
   }
 
+  /* Block layout — grid auto-placement was leaving content in column 2 (half-screen blank) */
   .wp-admin-frame {
-    grid-template-columns: 1fr;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    min-height: calc(100vh - 46px);
     min-height: calc(100dvh - 46px);
+    flex: 1 1 auto;
   }
 
   .wp-admin-menu {
-    display: none;
     position: fixed;
     top: 46px;
     left: 0;
     right: 0;
     bottom: 0;
+    width: 100%;
+    max-width: 100%;
     z-index: 998;
+    margin: 0;
     padding: 0.5rem 0 5rem;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
     border-right: none;
     box-shadow: inset 0 4px 12px rgba(0, 0, 0, 0.25);
+    transform: translateX(-100%);
+    visibility: hidden;
+    pointer-events: none;
   }
 
   .wp-admin-menu.is-open {
-    display: block;
+    transform: translateX(0);
+    visibility: visible;
+    pointer-events: auto;
   }
 
   .wp-menu-section {
@@ -748,10 +791,12 @@
   }
 
   .wp-admin-content {
+    display: block;
     width: 100%;
     max-width: 100%;
+    min-width: 0;
     padding: 0.75rem 0.65rem 2rem;
-    overflow-x: hidden;
+    overflow-x: clip;
     box-sizing: border-box;
   }
 
@@ -850,6 +895,29 @@
   .wp-admin-shell .glass-card {
     max-width: 100%;
     box-sizing: border-box;
+  }
+}
+
+@media (max-width: 480px) {
+  .wp-admin-bar {
+    padding: 0 0.5rem;
+  }
+
+  .wp-admin-bar-link {
+    font-size: 0.82rem;
+  }
+
+  .wp-admin-content {
+    padding: 0.65rem 0.5rem 1.5rem;
+  }
+
+  .wp-table-wrap {
+    margin-left: -0.5rem;
+    margin-right: -0.5rem;
+  }
+
+  .wp-dashboard-grid {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -981,10 +1049,6 @@
 .wp-button--small {
   font-size: 0.78rem;
   padding: 0.2rem 0.45rem;
-}
-
-.wp-admin-menu-toggle {
-  display: none;
 }
 
 /* WP product editor */

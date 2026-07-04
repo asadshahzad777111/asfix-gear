@@ -7,7 +7,6 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ShopStatusProvider } from './context/ShopStatusContext';
-import './components/admin/admin-wp.css';
 import App from './App.jsx';
 import './themes.css';
 import './index.css';
@@ -23,6 +22,7 @@ import './components/home/home.css';
 import './components/nav/nav-upgrade.css';
 import './components/chat-assistant.css';
 import './auth-2026.css';
+import './components/admin/admin-wp.css';
 import { registerSW } from 'virtual:pwa-register';
 
 registerSW({ immediate: true });

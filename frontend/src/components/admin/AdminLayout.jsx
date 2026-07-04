@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../context/LanguageContext';
 import { roleLabel } from '../../config/permissions';
@@ -27,6 +27,11 @@ export default function AdminLayout({
   const { products = 0, orders = 0, bookings = 0, pendingOrders = 0, lowStockCount = 0 } = counts || {};
   const { showSales, showAdminMgmt, showShopControl } = flags || {};
   const [menuOpen, setMenuOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.toggle('wp-admin-nav-open', menuOpen);
+    return () => document.body.classList.remove('wp-admin-nav-open');
+  }, [menuOpen]);
 
   const goTab = (next) => {
     if (next === 'add' && onEditCancel) onEditCancel();
