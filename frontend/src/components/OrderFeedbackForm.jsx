@@ -4,25 +4,46 @@ import { useTranslation } from '../context/LanguageContext';
 
 const RATINGS = [1, 2, 3, 4, 5];
 
+function FeedbackDone({ rating, comment, t }) {
+  return (
+    <div className="order-feedback order-feedback--done glass-card">
+      <p className="order-feedback-thanks">{t('feedback.thanks')}</p>
+      <p className="order-feedback-pending">{t('feedback.pendingNote')}</p>
+      <div className="order-feedback-stars" aria-label={t('feedback.yourRating')}>
+        {RATINGS.map((n) => (
+          <span key={n} className={n <= rating ? 'on' : ''} aria-hidden="true">★</span>
+        ))}
+      </div>
+      {comment ? <p className="order-feedback-comment">{comment}</p> : null}
+    </div>
+  );
+}
+
 export default function OrderFeedbackForm({ orderId, phone, existing, onSubmitted }) {
   const { t } = useTranslation();
   const [rating, setRating] = useState(existing?.rating || 0);
   const [comment, setComment] = useState(existing?.comment || '');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
-  const [done, setDone] = useState(Boolean(existing?.rating));
+  const [submitted, setSubmitted] = useState(null);
 
-  if (done && existing?.rating) {
+  if (existing?.rating && !submitted) {
     return (
-      <div className="order-feedback order-feedback--done glass-card">
-        <p className="order-feedback-thanks">{t('feedback.thanks')}</p>
-        <div className="order-feedback-stars" aria-label={t('feedback.yourRating')}>
-          {RATINGS.map((n) => (
-            <span key={n} className={n <= existing.rating ? 'on' : ''} aria-hidden="true">★</span>
-          ))}
-        </div>
-        {existing.comment ? <p className="order-feedback-comment">{existing.comment}</p> : null}
-      </div>
+      <FeedbackDone
+        rating={existing.rating}
+        comment={existing.comment}
+        t={t}
+      />
+    );
+  }
+
+  if (submitted?.rating) {
+    return (
+      <FeedbackDone
+        rating={submitted.rating}
+        comment={submitted.comment}
+        t={t}
+      />
     );
   }
 
@@ -40,7 +61,7 @@ export default function OrderFeedbackForm({ orderId, phone, existing, onSubmitte
         rating,
         comment: comment.trim(),
       });
-      setDone(true);
+      setSubmitted(data.feedback);
       onSubmitted?.(data.feedback);
     } catch (err) {
       setError(err.message || t('feedback.submitFailed'));

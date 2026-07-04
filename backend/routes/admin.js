@@ -110,4 +110,32 @@ router.delete('/categories/:id', writeLimiter, requireAuth, requireRole(...CATEG
   });
 });
 
+router.get('/feedback', requireAuth, requireRole(...SALES_VIEWERS), (_req, res) => {
+  res.json(store.listOrderFeedback());
+});
+
+router.patch('/feedback/:orderId', writeLimiter, requireAuth, requireRole(...CATEGORY_EDITORS), (req, res) => {
+  const orderId = Number(req.params.orderId);
+  if (!Number.isFinite(orderId)) {
+    return res.status(400).json({ error: 'Invalid order id' });
+  }
+  try {
+    const row = store.updateOrderFeedback(orderId, req.body || {}, req.user);
+    if (!row) return res.status(404).json({ error: 'Review not found' });
+    res.json(row);
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Could not update review' });
+  }
+});
+
+router.delete('/feedback/:orderId', writeLimiter, requireAuth, requireRole(...CATEGORY_EDITORS), (req, res) => {
+  const orderId = Number(req.params.orderId);
+  if (!Number.isFinite(orderId)) {
+    return res.status(400).json({ error: 'Invalid order id' });
+  }
+  const ok = store.deleteOrderFeedback(orderId);
+  if (!ok) return res.status(404).json({ error: 'Review not found' });
+  res.json({ ok: true });
+});
+
 export default router;

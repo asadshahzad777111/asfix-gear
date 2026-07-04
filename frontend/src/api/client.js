@@ -366,6 +366,12 @@ export const api = {
   },
   getAdminDashboardStats: () => request('/admin/dashboard-stats'),
   getCustomersSummary: () => request('/admin/customers-summary'),
+  getAdminFeedback: () => request('/admin/feedback'),
+  updateAdminFeedback: (orderId, body) =>
+    request(`/admin/feedback/${orderId}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteAdminFeedback: (orderId) =>
+    request(`/admin/feedback/${orderId}`, { method: 'DELETE' }),
+  getPublishedReviews: () => request('/orders/reviews'),
   getAdminCategories: () => request('/admin/categories'),
   createCategory: (body) =>
     request('/admin/categories', { method: 'POST', body: JSON.stringify(body) }),

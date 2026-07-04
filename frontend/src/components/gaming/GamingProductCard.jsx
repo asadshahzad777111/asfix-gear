@@ -34,6 +34,7 @@ export default function GamingProductCard({ product, index }) {
   const { popClass, handleProductLinkClick, linkPopHandlers } = useProductPop();
   const productPath = `/shop/${product.id}`;
   const [hovered, setHovered] = useState(false);
+  const [jumped, setJumped] = useState(false);
 
   useEffect(() => {
     const el = ref.current;
@@ -43,7 +44,7 @@ export default function GamingProductCard({ product, index }) {
       ([entry]) => {
         if (entry.isIntersecting) {
           setTimeout(() => {
-            el.classList.add('jumped');
+            setJumped(true);
             playProductJump(index);
           }, index * 120);
           observer.unobserve(el);
@@ -77,7 +78,7 @@ export default function GamingProductCard({ product, index }) {
     <>
     <motion.article
       ref={ref}
-      className={`gaming-product-card premium-gaming-card ${onSale ? 'on-sale' : ''} ${hovered ? 'is-hovered' : ''} ${popClass}`}
+      className={`gaming-product-card premium-gaming-card ${jumped ? 'jumped' : ''} ${onSale ? 'on-sale' : ''} ${hovered ? 'is-hovered' : ''} ${popClass}`.trim()}
       style={{ '--jump-delay': `${index * 0.12}s`, transformPerspective: 900 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}

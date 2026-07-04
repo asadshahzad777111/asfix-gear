@@ -142,6 +142,7 @@ export default function AdminLayout({
             {navItem('customers', 'Customers')}
             {navItem('bookings', 'Repair Intake', bookings || null)}
             {navItem('messages', t('admin.messages'))}
+            {navItem('feedback', 'Reviews')}
           </div>
 
           {(showSales || showAdminMgmt || showShopControl) && (

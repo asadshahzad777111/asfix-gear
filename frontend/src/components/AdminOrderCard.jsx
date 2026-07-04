@@ -284,6 +284,7 @@ export default function AdminOrderCard({
       {o.customer_feedback?.rating ? (
         <p className="admin-float-feedback">
           ★ {o.customer_feedback.rating}/5
+          {o.customer_feedback.status ? ` · ${o.customer_feedback.status}` : ''}
           {o.customer_feedback.comment ? ` — "${o.customer_feedback.comment}"` : ''}
         </p>
       ) : null}

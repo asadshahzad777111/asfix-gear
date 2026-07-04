@@ -9,6 +9,7 @@ import PromoBanners from '../components/home/PromoBanners';
 import ProductCarousel from '../components/home/ProductCarousel';
 import TrendingCategories from '../components/home/TrendingCategories';
 import LocationSection from '../components/LocationSection';
+import Testimonials from '../components/Testimonials';
 import { useTranslation } from '../context/LanguageContext';
 
 function filterShopProducts(products) {
@@ -112,6 +113,13 @@ export default function Home() {
         </>
       )}
       <TrendingCategories />
+      <section className="home-section home-reviews">
+        <div className="container">
+          <p className="section-eyebrow">{t('home.reviewsEyebrow')}</p>
+          <h2 className="section-title">{t('home.reviewsTitle')}</h2>
+          <Testimonials />
+        </div>
+      </section>
       <LocationSection />
     </>
   );

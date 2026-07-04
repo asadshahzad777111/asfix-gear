@@ -36,6 +36,10 @@ router.post('/feedback', (req, res) => {
   }
 });
 
+router.get('/reviews', (_req, res) => {
+  res.json(store.getPublishedReviews(12));
+});
+
 router.get('/track', (req, res) => {
   const { orderId, phone } = req.query;
   if (!orderId?.trim() || !phone?.trim()) {

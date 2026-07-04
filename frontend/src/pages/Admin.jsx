@@ -7,6 +7,7 @@ import AdminLayout from '../components/admin/AdminLayout';
 import AdminDashboard from '../components/admin/AdminDashboard';
 import AdminCategories from '../components/admin/AdminCategories';
 import AdminCustomers from '../components/admin/AdminCustomers';
+import AdminFeedback from '../components/admin/AdminFeedback';
 import AdminSettings from '../components/admin/AdminSettings';
 import '../components/admin/admin-wp.css';
 import AddProductForm from '../components/AddProductForm';
@@ -23,7 +24,7 @@ import { startVisibilityPoll } from '../utils/visibilityPoll';
 
 const VALID_TABS = new Set([
   'dashboard', 'products', 'add', 'categories', 'stock', 'orders', 'customers',
-  'bookings', 'messages', 'sales', 'admins', 'settings', 'payments',
+  'bookings', 'messages', 'feedback', 'sales', 'admins', 'settings', 'payments',
 ]);
 
 function ProductSortHeader({ label, sortKey, activeKey, dir, onSort }) {
@@ -337,6 +338,7 @@ export default function Admin() {
     if (tab === 'customers') return 'Customers';
     if (tab === 'bookings') return 'Repair Intake';
     if (tab === 'messages') return t('admin.messages');
+    if (tab === 'feedback') return 'Reviews & Feedback';
     if (tab === 'sales') return t('sales.tab');
     if (tab === 'admins') return t('team.manageTeam');
     if (tab === 'settings') return 'Settings';
@@ -363,7 +365,7 @@ export default function Admin() {
         onViewStock={() => setTab('stock')}
         onEditProduct={handleEditProduct}
       />
-      {loading && !['add', 'admins', 'messages', 'sales', 'dashboard', 'settings', 'payments', 'customers'].includes(tab) ? (
+      {loading && !['add', 'admins', 'messages', 'feedback', 'sales', 'dashboard', 'settings', 'payments', 'customers'].includes(tab) ? (
         <div className="wp-loading">{t('common.loading')}</div>
       ) : tab === 'dashboard' ? (
         <AdminDashboard onNavigate={navigateAdmin} />
@@ -384,6 +386,8 @@ export default function Admin() {
         <div className="wp-postbox">
           <div className="wp-postbox-body"><AdminChatInbox /></div>
         </div>
+      ) : tab === 'feedback' ? (
+        <AdminFeedback />
       ) : tab === 'sales' && showSales ? (
         <AdminSalesReport />
       ) : tab === 'add' ? (

@@ -4908,6 +4908,13 @@ img { max-width: 100%; height: auto; display: block; }
   font-weight: 600;
 }
 
+.order-feedback-pending {
+  margin: 0 0 0.75rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}
+
 .order-feedback-comment {
   margin: 0.5rem 0 0;
   color: var(--text-muted);

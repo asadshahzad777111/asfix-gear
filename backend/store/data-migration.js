@@ -159,6 +159,9 @@ export function migrateData(data) {
     if (order.customer_user_id == null) order.customer_user_id = null;
     if (order.stock_deducted == null) order.stock_deducted = false;
     if (order.customer_feedback == null) order.customer_feedback = null;
+    else if (order.customer_feedback && order.customer_feedback.status == null) {
+      order.customer_feedback.status = 'pending';
+    }
     if (order.payment_status == null) {
       order.payment_status = order.shipping_status === 'pending' ? 'pending_payment' : 'paid';
     }

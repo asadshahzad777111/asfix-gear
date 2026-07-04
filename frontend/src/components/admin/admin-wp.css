@@ -1692,3 +1692,92 @@
 .wp-product-hint--muted {
   color: #646970;
 }
+
+/* Reviews / feedback admin */
+.admin-feedback-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1rem;
+}
+
+.admin-feedback-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.admin-feedback-card {
+  padding: 1rem 1.1rem;
+}
+
+.admin-feedback-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  align-items: flex-start;
+  margin-bottom: 0.5rem;
+}
+
+.admin-feedback-stars {
+  color: #dba617;
+  margin-bottom: 0.35rem;
+}
+
+.admin-feedback-comment {
+  margin: 0.35rem 0;
+}
+
+.admin-feedback-meta {
+  font-size: 0.82rem;
+  margin: 0.25rem 0 0.75rem;
+}
+
+.admin-feedback-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.admin-feedback-edit label {
+  display: block;
+  margin-bottom: 0.65rem;
+  font-size: 0.85rem;
+}
+
+.admin-feedback-edit textarea,
+.admin-feedback-edit select {
+  display: block;
+  width: 100%;
+  margin-top: 0.25rem;
+}
+
+.wp-status-badge {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  padding: 0.15rem 0.45rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.wp-status-badge--pending {
+  background: #fcf9e8;
+  color: #996800;
+}
+
+.wp-status-badge--published {
+  background: #edfaef;
+  color: #007017;
+}
+
+.wp-status-badge--hidden {
+  background: #f0f0f1;
+  color: #646970;
+}
+
+.wp-button-link-delete {
+  color: #b32d2e !important;
+}

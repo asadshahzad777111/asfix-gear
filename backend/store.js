@@ -1338,10 +1338,93 @@ export function submitOrderFeedback(orderId, phone, { rating, comment = '' }) {
     order.customer_feedback = {
       rating: stars,
       comment: commentText,
+      status: 'pending',
       submitted_at: now(),
+      updated_at: now(),
     };
     order.updated_at = now();
     return order;
+  });
+}
+
+const VALID_FEEDBACK_STATUS = new Set(['pending', 'published', 'hidden']);
+
+function feedbackRow(order) {
+  const fb = order.customer_feedback;
+  if (!fb?.rating) return null;
+  return {
+    order_id: order.id,
+    order_ref: order.order_id || formatOrderId(order.id),
+    customer_name: order.customer_name || 'Customer',
+    rating: fb.rating,
+    comment: fb.comment || '',
+    status: fb.status || 'pending',
+    submitted_at: fb.submitted_at || order.updated_at,
+    updated_at: fb.updated_at || fb.submitted_at || order.updated_at,
+  };
+}
+
+export function listOrderFeedback() {
+  return withData((data) =>
+    data.orders
+      .map(feedbackRow)
+      .filter(Boolean)
+      .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
+  );
+}
+
+export function getPublishedReviews(limit = 12) {
+  return withData((data) =>
+    data.orders
+      .map(feedbackRow)
+      .filter((row) => row && row.status === 'published')
+      .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
+      .slice(0, limit)
+  );
+}
+
+export function updateOrderFeedback(orderId, patch, staffUser = null) {
+  return withData((data) => {
+    const id = Number(orderId);
+    const order = data.orders.find((o) => o.id === id);
+    if (!order?.customer_feedback?.rating) return null;
+
+    const fb = order.customer_feedback;
+    if (patch.comment != null) {
+      fb.comment = String(patch.comment).trim().slice(0, 500);
+    }
+    if (patch.rating != null) {
+      const stars = Number(patch.rating);
+      if (!Number.isInteger(stars) || stars < 1 || stars > 5) {
+        throw new Error('Rating must be between 1 and 5');
+      }
+      fb.rating = stars;
+    }
+    if (patch.status != null) {
+      const status = String(patch.status).trim().toLowerCase();
+      if (!VALID_FEEDBACK_STATUS.has(status)) {
+        throw new Error('Invalid review status');
+      }
+      fb.status = status;
+    }
+    fb.updated_at = now();
+    if (staffUser?.id) {
+      fb.updated_by = staffUser.id;
+      fb.updated_by_name = staffUser.name || staffUser.username || 'Staff';
+    }
+    order.updated_at = now();
+    return feedbackRow(order);
+  });
+}
+
+export function deleteOrderFeedback(orderId) {
+  return withData((data) => {
+    const id = Number(orderId);
+    const order = data.orders.find((o) => o.id === id);
+    if (!order?.customer_feedback?.rating) return false;
+    order.customer_feedback = null;
+    order.updated_at = now();
+    return true;
   });
 }
 
