@@ -889,6 +889,35 @@ export function updateBookingStatus(id, status, updatedBy = null) {
   });
 }
 
+export function addStaffNoteToBooking(id, noteText, staffUser) {
+  return withData((data) => {
+    const numId = Number(id);
+    const index = data.repair_bookings.findIndex((b) => b.id === numId);
+    if (index === -1) return null;
+
+    const existing = data.repair_bookings[index];
+    const text = String(noteText || '').trim().slice(0, 2000);
+    if (!text) return null;
+
+    const at = now();
+    const notes = [...(existing.staff_notes || [])];
+    notes.push({
+      id: notes.length + 1,
+      text,
+      at,
+      by: staffUser?.id ?? null,
+      by_name: staffUser?.name || staffUser?.username || 'Staff',
+    });
+
+    data.repair_bookings[index] = {
+      ...existing,
+      staff_notes: notes,
+      updated_at: at,
+    };
+    return enrichBooking(data.repair_bookings[index], data.repair_services);
+  });
+}
+
 export function createContactMessage(input) {
   return withData((data) => {
     const id = data.meta.nextMessageId++;

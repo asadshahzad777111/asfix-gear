@@ -128,6 +128,7 @@ export function migrateData(data) {
       ];
     }
     if (!booking.activity_log) booking.activity_log = [];
+    if (!booking.staff_notes) booking.staff_notes = [];
     if (!booking.updated_at) booking.updated_at = booking.created_at || nowIso;
   }
 

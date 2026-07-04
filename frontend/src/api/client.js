@@ -322,6 +322,11 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ status }),
     }),
+  addBookingNote: (id, note) =>
+    request(`/repairs/bookings/${id}/notes`, {
+      method: 'PATCH',
+      body: JSON.stringify({ note }),
+    }),
 
   placeOrder: (body) => request('/orders', { method: 'POST', body: JSON.stringify(body) }),
   getOrders: () => request('/orders'),

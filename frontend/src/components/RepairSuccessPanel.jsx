@@ -16,6 +16,7 @@ export default function RepairSuccessPanel({ booking, onReset }) {
         {t('repairSuccess.ref')}: <strong>#{booking.booking_ref}</strong>
       </p>
       <p className="order-success-hint">{t('repairSuccess.hint')}</p>
+      <p className="order-success-diagnosis">{t('repairSuccess.diagnosisNote')}</p>
 
       <Link
         to={contactTo}

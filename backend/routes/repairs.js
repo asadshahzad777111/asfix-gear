@@ -214,10 +214,15 @@ router.post('/book', (req, res) => {
 
   notifyCustomerWhatsApp(
     booking.phone,
-    `Assalam o Alaikum ${booking.customer_name}! Your repair booking for ${deviceLabel} at AsFix & Gear has been received. We'll contact you shortly to confirm next steps.`
+    `Assalam o Alaikum ${booking.customer_name}! Your repair booking for ${deviceLabel} at AsFix & Gear has been received. Exact issue confirm karne ke liye shop par physical inspection / eye diagnosis hogi — repair se pehle clear quote milega. We'll contact you shortly.`
   ).catch(() => {});
 
-  res.status(201).json({ message: 'Repair intake submitted successfully', booking });
+  res.status(201).json({
+    message: 'Repair intake submitted successfully',
+    booking,
+    customer_note:
+      'Exact issue confirm karne ke liye shop par physical inspection / eye diagnosis hogi. Repair se pehle transparent quote milega.',
+  });
 });
 
 router.get('/bookings', requireAuth, requireRole(...STAFF), (_req, res) => {
@@ -232,6 +237,18 @@ router.patch('/bookings/:id/status', requireAuth, requireRole(...STAFF), (req, r
   }
 
   const booking = store.updateBookingStatus(req.params.id, status, req.auth.user);
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
+
+  res.json(booking);
+});
+
+router.patch('/bookings/:id/notes', requireAuth, requireRole(...STAFF), (req, res) => {
+  const note = str(req.body?.note, 2000);
+  if (!note) {
+    return res.status(400).json({ error: 'Note text is required' });
+  }
+
+  const booking = store.addStaffNoteToBooking(req.params.id, note, req.auth.user);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
   res.json(booking);

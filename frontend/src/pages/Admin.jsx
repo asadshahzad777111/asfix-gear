@@ -67,6 +67,8 @@ export default function Admin() {
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [bulkLoading, setBulkLoading] = useState(false);
+  const [noteDrafts, setNoteDrafts] = useState({});
+  const [noteSaving, setNoteSaving] = useState({});
 
   const showAdminMgmt = canManageTeam(user);
   const showSales = canViewSalesReport(user);
@@ -234,6 +236,21 @@ export default function Admin() {
       setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
     } catch (err) {
       alert(err.message);
+    }
+  };
+
+  const saveBookingNote = async (id) => {
+    const note = (noteDrafts[id] || '').trim();
+    if (!note) return;
+    setNoteSaving((prev) => ({ ...prev, [id]: true }));
+    try {
+      const updated = await api.addBookingNote(id, note);
+      setBookings((prev) => prev.map((b) => (b.id === id ? updated : b)));
+      setNoteDrafts((prev) => ({ ...prev, [id]: '' }));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setNoteSaving((prev) => ({ ...prev, [id]: false }));
     }
   };
 
@@ -627,6 +644,43 @@ export default function Admin() {
                         <div>
                           <span className="admin-booking-label">Terms</span>
                           <p>{b.terms_accepted ? '✓ Confirmed' : '—'}</p>
+                        </div>
+                        <div className="admin-booking-span-2">
+                          <span className="admin-booking-label">Customer note sent</span>
+                          <p className="admin-booking-sub">{t('admin.standardCustomerNote')}</p>
+                        </div>
+                        {(b.staff_notes || []).length > 0 && (
+                          <div className="admin-booking-span-2 admin-booking-notes">
+                            <span className="admin-booking-label">{t('admin.staffNotes')}</span>
+                            <ul className="admin-booking-notes-list">
+                              {(b.staff_notes || []).map((n) => (
+                                <li key={n.id || n.at}>
+                                  <small>{n.at ? new Date(n.at).toLocaleString() : ''}{n.by_name ? ` · ${n.by_name}` : ''}</small>
+                                  <p>{n.text}</p>
+                                </li>
+                              ))}
+                            </ul>
+                          </div>
+                        )}
+                        <div className="admin-booking-span-2 admin-booking-note-form">
+                          <label className="admin-booking-label" htmlFor={`booking-note-${b.id}`}>{t('admin.staffNotes')}</label>
+                          <textarea
+                            id={`booking-note-${b.id}`}
+                            className="admin-booking-note-input"
+                            rows={3}
+                            value={noteDrafts[b.id] || ''}
+                            onChange={(e) => setNoteDrafts((prev) => ({ ...prev, [b.id]: e.target.value }))}
+                            placeholder={t('admin.bookingNotePlaceholder')}
+                            maxLength={2000}
+                          />
+                          <button
+                            type="button"
+                            className="btn btn-primary btn-sm"
+                            disabled={noteSaving[b.id] || !(noteDrafts[b.id] || '').trim()}
+                            onClick={() => saveBookingNote(b.id)}
+                          >
+                            {noteSaving[b.id] ? '…' : t('admin.saveBookingNote')}
+                          </button>
                         </div>
                       </div>
                     </article>

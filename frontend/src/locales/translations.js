@@ -518,6 +518,8 @@ export const translations = {
       loginFailed: 'Login failed',
       customerUseAccountLogin: 'Customer accounts sign in at /account/login — not here.',
       customerPrompt: 'Shopping or tracking repairs?',
+    },
+    account: {
       eyebrow: '👤 My Account',
       title: 'Your Account',
       welcome: 'Welcome back',
@@ -548,7 +550,7 @@ export const translations = {
       loginFailed: 'Login failed',
       registerFailed: 'Registration failed',
       loadFailed: 'Could not load account data',
-      staffUseAdminLogin: 'Staff ko /login par Staff Login use karein.',
+      staffUseAdminLogin: 'Staff accounts must sign in at /login (Staff Login page).',
       useCustomerLogin: 'Customer accounts should sign in at Account Login.',
       ordersTab: 'Orders',
       messagesTab: 'Messages',
