@@ -1,11 +1,14 @@
 import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { writeLimiter } from '../middleware/rateLimit.js';
 
 const router = Router();
 const SALES_VIEWERS = ['super_admin', 'admin', 'editor'];
+const CATEGORY_EDITORS = ['super_admin', 'admin', 'editor'];
 const BACKUP_EXPORTERS = ['super_admin', 'admin'];
 const VALID_PERIODS = ['day', 'week', 'range'];
+const MAX_CATEGORY_NAME_LEN = 80;
 
 // TODO: REMOVE AFTER MONGODB MIGRATION COMPLETE — temporary full-store export for Render free tier (no shell).
 router.get('/export-data', requireAuth, requireRole(...BACKUP_EXPORTERS), (_req, res) => {
@@ -45,6 +48,66 @@ router.get('/sales-report', requireAuth, requireRole(...SALES_VIEWERS), (req, re
 
 router.get('/customers-summary', requireAuth, requireRole(...SALES_VIEWERS), (_req, res) => {
   res.json(store.getCustomerSummaries());
+});
+
+router.get('/categories', requireAuth, requireRole(...CATEGORY_EDITORS), (_req, res) => {
+  res.json(store.listProductCategories());
+});
+
+router.post('/categories', writeLimiter, requireAuth, requireRole(...CATEGORY_EDITORS), (req, res) => {
+  const name = String(req.body?.name || '').trim().slice(0, MAX_CATEGORY_NAME_LEN);
+  if (!name) {
+    return res.status(400).json({ error: 'Category name is required' });
+  }
+  try {
+    const category = store.createProductCategory({
+      name,
+      slug: req.body?.slug,
+      parent_id: req.body?.parent_id,
+    });
+    res.status(201).json(category);
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Could not create category' });
+  }
+});
+
+router.patch('/categories/:id', writeLimiter, requireAuth, requireRole(...CATEGORY_EDITORS), (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ error: 'Invalid category id' });
+  }
+  try {
+    const category = store.updateProductCategory(id, {
+      name: req.body?.name,
+      slug: req.body?.slug,
+      parent_id: req.body?.parent_id,
+    });
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+    res.json(category);
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Could not update category' });
+  }
+});
+
+router.delete('/categories/:id', writeLimiter, requireAuth, requireRole(...CATEGORY_EDITORS), (req, res) => {
+  const id = Number(req.params.id);
+  if (!Number.isFinite(id)) {
+    return res.status(400).json({ error: 'Invalid category id' });
+  }
+  const result = store.deleteProductCategory(id);
+  if (result.deleted) {
+    return res.json({ ok: true });
+  }
+  if (result.reason === 'not_found') {
+    return res.status(404).json({ error: 'Category not found' });
+  }
+  return res.status(409).json({
+    error: result.message || 'Cannot delete category',
+    product_count: result.product_count,
+    reason: result.reason,
+  });
 });
 
 export default router;

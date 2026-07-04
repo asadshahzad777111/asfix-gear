@@ -1,21 +1,21 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../../api/client';
-import { CATEGORY_TREE, flattenCategoryTree } from '../../../config/products';
+import { CATEGORY_TREE } from '../../../config/products';
 
 export default function ProductCategoriesPanel({ category, onCategoryChange, onMessage }) {
   const [tab, setTab] = useState('all');
-  const [customCategories, setCustomCategories] = useState([]);
-  const [newCategory, setNewCategory] = useState('');
-  const [categoryRows, setCategoryRows] = useState([]);
+  const [registryCategories, setRegistryCategories] = useState([]);
   const [productCounts, setProductCounts] = useState(new Map());
+  const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = () => {
+    setLoading(true);
     Promise.all([
-      api.getCategories({ include_drafts: 'true' }),
+      api.getAdminCategories(),
       api.getProducts({ status: 'all' }),
     ])
-      .then(([names, products]) => {
-        setCategoryRows(Array.isArray(names) ? names : []);
+      .then(([cats, products]) => {
+        setRegistryCategories(Array.isArray(cats) ? cats : []);
         const map = new Map();
         for (const p of products || []) {
           const cat = p.category || 'Uncategorized';
@@ -24,50 +24,61 @@ export default function ProductCategoriesPanel({ category, onCategoryChange, onM
         setProductCounts(map);
       })
       .catch(() => {
-        setCategoryRows([]);
+        setRegistryCategories([]);
         setProductCounts(new Map());
-      });
+      })
+      .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    load();
   }, []);
 
   const counts = productCounts;
 
-  const allCategories = useMemo(
-    () => flattenCategoryTree([...customCategories, ...categoryRows]),
-    [customCategories, categoryRows],
-  );
+  const allCategoryNames = useMemo(() => {
+    const fromRegistry = registryCategories.map((c) => c.name);
+    const fromProducts = [...counts.keys()];
+    return [...new Set([...fromRegistry, ...fromProducts])].sort((a, b) => a.localeCompare(b));
+  }, [registryCategories, counts]);
 
   const popular = useMemo(
-    () => [...allCategories]
+    () => [...allCategoryNames]
       .sort((a, b) => (counts.get(b) || 0) - (counts.get(a) || 0))
       .slice(0, 6),
-    [allCategories, counts],
+    [allCategoryNames, counts],
   );
 
   const visibleGroups = useMemo(() => {
     if (tab === 'popular') {
       return [{ label: 'Most used', items: popular }];
     }
-    const extra = allCategories.filter(
+
+    if (registryCategories.length > 0) {
+      const grouped = [];
+      const topLevel = registryCategories.filter((c) => c.parent_id == null);
+      for (const parent of topLevel.sort((a, b) => a.name.localeCompare(b.name))) {
+        const children = registryCategories
+          .filter((c) => Number(c.parent_id) === parent.id)
+          .map((c) => c.name);
+        grouped.push({
+          label: parent.name,
+          items: children.length ? [parent.name, ...children] : [parent.name],
+        });
+      }
+      const inTree = new Set(grouped.flatMap((g) => g.items));
+      const orphans = allCategoryNames.filter((n) => !inTree.has(n));
+      if (orphans.length) grouped.push({ label: 'Other', items: orphans });
+      return grouped.length ? grouped : [{ label: 'Categories', items: allCategoryNames }];
+    }
+
+    const extra = allCategoryNames.filter(
       (name) => !CATEGORY_TREE.some((group) => group.items.includes(name)),
     );
     const groups = [...CATEGORY_TREE];
     if (extra.length) groups.push({ label: 'Other', items: extra });
     return groups;
-  }, [tab, allCategories, popular]);
-
-  const addCategory = () => {
-    const name = newCategory.trim();
-    if (!name) return;
-    if (allCategories.some((c) => c.toLowerCase() === name.toLowerCase())) {
-      onCategoryChange(name);
-      setNewCategory('');
-      return;
-    }
-    setCustomCategories((prev) => [...prev, name]);
-    onCategoryChange(name);
-    setNewCategory('');
-    onMessage?.(`Category "${name}" selected ✓`);
-  };
+  }, [tab, allCategoryNames, popular, registryCategories]);
 
   const renderItem = (name) => (
     <label key={name} className="wp-product-category-item">
@@ -86,34 +97,35 @@ export default function ProductCategoriesPanel({ category, onCategoryChange, onM
     <div className="wp-postbox wp-product-categories">
       <div className="wp-postbox-head">Product categories</div>
       <div className="wp-postbox-body">
-        <div className="wp-product-category-tabs">
-          <button type="button" className={tab === 'all' ? 'is-active' : ''} onClick={() => setTab('all')}>
-            All categories
-          </button>
-          <button type="button" className={tab === 'popular' ? 'is-active' : ''} onClick={() => setTab('popular')}>
-            Most Used
-          </button>
-        </div>
-        <div className="wp-product-category-list">
-          {visibleGroups.map((group) => (
-            <div key={group.label} className="wp-product-category-group">
-              <p className="wp-product-category-group-label">{group.label}</p>
-              {group.items.map(renderItem)}
+        {loading ? (
+          <p className="wp-product-hint--muted">Loading categories…</p>
+        ) : (
+          <>
+            <div className="wp-product-category-tabs">
+              <button type="button" className={tab === 'all' ? 'is-active' : ''} onClick={() => setTab('all')}>
+                All categories
+              </button>
+              <button type="button" className={tab === 'popular' ? 'is-active' : ''} onClick={() => setTab('popular')}>
+                Most Used
+              </button>
             </div>
-          ))}
-        </div>
-        <div className="wp-product-category-add">
-          <input
-            type="text"
-            placeholder="New category name"
-            value={newCategory}
-            onChange={(e) => setNewCategory(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addCategory(); } }}
-          />
-          <button type="button" className="wp-button wp-button--link" onClick={addCategory}>
-            + Add new category
-          </button>
-        </div>
+            <div className="wp-product-category-list">
+              {visibleGroups.map((group) => (
+                <div key={group.label} className="wp-product-category-group">
+                  <p className="wp-product-category-group-label">{group.label}</p>
+                  {[...new Set(group.items)].map(renderItem)}
+                </div>
+              ))}
+            </div>
+            <p className="wp-product-hint--muted">
+              Manage categories in{' '}
+              <button type="button" className="wp-button wp-button--link" onClick={() => onMessage?.('Open Categories tab from the sidebar')}>
+                Products → Categories
+              </button>
+              . Selecting a category here sets it on save — existing products keep their current category until edited.
+            </p>
+          </>
+        )}
       </div>
     </div>
   );

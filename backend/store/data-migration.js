@@ -1,3 +1,9 @@
+import { slugify } from '../utils/slug.js';
+
+function slugifyCategoryName(name) {
+  return slugify(name) || `cat-${Date.now()}`;
+}
+
 export const DEFAULT_DATA = {
   meta: {
     nextProductId: 1,
@@ -9,6 +15,7 @@ export const DEFAULT_DATA = {
     nextVerificationCodeId: 1,
     nextRepairRateId: 1,
     nextRepairRateQueryId: 1,
+    nextCategoryId: 1,
   },
   users: [],
   sessions: [],
@@ -26,6 +33,7 @@ export const DEFAULT_DATA = {
       updated_at: null,
       updated_by: null,
     },
+    product_categories: [],
   },
 };
 
@@ -60,6 +68,28 @@ export function migrateData(data) {
   if (!data.meta.nextVerificationCodeId) data.meta.nextVerificationCodeId = 1;
   if (!data.meta.nextRepairRateId) data.meta.nextRepairRateId = 1;
   if (!data.meta.nextRepairRateQueryId) data.meta.nextRepairRateQueryId = 1;
+  if (!data.meta.nextCategoryId) data.meta.nextCategoryId = 1;
+
+  if (!Array.isArray(data.settings.product_categories)) {
+    data.settings.product_categories = [];
+  }
+
+  const nowIso = new Date().toISOString();
+
+  const categoryNames = new Set(data.settings.product_categories.map((c) => c.name));
+  for (const product of data.products) {
+    const name = String(product.category || '').trim();
+    if (!name || categoryNames.has(name)) continue;
+    const id = data.meta.nextCategoryId++;
+    data.settings.product_categories.push({
+      id,
+      name,
+      slug: slugifyCategoryName(name),
+      parent_id: null,
+      created_at: nowIso,
+    });
+    categoryNames.add(name);
+  }
 
   for (const msg of data.contact_messages) {
     if (msg.staff_reply == null) msg.staff_reply = '';
@@ -73,9 +103,9 @@ export function migrateData(data) {
     if (!product.status || !['published', 'draft'].includes(product.status)) {
       product.status = 'published';
     }
+    if (product.slug == null) product.slug = '';
+    if (!Array.isArray(product.tags)) product.tags = [];
   }
-
-  const nowIso = new Date().toISOString();
 
   for (const order of data.orders) {
     if (!order.order_id) order.order_id = formatOrderId(order.id);

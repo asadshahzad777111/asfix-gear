@@ -41,10 +41,31 @@ function sanitizeGallery(gallery) {
   return gallery.map((item) => validateProductImage(item)).filter(Boolean);
 }
 
+function sanitizeTags(tags) {
+  if (tags == null) return tags;
+  if (!Array.isArray(tags)) {
+    throw new Error('Tags must be an array of strings');
+  }
+  return store.normalizeTags(tags);
+}
+
+function sanitizeSlug(slug) {
+  if (slug == null) return slug;
+  const value = String(slug).trim();
+  if (!value) return '';
+  const normalized = store.slugify(value);
+  if (!store.isValidSlug(normalized)) {
+    throw new Error('Slug may only contain lowercase letters, numbers, and hyphens');
+  }
+  return normalized;
+}
+
 function sanitizeProductBody(body) {
   const next = { ...body };
   if (next.image != null) next.image = validateProductImage(next.image);
   if (next.gallery != null) next.gallery = sanitizeGallery(next.gallery);
+  if (next.tags != null) next.tags = sanitizeTags(next.tags);
+  if (next.slug != null) next.slug = sanitizeSlug(next.slug);
   if (next.status != null) {
     try {
       next.status = store.normalizeProductStatus(next.status);
@@ -153,6 +174,8 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       price,
       cost_price,
       description,
+      slug,
+      tags,
       image,
       gallery,
       stock,
@@ -173,6 +196,8 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       price,
       cost_price,
       description: description || '',
+      slug,
+      tags,
       image,
       gallery,
       stock,

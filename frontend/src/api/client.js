@@ -347,6 +347,12 @@ export const api = {
   },
   getAdminDashboardStats: () => request('/admin/dashboard-stats'),
   getCustomersSummary: () => request('/admin/customers-summary'),
+  getAdminCategories: () => request('/admin/categories'),
+  createCategory: (body) =>
+    request('/admin/categories', { method: 'POST', body: JSON.stringify(body) }),
+  updateCategory: (id, body) =>
+    request(`/admin/categories/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteCategory: (id) => request(`/admin/categories/${id}`, { method: 'DELETE' }),
   downloadDataBackup: () => downloadDataBackup(),
 
   getStats: () => request('/stats'),

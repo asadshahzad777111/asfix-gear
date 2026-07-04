@@ -337,7 +337,6 @@ export default function Admin() {
         <AdminSettings section="payments" />
       ) : tab === 'categories' ? (
         <AdminCategories
-          products={products}
           onViewCategory={(name) => navigateAdmin('products', { category: name })}
         />
       ) : tab === 'messages' ? (

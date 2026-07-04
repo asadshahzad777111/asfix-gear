@@ -2,6 +2,35 @@ import { createToken, hashPassword, sessionExpiry, verifyPassword } from './auth
 import { formatOrderId, formatBookingRef } from './store/data-migration.js';
 import { readData, withData, getStorageBackend, initStorage, isStorageReady } from './store/storage.js';
 import { productMatchesSearch } from './utils/product-search.js';
+import { slugify, ensureUniqueSlug, isValidSlug } from './utils/slug.js';
+
+export { slugify, ensureUniqueSlug, isValidSlug };
+
+const MAX_TAGS = 20;
+const MAX_TAG_LEN = 40;
+
+export function normalizeTags(value) {
+  if (!Array.isArray(value)) return [];
+  const seen = new Set();
+  const out = [];
+  for (const raw of value) {
+    const tag = String(raw || '').trim().slice(0, MAX_TAG_LEN);
+    if (!tag) continue;
+    const key = tag.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(tag);
+    if (out.length >= MAX_TAGS) break;
+  }
+  return out;
+}
+
+function resolveProductSlug(data, { slug, name, excludeId }) {
+  const raw = String(slug ?? '').trim() ? slugify(slug) : slugify(name);
+  if (!raw) return '';
+  if (!isValidSlug(raw)) throw new Error('Invalid product slug');
+  return ensureUniqueSlug(data.products, raw, excludeId);
+}
 
 export { getStorageBackend, initStorage, isStorageReady };
 export { formatOrderId, formatBookingRef };
@@ -111,11 +140,14 @@ export function getProducts(filters = {}) {
 }
 
 export function getProductCategories({ includeDrafts = false } = {}) {
-  let products = readData().products;
+  const data = readData();
+  let products = data.products;
   if (!includeDrafts) {
     products = products.filter((p) => isPublishedProduct(p));
   }
-  const categories = [...new Set(products.map((p) => p.category))];
+  const fromProducts = products.map((p) => p.category).filter(Boolean);
+  const fromRegistry = (data.settings?.product_categories || []).map((c) => c.name);
+  const categories = [...new Set([...fromRegistry, ...fromProducts])];
   return categories.sort((a, b) => a.localeCompare(b));
 }
 
@@ -137,6 +169,7 @@ export function normalizeGallery(value) {
 export function createProduct(input) {
   return withData((data) => {
     const id = data.meta.nextProductId++;
+    const slug = resolveProductSlug(data, { slug: input.slug, name: input.name });
     const product = {
       id,
       name: input.name,
@@ -146,6 +179,8 @@ export function createProduct(input) {
       price: Number(input.price),
       cost_price: Math.max(0, Number(input.cost_price) || 0),
       description: String(input.description || '').trim(),
+      slug,
+      tags: normalizeTags(input.tags),
       image: input.image || '',
       gallery: normalizeGallery(input.gallery),
       stock: Number(input.stock) || 0,
@@ -190,6 +225,15 @@ export function updateProduct(id, input) {
       cost_price:
         input.cost_price != null ? Math.max(0, Number(input.cost_price) || 0) : existing.cost_price ?? 0,
       description: input.description ?? existing.description,
+      slug:
+        input.slug != null || input.name != null
+          ? resolveProductSlug(data, {
+              slug: input.slug != null ? input.slug : existing.slug,
+              name: input.name ?? existing.name,
+              excludeId: numId,
+            })
+          : existing.slug ?? '',
+      tags: input.tags != null ? normalizeTags(input.tags) : existing.tags ?? [],
       image: input.image ?? existing.image,
       gallery: input.gallery != null ? normalizeGallery(input.gallery) : existing.gallery ?? [],
       stock: input.stock != null ? Number(input.stock) : existing.stock,
@@ -271,10 +315,14 @@ export function duplicateProduct(id, input = {}) {
     const existing = data.products.find((p) => p.id === Number(id));
     if (!existing) return null;
     const newId = data.meta.nextProductId++;
+    const copyName = `${existing.name} (Copy)`;
+    const slug = resolveProductSlug(data, { slug: '', name: copyName });
     const copy = {
       ...existing,
       id: newId,
-      name: `${existing.name} (Copy)`,
+      name: copyName,
+      slug,
+      tags: Array.isArray(existing.tags) ? [...existing.tags] : [],
       featured: 0,
       gallery: Array.isArray(existing.gallery) ? [...existing.gallery] : [],
       created_at: now(),
@@ -327,6 +375,187 @@ export function countProducts() {
 
 export function countProductsByCategory(category) {
   return readData().products.filter((p) => p.category === category).length;
+}
+
+const MAX_CATEGORY_NAME_LEN = 80;
+
+function categoryProductCounts(data) {
+  const counts = new Map();
+  for (const p of data.products || []) {
+    const name = String(p.category || '').trim();
+    if (!name) continue;
+    counts.set(name, (counts.get(name) || 0) + 1);
+  }
+  return counts;
+}
+
+function ensureUniqueCategorySlug(categories, baseSlug, excludeId = null) {
+  const root = slugify(baseSlug);
+  if (!root) return '';
+  let candidate = root;
+  let n = 2;
+  const taken = (s) =>
+    categories.some((c) => c.slug === s && Number(c.id) !== Number(excludeId));
+  while (taken(candidate)) {
+    candidate = `${root}-${n}`;
+    n += 1;
+  }
+  return candidate;
+}
+
+function categoryDescendantIds(categories, rootId) {
+  const ids = new Set([Number(rootId)]);
+  let changed = true;
+  while (changed) {
+    changed = false;
+    for (const c of categories) {
+      if (c.parent_id != null && ids.has(Number(c.parent_id)) && !ids.has(Number(c.id))) {
+        ids.add(Number(c.id));
+        changed = true;
+      }
+    }
+  }
+  return ids;
+}
+
+export function listProductCategories() {
+  const data = readData();
+  const categories = data.settings?.product_categories || [];
+  const counts = categoryProductCounts(data);
+  return categories
+    .map((c) => ({
+      ...c,
+      product_count: counts.get(c.name) || 0,
+    }))
+    .sort((a, b) => String(a.name).localeCompare(String(b.name)));
+}
+
+export function createProductCategory(input) {
+  return withData((data) => {
+    if (!data.settings) data.settings = {};
+    if (!Array.isArray(data.settings.product_categories)) {
+      data.settings.product_categories = [];
+    }
+    if (!data.meta.nextCategoryId) data.meta.nextCategoryId = 1;
+
+    const name = String(input.name || '').trim().slice(0, MAX_CATEGORY_NAME_LEN);
+    if (!name) throw new Error('Category name is required');
+
+    const list = data.settings.product_categories;
+    if (list.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
+      throw new Error('A category with this name already exists');
+    }
+
+    let parent_id = input.parent_id != null && input.parent_id !== '' ? Number(input.parent_id) : null;
+    if (parent_id != null) {
+      if (!list.some((c) => c.id === parent_id)) {
+        throw new Error('Parent category not found');
+      }
+    }
+
+    const slugInput = String(input.slug || '').trim() ? input.slug : name;
+    const slug = ensureUniqueCategorySlug(list, slugInput);
+    if (!isValidSlug(slug)) throw new Error('Invalid category slug');
+
+    const id = data.meta.nextCategoryId++;
+    const category = {
+      id,
+      name,
+      slug,
+      parent_id,
+      created_at: now(),
+    };
+    list.push(category);
+    return { ...category, product_count: 0 };
+  });
+}
+
+export function updateProductCategory(id, input) {
+  return withData((data) => {
+    const numId = Number(id);
+    const list = data.settings?.product_categories || [];
+    const index = list.findIndex((c) => c.id === numId);
+    if (index === -1) return null;
+
+    const existing = list[index];
+    const counts = categoryProductCounts(data);
+    const productCount = counts.get(existing.name) || 0;
+
+    const next = { ...existing };
+
+    if (input.name != null) {
+      const name = String(input.name).trim().slice(0, MAX_CATEGORY_NAME_LEN);
+      if (!name) throw new Error('Category name is required');
+      if (name !== existing.name) {
+        if (productCount > 0) {
+          throw new Error(
+            `Cannot rename — ${productCount} product(s) use this category. Create a new category instead.`
+          );
+        }
+        if (list.some((c) => c.id !== numId && c.name.toLowerCase() === name.toLowerCase())) {
+          throw new Error('A category with this name already exists');
+        }
+        next.name = name;
+      }
+    }
+
+    if (input.slug != null) {
+      const slug = ensureUniqueCategorySlug(list, input.slug || next.name, numId);
+      if (!isValidSlug(slug)) throw new Error('Invalid category slug');
+      next.slug = slug;
+    }
+
+    if (input.parent_id !== undefined) {
+      let parent_id = input.parent_id != null && input.parent_id !== '' ? Number(input.parent_id) : null;
+      if (parent_id === numId) throw new Error('A category cannot be its own parent');
+      if (parent_id != null) {
+        if (!list.some((c) => c.id === parent_id)) {
+          throw new Error('Parent category not found');
+        }
+        const descendants = categoryDescendantIds(list, numId);
+        if (descendants.has(parent_id)) {
+          throw new Error('Invalid parent — would create a circular hierarchy');
+        }
+      }
+      next.parent_id = parent_id;
+    }
+
+    list[index] = next;
+    return { ...next, product_count: counts.get(next.name) || 0 };
+  });
+}
+
+export function deleteProductCategory(id) {
+  return withData((data) => {
+    const numId = Number(id);
+    const list = data.settings?.product_categories || [];
+    const index = list.findIndex((c) => c.id === numId);
+    if (index === -1) return { deleted: false, reason: 'not_found' };
+
+    const existing = list[index];
+    const counts = categoryProductCounts(data);
+    const productCount = counts.get(existing.name) || 0;
+    if (productCount > 0) {
+      return {
+        deleted: false,
+        reason: 'in_use',
+        product_count: productCount,
+        message: `Cannot delete — ${productCount} product(s) use this category`,
+      };
+    }
+
+    const hasChildren = list.some((c) => Number(c.parent_id) === numId);
+    if (hasChildren) {
+      return {
+        deleted: false,
+        reason: 'has_children',
+        message: 'Cannot delete — move or delete child categories first',
+      };
+    }
+
+    list.splice(index, 1);
+    return { deleted: true };
+  });
 }
 
 export function insertProducts(items) {
@@ -503,6 +732,47 @@ export function getSalesReport({ period = 'day', from, to } = {}) {
     { order_count: 0, sale_total: 0, cost_total: 0, profit: 0 }
   );
 
+  const topProductsMap = new Map();
+  const dailyMap = new Map();
+
+  for (const row of rows) {
+    const dayKey = String(row.created_at || '').slice(0, 10);
+    if (dayKey) {
+      const dayRow = dailyMap.get(dayKey) || {
+        date: dayKey,
+        order_count: 0,
+        sale_total: 0,
+        profit: 0,
+      };
+      dayRow.order_count += 1;
+      dayRow.sale_total += row.sale_total;
+      dayRow.profit += row.profit;
+      dailyMap.set(dayKey, dayRow);
+    }
+
+    for (const item of row.items || []) {
+      const key = String(item.name || 'Unknown').trim();
+      const lineSale = Number(item.sale_line) || 0;
+      const lineQty = Number(item.qty) || 1;
+      const existing = topProductsMap.get(key) || {
+        name: key,
+        qty: 0,
+        revenue: 0,
+        profit: 0,
+      };
+      existing.qty += lineQty;
+      existing.revenue += lineSale;
+      existing.profit += lineSale - (Number(item.cost_line) || 0);
+      topProductsMap.set(key, existing);
+    }
+  }
+
+  const top_products = [...topProductsMap.values()]
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 8);
+
+  const daily_chart = [...dailyMap.values()].sort((a, b) => a.date.localeCompare(b.date));
+
   return {
     period,
     range: {
@@ -511,6 +781,8 @@ export function getSalesReport({ period = 'day', from, to } = {}) {
       label: range.label,
     },
     summary,
+    top_products,
+    daily_chart,
     orders: rows,
   };
 }
@@ -733,6 +1005,7 @@ function customerSummaryKey(order) {
 /** Aggregate unique customers from order history (not auth accounts). */
 export function getCustomerSummaries() {
   const byKey = new Map();
+  const ordersByKey = new Map();
 
   for (const order of getOrders()) {
     const key = customerSummaryKey(order);
@@ -765,11 +1038,34 @@ export function getCustomerSummaries() {
     }
 
     byKey.set(key, existing);
+
+    if (!ordersByKey.has(key)) ordersByKey.set(key, []);
+    ordersByKey.get(key).push({
+      id: order.id,
+      order_id: order.order_id,
+      created_at: order.created_at,
+      total_amount: order.total_amount,
+      shipping_status: order.shipping_status,
+      item_count: Array.isArray(order.items) ? order.items.length : 0,
+    });
   }
 
-  return [...byKey.values()].sort((a, b) =>
-    String(b.last_order_at || '').localeCompare(String(a.last_order_at || ''))
-  );
+  return [...byKey.values()]
+    .map((customer) => {
+      const recent = (ordersByKey.get(customer.id) || [])
+        .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+        .slice(0, 8)
+        .map(({ id, order_id, created_at, total_amount, shipping_status, item_count }) => ({
+          id,
+          order_id,
+          created_at,
+          total_amount,
+          shipping_status,
+          item_count,
+        }));
+      return { ...customer, recent_orders: recent };
+    })
+    .sort((a, b) => String(b.last_order_at || '').localeCompare(String(a.last_order_at || '')));
 }
 
 export function updateOrderStatus(id, shipping_status, updatedBy = null) {

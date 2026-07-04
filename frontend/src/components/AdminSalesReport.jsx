@@ -136,6 +136,9 @@ export default function AdminSalesReport({ compact = false }) {
   }, [loadReport]);
 
   const summary = report?.summary;
+  const topProducts = report?.top_products || [];
+  const dailyChart = report?.daily_chart || [];
+  const maxDailyRevenue = dailyChart.reduce((m, d) => Math.max(m, d.sale_total || 0), 0) || 1;
 
   return (
     <div className={`sales-report ${compact ? 'sales-report--compact' : ''}`}>
@@ -206,7 +209,69 @@ export default function AdminSalesReport({ compact = false }) {
             <strong className={`sales-summary-value ${summary.profit >= 0 ? 'sales-summary-value--profit' : 'sales-summary-value--loss'}`}>
               {formatPrice(summary.profit)}
             </strong>
+            {summary.sale_total > 0 ? (
+              <span className="sales-summary-margin">
+                {Math.round((summary.profit / summary.sale_total) * 100)}% margin
+              </span>
+            ) : null}
           </div>
+        </div>
+      )}
+
+      {!loading && (dailyChart.length > 0 || topProducts.length > 0) && (
+        <div className="sales-widgets-row">
+          {dailyChart.length > 0 && (
+            <div className="glass-card sales-chart-card">
+              <h4 className="sales-widget-title">Revenue by day</h4>
+              <div className="sales-bar-chart" role="img" aria-label="Daily revenue bar chart">
+                {dailyChart.map((day) => {
+                  const heightPct = Math.max(4, Math.round(((day.sale_total || 0) / maxDailyRevenue) * 100));
+                  return (
+                    <div key={day.date} className="sales-bar-col" title={`${day.date}: ${formatPrice(day.sale_total)}`}>
+                      <div className="sales-bar-stack">
+                        <div
+                          className="sales-bar sales-bar--revenue"
+                          style={{ height: `${heightPct}%` }}
+                        />
+                      </div>
+                      <span className="sales-bar-label">{day.date.slice(5)}</span>
+                      <span className="sales-bar-value">{formatPrice(day.sale_total)}</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {topProducts.length > 0 && (
+            <div className="glass-card sales-top-products">
+              <h4 className="sales-widget-title">Top products</h4>
+              <ul className="sales-top-products-list">
+                {topProducts.map((p, idx) => {
+                  const maxRev = topProducts[0]?.revenue || 1;
+                  const widthPct = Math.max(8, Math.round(((p.revenue || 0) / maxRev) * 100));
+                  return (
+                    <li key={p.name}>
+                      <div className="sales-top-product-head">
+                        <span className="sales-top-rank">{idx + 1}</span>
+                        <span className="sales-top-name">{p.name}</span>
+                        <span className="sales-top-qty">×{p.qty}</span>
+                      </div>
+                      <div className="sales-top-bar-track">
+                        <div className="sales-top-bar-fill" style={{ width: `${widthPct}%` }} />
+                      </div>
+                      <div className="sales-top-meta">
+                        <span>{formatPrice(p.revenue)}</span>
+                        <span className={p.profit >= 0 ? 'sales-profit-pos' : 'sales-profit-neg'}>
+                          {formatPrice(p.profit)} profit
+                        </span>
+                      </div>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 

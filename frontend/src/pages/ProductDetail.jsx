@@ -135,7 +135,14 @@ export default function ProductDetail() {
             {onSale && (
               <p className="savings-line">{t('product.youSave', { amount: formatPrice(getSavings(product)) })}</p>
             )}
-            <p className="product-detail-desc">{product.description}</p>
+            {product.description && /<[a-z][\s\S]*>/i.test(product.description) ? (
+              <div
+                className="product-detail-desc product-detail-desc-html"
+                dangerouslySetInnerHTML={{ __html: product.description }}
+              />
+            ) : (
+              <p className="product-detail-desc">{product.description}</p>
+            )}
             {product.warranty ? (
               <p className="product-warranty-line">🛡️ {t('product.warranty', { text: product.warranty })}</p>
             ) : null}

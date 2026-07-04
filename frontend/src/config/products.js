@@ -96,6 +96,8 @@ export const EMPTY_PRODUCT = {
   price: '',
   cost_price: '',
   description: '',
+  slug: '',
+  tags: [],
   image: DEFAULT_IMAGES.Cases,
   gallery: [],
   stock: '10',

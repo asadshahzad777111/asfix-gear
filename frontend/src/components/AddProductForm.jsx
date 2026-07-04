@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import DiscountPicker, { DiscountRibbon, ProductPrice } from './DiscountPicker';
 import { CATEGORIES, EMPTY_PRODUCT, DEFAULT_IMAGES, SHOP_BRANDS, getDefaultImage } from '../config/products';
@@ -8,7 +8,12 @@ import ProductImagePanel from './admin/product-editor/ProductImagePanel';
 import ProductGalleryPanel from './admin/product-editor/ProductGalleryPanel';
 import ProductCategoriesPanel from './admin/product-editor/ProductCategoriesPanel';
 import ProductPublishPanel from './admin/product-editor/ProductPublishPanel';
+import ProductTagsPanel from './admin/product-editor/ProductTagsPanel';
+import ProductPermalinkPanel from './admin/product-editor/ProductPermalinkPanel';
+import ProductBrandPanel from './admin/product-editor/ProductBrandPanel';
+import RichTextEditor from './admin/product-editor/RichTextEditor';
 import { uploadProductImageFile } from '../utils/productImageUpload';
+import { slugify } from '../utils/slug';
 
 const isDefaultImage = (url) => Object.values(DEFAULT_IMAGES).includes(url);
 
@@ -26,6 +31,8 @@ function productToForm(editProduct) {
     price: String(editProduct.price ?? ''),
     cost_price: String(editProduct.cost_price ?? ''),
     description: editProduct.description || '',
+    slug: editProduct.slug || '',
+    tags: Array.isArray(editProduct.tags) ? editProduct.tags : [],
     image: editProduct.image || getDefaultImage(editProduct.category),
     gallery: Array.isArray(editProduct.gallery) ? editProduct.gallery : [],
     stock: String(editProduct.stock ?? 0),
@@ -51,9 +58,11 @@ export default function AddProductForm({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageUploadHint, setImageUploadHint] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const slugTouchedRef = useRef(Boolean(editProduct?.slug));
 
   useEffect(() => {
     setProduct(productToForm(editProduct));
+    slugTouchedRef.current = Boolean(editProduct?.slug);
     setImageUploadHint('');
     setMessage({ type: '', text: '' });
   }, [editProduct?.id]);
@@ -63,6 +72,9 @@ export default function AddProductForm({
       const next = { ...prev, [field]: value };
       if (field === 'category' && isDefaultImage(prev.image)) {
         next.image = getDefaultImage(value);
+      }
+      if (field === 'name' && !slugTouchedRef.current) {
+        next.slug = slugify(value);
       }
       return next;
     });
@@ -98,7 +110,7 @@ export default function AddProductForm({
     }
   };
 
-  const buildPayload = () => ({
+  const buildPayload = (statusOverride) => ({
     name: product.name.trim(),
     category: product.category,
     brand: product.brand,
@@ -106,46 +118,80 @@ export default function AddProductForm({
     price: Number(product.price),
     cost_price: Number(product.cost_price) || 0,
     description: product.description.trim(),
+    slug: product.slug.trim() || slugify(product.name),
+    tags: Array.isArray(product.tags) ? product.tags : [],
     image: product.image.trim() || getDefaultImage(product.category),
     gallery: (product.gallery || []).filter((url) => url && !String(url).startsWith('blob:')),
     stock: Number(product.stock) || 0,
     featured: product.featured,
     discount_percent: product.discount_enabled ? Number(product.discount_percent) || 0 : 0,
     warranty: product.warranty.trim(),
-    status: product.status || 'published',
+    status: statusOverride || product.status || 'published',
   });
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const saveProduct = async (statusOverride) => {
     if (uploadingImage || product.image.startsWith('blob:')) {
       setMessage({ type: 'error', text: 'Photo upload complete hone ka wait karein.' });
-      return;
+      return null;
+    }
+    if (!product.name.trim() || !product.category || !Number(product.price)) {
+      setMessage({ type: 'error', text: 'Name, category, and price are required.' });
+      return null;
     }
 
     setSubmitting(true);
     setMessage({ type: '', text: '' });
 
     try {
-      const payload = buildPayload();
+      const payload = buildPayload(statusOverride);
       const saved = isEdit
         ? await api.updateProduct(editProduct.id, payload)
         : await api.createProduct(payload);
 
+      if (statusOverride) {
+        setField('status', statusOverride);
+      }
+      if (saved.slug) {
+        slugTouchedRef.current = true;
+        setField('slug', saved.slug);
+      }
+
+      const statusLabel = payload.status === 'draft' ? 'draft saved' : 'published';
       setMessage({
         type: 'success',
-        text: isEdit ? `"${saved.name}" update ho gaya! ✓` : `"${saved.name}" shop mein add ho gaya! ✓`,
+        text: isEdit
+          ? `"${saved.name}" updated (${statusLabel}) ✓`
+          : `"${saved.name}" added to shop (${statusLabel}) ✓`,
       });
 
       if (!isEdit) {
         setProduct({ ...EMPTY_PRODUCT, image: getDefaultImage('Cases'), gallery: [] });
+        slugTouchedRef.current = false;
       }
 
       if (onSuccess) onSuccess(saved);
+      return saved;
     } catch (err) {
       setMessage({ type: 'error', text: err.message });
+      return null;
     } finally {
       setSubmitting(false);
     }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    await saveProduct();
+  };
+
+  const handleSaveDraft = async () => {
+    setField('status', 'draft');
+    await saveProduct('draft');
+  };
+
+  const handlePublish = async () => {
+    setField('status', 'published');
+    await saveProduct('published');
   };
 
   const previewImage = product.image || getDefaultImage(product.category);
@@ -153,6 +199,61 @@ export default function AddProductForm({
     if (!text) return;
     setMessage({ type: text.includes('✓') ? 'success' : 'error', text });
   };
+
+  const brandFields = wpLayout ? (
+    <ProductBrandPanel
+      brand={product.brand}
+      compatibleModels={product.compatible_models}
+      onBrandChange={(value) => setField('brand', value)}
+      onCompatibleModelsChange={(value) => setField('compatible_models', value)}
+    />
+  ) : (
+    <div className="form-row-2">
+      <div className="form-group">
+        <label>Brand</label>
+        <select
+          value={product.brand}
+          onChange={(e) => setField('brand', e.target.value)}
+          className="category-select"
+        >
+          <option value="">Universal / Not brand-specific</option>
+          {SHOP_BRANDS.map((b) => (
+            <option key={b.id} value={b.id}>{b.icon} {b.label}</option>
+          ))}
+        </select>
+        <p className="field-hint">Isse yeh product Shop brand filter mein sahi jagah dikhega.</p>
+      </div>
+      <div className="form-group">
+        <label>Compatible Model(s)</label>
+        <ModelMultiPicker
+          brand={product.brand}
+          value={product.compatible_models}
+          onChange={(v) => setField('compatible_models', v)}
+        />
+      </div>
+    </div>
+  );
+
+  const descriptionField = wpLayout ? (
+    <div className="form-group">
+      <label id="product-description-label" htmlFor="product-description">Product description</label>
+      <RichTextEditor
+        id="product-description"
+        value={product.description}
+        onChange={(html) => setField('description', html)}
+      />
+    </div>
+  ) : (
+    <div className="form-group">
+      <label>Description (optional)</label>
+      <textarea
+        value={product.description}
+        onChange={(e) => setField('description', e.target.value)}
+        placeholder="Product ki detail likhein — quality, color, compatibility..."
+        rows={3}
+      />
+    </div>
+  );
 
   const mainFields = (
     <>
@@ -166,6 +267,16 @@ export default function AddProductForm({
           autoFocus={!isEdit}
         />
       </div>
+
+      {wpLayout && (
+        <ProductPermalinkPanel
+          slug={product.slug}
+          name={product.name}
+          productId={isEdit ? editProduct.id : null}
+          onSlugChange={(value) => setField('slug', value)}
+          onSlugTouched={() => { slugTouchedRef.current = true; }}
+        />
+      )}
 
       {!wpLayout && (
         <div className="form-group">
@@ -187,30 +298,7 @@ export default function AddProductForm({
         </div>
       )}
 
-      <div className="form-row-2">
-        <div className="form-group">
-          <label>Brand</label>
-          <select
-            value={product.brand}
-            onChange={(e) => setField('brand', e.target.value)}
-            className="category-select"
-          >
-            <option value="">Universal / Not brand-specific</option>
-            {SHOP_BRANDS.map((b) => (
-              <option key={b.id} value={b.id}>{b.icon} {b.label}</option>
-            ))}
-          </select>
-          <p className="field-hint">Isse yeh product Shop brand filter mein sahi jagah dikhega.</p>
-        </div>
-        <div className="form-group">
-          <label>Compatible Model(s)</label>
-          <ModelMultiPicker
-            brand={product.brand}
-            value={product.compatible_models}
-            onChange={(v) => setField('compatible_models', v)}
-          />
-        </div>
-      </div>
+      {!wpLayout && brandFields}
 
       <div className="form-row-2">
         <div className="form-group">
@@ -238,15 +326,7 @@ export default function AddProductForm({
         </div>
       </div>
 
-      <div className="form-group">
-        <label>{wpLayout ? 'Product description' : 'Description (optional)'}</label>
-        <textarea
-          value={product.description}
-          onChange={(e) => setField('description', e.target.value)}
-          placeholder="Product ki detail likhein — quality, color, compatibility..."
-          rows={wpLayout ? 6 : 3}
-        />
-      </div>
+      {descriptionField}
 
       <div className="form-group">
         <label>Warranty</label>
@@ -307,6 +387,15 @@ export default function AddProductForm({
         <div className="wp-product-editor">
           <div className="wp-product-editor-main">{mainFields}</div>
           <aside className="wp-product-editor-sidebar">
+            <ProductPublishPanel
+              status={product.status}
+              onStatusChange={(value) => setField('status', value)}
+              productId={isEdit ? editProduct.id : null}
+              onSaveDraft={handleSaveDraft}
+              onPublish={handlePublish}
+              submitting={submitting}
+              disabled={uploadingImage}
+            />
             <ProductImagePanel
               image={product.image}
               category={product.category}
@@ -327,10 +416,10 @@ export default function AddProductForm({
               onCategoryChange={handleCategoryPick}
               onMessage={sidebarHint}
             />
-            <ProductPublishPanel
-              status={product.status}
-              onStatusChange={(value) => setField('status', value)}
-              productId={isEdit ? editProduct.id : null}
+            {brandFields}
+            <ProductTagsPanel
+              tags={product.tags}
+              onChange={(tags) => setField('tags', tags)}
             />
           </aside>
         </div>
