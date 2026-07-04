@@ -1,25 +1,31 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 export default function useScrollReveal({ threshold = 0.15, delay = 0, disabled = false } = {}) {
   const ref = useRef(null);
+  const [revealed, setRevealed] = useState(disabled);
 
   useEffect(() => {
-    if (disabled) return undefined;
+    if (disabled) {
+      setRevealed(true);
+      return undefined;
+    }
+
     const el = ref.current;
     if (!el) return undefined;
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      el.classList.add('scroll-revealed');
+      setRevealed(true);
       return undefined;
     }
 
+    let delayTimer = null;
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           if (delay > 0) {
-            setTimeout(() => el.classList.add('scroll-revealed'), delay);
+            delayTimer = window.setTimeout(() => setRevealed(true), delay);
           } else {
-            el.classList.add('scroll-revealed');
+            setRevealed(true);
           }
           observer.unobserve(el);
         }
@@ -28,8 +34,14 @@ export default function useScrollReveal({ threshold = 0.15, delay = 0, disabled 
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      if (delayTimer) window.clearTimeout(delayTimer);
+    };
   }, [threshold, delay, disabled]);
 
-  return ref;
+  return {
+    ref,
+    revealClass: revealed ? 'scroll-revealed' : '',
+  };
 }

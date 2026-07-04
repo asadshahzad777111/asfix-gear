@@ -36,7 +36,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
   const addRef = useRef(null);
   const [hovered, setHovered] = useState(false);
   const [selected, setSelected] = useState(false);
-  const revealRef = useScrollReveal({
+  const { ref: revealRef, revealClass } = useScrollReveal({
     threshold: 0.12,
     delay: revealIndex * 90,
     disabled: !inGrid || revealIndex < 0,
@@ -191,7 +191,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
       <>
         <article
           ref={revealRef}
-          className={`${cardClass} scroll-reveal`}
+          className={`${cardClass} scroll-reveal ${revealClass}`.trim()}
           onMouseEnter={() => {
             setHovered(true);
             onCardImageEnter();
