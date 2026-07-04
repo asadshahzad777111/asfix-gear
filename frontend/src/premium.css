@@ -2456,3 +2456,131 @@ body.custom-cursor-active {
 .admin-management--compact .admin-mgmt-form-wrap h3 {
   font-size: 1rem;
 }
+
+/* Delivery address book + checkout map */
+.address-book-list {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.address-book-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.85rem 1rem;
+  border-radius: 12px;
+  border: 1px solid var(--glass-edge, rgba(255,255,255,0.12));
+  background: rgba(0,0,0,0.18);
+}
+
+.address-book-item.is-default {
+  border-color: rgba(255, 107, 44, 0.45);
+}
+
+.address-default-badge {
+  margin-left: 0.5rem;
+  font-size: 0.72rem;
+  opacity: 0.85;
+}
+
+.address-coords {
+  font-size: 0.78rem;
+  opacity: 0.7;
+}
+
+.address-book-form {
+  padding: 1rem;
+  display: grid;
+  gap: 0.65rem;
+}
+
+.address-book-form input,
+.address-book-form textarea,
+.checkout-address-section input,
+.checkout-address-section textarea {
+  width: 100%;
+}
+
+.address-map-hint {
+  font-size: 0.82rem;
+  opacity: 0.8;
+  margin: 0.25rem 0;
+}
+
+.checkout-address-section {
+  margin-top: 0.75rem;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.checkout-section-subtitle {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.checkout-address-mode {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.checkout-saved-addresses {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.checkout-address-card {
+  display: flex;
+  gap: 0.65rem;
+  align-items: flex-start;
+  padding: 0.65rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid var(--glass-edge, rgba(255,255,255,0.12));
+  cursor: pointer;
+}
+
+.checkout-address-card.selected {
+  border-color: rgba(255, 107, 44, 0.55);
+  background: rgba(255, 107, 44, 0.08);
+}
+
+.checkout-address-card small {
+  display: block;
+  opacity: 0.8;
+  margin-top: 0.15rem;
+}
+
+.admin-rider-form {
+  display: grid;
+  gap: 0.45rem;
+  width: 100%;
+  margin-top: 0.35rem;
+}
+
+.admin-rider-form-actions {
+  display: flex;
+  gap: 0.35rem;
+  justify-content: flex-end;
+}
+
+.order-status-pill.status-pending_payment { background: rgba(255, 193, 7, 0.18); }
+.order-status-pill.status-waiting_for_rider { background: rgba(33, 150, 243, 0.18); }
+.order-status-pill.status-rider_assigned { background: rgba(156, 39, 176, 0.18); }
+
+.order-track-rider {
+  margin: 0.75rem 0;
+  padding: 0.75rem 1rem;
+}
+
+.order-track-address {
+  margin: 0.5rem 0 0.75rem;
+  opacity: 0.9;
+}
+
+.leaflet-container {
+  font-family: inherit;
+  z-index: 0;
+}

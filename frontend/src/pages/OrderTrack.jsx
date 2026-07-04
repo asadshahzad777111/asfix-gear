@@ -4,6 +4,7 @@ import { api, formatPrice } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
 import OrderTimeline from '../components/OrderTimeline';
 import OrderFeedbackForm from '../components/OrderFeedbackForm';
+import { getOrderCustomerStatus } from '../utils/orderStatus';
 
 export default function OrderTrack() {
   const { t } = useTranslation();
@@ -40,6 +41,8 @@ export default function OrderTrack() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  const customerStatus = order ? getOrderCustomerStatus(order) : null;
+
   return (
     <main className="page order-track-page">
       <section className="order-track-hero glass-card">
@@ -73,12 +76,27 @@ export default function OrderTrack() {
               <h2>#{order.order_id}</h2>
               <p>{order.customer_name} · {order.city}</p>
             </div>
-            <span className={`order-status-pill status-${order.shipping_status}`}>
-              {t(`track.status_${order.shipping_status}`) || order.shipping_status}
+            <span className={`order-status-pill status-${customerStatus}`}>
+              {t(`track.status_${customerStatus}`) || customerStatus}
             </span>
           </div>
 
-          <OrderTimeline status={order.shipping_status} statusHistory={order.status_history} />
+          <OrderTimeline order={order} statusHistory={order.status_history} />
+
+          {order.shipping_address?.text && (
+            <p className="order-track-address">
+              📍 {t('track.deliveryAddress')}: {order.shipping_address.text}
+            </p>
+          )}
+
+          {order.rider_phone && (
+            <div className="order-track-rider glass-card">
+              <p><strong>{t('track.riderPhone')}:</strong> {order.rider_phone}</p>
+              {Number(order.delivery_charge) > 0 && (
+                <p><strong>{t('track.deliveryCharge')}:</strong> {formatPrice(order.delivery_charge)}</p>
+              )}
+            </div>
+          )}
 
           <ul className="order-track-items">
             {order.items.map((item, idx) => (
@@ -90,7 +108,7 @@ export default function OrderTrack() {
           </ul>
           <p className="order-track-total">{t('track.total')}: <strong>{formatPrice(order.total_amount)}</strong></p>
 
-          {['delivered', 'shipped', 'out_for_delivery', 'payment_verified'].includes(order.shipping_status) && (
+          {['delivered', 'shipped', 'out_for_delivery', 'payment_verified', 'rider_assigned', 'waiting_for_rider', 'paid'].includes(customerStatus) && (
             <OrderFeedbackForm
               orderId={order.order_id}
               phone={phone}

@@ -47,7 +47,7 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Please sign in as a customer to place an order' });
   }
 
-  const { customer_name, phone, city, payment_mode, items, notes } = req.body;
+  const { customer_name, phone, city, payment_mode, items, notes, shipping_address, address_id } = req.body;
   if (!customer_name?.trim() || !phone?.trim()) {
     return res.status(400).json({ error: 'Name and phone are required' });
   }
@@ -69,6 +69,22 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Invalid payment method' });
   }
 
+  let resolvedAddress = null;
+  try {
+    if (address_id != null) {
+      resolvedAddress = store.resolveCustomerAddress(user.id, address_id);
+      if (!resolvedAddress) {
+        return res.status(400).json({ error: 'Saved address not found' });
+      }
+    } else if (shipping_address) {
+      resolvedAddress = store.validateShippingAddress(shipping_address);
+    } else {
+      return res.status(400).json({ error: 'Delivery address is required' });
+    }
+  } catch (err) {
+    return res.status(400).json({ error: err.message });
+  }
+
   const customerUserId = user.id;
 
   try {
@@ -80,6 +96,7 @@ router.post('/', requireAuth, (req, res) => {
       items,
       notes: notes?.trim() || '',
       customer_user_id: customerUserId,
+      shipping_address: resolvedAddress,
     });
     res.status(201).json({ message: 'Order placed successfully', order });
   } catch (err) {
@@ -119,6 +136,41 @@ router.patch('/:id/status', requireAuth, requireRole(...STAFF), (req, res) => {
   const order = store.updateOrderStatus(req.params.id, shipping_status, req.auth.user);
   if (!order) return res.status(404).json({ error: 'Order not found' });
   res.json(order);
+});
+
+router.patch('/:id/mark-paid', requireAuth, requireRole(...STAFF), (req, res) => {
+  try {
+    const order = store.markOrderPaid(req.params.id, req.auth.user);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json(order);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.patch('/:id/assign-rider', requireAuth, requireRole(...STAFF), (req, res) => {
+  const { rider_phone, delivery_charge } = req.body;
+  try {
+    const order = store.assignOrderRider(
+      req.params.id,
+      { rider_phone, delivery_charge },
+      req.auth.user
+    );
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json(order);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.patch('/:id/mark-delivered', requireAuth, requireRole(...STAFF), (req, res) => {
+  try {
+    const order = store.markOrderDelivered(req.params.id, req.auth.user);
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    res.json(order);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
 });
 
 export default router;

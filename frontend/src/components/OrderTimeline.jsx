@@ -1,14 +1,15 @@
 import { useTranslation } from '../context/LanguageContext';
-import { getTimelineStepIndex } from '../utils/receipts';
+import { getDeliveryTimelineIndex, getOrderCustomerStatus } from '../utils/orderStatus';
 
-const STEPS = ['placed', 'payment', 'shipped', 'delivered'];
+const STEPS = ['placed', 'payment', 'rider', 'delivered'];
 
-export default function OrderTimeline({ status, statusHistory = [] }) {
+export default function OrderTimeline({ order, status, statusHistory = [] }) {
   const { t } = useTranslation();
-  const activeIdx = getTimelineStepIndex(status);
+  const customerStatus = order ? getOrderCustomerStatus(order) : status;
+  const activeIdx = order ? getDeliveryTimelineIndex(order) : getLegacyTimelineIndex(status);
 
   const stepTime = (stepIdx) => {
-    const keys = ['pending', 'payment_verified', 'shipped', 'delivered'];
+    const keys = ['pending', 'payment_verified', 'out_for_delivery', 'delivered'];
     const target = keys[stepIdx];
     const entry = [...statusHistory].reverse().find((h) => h.status === target);
     if (entry?.at) {
@@ -26,7 +27,7 @@ export default function OrderTimeline({ status, statusHistory = [] }) {
     <div className="order-timeline">
       {STEPS.map((step, idx) => {
         const done = idx <= activeIdx;
-        const current = idx === activeIdx && status !== 'delivered';
+        const current = idx === activeIdx && customerStatus !== 'delivered';
         const time = done ? stepTime(idx) : null;
 
         return (
@@ -38,8 +39,11 @@ export default function OrderTimeline({ status, statusHistory = [] }) {
             <div className="order-timeline-body">
               <strong>{t(`track.step_${step}`)}</strong>
               {time && <small>{time}</small>}
-              {current && status === 'out_for_delivery' && (
-                <em className="order-timeline-sub">{t('track.outForDelivery')}</em>
+              {current && customerStatus === 'waiting_for_rider' && (
+                <em className="order-timeline-sub">{t('track.waitingForRider')}</em>
+              )}
+              {current && customerStatus === 'rider_assigned' && (
+                <em className="order-timeline-sub">{t('track.riderAssignedNote')}</em>
               )}
             </div>
           </div>
@@ -47,4 +51,11 @@ export default function OrderTimeline({ status, statusHistory = [] }) {
       })}
     </div>
   );
+}
+
+function getLegacyTimelineIndex(status) {
+  if (status === 'delivered') return 3;
+  if (status === 'shipped' || status === 'out_for_delivery' || status === 'rider_assigned') return 2;
+  if (status === 'payment_verified' || status === 'paid' || status === 'waiting_for_rider') return 1;
+  return 0;
 }

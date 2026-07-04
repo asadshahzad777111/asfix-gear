@@ -109,7 +109,7 @@ export default function Admin() {
     }
   };
 
-  const pendingOrders = orders.filter((o) => o.shipping_status === 'pending').length;
+  const pendingOrders = orders.filter((o) => o.payment_status === 'pending_payment' || o.shipping_status === 'pending').length;
 
   const stockAlertProducts = getStockAlertProducts(products);
   const lowStockCount = stockAlertProducts.length;
@@ -213,6 +213,30 @@ export default function Admin() {
   const updateOrderStatus = async (id, shipping_status) => {
     try {
       const updated = await api.updateOrderStatus(id, shipping_status);
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const markOrderPaid = async (id) => {
+    try {
+      const updated = await api.markOrderPaid(id);
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const assignOrderRider = async (id, body) => {
+    const updated = await api.assignOrderRider(id, body);
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    return updated;
+  };
+
+  const markOrderDelivered = async (id) => {
+    try {
+      const updated = await api.markOrderDelivered(id);
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
     } catch (err) {
       alert(err.message);
@@ -410,6 +434,9 @@ export default function Admin() {
                       key={o.id}
                       order={o}
                       onUpdateStatus={updateOrderStatus}
+                      onMarkPaid={markOrderPaid}
+                      onAssignRider={assignOrderRider}
+                      onMarkDelivered={markOrderDelivered}
                       className="admin-float-card admin-order-card-full glass-card"
                     />
                   ))

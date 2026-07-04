@@ -11,12 +11,13 @@ import { useTranslation } from '../context/LanguageContext';
 import PageHeader from '../components/PageHeader';
 
 import RepairRateBot from '../components/account/RepairRateBot';
+import AddressBook from '../components/account/AddressBook';
+import { getOrderCustomerStatus } from '../utils/orderStatus';
 
 
 
 const COMPLETED_STATUSES = new Set(['delivered']);
-
-const PENDING_STATUSES = new Set(['pending']);
+const PENDING_STATUSES = new Set(['pending', 'pending_payment']);
 
 
 
@@ -110,9 +111,9 @@ export default function Account() {
 
     total: orders.length,
 
-    pending: orders.filter((o) => PENDING_STATUSES.has(o.shipping_status)).length,
+    pending: orders.filter((o) => PENDING_STATUSES.has(getOrderCustomerStatus(o))).length,
 
-    completed: orders.filter((o) => COMPLETED_STATUSES.has(o.shipping_status)).length,
+    completed: orders.filter((o) => COMPLETED_STATUSES.has(getOrderCustomerStatus(o))).length,
 
   }), [orders]);
 
@@ -146,7 +147,9 @@ export default function Account() {
 
 
 
-  const statusLabel = (status) => {
+  const statusLabel = (order) => {
+
+    const status = getOrderCustomerStatus(order);
 
     const key = `track.status_${status}`;
 
@@ -244,6 +247,20 @@ export default function Account() {
 
                 type="button"
 
+                className={tab === 'addresses' ? 'active' : ''}
+
+                onClick={() => setTab('addresses')}
+
+              >
+
+                {t('address.tab')}
+
+              </button>
+
+              <button
+
+                type="button"
+
                 className={tab === 'rates' ? 'active' : ''}
 
                 onClick={() => setTab('rates')}
@@ -265,6 +282,10 @@ export default function Account() {
             {tab === 'rates' ? (
 
               <RepairRateBot />
+
+            ) : tab === 'addresses' ? (
+
+              <AddressBook />
 
             ) : loading ? (
 
@@ -360,9 +381,9 @@ export default function Account() {
 
                           <div className="account-order-head">
 
-                            <span className={`order-status-pill status-${order.shipping_status}`}>
+                            <span className={`order-status-pill status-${getOrderCustomerStatus(order)}`}>
 
-                              {statusLabel(order.shipping_status)}
+                              {statusLabel(order)}
 
                             </span>
 
@@ -389,6 +410,36 @@ export default function Account() {
                               <strong>{order.city || '—'}</strong>
 
                             </p>
+
+                            {order.shipping_address?.text && (
+
+                              <p>
+
+                                <span>{t('track.deliveryAddress')}</span>{' '}
+
+                                <strong>{order.shipping_address.text}</strong>
+
+                              </p>
+
+                            )}
+
+                            {order.rider_phone && (
+
+                              <p>
+
+                                <span>{t('track.riderPhone')}</span>{' '}
+
+                                <strong>{order.rider_phone}</strong>
+
+                                {Number(order.delivery_charge) > 0 && (
+
+                                  <> · {t('track.deliveryCharge')}: {formatPrice(order.delivery_charge)}</>
+
+                                )}
+
+                              </p>
+
+                            )}
 
                             <p>
 

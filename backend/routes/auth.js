@@ -604,6 +604,36 @@ router.get('/my-orders', requireAuth, requireRole('customer'), (req, res) => {
   res.json(store.getOrdersByCustomerId(req.auth.user.id));
 });
 
+router.get('/my-addresses', requireAuth, requireRole('customer'), (req, res) => {
+  res.json(store.getCustomerAddresses(req.auth.user.id));
+});
+
+router.post('/my-addresses', requireAuth, requireRole('customer'), (req, res) => {
+  try {
+    const address = store.addCustomerAddress(req.auth.user.id, req.body);
+    if (!address) return res.status(404).json({ error: 'Account not found' });
+    res.status(201).json(address);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.patch('/my-addresses/:id', requireAuth, requireRole('customer'), (req, res) => {
+  try {
+    const address = store.updateCustomerAddress(req.auth.user.id, req.params.id, req.body);
+    if (!address) return res.status(404).json({ error: 'Address not found' });
+    res.json(address);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.delete('/my-addresses/:id', requireAuth, requireRole('customer'), (req, res) => {
+  const ok = store.deleteCustomerAddress(req.auth.user.id, req.params.id);
+  if (!ok) return res.status(404).json({ error: 'Address not found' });
+  res.json({ message: 'Address removed' });
+});
+
 router.get('/my-messages', requireAuth, requireRole('customer'), (req, res) => {
   res.json(store.getContactMessagesByCustomerId(req.auth.user.id));
 });

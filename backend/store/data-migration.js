@@ -16,6 +16,7 @@ export const DEFAULT_DATA = {
     nextRepairRateId: 1,
     nextRepairRateQueryId: 1,
     nextCategoryId: 1,
+    nextAddressId: 1,
   },
   users: [],
   sessions: [],
@@ -69,6 +70,7 @@ export function migrateData(data) {
   if (!data.meta.nextRepairRateId) data.meta.nextRepairRateId = 1;
   if (!data.meta.nextRepairRateQueryId) data.meta.nextRepairRateQueryId = 1;
   if (!data.meta.nextCategoryId) data.meta.nextCategoryId = 1;
+  if (!data.meta.nextAddressId) data.meta.nextAddressId = 1;
 
   if (!Array.isArray(data.settings.product_categories)) {
     data.settings.product_categories = [];
@@ -157,11 +159,30 @@ export function migrateData(data) {
     if (order.customer_user_id == null) order.customer_user_id = null;
     if (order.stock_deducted == null) order.stock_deducted = false;
     if (order.customer_feedback == null) order.customer_feedback = null;
+    if (order.payment_status == null) {
+      order.payment_status = order.shipping_status === 'pending' ? 'pending_payment' : 'paid';
+    }
+    if (order.delivery_status == null) {
+      if (order.shipping_status === 'delivered') order.delivery_status = 'delivered';
+      else if (order.shipping_status === 'out_for_delivery') order.delivery_status = 'rider_assigned';
+      else if (['payment_verified', 'shipped'].includes(order.shipping_status)) {
+        order.delivery_status = 'waiting_for_rider';
+      } else {
+        order.delivery_status = null;
+      }
+    }
+    if (order.rider_phone == null) order.rider_phone = '';
+    if (order.delivery_charge == null) order.delivery_charge = 0;
+    if (order.shipping_address == null) order.shipping_address = null;
     if (Array.isArray(order.items)) {
       for (const item of order.items) {
         if (item.cost_price == null) item.cost_price = 0;
       }
     }
+  }
+
+  for (const user of data.users) {
+    if (!Array.isArray(user.addresses)) user.addresses = [];
   }
 
   for (const msg of data.contact_messages) {

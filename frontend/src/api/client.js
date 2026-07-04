@@ -330,6 +330,20 @@ export const api = {
 
   placeOrder: (body) => request('/orders', { method: 'POST', body: JSON.stringify(body) }),
   getOrders: () => request('/orders'),
+  updateOrderStatus: (id, shipping_status) =>
+    request(`/orders/${id}/status`, {
+      method: 'PATCH',
+      body: JSON.stringify({ shipping_status }),
+    }),
+  markOrderPaid: (id) => request(`/orders/${id}/mark-paid`, { method: 'PATCH' }),
+  assignOrderRider: (id, body) =>
+    request(`/orders/${id}/assign-rider`, { method: 'PATCH', body: JSON.stringify(body) }),
+  markOrderDelivered: (id) => request(`/orders/${id}/mark-delivered`, { method: 'PATCH' }),
+  getMyAddresses: () => request('/auth/my-addresses'),
+  addAddress: (body) => request('/auth/my-addresses', { method: 'POST', body: JSON.stringify(body) }),
+  updateAddress: (id, body) =>
+    request(`/auth/my-addresses/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
+  deleteAddress: (id) => request(`/auth/my-addresses/${id}`, { method: 'DELETE' }),
   trackOrder: (orderId, phone) => {
     const q = new URLSearchParams({ orderId, phone }).toString();
     return request(`/orders/track?${q}`);

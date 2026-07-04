@@ -144,6 +144,30 @@ export default function AdminFloatingDashboard() {
 
   };
 
+  const markOrderPaid = async (id) => {
+    try {
+      const updated = await api.markOrderPaid(id);
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const assignOrderRider = async (id, body) => {
+    const updated = await api.assignOrderRider(id, body);
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    return updated;
+  };
+
+  const markOrderDelivered = async (id) => {
+    try {
+      const updated = await api.markOrderDelivered(id);
+      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
 
 
   const updateBooking = async (id, status) => {
@@ -312,7 +336,14 @@ export default function AdminFloatingDashboard() {
 
                     orders.map((o) => (
 
-                      <AdminOrderCard key={o.id} order={o} onUpdateStatus={updateOrder} />
+                      <AdminOrderCard
+                        key={o.id}
+                        order={o}
+                        onUpdateStatus={updateOrder}
+                        onMarkPaid={markOrderPaid}
+                        onAssignRider={assignOrderRider}
+                        onMarkDelivered={markOrderDelivered}
+                      />
 
                     ))
 

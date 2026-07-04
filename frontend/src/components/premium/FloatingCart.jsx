@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { AnimatePresence, motion } from 'framer-motion';
 
@@ -20,7 +20,9 @@ import { buildContactPath, buildContactPrefill } from '../../utils/contactPrefil
 
 import OrderSuccessPanel from '../OrderSuccessPanel';
 import PaymentInstructions from '../PaymentInstructions';
+import MapAddressPicker from '../MapAddressPicker';
 import { enabledPaymentMethods, mergePaymentSettings } from '../../config/payments';
+import { SHOP } from '../../config/shop';
 
 import ShopLoginPrompt from '../ShopLoginPrompt';
 
@@ -77,6 +79,16 @@ export default function FloatingCart() {
 
   const [successPhone, setSuccessPhone] = useState('');
   const [paymentSettings, setPaymentSettings] = useState(() => mergePaymentSettings());
+  const [savedAddresses, setSavedAddresses] = useState([]);
+  const [addressMode, setAddressMode] = useState('saved');
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [newAddress, setNewAddress] = useState({
+    name: '',
+    phone: '',
+    text: '',
+    lat: SHOP.lat,
+    lng: SHOP.lng,
+  });
 
   const [form, setForm] = useState({
 
@@ -131,7 +143,53 @@ export default function FloatingCart() {
 
     }));
 
+    setNewAddress((prev) => ({
+
+      ...prev,
+
+      name: user.name || prev.name,
+
+      phone: user.phone || prev.phone,
+
+    }));
+
   }, [isCustomer, user]);
+
+
+
+  const loadSavedAddresses = useCallback(async () => {
+
+    if (!isCustomer) return;
+
+    try {
+
+      const data = await api.getMyAddresses();
+
+      setSavedAddresses(data);
+
+      const defaultAddr = data.find((a) => a.is_default) || data[0];
+
+      if (defaultAddr) {
+
+        setSelectedAddressId(defaultAddr.id);
+
+        setAddressMode('saved');
+
+      } else {
+
+        setAddressMode('new');
+
+      }
+
+    } catch {
+
+      setSavedAddresses([]);
+
+      setAddressMode('new');
+
+    }
+
+  }, [isCustomer]);
 
 
 
@@ -167,9 +225,53 @@ export default function FloatingCart() {
 
       setOrderMsg('');
 
+      loadSavedAddresses();
+
     });
 
   };
+
+
+
+  const validateDeliveryAddress = () => {
+
+    if (addressMode === 'saved') {
+
+      if (!selectedAddressId) {
+
+        setOrderMsg(t('cart.selectAddress'));
+
+        return false;
+
+      }
+
+      return true;
+
+    }
+
+    if (!newAddress.name.trim() || !newAddress.phone.trim() || !newAddress.text.trim()) {
+
+      setOrderMsg(t('cart.addressRequired'));
+
+      return false;
+
+    }
+
+    if (!Number.isFinite(Number(newAddress.lat)) || !Number.isFinite(Number(newAddress.lng))) {
+
+      setOrderMsg(t('cart.mapPinRequired'));
+
+      return false;
+
+    }
+
+    return true;
+
+  };
+
+
+
+  const selectedSavedAddress = savedAddresses.find((a) => a.id === selectedAddressId);
 
 
 
@@ -221,6 +323,8 @@ export default function FloatingCart() {
 
       }
 
+      if (!validateDeliveryAddress()) return;
+
     }
 
     if (checkoutStep === 2) {
@@ -261,13 +365,15 @@ export default function FloatingCart() {
 
     }
 
+    if (!validateDeliveryAddress()) return;
+
     setSubmitting(true);
 
     setOrderMsg('');
 
     try {
 
-      const { order } = await api.placeOrder({
+      const payload = {
 
         ...form,
 
@@ -283,7 +389,19 @@ export default function FloatingCart() {
 
         })),
 
-      });
+      };
+
+      if (addressMode === 'saved') {
+
+        payload.address_id = selectedAddressId;
+
+      } else {
+
+        payload.shipping_address = newAddress;
+
+      }
+
+      const { order } = await api.placeOrder(payload);
 
       setSuccessPhone(form.phone.trim());
 
@@ -533,7 +651,7 @@ export default function FloatingCart() {
 
                           className="checkout-notes"
 
-                          placeholder={t('cart.addressNotes')}
+                          placeholder={t('cart.orderNotes')}
 
                           value={form.notes}
 
@@ -542,6 +660,136 @@ export default function FloatingCart() {
                           rows={2}
 
                         />
+
+                        <div className="checkout-address-section">
+
+                          <h4 className="checkout-section-subtitle">{t('cart.deliveryAddress')}</h4>
+
+                          {savedAddresses.length > 0 && (
+
+                            <div className="checkout-address-mode">
+
+                              <button
+
+                                type="button"
+
+                                className={`btn btn-outline btn-sm${addressMode === 'saved' ? ' active' : ''}`}
+
+                                onClick={() => setAddressMode('saved')}
+
+                              >
+
+                                {t('cart.useSavedAddress')}
+
+                              </button>
+
+                              <button
+
+                                type="button"
+
+                                className={`btn btn-outline btn-sm${addressMode === 'new' ? ' active' : ''}`}
+
+                                onClick={() => setAddressMode('new')}
+
+                              >
+
+                                {t('cart.newAddress')}
+
+                              </button>
+
+                            </div>
+
+                          )}
+
+                          {addressMode === 'saved' && savedAddresses.length > 0 ? (
+
+                            <div className="checkout-saved-addresses">
+
+                              {savedAddresses.map((addr) => (
+
+                                <label key={addr.id} className={`checkout-address-card${selectedAddressId === addr.id ? ' selected' : ''}`}>
+
+                                  <input
+
+                                    type="radio"
+
+                                    name="checkout-address"
+
+                                    checked={selectedAddressId === addr.id}
+
+                                    onChange={() => setSelectedAddressId(addr.id)}
+
+                                  />
+
+                                  <span>
+
+                                    <strong>{addr.name}</strong> · {addr.phone}
+
+                                    <small>{addr.text}</small>
+
+                                  </span>
+
+                                </label>
+
+                              ))}
+
+                            </div>
+
+                          ) : (
+
+                            <>
+
+                              <input
+
+                                placeholder={t('address.namePh')}
+
+                                value={newAddress.name}
+
+                                onChange={(e) => setNewAddress((a) => ({ ...a, name: e.target.value }))}
+
+                              />
+
+                              <input
+
+                                placeholder={t('address.phonePh')}
+
+                                value={newAddress.phone}
+
+                                onChange={(e) => setNewAddress((a) => ({ ...a, phone: e.target.value }))}
+
+                              />
+
+                              <textarea
+
+                                placeholder={t('address.textPh')}
+
+                                value={newAddress.text}
+
+                                onChange={(e) => setNewAddress((a) => ({ ...a, text: e.target.value }))}
+
+                                rows={2}
+
+                              />
+
+                              <p className="address-map-hint">{t('address.mapHint')}</p>
+
+                              <MapAddressPicker
+
+                                lat={newAddress.lat}
+
+                                lng={newAddress.lng}
+
+                                onChange={({ lat, lng }) => setNewAddress((a) => ({ ...a, lat, lng }))}
+
+                                height={180}
+
+                              />
+
+                            </>
+
+                          )}
+
+                        </div>
 
                       </section>
 
@@ -657,9 +905,19 @@ export default function FloatingCart() {
 
                           <p><span>{t('cart.phone')}</span> <strong>{form.phone}</strong></p>
 
+                          {addressMode === 'saved' && selectedSavedAddress ? (
+
+                            <p><span>{t('cart.deliveryAddress')}</span> {selectedSavedAddress.text}</p>
+
+                          ) : (
+
+                            <p><span>{t('cart.deliveryAddress')}</span> {newAddress.text}</p>
+
+                          )}
+
                           <p><span>{t('cart.payVia')}</span> <strong>{paymentLabel(form.payment_mode)}</strong></p>
 
-                          {form.notes && <p><span>{t('cart.addressNotes')}</span> {form.notes}</p>}
+                          {form.notes && <p><span>{t('cart.orderNotes')}</span> {form.notes}</p>}
 
                         </div>
 

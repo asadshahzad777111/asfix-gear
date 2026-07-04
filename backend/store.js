@@ -76,8 +76,40 @@ function statusLabel(status) {
     cancelled: 'Cancelled',
     in_progress: 'In Progress',
     completed: 'Completed',
+    pending_payment: 'Pending Payment',
+    paid: 'Paid',
+    waiting_for_rider: 'Waiting for Rider',
+    rider_assigned: 'Rider Assigned',
   };
   return labels[status] || status;
+}
+
+export function orderCustomerStatus(order) {
+  if (order.payment_status === 'pending_payment') return 'pending_payment';
+  if (order.delivery_status === 'waiting_for_rider') return 'waiting_for_rider';
+  if (order.delivery_status === 'rider_assigned') return 'rider_assigned';
+  if (order.delivery_status === 'delivered') return 'delivered';
+  if (order.shipping_status === 'cancelled') return 'cancelled';
+  return order.shipping_status || 'pending';
+}
+
+function validateShippingAddress(raw) {
+  if (!raw || typeof raw !== 'object') return null;
+  const name = String(raw.name || '').trim().slice(0, 120);
+  const phone = String(raw.phone || '').trim().slice(0, 30);
+  const text = String(raw.text || '').trim().slice(0, 500);
+  const lat = Number(raw.lat);
+  const lng = Number(raw.lng);
+  if (!name || !phone || !text) {
+    throw new Error('Delivery address requires name, phone, and text address');
+  }
+  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+    throw new Error('Drop a map pin for delivery location');
+  }
+  if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
+    throw new Error('Invalid map coordinates');
+  }
+  return { name, phone, text, lat, lng };
 }
 
 function sortProducts(products) {
@@ -1001,6 +1033,11 @@ export function createOrder(input) {
       items,
       total_amount: total,
       shipping_status: 'pending',
+      payment_status: 'pending_payment',
+      delivery_status: null,
+      rider_phone: '',
+      delivery_charge: 0,
+      shipping_address: input.shipping_address || null,
       gmail: '',
       notes: input.notes || '',
       customer_user_id: input.customer_user_id ?? null,
@@ -1253,6 +1290,12 @@ export function trackOrder(orderId, phone) {
     items: order.items,
     total_amount: order.total_amount,
     shipping_status: order.shipping_status,
+    payment_status: order.payment_status || 'pending_payment',
+    delivery_status: order.delivery_status ?? null,
+    rider_phone: order.rider_phone || '',
+    delivery_charge: Number(order.delivery_charge) || 0,
+    shipping_address: order.shipping_address || null,
+    customer_status: orderCustomerStatus(order),
     status_history: order.status_history || [],
     customer_feedback: order.customer_feedback || null,
     created_at: order.created_at,
@@ -1489,6 +1532,7 @@ export function createCustomer({ name, email, phone, username, password, passwor
       created_at: now(),
       last_login: null,
       created_by: null,
+      addresses: [],
     };
     data.users.push(user);
     return user;
@@ -1721,6 +1765,243 @@ export function changeCustomerPassword(userId, currentPassword, newPassword) {
     return { ok: true, user };
   });
 }
+
+/* ── Customer delivery addresses ── */
+
+function findCustomerUser(data, userId) {
+  const user = data.users.find((u) => u.id === Number(userId));
+  if (!user || user.role !== 'customer') return null;
+  if (!Array.isArray(user.addresses)) user.addresses = [];
+  return user;
+}
+
+export function getCustomerAddresses(userId) {
+  const data = readData();
+  const user = findCustomerUser(data, userId);
+  if (!user) return [];
+  return [...user.addresses].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+}
+
+export function addCustomerAddress(userId, input) {
+  return withData((data) => {
+    const user = findCustomerUser(data, userId);
+    if (!user) return null;
+
+    const address = validateShippingAddress(input);
+    const id = data.meta.nextAddressId++;
+    const createdAt = now();
+    const entry = {
+      id,
+      ...address,
+      is_default: Boolean(input.is_default),
+      created_at: createdAt,
+      updated_at: createdAt,
+    };
+
+    if (entry.is_default || user.addresses.length === 0) {
+      for (const a of user.addresses) a.is_default = false;
+      entry.is_default = true;
+    }
+
+    user.addresses.push(entry);
+    return entry;
+  });
+}
+
+export function updateCustomerAddress(userId, addressId, input) {
+  return withData((data) => {
+    const user = findCustomerUser(data, userId);
+    if (!user) return null;
+
+    const index = user.addresses.findIndex((a) => a.id === Number(addressId));
+    if (index === -1) return null;
+
+    const existing = user.addresses[index];
+    const patch = validateShippingAddress({
+      name: input.name ?? existing.name,
+      phone: input.phone ?? existing.phone,
+      text: input.text ?? existing.text,
+      lat: input.lat ?? existing.lat,
+      lng: input.lng ?? existing.lng,
+    });
+
+    const updated = {
+      ...existing,
+      ...patch,
+      is_default: input.is_default != null ? Boolean(input.is_default) : existing.is_default,
+      updated_at: now(),
+    };
+
+    if (updated.is_default) {
+      for (const a of user.addresses) a.is_default = false;
+      updated.is_default = true;
+    }
+
+    user.addresses[index] = updated;
+    return updated;
+  });
+}
+
+export function deleteCustomerAddress(userId, addressId) {
+  return withData((data) => {
+    const user = findCustomerUser(data, userId);
+    if (!user) return false;
+
+    const before = user.addresses.length;
+    const removed = user.addresses.find((a) => a.id === Number(addressId));
+    user.addresses = user.addresses.filter((a) => a.id !== Number(addressId));
+    if (user.addresses.length === before) return false;
+
+    if (removed?.is_default && user.addresses.length > 0) {
+      user.addresses[0].is_default = true;
+    }
+    return true;
+  });
+}
+
+export function resolveCustomerAddress(userId, addressId) {
+  const data = readData();
+  const user = findCustomerUser(data, userId);
+  if (!user) return null;
+  const addr = user.addresses.find((a) => a.id === Number(addressId));
+  if (!addr) return null;
+  const { name, phone, text, lat, lng } = addr;
+  return { name, phone, text, lat, lng };
+}
+
+function appendOrderActivity(order, message, updatedBy, at) {
+  const activity_log = [...(order.activity_log || [])];
+  if (message) {
+    activity_log.push({
+      at,
+      message,
+      by: updatedBy?.id ?? null,
+    });
+  }
+  return activity_log;
+}
+
+export function markOrderPaid(id, updatedBy = null) {
+  return withData((data) => {
+    const index = data.orders.findIndex((o) => o.id === Number(id));
+    if (index === -1) return null;
+
+    const existing = data.orders[index];
+    if (existing.payment_status === 'paid') return existing;
+    if (existing.shipping_status === 'cancelled') {
+      throw new Error('Cannot mark a cancelled order as paid');
+    }
+
+    const at = now();
+    const history = [
+      ...(existing.status_history || []),
+      { status: 'payment_verified', at, by: updatedBy?.id ?? null },
+    ];
+    const activity_log = appendOrderActivity(
+      existing,
+      updatedBy?.username
+        ? `Payment marked as paid by Staff: ${updatedBy.username}`
+        : 'Payment marked as paid',
+      updatedBy,
+      at
+    );
+
+    data.orders[index] = {
+      ...existing,
+      payment_status: 'paid',
+      delivery_status: 'waiting_for_rider',
+      shipping_status: 'payment_verified',
+      status_history: history,
+      activity_log,
+      updated_at: at,
+    };
+    return data.orders[index];
+  });
+}
+
+export function assignOrderRider(id, { rider_phone, delivery_charge }, updatedBy = null) {
+  return withData((data) => {
+    const index = data.orders.findIndex((o) => o.id === Number(id));
+    if (index === -1) return null;
+
+    const existing = data.orders[index];
+    if (existing.payment_status !== 'paid') {
+      throw new Error('Order must be paid before assigning a rider');
+    }
+    if (existing.delivery_status === 'delivered') {
+      throw new Error('Order is already delivered');
+    }
+
+    const phone = String(rider_phone || '').trim().slice(0, 30);
+    const charge = Number(delivery_charge);
+    if (!phone) throw new Error('Rider phone is required');
+    if (!Number.isFinite(charge) || charge < 0) {
+      throw new Error('Delivery charge must be a valid amount');
+    }
+
+    const at = now();
+    const history = [
+      ...(existing.status_history || []),
+      { status: 'out_for_delivery', at, by: updatedBy?.id ?? null },
+    ];
+    const activity_log = appendOrderActivity(
+      existing,
+      updatedBy?.username
+        ? `Rider assigned (${phone}, PKR ${charge}) by Staff: ${updatedBy.username}`
+        : `Rider assigned (${phone})`,
+      updatedBy,
+      at
+    );
+
+    data.orders[index] = {
+      ...existing,
+      rider_phone: phone,
+      delivery_charge: Math.round(charge),
+      delivery_status: 'rider_assigned',
+      shipping_status: 'out_for_delivery',
+      status_history: history,
+      activity_log,
+      updated_at: at,
+    };
+    return data.orders[index];
+  });
+}
+
+export function markOrderDelivered(id, updatedBy = null) {
+  return withData((data) => {
+    const index = data.orders.findIndex((o) => o.id === Number(id));
+    if (index === -1) return null;
+
+    const existing = data.orders[index];
+    if (existing.delivery_status === 'delivered') return existing;
+
+    const at = now();
+    const history = [
+      ...(existing.status_history || []),
+      { status: 'delivered', at, by: updatedBy?.id ?? null },
+    ];
+    const activity_log = appendOrderActivity(
+      existing,
+      updatedBy?.username
+        ? `Marked delivered by Staff: ${updatedBy.username}`
+        : 'Marked delivered',
+      updatedBy,
+      at
+    );
+
+    data.orders[index] = {
+      ...existing,
+      delivery_status: 'delivered',
+      shipping_status: 'delivered',
+      status_history: history,
+      activity_log,
+      updated_at: at,
+    };
+    return data.orders[index];
+  });
+}
+
+export { validateShippingAddress };
 
 /* ── iPhone repair rates ── */
 
