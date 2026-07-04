@@ -1,7 +1,9 @@
-import { SHOP, directionsContactPath, generalContactPath } from '../config/shop';
-import { Link } from 'react-router-dom';
+import { SHOP, whatsappLink } from '../config/shop';
+import { buildContactPrefill } from '../utils/contactPrefill';
 import OpenBadge from './OpenBadge';
 import { useTranslation } from '../context/LanguageContext';
+
+const GENERAL_WHATSAPP_HREF = whatsappLink(buildContactPrefill({ type: 'general' }).message);
 
 export default function LocationSection({ showMap = true }) {
   const { t } = useTranslation();
@@ -58,18 +60,22 @@ export default function LocationSection({ showMap = true }) {
               >
                 {t('location.googleMaps')}
               </a>
-              <Link
-                to={directionsContactPath()}
+              <a
+                href={SHOP.mapsDirectionsUrl}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="btn btn-whatsapp"
               >
                 {t('common.getDirections')}
-              </Link>
-              <Link
-                to={generalContactPath()}
+              </a>
+              <a
+                href={GENERAL_WHATSAPP_HREF}
+                target="_blank"
+                rel="noopener noreferrer"
                 className="btn btn-outline"
               >
                 {t('nav.whatsapp')}
-              </Link>
+              </a>
             </div>
           </div>
 

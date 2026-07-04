@@ -17,7 +17,7 @@ import PasswordField from './auth/PasswordField';
 import { getPostLoginPath } from '../utils/authRedirect';
 
 export default function CustomerLoginModal({ open, onClose }) {
-  const { login, completeSession } = useAuth();
+  const { login, completeSession, user, isCustomer, logout } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
 

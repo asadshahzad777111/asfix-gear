@@ -6,6 +6,7 @@
 @media (max-width: 1024px) {
   :root {
     --nav-mobile-bar-h: calc(3.35rem + env(safe-area-inset-top, 0px));
+    --guest-banner-top: var(--nav-mobile-bar-h);
     --nav-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
     --nav-ease-in: cubic-bezier(0.4, 0, 1, 1);
   }
