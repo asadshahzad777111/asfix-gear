@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { SHOP_BRANDS } from '../config/products';
 import { getSeriesForShopBrand } from '../config/repairModels';
@@ -53,7 +54,9 @@ export default function PhoneFinderModal({ open, category, onClose, onNavigate }
     onClose();
   };
 
-  return (
+  if (typeof document === 'undefined') return null;
+
+  return createPortal(
     <div className="modal-overlay" onClick={handleClose} role="presentation">
       <div
         ref={panelRef}
@@ -87,7 +90,8 @@ export default function PhoneFinderModal({ open, category, onClose, onNavigate }
           />
         )}
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }
 

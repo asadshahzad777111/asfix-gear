@@ -2,6 +2,8 @@ import { useMemo, useState } from 'react';
 import RepairSuccessPanel from './RepairSuccessPanel';
 import PremiumButton from './premium/PremiumButton';
 import ScreenQualityPicker from './ScreenQualityPicker';
+import BrandPickerDropdown from './BrandPickerDropdown';
+import { getShopBrandIdFromRepairBrand } from '../utils/brandIcon';
 import { api } from '../api/client';
 import { SHOP } from '../config/shop';
 import { useTranslation } from '../context/LanguageContext';
@@ -53,7 +55,15 @@ export default function RepairIntakeForm() {
   const [message, setMessage] = useState({ type: '', text: '' });
   const [successBooking, setSuccessBooking] = useState(null);
 
-  const brandOptions = useMemo(() => [...Object.keys(DEVICE_BRANDS), 'Other'], []);
+  const brandOptions = useMemo(
+    () =>
+      [...Object.keys(DEVICE_BRANDS), 'Other'].map((brand) => ({
+        value: brand,
+        label: brand,
+        brandId: brand === 'Other' ? '' : getShopBrandIdFromRepairBrand(brand),
+      })),
+    []
+  );
   const modelOptions = useMemo(() => {
     if (!form.brand_key || form.brand_key === 'Other') return [];
     return DEVICE_BRANDS[form.brand_key] || [];
@@ -75,8 +85,7 @@ export default function RepairIntakeForm() {
 
   const setField = (name, value) => setForm((prev) => ({ ...prev, [name]: value }));
 
-  const handleBrandChange = (e) => {
-    const brand_key = e.target.value;
+  const handleBrandChange = (brand_key) => {
     setForm((prev) => ({
       ...prev,
       brand_key,
@@ -222,12 +231,17 @@ export default function RepairIntakeForm() {
         <div className="form-row-2">
           <div className="form-group">
             <label htmlFor="brand_key">{t('repairForm.brand')} *</label>
-            <select id="brand_key" name="brand_key" value={form.brand_key} onChange={handleBrandChange} required>
-              <option value="">{t('repairForm.selectBrand')}</option>
-              {brandOptions.map((brand) => (
-                <option key={brand} value={brand}>{brand}</option>
-              ))}
-            </select>
+            <BrandPickerDropdown
+              id="brand_key"
+              value={form.brand_key}
+              onChange={handleBrandChange}
+              options={brandOptions}
+              placeholder={t('repairForm.selectBrand')}
+              ariaLabel={t('repairForm.brand')}
+              variant="form"
+              triggerClassName="brand-picker-trigger--form"
+              activeWhen={Boolean(form.brand_key)}
+            />
           </div>
           {form.brand_key === 'Other' ? (
             <div className="form-group">

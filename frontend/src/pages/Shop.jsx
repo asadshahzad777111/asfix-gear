@@ -12,6 +12,7 @@ import { startVisibilityPoll } from '../utils/visibilityPoll';
 import { readProductsCache, writeProductsCache } from '../utils/productCache';
 import { filterPublishedProducts } from '../utils/productStatus';
 import ShopModelPicker from '../components/shop/ShopModelPicker';
+import BrandPickerDropdown from '../components/BrandPickerDropdown';
 
 const STOCK_POLL_MS = 25_000;
 
@@ -154,8 +155,7 @@ export default function Shop() {
 
   const selectedModelLabel = activeBrandData && search.trim() ? search.trim() : '';
 
-  const handleBrandSelect = (e) => {
-    const value = e.target.value;
+  const handleBrandSelect = (value) => {
     setActiveBrand(value);
     const next = new URLSearchParams(searchParams);
     if (value === 'all') {
@@ -209,12 +209,16 @@ export default function Shop() {
             <button type="button" className={`filter-btn filter-sale ${showSaleOnly ? 'active' : ''}`} onClick={() => setShowSaleOnly((s) => !s)}>
               🏷️ {t('shop.sale')}
             </button>
-            <select className="filter-btn filter-brand-select" value={activeBrand} onChange={handleBrandSelect} aria-label={t('shop.filterByBrand')}>
-              <option value="all">{t('shop.allBrands')}</option>
-              {SHOP_BRANDS.map((b) => (
-                <option key={b.id} value={b.id}>{b.icon} {b.label}</option>
-              ))}
-            </select>
+            <BrandPickerDropdown
+              value={activeBrand}
+              onChange={handleBrandSelect}
+              allOption={{ value: 'all', label: t('shop.allBrands') }}
+              options={SHOP_BRANDS.map((b) => ({ value: b.id, label: b.label, brandId: b.id }))}
+              placeholder={t('shop.allBrands')}
+              ariaLabel={t('shop.filterByBrand')}
+              triggerClassName="filter-btn filter-brand-picker"
+              activeWhen={activeBrand !== 'all'}
+            />
             {activeBrandData && (
               <ShopModelPicker
                 brand={activeBrandData}

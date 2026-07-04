@@ -1773,6 +1773,113 @@ img { max-width: 100%; height: auto; display: block; }
   max-width: 11rem;
 }
 
+.brand-picker-wrap {
+  position: relative;
+}
+
+.brand-picker-dropdown {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.35rem;
+  text-align: left;
+  cursor: pointer;
+}
+
+.brand-picker-dropdown--filter {
+  max-width: 13rem;
+}
+
+.brand-picker-dropdown--filter.filter-brand-picker {
+  min-width: 8.5rem;
+}
+
+.brand-picker-dropdown--form {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 0.85rem 1rem;
+  min-height: var(--touch-min);
+  border-radius: 12px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  backdrop-filter: var(--glass-blur);
+  -webkit-backdrop-filter: var(--glass-blur);
+  color: var(--text);
+  font: inherit;
+  font-size: 1rem;
+  box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.04);
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.35s;
+}
+
+.brand-picker-dropdown--form:focus-visible {
+  outline: none;
+  border-color: var(--mint);
+  box-shadow: 0 0 0 3px var(--mint-focus);
+}
+
+.brand-picker-trigger-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.brand-picker-trigger-label > span:last-child {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.brand-picker-trigger-label .nav-search-brand-icon,
+.brand-picker-trigger-label .nav-search-brand-fallback {
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.brand-picker-placeholder {
+  color: var(--text-muted);
+}
+
+.brand-picker-chevron {
+  flex-shrink: 0;
+  font-size: 0.75rem;
+  opacity: 0.7;
+}
+
+.brand-picker-panel {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.brand-picker-list {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+}
+
+.brand-picker-item.is-selected {
+  background: rgba(255, 107, 44, 0.12);
+  color: var(--primary);
+  font-weight: 600;
+}
+
+.brand-picker-item-spacer {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.brand-picker-item .nav-search-brand-icon,
+.brand-picker-item .nav-search-brand-fallback {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 .shop-model-picker {
   position: relative;
 }
@@ -2823,7 +2930,7 @@ img { max-width: 100%; height: auto; display: block; }
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: center;
   padding: calc(var(--navbar-height) + 0.75rem) 1rem 1rem;
   overflow-y: auto;
