@@ -60,17 +60,18 @@ export default function AdminLayout({
           >
             {menuOpen ? 'Close' : 'Menu'}
           </button>
-          <span className="wp-admin-bar-site">AsFix & Gear</span>
-          <span className="wp-admin-bar-live">Live</span>
           {lowStockCount > 0 ? (
             <button
               type="button"
               className="wp-admin-bar-stock-alert"
               onClick={() => (onStockAlertClick ? onStockAlertClick() : goTab('stock'))}
+              aria-label={t('admin.stockAlerts')}
             >
               {t('admin.stockAlertBar', { count: lowStockCount })}
             </button>
           ) : null}
+          <span className="wp-admin-bar-site">AsFix & Gear</span>
+          <span className="wp-admin-bar-live">Live</span>
           <Link to="/" className="wp-admin-bar-link" target="_blank" rel="noreferrer">
             View site
           </Link>
@@ -97,7 +98,14 @@ export default function AdminLayout({
                 onClick={() => goTab('products')}
               >
                 <span className="wp-menu-text">Products</span>
-                <span className="wp-menu-badge">{products}</span>
+                <span className="wp-menu-badges">
+                  {lowStockCount > 0 ? (
+                    <span className="wp-menu-badge wp-menu-badge--warn" title={t('admin.stockAlerts')}>
+                      {lowStockCount}
+                    </span>
+                  ) : null}
+                  <span className="wp-menu-badge">{products}</span>
+                </span>
               </button>
               <div className="wp-submenu">
                 {PRODUCT_SUB.map((item) => (
@@ -115,6 +123,16 @@ export default function AdminLayout({
                 ))}
               </div>
             </div>
+            {lowStockCount > 0 ? (
+              <button
+                type="button"
+                className={`wp-menu-link wp-menu-link--stock-alert ${tab === 'stock' ? 'is-active' : ''}`}
+                onClick={() => goTab('stock')}
+              >
+                <span className="wp-menu-text">{t('admin.stockAlerts')}</span>
+                <span className="wp-menu-badge wp-menu-badge--warn">{lowStockCount}</span>
+              </button>
+            ) : null}
             {navItem('orders', 'Orders', pendingOrders > 0 ? pendingOrders : orders || null)}
             {navItem('bookings', 'Repair Intake', bookings || null)}
             {navItem('messages', t('admin.messages'))}

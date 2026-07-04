@@ -4,6 +4,7 @@ import { getDefaultImage } from '../../config/products';
 import { useCart } from '../../context/CartContext';
 import { useShopGate } from '../../hooks/useShopGate';
 import useProductPop from '../../hooks/useProductPop';
+import useProductCardImage from '../../hooks/useProductCardImage';
 import { useTranslation } from '../../context/LanguageContext';
 import { DiscountRibbon, ProductPrice } from '../DiscountPicker';
 import { hasDiscount } from '../../utils/pricing';
@@ -21,7 +22,16 @@ export default function HomeProductCard({ product }) {
     loginOpen,
     setLoginOpen,
   } = useShopGate();
-  const { popClass, handleProductLinkClick, linkPopHandlers } = useProductPop();
+  const { popClass, popping, handleProductLinkClick, linkPopHandlers } = useProductPop();
+  const {
+    displayImage,
+    hasHoverImage,
+    onMouseEnter: onCardImageEnter,
+    onMouseLeave: onCardImageLeave,
+    onPointerDown: onCardImagePointerDown,
+    onPointerUp: onCardImagePointerUp,
+    onPointerLeave: onCardImagePointerLeave,
+  } = useProductCardImage(product, { popping });
   const productPath = `/shop/${product.id}`;
   const { addItem } = useCart();
   const addRef = useRef(null);
@@ -48,22 +58,43 @@ export default function HomeProductCard({ product }) {
     e.target.src = getDefaultImage(product.category);
   };
 
+  const cardImageHandlers = {
+    ...linkPopHandlers,
+    onPointerDown: (e) => {
+      linkPopHandlers.onPointerDown(e);
+      onCardImagePointerDown();
+    },
+    onPointerUp: (e) => {
+      linkPopHandlers.onPointerUp(e);
+      onCardImagePointerUp();
+    },
+    onPointerLeave: (e) => {
+      linkPopHandlers.onPointerLeave(e);
+      onCardImagePointerLeave();
+    },
+  };
+
   return (
     <>
-      <article className={`home-product-card ${onSale ? 'on-sale' : ''} ${popClass}`}>
+      <article
+        className={`home-product-card ${onSale ? 'on-sale' : ''} ${popClass}`}
+        onMouseEnter={onCardImageEnter}
+        onMouseLeave={onCardImageLeave}
+      >
         <Link
           to={productPath}
           className="home-product-link"
-          {...linkPopHandlers}
+          {...cardImageHandlers}
           onClick={(e) => handleProductLinkClick(e, productPath)}
         >
           <div className="home-product-img-wrap">
             {onSale && <DiscountRibbon percent={product.discount_percent} compact />}
             <img
-              src={product.image}
+              src={displayImage}
               alt={product.name}
               loading="lazy"
               onError={handleImgError}
+              className={hasHoverImage ? 'product-card-img-swap' : undefined}
             />
           </div>
           <div className="home-product-body">

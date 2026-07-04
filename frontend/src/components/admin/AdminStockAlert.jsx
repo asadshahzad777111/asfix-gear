@@ -3,7 +3,7 @@ import useModalBehavior from '../../hooks/useModalBehavior';
 import { useTranslation } from '../../context/LanguageContext';
 import { getStockStatus, LOW_STOCK_THRESHOLD } from '../../utils/stock';
 
-const STORAGE_KEY = 'asfix_admin_stock_alert_dismissed';
+const STORAGE_KEY = 'asfix_admin_stock_alert_dismissed_count';
 
 export default function AdminStockAlert({
   products,
@@ -12,23 +12,25 @@ export default function AdminStockAlert({
   onEditProduct,
 }) {
   const { t } = useTranslation();
-  const [dismissed, setDismissed] = useState(() => {
+  const alertCount = products.length;
+  const [dismissedCount, setDismissedCount] = useState(() => {
     try {
-      return sessionStorage.getItem(STORAGE_KEY) === '1';
+      const stored = sessionStorage.getItem(STORAGE_KEY);
+      return stored != null ? Number(stored) || 0 : 0;
     } catch {
-      return false;
+      return 0;
     }
   });
 
-  const visible = ready && products.length > 0 && !dismissed;
+  const visible = ready && alertCount > 0 && dismissedCount < alertCount;
 
   const dismiss = () => {
     try {
-      sessionStorage.setItem(STORAGE_KEY, '1');
+      sessionStorage.setItem(STORAGE_KEY, String(alertCount));
     } catch {
       /* ignore */
     }
-    setDismissed(true);
+    setDismissedCount(alertCount);
   };
 
   const handleViewStock = () => {

@@ -62,6 +62,7 @@ export default function ProductImagePanel({
           onChange={(e) => onImageChange(e.target.value)}
         />
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFile} />
+        <p className="wp-product-hint">Featured photo — gallery mein 2 aur add karein (3 total).</p>
         {uploading ? <p className="wp-product-hint">Uploading…</p> : null}
       </div>
     </div>

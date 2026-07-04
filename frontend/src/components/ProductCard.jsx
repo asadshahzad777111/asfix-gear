@@ -12,6 +12,7 @@ import { useTranslation } from '../context/LanguageContext';
 import { useShopGate } from '../hooks/useShopGate';
 import useScrollReveal from '../hooks/useScrollReveal';
 import useProductPop from '../hooks/useProductPop';
+import useProductCardImage from '../hooks/useProductCardImage';
 import ShopLoginPrompt from './ShopLoginPrompt';
 import CustomerLoginModal from './CustomerLoginModal';
 
@@ -40,7 +41,16 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     delay: revealIndex * 90,
     disabled: !inGrid || revealIndex < 0,
   });
-  const { popClass, handleProductLinkClick, linkPopHandlers } = useProductPop();
+  const { popClass, popping, handleProductLinkClick, linkPopHandlers } = useProductPop();
+  const {
+    displayImage,
+    hasHoverImage,
+    onMouseEnter: onCardImageEnter,
+    onMouseLeave: onCardImageLeave,
+    onPointerDown: onCardImagePointerDown,
+    onPointerUp: onCardImagePointerUp,
+    onPointerLeave: onCardImagePointerLeave,
+  } = useProductCardImage(product, { popping });
   const productPath = `/shop/${product.id}`;
 
   const animKind = getProductAnimKind(product.category);
@@ -61,6 +71,32 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     e.target.src = getDefaultImage(product.category);
   };
 
+  const cardImageHandlers = {
+    ...linkPopHandlers,
+    onPointerDown: (e) => {
+      linkPopHandlers.onPointerDown(e);
+      onCardImagePointerDown();
+    },
+    onPointerUp: (e) => {
+      linkPopHandlers.onPointerUp(e);
+      onCardImagePointerUp();
+    },
+    onPointerLeave: (e) => {
+      linkPopHandlers.onPointerLeave(e);
+      onCardImagePointerLeave();
+    },
+  };
+
+  const renderCardImage = (className = '') => (
+    <img
+      src={displayImage}
+      alt={product.name}
+      loading="lazy"
+      onError={handleImgError}
+      className={`${className} ${hasHoverImage ? 'product-card-img-swap' : ''}`.trim()}
+    />
+  );
+
   const cardClass = [
     'product-card-wrap',
     'premium-product',
@@ -77,7 +113,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
       <Link
         to={productPath}
         className="product-card glass-card"
-        {...linkPopHandlers}
+        {...cardImageHandlers}
         onClick={(e) => handleProductLinkClick(e, productPath)}
       >
         <div className="product-image premium-product-image">
@@ -99,7 +135,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
           {animKind === 'case' && !inGrid ? (
             <div className={`premium-case-flip ${hovered || selected ? 'is-flipped' : ''}`}>
               <div className="premium-case-face premium-case-face--front">
-                <img src={product.image} alt={product.name} loading="lazy" onError={handleImgError} />
+                {renderCardImage()}
               </div>
               <div className="premium-case-face premium-case-face--back">
                 <span className="premium-case-back-plate" />
@@ -107,13 +143,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
               </div>
             </div>
           ) : (
-            <img
-              src={product.image}
-              alt={product.name}
-              loading="lazy"
-              onError={handleImgError}
-              className="product-grid-img"
-            />
+            renderCardImage('product-grid-img')
           )}
           {!inGrid && animKind === 'charger' && hovered && (
             <span className="premium-charge-bolt">⚡</span>
@@ -162,8 +192,14 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
         <article
           ref={revealRef}
           className={`${cardClass} scroll-reveal`}
-          onMouseEnter={() => setHovered(true)}
-          onMouseLeave={() => setHovered(false)}
+          onMouseEnter={() => {
+            setHovered(true);
+            onCardImageEnter();
+          }}
+          onMouseLeave={() => {
+            setHovered(false);
+            onCardImageLeave();
+          }}
         >
           {inner}
         </article>
@@ -177,8 +213,14 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     <>
       <motion.article
         className={cardClass}
-        onMouseEnter={() => setHovered(true)}
-        onMouseLeave={() => setHovered(false)}
+        onMouseEnter={() => {
+          setHovered(true);
+          onCardImageEnter();
+        }}
+        onMouseLeave={() => {
+          setHovered(false);
+          onCardImageLeave();
+        }}
         whileTap={TAP_POP}
         transition={TAP_SPRING}
         style={{ transformPerspective: 900 }}

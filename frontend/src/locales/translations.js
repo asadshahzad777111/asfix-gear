@@ -313,6 +313,7 @@ export const translations = {
       stockAlertViewStock: 'View stock',
       stockAlertEdit: 'Edit',
       stockAlertBar: '{count} low stock',
+      stockAlerts: 'Stock alerts',
     },
     sales: {
       tab: 'Sales & Profit',
@@ -1165,6 +1166,7 @@ export const translations = {
       stockAlertViewStock: 'Stock dekhein',
       stockAlertEdit: 'Edit',
       stockAlertBar: '{count} kam stock',
+      stockAlerts: 'Stock alerts',
     },
     sales: {
       tab: 'Sales & Profit',

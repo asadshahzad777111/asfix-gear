@@ -1,6 +1,7 @@
 /* WordPress-style admin shell — light content, dark sidebar */
 .wp-admin-shell {
   min-height: 100vh;
+  min-height: 100dvh;
   background: #f0f0f1;
   color: #1d2327;
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen-Sans, Ubuntu, Cantarell, "Helvetica Neue", sans-serif;
@@ -8,17 +9,32 @@
 
 .app--admin {
   background: #f0f0f1;
-  overflow-x: hidden;
+  overflow-x: clip;
   width: 100%;
   max-width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
 }
 
 .app-main--admin {
   padding: 0;
+  padding-bottom: 0 !important;
   max-width: none;
   width: 100%;
-  flex: 1;
-  overflow-x: hidden;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  overflow-x: clip;
+}
+
+.app-main--admin .page-transition-shell {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.wp-admin-menu-toggle {
+  display: none;
 }
 
 .wp-admin-bar {
@@ -148,6 +164,26 @@
   font-size: 0.68rem;
   font-weight: 700;
   text-align: center;
+}
+
+.wp-menu-badges {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.wp-submenu {
+  display: block;
+}
+
+.wp-menu-link--stock-alert {
+  margin-top: 0.15rem;
+  border-left: 3px solid #dba617;
+  padding-left: calc(1rem - 3px);
+}
+
+.wp-menu-link--stock-alert.is-active {
+  border-left-color: #fff;
 }
 
 .wp-admin-content {
@@ -636,7 +672,17 @@
     gap: 0.35rem;
   }
 
+  .wp-admin-bar-stock-alert {
+    order: 2;
+    font-size: 0.72rem;
+    padding: 0.12rem 0.4rem;
+    max-width: 42vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
   .wp-admin-bar-site {
+    order: 3;
     font-size: 0.9rem;
   }
 
@@ -919,6 +965,8 @@
   font-weight: 600;
   border: none;
   cursor: pointer;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .wp-admin-bar-stock-alert:hover {

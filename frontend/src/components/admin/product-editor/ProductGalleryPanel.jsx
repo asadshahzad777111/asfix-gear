@@ -62,12 +62,12 @@ export default function ProductGalleryPanel({
             ))}
           </ul>
         ) : (
-          <p className="wp-product-hint">Extra photos for product page — main image alag set hoti hai.</p>
+          <p className="wp-product-hint">Main image alag hoti hai — yahan 2 extra photos add karein (total 3).</p>
         )}
         <button type="button" className="wp-button wp-button--secondary wp-button--small" onClick={addImages} disabled={uploading || atMax}>
           Add to gallery
         </button>
-        <p className="wp-product-hint">{gallery.length}/{MAX_GALLERY_IMAGES} images</p>
+        <p className="wp-product-hint">{gallery.length}/{MAX_GALLERY_IMAGES} gallery · Main + 2 gallery = 3 photos</p>
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={handleFiles} />
       </div>
     </div>
