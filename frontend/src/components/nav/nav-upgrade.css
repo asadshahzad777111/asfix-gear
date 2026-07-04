@@ -207,6 +207,12 @@ body {
   object-fit: contain;
 }
 
+.nav-search-brand-icon--wide {
+  width: auto;
+  max-width: 3.25rem;
+  height: 1.1rem;
+}
+
 .nav-search-brand-fallback {
   width: 22px;
   height: 22px;
@@ -479,6 +485,10 @@ body {
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  max-height: min(52vh, 480px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scroll-padding-top: 0.35rem;
 }
 
 .nav-mega-brand-item {
@@ -847,7 +857,7 @@ body {
 
 /* ── Click-only shop mega menu (opaque, themed) ── */
 .nav-mega-wrap--click .nav-mega-panel--solid {
-  z-index: 950;
+  z-index: 1100;
 }
 
 /* Portalled under trigger — fixed coords from getBoundingClientRect on every

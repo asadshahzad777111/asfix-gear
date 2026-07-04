@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { SHOP_BRANDS } from '../config/products';
 import { getSeriesForShopBrand } from '../config/repairModels';
@@ -17,8 +17,21 @@ export default function PhoneFinderModal({ open, category, onClose, onNavigate }
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [brand, setBrand] = useState(null);
+  const panelRef = useRef(null);
+  const brandGridRef = useRef(null);
 
   const { closeWithoutHistoryBack } = useModalBehavior(open, onClose);
+
+  useEffect(() => {
+    if (!open) {
+      setBrand(null);
+      return;
+    }
+    const panel = panelRef.current;
+    const grid = brandGridRef.current;
+    if (panel) panel.scrollTop = 0;
+    if (grid) grid.scrollTop = 0;
+  }, [open, category]);
 
   if (!open) return null;
 
@@ -43,6 +56,7 @@ export default function PhoneFinderModal({ open, category, onClose, onNavigate }
   return (
     <div className="modal-overlay" onClick={handleClose} role="presentation">
       <div
+        ref={panelRef}
         className="modal-panel phone-finder-panel"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
@@ -58,6 +72,7 @@ export default function PhoneFinderModal({ open, category, onClose, onNavigate }
             category={category}
             onSelectBrand={setBrand}
             onSkip={() => goToShop({})}
+            brandGridRef={brandGridRef}
             t={t}
           />
         ) : (
@@ -76,14 +91,14 @@ export default function PhoneFinderModal({ open, category, onClose, onNavigate }
   );
 }
 
-function PhoneFinderBrandStep({ category, onSelectBrand, onSkip, t }) {
+function PhoneFinderBrandStep({ category, onSelectBrand, onSkip, t, brandGridRef }) {
   return (
     <div className="phone-finder-step">
       <p className="phone-finder-eyebrow">{t('phoneFinder.eyebrow', { category })}</p>
       <h2 className="phone-finder-title">{t('phoneFinder.brandQuestion')}</h2>
       <p className="phone-finder-sub">{t('phoneFinder.brandSub')}</p>
 
-      <div className="phone-finder-brand-grid">
+      <div className="phone-finder-brand-grid" ref={brandGridRef}>
         {SHOP_BRANDS.map((b) => (
           <button
             key={b.id}

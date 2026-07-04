@@ -14,15 +14,27 @@ const BRAND_SIMPLE_ICON_SLUG = {
   pixel: 'google',
 };
 
+/** Brands not on Simple Icons — self-hosted SVG wordmarks in /public/brands/. */
+const BRAND_LOCAL_ICON = {
+  infinix: '/brands/infinix.svg',
+  tecno: '/brands/tecno.svg',
+  realme: '/brands/realme.svg',
+  nothing: '/brands/nothing.svg',
+  itel: '/brands/itel.svg',
+};
+
 export function getSimpleIconSlug(brandId) {
   const id = String(brandId || '').trim().toLowerCase();
   if (!id) return '';
   return BRAND_SIMPLE_ICON_SLUG[id] || id;
 }
 
-/** Official Simple Icons CDN — open source brand SVGs. */
+/** Simple Icons CDN, with local SVG fallback for brands missing from the CDN. */
 export function getBrandIconUrl(brandId, color = '374151') {
-  const slug = getSimpleIconSlug(brandId);
+  const id = String(brandId || '').trim().toLowerCase();
+  if (!id) return '';
+  if (BRAND_LOCAL_ICON[id]) return BRAND_LOCAL_ICON[id];
+  const slug = getSimpleIconSlug(id);
   if (!slug) return '';
   const hex = String(color).replace('#', '');
   return `https://cdn.simpleicons.org/${encodeURIComponent(slug)}/${hex}`;

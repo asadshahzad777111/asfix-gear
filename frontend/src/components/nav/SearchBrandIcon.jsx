@@ -4,6 +4,7 @@ import { getBrandFallbackEmoji, getBrandIconUrl } from '../../utils/brandIcon';
 export default function SearchBrandIcon({ brandId, className = '' }) {
   const [failed, setFailed] = useState(false);
   const url = getBrandIconUrl(brandId);
+  const isLocal = url.startsWith('/brands/');
 
   if (!brandId || !url || failed) {
     return (
@@ -17,7 +18,7 @@ export default function SearchBrandIcon({ brandId, className = '' }) {
     <img
       src={url}
       alt=""
-      className={`nav-search-brand-icon ${className}`.trim()}
+      className={`nav-search-brand-icon${isLocal ? ' nav-search-brand-icon--wide' : ''} ${className}`.trim()}
       loading="lazy"
       decoding="async"
       onError={() => setFailed(true)}

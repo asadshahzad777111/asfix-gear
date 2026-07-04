@@ -7,7 +7,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import PhoneFinderModal from '../PhoneFinderModal';
 import SearchBrandIcon from './SearchBrandIcon';
 
-const PANEL_GAP_PX = 6;
+const PANEL_GAP_PX = 12;
 
 function getNavbarBottom() {
   if (typeof document === 'undefined') return 0;
