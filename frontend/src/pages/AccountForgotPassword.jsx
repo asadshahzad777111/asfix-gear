@@ -157,7 +157,7 @@ export default function AccountForgotPassword() {
               )}
               {errorCode === 'STAFF_ACCOUNT' && (
                 <p className="auth-2026-field-hint">
-                  <Link to="/account/login">{t('otp.staffLoginLink')}</Link>
+                  <Link to="/login">{t('otp.staffLoginLink')}</Link>
                 </p>
               )}
 

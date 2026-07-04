@@ -65,7 +65,7 @@ export default function Footer() {
           © {new Date().getFullYear()} {SHOP.name} — {SHOP.owner}. {t('footer.crafted')}
         </p>
         {!isStaff && (
-          <Link to="/account/login" className="footer-staff-login">
+          <Link to="/login" className="footer-staff-login">
             {t('footer.staffLogin')}
           </Link>
         )}

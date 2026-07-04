@@ -17,7 +17,7 @@ import {
 import PasswordField from '../components/auth/PasswordField';
 
 export default function AccountRegister() {
-  const { isCustomer, user, loading, completeSession } = useAuth();
+  const { isCustomer, isStaff, user, loading, completeSession } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -39,6 +39,10 @@ export default function AccountRegister() {
 
   if (loading) {
     return <div className="loading container">{t('common.loading')}</div>;
+  }
+
+  if (user && isStaff) {
+    return <Navigate to="/admin" replace />;
   }
 
   if (user && isCustomer) {

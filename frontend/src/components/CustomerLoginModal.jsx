@@ -15,6 +15,7 @@ import {
 } from './auth/AuthUI';
 import PasswordField from './auth/PasswordField';
 import { getPostLoginPath } from '../utils/authRedirect';
+import { isStaff } from '../config/permissions';
 
 export default function CustomerLoginModal({ open, onClose }) {
   const { login, completeSession, user, isCustomer, logout } = useAuth();
@@ -45,6 +46,15 @@ export default function CustomerLoginModal({ open, onClose }) {
     onClose();
   };
 
+  const rejectStaffSession = async (loggedIn) => {
+    if (isStaff(loggedIn)) {
+      await logout();
+      setError(t('account.staffUseStaffLogin'));
+      return true;
+    }
+    return false;
+  };
+
   const handlePasswordSubmit = async (e) => {
     e.preventDefault();
     setSubmitting(true);
@@ -52,6 +62,7 @@ export default function CustomerLoginModal({ open, onClose }) {
 
     try {
       const loggedIn = await login(loginValue.trim(), password);
+      if (await rejectStaffSession(loggedIn)) return;
       setLoginValue('');
       setPassword('');
       handleClose();
@@ -105,6 +116,7 @@ export default function CustomerLoginModal({ open, onClose }) {
     try {
       const data = await api.loginOtpVerify({ login: loginValue.trim(), code: otp });
       const loggedIn = await completeSession(data);
+      if (await rejectStaffSession(loggedIn)) return;
       setLoginValue('');
       setOtp('');
       handleClose();

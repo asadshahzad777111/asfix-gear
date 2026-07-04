@@ -17,9 +17,10 @@ import {
 } from '../components/auth/AuthUI';
 import PasswordField from '../components/auth/PasswordField';
 import { getPostLoginPath } from '../utils/authRedirect';
+import { isStaff } from '../config/permissions';
 
 export default function AccountLogin() {
-  const { login, user, loading, completeSession } = useAuth();
+  const { login, user, loading, completeSession, logout } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,11 +42,24 @@ export default function AccountLogin() {
   }
 
   if (user) {
+    if (isStaff(user)) {
+      return <Navigate to="/admin" replace />;
+    }
     return <Navigate to={getPostLoginPath(user, from)} replace />;
   }
 
+  const rejectStaffSession = async (loggedIn) => {
+    if (isStaff(loggedIn)) {
+      await logout();
+      setError(t('account.staffUseStaffLogin'));
+      return true;
+    }
+    return false;
+  };
+
   const finishLogin = async (data) => {
     const loggedIn = await completeSession(data);
+    if (await rejectStaffSession(loggedIn)) return;
     navigate(getPostLoginPath(loggedIn, from), { replace: true });
   };
 
@@ -56,6 +70,7 @@ export default function AccountLogin() {
 
     try {
       const loggedIn = await login(loginValue.trim(), password);
+      if (await rejectStaffSession(loggedIn)) return;
       navigate(getPostLoginPath(loggedIn, from), { replace: true });
     } catch (err) {
       setError(err.message || t('account.loginFailed'));
@@ -244,6 +259,9 @@ export default function AccountLogin() {
           <p className="auth-2026-foot">
             {t('account.noAccount')}{' '}
             <Link to="/account/register">{t('account.createAccount')}</Link>
+          </p>
+          <p className="auth-2026-foot">
+            <Link to="/login">{t('otp.staffLoginLink')}</Link>
           </p>
           <p className="auth-2026-foot">
             <Link to="/">{t('login.backToStore')}</Link>

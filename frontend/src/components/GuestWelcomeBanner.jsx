@@ -6,7 +6,7 @@ import { useTranslation } from '../context/LanguageContext';
 const STORAGE_KEY = 'asfix_guest_welcome_dismissed';
 
 export default function GuestWelcomeBanner() {
-  const { isCustomer, loading } = useAuth();
+  const { user, loading } = useAuth();
   const { t } = useTranslation();
   const [dismissed, setDismissed] = useState(() => {
     try {
@@ -16,7 +16,7 @@ export default function GuestWelcomeBanner() {
     }
   });
 
-  if (loading || isCustomer || dismissed) return null;
+  if (loading || user || dismissed) return null;
 
   const dismiss = () => {
     try {

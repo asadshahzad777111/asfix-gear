@@ -37,6 +37,11 @@ export default function Navbar() {
 
   const closeMenu = () => setMenuOpen(false);
 
+  const openLoginModal = () => {
+    closeMenu();
+    setLoginOpen(true);
+  };
+
   const handleLogout = async () => {
     closeMenu();
     await logout();
@@ -262,9 +267,19 @@ export default function Navbar() {
                     onClick={handleLogout}
                   />
                 </>
+              ) : isStaff ? (
+                <>
+                  <NavDrawerAdminLink to="/admin" icon="⚙️" label={t('nav.admin')} onClick={closeMenu} />
+                  <NavDrawerButton
+                    icon="🚪"
+                    label={t('account.logout')}
+                    className="nav-drawer-logout"
+                    onClick={handleLogout}
+                  />
+                </>
               ) : (
                 <>
-                  <NavDrawerLink to="/account/login" icon="🔑" label={t('nav.signIn')} onClick={closeMenu} />
+                  <NavDrawerButton icon="🔑" label={t('nav.signIn')} onClick={openLoginModal} />
                   <NavDrawerLink to="/account/register" icon="✨" label={t('nav.signUp')} onClick={closeMenu} />
                 </>
               )}
@@ -283,7 +298,6 @@ export default function Navbar() {
                       closeMenu();
                     }}
                   />
-                  <NavDrawerAdminLink to="/admin" icon="⚙️" label={t('nav.admin')} onClick={closeMenu} />
                 </div>
               </>
             )}
@@ -301,6 +315,10 @@ export default function Navbar() {
             <OpenBadge compact />
             {isCustomer ? (
               <AccountMenu className="account-menu--toolbar" />
+            ) : isStaff ? (
+              <Link to="/admin" className="btn btn-primary btn-sm nav-auth-btn">
+                {t('nav.admin')}
+              </Link>
             ) : (
               <div className="nav-auth-buttons nav-auth-buttons--toolbar">
                 <button
