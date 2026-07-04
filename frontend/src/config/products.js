@@ -103,6 +103,7 @@ export const EMPTY_PRODUCT = {
   discount_enabled: false,
   discount_percent: 0,
   warranty: '',
+  status: 'published',
 };
 
 export function getDefaultImage(category) {

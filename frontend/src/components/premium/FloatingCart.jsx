@@ -76,7 +76,7 @@ export default function FloatingCart() {
   const [orderSuccess, setOrderSuccess] = useState(null);
 
   const [successPhone, setSuccessPhone] = useState('');
-  const [paymentSettings, setPaymentSettings] = useState(null);
+  const [paymentSettings, setPaymentSettings] = useState(() => mergePaymentSettings());
 
   const [form, setForm] = useState({
 

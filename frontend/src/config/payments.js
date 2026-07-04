@@ -20,11 +20,16 @@ export const DEFAULT_PAYMENTS = {
   },
 };
 
-export function mergePaymentSettings(saved = {}) {
+function normalizeSavedPayments(saved) {
+  return saved && typeof saved === 'object' ? saved : {};
+}
+
+export function mergePaymentSettings(saved) {
+  const s = normalizeSavedPayments(saved);
   return {
-    jazzcash: { ...DEFAULT_PAYMENTS.jazzcash, ...(saved.jazzcash || {}) },
-    easypaisa: { ...DEFAULT_PAYMENTS.easypaisa, ...(saved.easypaisa || {}) },
-    bank: { ...DEFAULT_PAYMENTS.bank, ...(saved.bank || {}) },
+    jazzcash: { ...DEFAULT_PAYMENTS.jazzcash, ...(s.jazzcash || {}) },
+    easypaisa: { ...DEFAULT_PAYMENTS.easypaisa, ...(s.easypaisa || {}) },
+    bank: { ...DEFAULT_PAYMENTS.bank, ...(s.bank || {}) },
   };
 }
 

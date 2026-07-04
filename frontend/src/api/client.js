@@ -343,6 +343,7 @@ export const api = {
     return request(`/admin/sales-report${query ? `?${query}` : ''}`);
   },
   getAdminDashboardStats: () => request('/admin/dashboard-stats'),
+  getCustomersSummary: () => request('/admin/customers-summary'),
   downloadDataBackup: () => downloadDataBackup(),
 
   getStats: () => request('/stats'),

@@ -7,6 +7,7 @@ import { useTranslation } from '../context/LanguageContext';
 import ProductImagePanel from './admin/product-editor/ProductImagePanel';
 import ProductGalleryPanel from './admin/product-editor/ProductGalleryPanel';
 import ProductCategoriesPanel from './admin/product-editor/ProductCategoriesPanel';
+import ProductPublishPanel from './admin/product-editor/ProductPublishPanel';
 import { uploadProductImageFile } from '../utils/productImageUpload';
 
 const isDefaultImage = (url) => Object.values(DEFAULT_IMAGES).includes(url);
@@ -32,6 +33,7 @@ function productToForm(editProduct) {
     discount_enabled: Number(editProduct.discount_percent) > 0,
     discount_percent: Number(editProduct.discount_percent) || 0,
     warranty: editProduct.warranty || '',
+    status: editProduct.status || 'published',
   };
 }
 
@@ -110,6 +112,7 @@ export default function AddProductForm({
     featured: product.featured,
     discount_percent: product.discount_enabled ? Number(product.discount_percent) || 0 : 0,
     warranty: product.warranty.trim(),
+    status: product.status || 'published',
   });
 
   const handleSubmit = async (e) => {
@@ -324,12 +327,11 @@ export default function AddProductForm({
               onCategoryChange={handleCategoryPick}
               onMessage={sidebarHint}
             />
-            <div className="wp-postbox">
-              <div className="wp-postbox-head">Publish</div>
-              <div className="wp-postbox-body">
-                <p className="wp-product-hint">Neeche <strong>Save Changes</strong> dabayein — product shop par live ho jayega.</p>
-              </div>
-            </div>
+            <ProductPublishPanel
+              status={product.status}
+              onStatusChange={(value) => setField('status', value)}
+              productId={isEdit ? editProduct.id : null}
+            />
           </aside>
         </div>
       ) : (

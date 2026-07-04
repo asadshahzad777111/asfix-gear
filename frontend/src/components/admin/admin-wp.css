@@ -1244,3 +1244,64 @@
     order: -1;
   }
 }
+
+/* Sortable table headers */
+.wp-sortable-th {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  font-weight: 600;
+  color: inherit;
+  cursor: pointer;
+}
+
+.wp-sortable-th:hover,
+.wp-sortable-th.is-active {
+  color: #2271b1;
+}
+
+.wp-sort-indicator {
+  font-size: 0.68rem;
+  color: #8c8f94;
+  line-height: 1;
+}
+
+.wp-sortable-th.is-active .wp-sort-indicator {
+  color: #2271b1;
+}
+
+/* Product status badges */
+.wp-status-badge {
+  display: inline-block;
+  margin-top: 0.2rem;
+  padding: 0.1rem 0.45rem;
+  border-radius: 3px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.wp-status-badge--published {
+  background: #edfaef;
+  color: #007017;
+}
+
+.wp-status-badge--draft {
+  background: #f0f0f1;
+  color: #50575e;
+}
+
+/* Customers table */
+.wp-table--customers .wp-customer-contact {
+  color: #50575e;
+  font-size: 0.8rem;
+}
+
+.wp-product-hint--muted {
+  color: #646970;
+}

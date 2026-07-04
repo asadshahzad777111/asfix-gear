@@ -45,6 +45,13 @@ function sanitizeProductBody(body) {
   const next = { ...body };
   if (next.image != null) next.image = validateProductImage(next.image);
   if (next.gallery != null) next.gallery = sanitizeGallery(next.gallery);
+  if (next.status != null) {
+    try {
+      next.status = store.normalizeProductStatus(next.status);
+    } catch {
+      throw new Error('Invalid product status');
+    }
+  }
   return next;
 }
 const CAN_DELETE = ['super_admin', 'admin'];
@@ -74,12 +81,17 @@ function mapProductsForRequest(products, user) {
 }
 
 router.get('/', optionalAuth, (req, res) => {
-  const products = store.getProducts(req.query);
+  const staff = isStaffUser(req.auth?.user);
+  let products = store.getProducts(req.query);
+  if (!staff) {
+    products = products.filter((p) => store.isPublishedProduct(p));
+  }
   res.json(mapProductsForRequest(products, req.auth?.user));
 });
 
-router.get('/categories', (_req, res) => {
-  res.json(store.getProductCategories());
+router.get('/categories', optionalAuth, (req, res) => {
+  const includeDrafts = isStaffUser(req.auth?.user);
+  res.json(store.getProductCategories({ includeDrafts }));
 });
 
 router.post('/upload-image', requireAuth, requireRole(...STAFF), (req, res, next) => {
@@ -118,7 +130,11 @@ router.post('/upload-image', requireAuth, requireRole(...STAFF), (req, res, next
 router.get('/:id', optionalAuth, (req, res) => {
   const product = store.getProductById(req.params.id);
   if (!product) return res.status(404).json({ error: 'Product not found' });
-  res.json(isStaffUser(req.auth?.user) ? product : store.stripProductCost(product));
+  const staff = isStaffUser(req.auth?.user);
+  if (!staff && !store.isPublishedProduct(product)) {
+    return res.status(404).json({ error: 'Product not found' });
+  }
+  res.json(staff ? product : store.stripProductCost(product));
 });
 
 router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
@@ -138,6 +154,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       featured,
       discount_percent,
       warranty,
+      status,
     } = body;
     if (!name || !category || price == null) {
       return res.status(400).json({ error: 'Missing required fields' });
@@ -157,6 +174,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       featured,
       discount_percent,
       warranty,
+      status,
       created_by: req.auth.user.id,
       created_by_name: req.auth.user.name || req.auth.user.username,
     });

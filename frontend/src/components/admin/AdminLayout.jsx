@@ -139,6 +139,7 @@ export default function AdminLayout({
               </button>
             ) : null}
             {navItem('orders', 'Orders', pendingOrders > 0 ? pendingOrders : orders || null)}
+            {navItem('customers', 'Customers')}
             {navItem('bookings', 'Repair Intake', bookings || null)}
             {navItem('messages', t('admin.messages'))}
           </div>

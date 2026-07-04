@@ -43,4 +43,8 @@ router.get('/sales-report', requireAuth, requireRole(...SALES_VIEWERS), (req, re
   res.json(report);
 });
 
+router.get('/customers-summary', requireAuth, requireRole(...SALES_VIEWERS), (_req, res) => {
+  res.json(store.getCustomerSummaries());
+});
+
 export default router;

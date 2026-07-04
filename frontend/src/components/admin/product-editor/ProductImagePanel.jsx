@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import { getDefaultImage } from '../../config/products';
-import { uploadProductImageFile } from '../../utils/productImageUpload';
+import { getDefaultImage } from '../../../config/products';
+import { uploadProductImageFile } from '../../../utils/productImageUpload';
 
 export default function ProductImagePanel({
   image,

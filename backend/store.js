@@ -7,6 +7,19 @@ export { getStorageBackend, initStorage, isStorageReady };
 export { formatOrderId, formatBookingRef };
 
 export const LOW_STOCK_THRESHOLD = 5;
+export const PRODUCT_STATUSES = ['published', 'draft'];
+
+export function normalizeProductStatus(status, fallback = 'published') {
+  const value = String(status ?? fallback).trim().toLowerCase();
+  if (!PRODUCT_STATUSES.includes(value)) {
+    throw new Error('Invalid product status');
+  }
+  return value;
+}
+
+export function isPublishedProduct(product) {
+  return (product?.status || 'published') === 'published';
+}
 
 export class StockError extends Error {
   constructor(message, details = {}) {
@@ -58,8 +71,12 @@ export function getStats() {
 }
 
 export function getProducts(filters = {}) {
-  const { category, featured, search, on_sale, brand, stock_status } = filters;
+  const { category, featured, search, on_sale, brand, stock_status, status } = filters;
   let products = readData().products;
+
+  if (status && status !== 'all') {
+    products = products.filter((p) => (p.status || 'published') === status);
+  }
 
   if (category && category !== 'all') {
     products = products.filter((p) => p.category === category);
@@ -90,8 +107,12 @@ export function getProducts(filters = {}) {
   return sortProducts(products);
 }
 
-export function getProductCategories() {
-  const categories = [...new Set(readData().products.map((p) => p.category))];
+export function getProductCategories({ includeDrafts = false } = {}) {
+  let products = readData().products;
+  if (!includeDrafts) {
+    products = products.filter((p) => isPublishedProduct(p));
+  }
+  const categories = [...new Set(products.map((p) => p.category))];
   return categories.sort((a, b) => a.localeCompare(b));
 }
 
@@ -134,6 +155,7 @@ export function createProduct(input) {
       // staff from stepping on each other's listings.
       created_by: input.created_by ?? null,
       created_by_name: String(input.created_by_name || '').trim(),
+      status: normalizeProductStatus(input.status, 'published'),
     };
     data.products.push(product);
     return product;
@@ -172,6 +194,10 @@ export function updateProduct(id, input) {
         input.featured != null ? (input.featured ? 1 : 0) : existing.featured,
       discount_percent: discount,
       warranty: input.warranty != null ? String(input.warranty).trim() : existing.warranty ?? '',
+      status:
+        input.status != null
+          ? normalizeProductStatus(input.status, existing.status || 'published')
+          : existing.status || 'published',
     };
 
     data.products[index] = updated;
@@ -252,6 +278,7 @@ export function duplicateProduct(id, input = {}) {
       created_by: input.created_by ?? existing.created_by,
       created_by_name: String(input.created_by_name || existing.created_by_name || '').trim(),
       stock_log: [],
+      status: 'draft',
     };
     data.products.push(copy);
     return copy;
@@ -684,6 +711,58 @@ export function createOrder(input) {
 export function getOrders() {
   return [...readData().orders].sort((a, b) =>
     String(b.created_at).localeCompare(String(a.created_at))
+  );
+}
+
+function customerSummaryKey(order) {
+  const email = String(order.gmail || '').trim().toLowerCase();
+  const phone = normalizePhone(order.phone);
+  if (email) return `email:${email}`;
+  if (phone) return `phone:${phone}`;
+  const name = String(order.customer_name || '').trim().toLowerCase();
+  if (name) return `name:${name}`;
+  return null;
+}
+
+/** Aggregate unique customers from order history (not auth accounts). */
+export function getCustomerSummaries() {
+  const byKey = new Map();
+
+  for (const order of getOrders()) {
+    const key = customerSummaryKey(order);
+    if (!key) continue;
+
+    const email = String(order.gmail || '').trim().toLowerCase();
+    const existing = byKey.get(key) || {
+      id: key,
+      name: '',
+      email: '',
+      phone: '',
+      order_count: 0,
+      last_order_at: null,
+      total_spent: 0,
+    };
+
+    if (!existing.name && order.customer_name) existing.name = order.customer_name;
+    if (!existing.email && email) existing.email = email;
+    if (!existing.phone && order.phone) existing.phone = order.phone;
+
+    existing.order_count += 1;
+
+    const created = order.created_at || null;
+    if (created && (!existing.last_order_at || String(created) > String(existing.last_order_at))) {
+      existing.last_order_at = created;
+    }
+
+    if (order.shipping_status !== 'cancelled') {
+      existing.total_spent += Number(order.total_amount) || 0;
+    }
+
+    byKey.set(key, existing);
+  }
+
+  return [...byKey.values()].sort((a, b) =>
+    String(b.last_order_at || '').localeCompare(String(a.last_order_at || ''))
   );
 }
 

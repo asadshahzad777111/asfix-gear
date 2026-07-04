@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -6,6 +6,7 @@ import { canDeleteProducts, canEditProduct, canManageTeam, canManageShopSettings
 import AdminLayout from '../components/admin/AdminLayout';
 import AdminDashboard from '../components/admin/AdminDashboard';
 import AdminCategories from '../components/admin/AdminCategories';
+import AdminCustomers from '../components/admin/AdminCustomers';
 import AdminSettings from '../components/admin/AdminSettings';
 import '../components/admin/admin-wp.css';
 import AddProductForm from '../components/AddProductForm';
@@ -20,11 +21,37 @@ import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts } from '../u
 import AdminStockAlert from '../components/admin/AdminStockAlert';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 
+const VALID_TABS = new Set([
+  'dashboard', 'products', 'add', 'categories', 'stock', 'orders', 'customers',
+  'bookings', 'messages', 'sales', 'admins', 'settings', 'payments',
+]);
+
+function ProductSortHeader({ label, sortKey, activeKey, dir, onSort }) {
+  const active = activeKey === sortKey;
+  return (
+    <th>
+      <button
+        type="button"
+        className={`wp-sortable-th${active ? ' is-active' : ''}`}
+        onClick={() => onSort(sortKey)}
+      >
+        {label}
+        <span className="wp-sort-indicator" aria-hidden>
+          {active ? (dir === 'asc' ? '▲' : '▼') : '↕'}
+        </span>
+      </button>
+    </th>
+  );
+}
+
 export default function Admin() {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
-  const [searchParams] = useSearchParams();
-  const [tab, setTab] = useState(searchParams.get('tab') || 'dashboard');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const initialTab = searchParams.get('tab');
+  const [tab, setTabState] = useState(
+    initialTab && VALID_TABS.has(initialTab) ? initialTab : 'dashboard'
+  );
   const [bookings, setBookings] = useState([]);
   const [products, setProducts] = useState([]);
   const [orders, setOrders] = useState([]);
@@ -34,7 +61,9 @@ export default function Admin() {
   const [productSearch, setProductSearch] = useState('');
   const [productCategory, setProductCategory] = useState('all');
   const [productStockFilter, setProductStockFilter] = useState('all');
+  const [productStatusFilter, setProductStatusFilter] = useState('all');
   const [productOnSale, setProductOnSale] = useState(false);
+  const [productSort, setProductSort] = useState({ key: 'date', dir: 'desc' });
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [bulkLoading, setBulkLoading] = useState(false);
@@ -43,6 +72,22 @@ export default function Admin() {
   const showSales = canViewSalesReport(user);
   const allowDelete = canDeleteProducts(user);
   const showShopControl = canManageShopSettings(user);
+
+  const setTab = (next) => {
+    setTabState(next);
+    if (next && next !== 'dashboard') {
+      setSearchParams({ tab: next }, { replace: true });
+    } else {
+      setSearchParams({}, { replace: true });
+    }
+  };
+
+  const toggleProductSort = (key) => {
+    setProductSort((prev) => ({
+      key,
+      dir: prev.key === key && prev.dir === 'asc' ? 'desc' : 'asc',
+    }));
+  };
 
   const loadData = async () => {
     setLoading(true);
@@ -69,9 +114,11 @@ export default function Admin() {
 
   const productCategories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
 
-  const filteredProducts = products.filter((p) => {
+  const filteredProducts = useMemo(() => products.filter((p) => {
     if (productCategory !== 'all' && p.category !== productCategory) return false;
     if (productOnSale && !(Number(p.discount_percent) > 0)) return false;
+    const status = p.status || 'published';
+    if (productStatusFilter !== 'all' && status !== productStatusFilter) return false;
     const stock = Number(p.stock) || 0;
     if (productStockFilter === 'out_of_stock' && stock > 0) return false;
     if (productStockFilter === 'low_stock' && (stock <= 0 || stock > LOW_STOCK_THRESHOLD)) return false;
@@ -82,7 +129,26 @@ export default function Admin() {
       if (!hay.includes(q)) return false;
     }
     return true;
-  });
+  }), [products, productCategory, productOnSale, productStatusFilter, productStockFilter, productSearch]);
+
+  const sortedProducts = useMemo(() => {
+    const mul = productSort.dir === 'asc' ? 1 : -1;
+    return [...filteredProducts].sort((a, b) => {
+      if (productSort.key === 'name') {
+        return mul * String(a.name || '').localeCompare(String(b.name || ''));
+      }
+      if (productSort.key === 'stock') {
+        return mul * ((Number(a.stock) || 0) - (Number(b.stock) || 0));
+      }
+      if (productSort.key === 'price') {
+        return mul * ((Number(a.price) || 0) - (Number(b.price) || 0));
+      }
+      if (productSort.key === 'brand') {
+        return mul * String(a.brand || '').localeCompare(String(b.brand || ''));
+      }
+      return mul * String(a.created_at || '').localeCompare(String(b.created_at || ''));
+    });
+  }, [filteredProducts, productSort]);
 
   const filteredOrders = orderStatusFilter === 'all'
     ? orders
@@ -158,7 +224,8 @@ export default function Admin() {
 
   useEffect(() => {
     const t = searchParams.get('tab');
-    if (t) setTab(t);
+    const next = t && VALID_TABS.has(t) ? t : 'dashboard';
+    setTabState(next);
   }, [searchParams]);
 
   const updateStatus = async (id, status) => {
@@ -226,6 +293,7 @@ export default function Admin() {
     if (tab === 'categories') return 'Categories';
     if (tab === 'stock') return 'Stock';
     if (tab === 'orders') return 'Orders';
+    if (tab === 'customers') return 'Customers';
     if (tab === 'bookings') return 'Repair Intake';
     if (tab === 'messages') return t('admin.messages');
     if (tab === 'sales') return t('sales.tab');
@@ -254,7 +322,7 @@ export default function Admin() {
         onViewStock={() => setTab('stock')}
         onEditProduct={handleEditProduct}
       />
-      {loading && !['add', 'admins', 'messages', 'sales', 'dashboard', 'settings', 'payments'].includes(tab) ? (
+      {loading && !['add', 'admins', 'messages', 'sales', 'dashboard', 'settings', 'payments', 'customers'].includes(tab) ? (
         <div className="wp-loading">{t('common.loading')}</div>
       ) : tab === 'dashboard' ? (
         <AdminDashboard onNavigate={navigateAdmin} />
@@ -332,6 +400,8 @@ export default function Admin() {
               )}
             </div>
             </>
+          ) : tab === 'customers' ? (
+            <AdminCustomers />
           ) : tab === 'stock' ? (
             <AdminStockManager
               products={products}
@@ -372,11 +442,16 @@ export default function Admin() {
                   <option value="low_stock">Low stock</option>
                   <option value="out_of_stock">Out of stock</option>
                 </select>
+                <select value={productStatusFilter} onChange={(e) => setProductStatusFilter(e.target.value)} aria-label="Filter by status">
+                  <option value="all">All statuses</option>
+                  <option value="published">Published</option>
+                  <option value="draft">Draft</option>
+                </select>
                 <label style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.84rem' }}>
                   <input type="checkbox" checked={productOnSale} onChange={(e) => setProductOnSale(e.target.checked)} />
                   On sale only
                 </label>
-                {(productSearch || productCategory !== 'all' || productStockFilter !== 'all' || productOnSale) && (
+                {(productSearch || productCategory !== 'all' || productStockFilter !== 'all' || productStatusFilter !== 'all' || productOnSale) && (
                   <button
                     type="button"
                     className="wp-button wp-button--secondary wp-button--small"
@@ -384,6 +459,7 @@ export default function Admin() {
                       setProductSearch('');
                       setProductCategory('all');
                       setProductStockFilter('all');
+                      setProductStatusFilter('all');
                       setProductOnSale(false);
                     }}
                   >
@@ -430,15 +506,17 @@ export default function Admin() {
                           </th>
                         ) : null}
                         <th style={{ width: 56 }} />
-                        <th>Name</th>
-                        <th>Stock</th>
-                        <th>Price</th>
-                        <th>Categories</th>
-                        <th>Date</th>
+                        <ProductSortHeader label="Name" sortKey="name" activeKey={productSort.key} dir={productSort.dir} onSort={toggleProductSort} />
+                        <ProductSortHeader label="Stock" sortKey="stock" activeKey={productSort.key} dir={productSort.dir} onSort={toggleProductSort} />
+                        <ProductSortHeader label="Price" sortKey="price" activeKey={productSort.key} dir={productSort.dir} onSort={toggleProductSort} />
+                        <th>Category</th>
+                        <ProductSortHeader label="Brand" sortKey="brand" activeKey={productSort.key} dir={productSort.dir} onSort={toggleProductSort} />
+                        <th>Status</th>
+                        <ProductSortHeader label="Date" sortKey="date" activeKey={productSort.key} dir={productSort.dir} onSort={toggleProductSort} />
                       </tr>
                     </thead>
                     <tbody>
-                      {filteredProducts.map((p) => {
+                      {sortedProducts.map((p) => {
                         const editable = canEditProduct(user, p);
                         const stockStatus = getStockStatus(p.stock);
                         return (
@@ -488,7 +566,13 @@ export default function Admin() {
                             <td>
                               <ProductPrice product={p} size="sm" />
                             </td>
-                            <td>{p.category}{p.brand ? ` · ${p.brand}` : ''}</td>
+                            <td>{p.category || '—'}</td>
+                            <td>{p.brand || '—'}</td>
+                            <td>
+                              <span className={`wp-status-badge wp-status-badge--${p.status || 'published'}`}>
+                                {(p.status || 'published') === 'draft' ? 'Draft' : 'Published'}
+                              </span>
+                            </td>
                             <td>{p.created_at ? new Date(p.created_at).toLocaleString() : '—'}</td>
                           </tr>
                         );

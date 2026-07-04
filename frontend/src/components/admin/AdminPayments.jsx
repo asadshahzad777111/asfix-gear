@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { api } from '../api/client';
-import { DEFAULT_PAYMENTS, mergePaymentSettings } from '../config/payments';
+import { api } from '../../api/client';
+import { DEFAULT_PAYMENTS, mergePaymentSettings } from '../../config/payments';
 
 const METHODS = [
   { id: 'jazzcash', title: 'JazzCash', fields: ['number', 'accountName'] },

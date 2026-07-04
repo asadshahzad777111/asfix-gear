@@ -70,6 +70,9 @@ export function migrateData(data) {
     if (product.warranty == null) product.warranty = '';
     if (product.cost_price == null) product.cost_price = 0;
     if (!Array.isArray(product.gallery)) product.gallery = [];
+    if (!product.status || !['published', 'draft'].includes(product.status)) {
+      product.status = 'published';
+    }
   }
 
   const nowIso = new Date().toISOString();
