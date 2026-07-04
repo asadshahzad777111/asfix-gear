@@ -771,18 +771,12 @@ export default function FloatingCart() {
 
                               />
 
-                              <p className="address-map-hint">{t('address.mapHint')}</p>
 
                               <MapAddressPicker
-
                                 lat={newAddress.lat}
-
                                 lng={newAddress.lng}
-
                                 onChange={({ lat, lng }) => setNewAddress((a) => ({ ...a, lat, lng }))}
-
-                                height={180}
-
+                                previewHeight={140}
                               />
 
                             </>

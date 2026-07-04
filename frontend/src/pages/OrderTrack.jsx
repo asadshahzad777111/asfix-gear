@@ -4,6 +4,7 @@ import { api, formatPrice } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
 import OrderTimeline from '../components/OrderTimeline';
 import OrderFeedbackForm from '../components/OrderFeedbackForm';
+import OrderHelpActions from '../components/OrderHelpActions';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
 
 export default function OrderTrack() {
@@ -71,10 +72,16 @@ export default function OrderTrack() {
 
       {order && (
         <section className="order-track-result glass-card">
+          <div className="order-success-id-card order-track-id-card">
+            <span className="order-success-id-label">{t('track.orderIdLabel')}</span>
+            <strong className="order-success-id-value">#{order.order_id}</strong>
+            <p className="order-success-save-id">{t('track.saveIdHint')}</p>
+          </div>
+
           <div className="order-track-result-head">
             <div>
-              <h2>#{order.order_id}</h2>
-              <p>{order.customer_name} · {order.city}</p>
+              <h2>{order.customer_name}</h2>
+              <p>{order.city}</p>
             </div>
             <span className={`order-status-pill status-${customerStatus}`}>
               {t(`track.status_${customerStatus}`) || customerStatus}
@@ -107,6 +114,8 @@ export default function OrderTrack() {
             ))}
           </ul>
           <p className="order-track-total">{t('track.total')}: <strong>{formatPrice(order.total_amount)}</strong></p>
+
+          <OrderHelpActions orderId={order.order_id} phone={phone} />
 
           {['delivered', 'shipped', 'out_for_delivery', 'payment_verified', 'rider_assigned', 'waiting_for_rider', 'paid'].includes(customerStatus) && (
             <OrderFeedbackForm

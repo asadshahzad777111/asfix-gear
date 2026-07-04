@@ -2092,6 +2092,64 @@ body.custom-cursor-active {
   padding: 0.25rem 0.55rem;
 }
 
+.order-success-id-card--hero {
+  text-align: center;
+}
+
+.order-success-id-card--hero .order-success-id-value {
+  font-size: 1.65rem;
+}
+
+.order-success-save-id {
+  font-size: 0.78rem;
+  color: var(--primary, #ff6b2c);
+  font-weight: 600;
+  margin: 0.35rem 0 0.15rem;
+  line-height: 1.35;
+}
+
+.order-help-actions {
+  margin: 0.75rem 0;
+  padding: 0.75rem;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(0, 0, 0, 0.15);
+}
+
+.order-help-actions__label {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  margin: 0 0 0.5rem;
+}
+
+.order-help-actions__buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.order-help-actions--compact {
+  margin: 0.5rem 0 0;
+  padding: 0.5rem 0 0;
+  border: none;
+  background: transparent;
+}
+
+.order-track-id-card {
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+.order-track-id-card .order-success-id-value {
+  display: block;
+  font-size: 1.75rem;
+  margin-top: 0.15rem;
+}
+
+.account-order-help {
+  margin-top: 0.5rem;
+}
+
 .order-success-dispatch {
   font-size: 0.75rem;
   color: var(--text-muted);
@@ -2502,6 +2560,168 @@ body.custom-cursor-active {
 .checkout-address-section input,
 .checkout-address-section textarea {
   width: 100%;
+}
+
+.map-address-picker {
+  width: 100%;
+}
+
+.map-address-picker__preview {
+  position: relative;
+  display: block;
+  width: 100%;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  overflow: hidden;
+  cursor: pointer;
+  background: transparent;
+}
+
+.map-address-picker__preview-overlay {
+  position: absolute;
+  inset: auto 0 0 0;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.78rem;
+  text-align: center;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.72));
+  color: #fff;
+  pointer-events: none;
+}
+
+.map-address-picker__canvas {
+  border-radius: inherit;
+}
+
+.map-address-picker__modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10050;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.map-address-picker__modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.65);
+}
+
+.map-address-picker__modal-panel {
+  position: relative;
+  z-index: 1;
+  width: min(560px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border-radius: 16px;
+  padding: 1rem;
+  background: var(--glass-bg, rgba(18, 18, 24, 0.96));
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: grid;
+  gap: 0.65rem;
+}
+
+.map-address-picker__modal-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.map-address-picker__modal-head h4 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.map-address-picker__search input {
+  width: 100%;
+}
+
+.map-address-picker__search-status {
+  margin: 0.25rem 0 0;
+  font-size: 0.78rem;
+  opacity: 0.75;
+}
+
+.map-address-picker__search-results {
+  list-style: none;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  max-height: 140px;
+  overflow: auto;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+}
+
+.map-address-picker__search-results li button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  padding: 0.5rem 0.65rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.map-address-picker__search-results li + li button {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.map-address-picker__search-results li button:hover {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.map-address-picker__coords {
+  margin: 0;
+  font-size: 0.78rem;
+  opacity: 0.75;
+  font-family: ui-monospace, monospace;
+}
+
+.map-address-picker__modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.5rem;
+}
+
+.admin-delivery-location {
+  margin: 0.35rem 0;
+}
+
+.admin-delivery-location__text {
+  margin-bottom: 0.25rem;
+}
+
+.admin-delivery-location__coords {
+  margin: 0 0 0.35rem;
+  font-size: 0.75rem;
+  opacity: 0.7;
+  font-family: ui-monospace, monospace;
+}
+
+.admin-delivery-map-preview {
+  display: block;
+  border-radius: 8px;
+  overflow: hidden;
+  margin-bottom: 0.35rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.admin-delivery-map-preview img {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+.admin-delivery-map-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin-bottom: 0.35rem;
 }
 
 .address-map-hint {

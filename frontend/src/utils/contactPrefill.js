@@ -186,6 +186,25 @@ export function buildContactPrefill(input = {}) {
       };
     }
 
+    case 'order-help': {
+      const { orderId = '', phone = '' } = input;
+      const id = String(orderId).replace(/^#/, '');
+      return {
+        subject: 'Order help',
+        order_id: id,
+        message: [
+          'Assalam o Alaikum!',
+          '',
+          `I need help with my order #${id}.`,
+          phone ? `Phone used at checkout: ${phone}` : '',
+          '',
+          'Issue / question:',
+          '',
+          SIGNOFF,
+        ].filter(Boolean).join('\n'),
+      };
+    }
+
     case 'order-receipt': {
       const { text } = input;
       return {
@@ -228,10 +247,26 @@ export function buildContactPrefill(input = {}) {
   }
 }
 
-/** @param {{ subject?: string, message?: string }} prefill */
+/** Plain-ASCII WhatsApp body for order support (includes Order ID). */
+export function buildOrderHelpWhatsAppMessage(orderId, phone = '') {
+  const id = String(orderId || '').replace(/^#/, '');
+  const lines = [
+    'Assalam o Alaikum!',
+    '',
+    'I need help with my order.',
+    '',
+    `Order ID: #${id}`,
+  ];
+  if (phone?.trim()) lines.push(`Phone: ${phone.trim()}`);
+  lines.push('', 'Please assist. Thank you — AsFix & Gear');
+  return lines.join('\n');
+}
+
+/** @param {{ subject?: string, message?: string, order_id?: string }} prefill */
 export function buildContactPath(prefill = {}) {
   const params = new URLSearchParams();
   if (prefill.subject) params.set('subject', prefill.subject);
+  if (prefill.order_id) params.set('order_id', prefill.order_id);
   if (prefill.message) params.set('message', prefill.message);
   const qs = params.toString();
   return qs ? `/contact?${qs}` : '/contact';

@@ -3,6 +3,7 @@ import { formatPrice } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
 import { buildOrderReceipt } from '../utils/receipts';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
+import { googleMapsUrl, osmStaticPreviewUrl } from '../utils/maps';
 
 export const ORDER_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 
@@ -18,11 +19,23 @@ function statusBtnLabel(status) {
   return found?.short || status;
 }
 
-function AssignRiderForm({ onSubmit, onCancel, t }) {
+function AssignRiderForm({ onSubmit, onCancel, t, mapUrl }) {
   const [riderPhone, setRiderPhone] = useState('');
   const [deliveryCharge, setDeliveryCharge] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [copied, setCopied] = useState(false);
+
+  const copyMapLink = async () => {
+    if (!mapUrl) return;
+    try {
+      await navigator.clipboard.writeText(mapUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -39,6 +52,16 @@ function AssignRiderForm({ onSubmit, onCancel, t }) {
   return (
     <form className="admin-rider-form" onSubmit={handleSubmit}>
       {error && <p className="alert alert-error">{error}</p>}
+      {mapUrl && (
+        <div className="admin-delivery-map-actions">
+          <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
+            {t('admin.openInMaps')}
+          </a>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={copyMapLink}>
+            {copied ? t('admin.locationCopied') : t('admin.copyLocationLink')}
+          </button>
+        </div>
+      )}
       <input
         placeholder={t('admin.riderPhonePh')}
         value={riderPhone}
@@ -66,6 +89,53 @@ function AssignRiderForm({ onSubmit, onCancel, t }) {
   );
 }
 
+function DeliveryLocationBlock({ addr, t }) {
+  const mapUrl = googleMapsUrl(addr.lat, addr.lng);
+  const previewUrl = osmStaticPreviewUrl(addr.lat, addr.lng, { width: 360, height: 100 });
+  const [copied, setCopied] = useState(false);
+
+  const copyMapLink = async () => {
+    if (!mapUrl) return;
+    try {
+      await navigator.clipboard.writeText(mapUrl);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      /* ignore */
+    }
+  };
+
+  return (
+    <div className="admin-delivery-location">
+      <p className="admin-float-sub admin-delivery-location__text">
+        {addr.name} · {addr.phone}
+        <br />
+        {addr.text}
+      </p>
+      {Number.isFinite(Number(addr.lat)) && Number.isFinite(Number(addr.lng)) && (
+        <p className="admin-delivery-location__coords">
+          {Number(addr.lat).toFixed(5)}, {Number(addr.lng).toFixed(5)}
+        </p>
+      )}
+      {previewUrl && (
+        <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="admin-delivery-map-preview">
+          <img src={previewUrl} alt="" loading="lazy" />
+        </a>
+      )}
+      {mapUrl && (
+        <div className="admin-delivery-map-actions">
+          <a href={mapUrl} target="_blank" rel="noopener noreferrer" className="btn btn-outline btn-sm">
+            {t('admin.openInMaps')}
+          </a>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={copyMapLink}>
+            {copied ? t('admin.locationCopied') : t('admin.copyLocationLink')}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 /**
  * Shared order card UI used by both the full-page Admin dashboard (`/admin`
  * → Orders tab) and the AdminFloatingDashboard "Ops Desk" widget, so the two
@@ -83,6 +153,7 @@ export default function AdminOrderCard({
   const [showRiderForm, setShowRiderForm] = useState(false);
   const customerStatus = getOrderCustomerStatus(o);
   const addr = o.shipping_address;
+  const mapUrl = addr ? googleMapsUrl(addr.lat, addr.lng) : null;
 
   const handleAssignRider = async (payload) => {
     await onAssignRider(o.id, payload);
@@ -96,12 +167,8 @@ export default function AdminOrderCard({
         <span>{formatPrice(o.total_amount)}</span>
       </div>
       <p className="admin-float-meta">{o.phone} · {o.city || 'No city'} · {o.payment_mode}</p>
-      {addr && (
-        <p className="admin-float-sub">
-          📍 {addr.name} · {addr.phone} · {addr.text}
-        </p>
-      )}
-      {o.gmail && <p className="admin-float-sub">📩 {o.gmail}</p>}
+      {addr && <DeliveryLocationBlock addr={addr} t={t} />}
+      {o.gmail && <p className="admin-float-sub">Gmail: {o.gmail}</p>}
       <p className="admin-float-sub">
         <span className={`order-status-pill status-${customerStatus}`}>
           {t(`track.status_${customerStatus}`) || customerStatus}
@@ -109,7 +176,7 @@ export default function AdminOrderCard({
       </p>
       {o.rider_phone && (
         <p className="admin-float-sub">
-          🛵 {t('admin.riderPhone')}: {o.rider_phone}
+          {t('admin.riderPhone')}: {o.rider_phone}
           {Number(o.delivery_charge) > 0 && ` · ${t('admin.deliveryCharge')}: ${formatPrice(o.delivery_charge)}`}
         </p>
       )}
@@ -169,6 +236,7 @@ export default function AdminOrderCard({
         {showRiderForm && onAssignRider && (
           <AssignRiderForm
             t={t}
+            mapUrl={mapUrl}
             onCancel={() => setShowRiderForm(false)}
             onSubmit={handleAssignRider}
           />

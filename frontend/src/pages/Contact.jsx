@@ -10,20 +10,35 @@ import { useTranslation } from '../context/LanguageContext';
 
 function readPrefill(searchParams, locationState) {
   const fromState = locationState?.contactPrefill;
-  if (fromState?.subject || fromState?.message) {
+  if (fromState?.subject || fromState?.message || fromState?.order_id) {
     return {
-      subject: fromState.subject || '',
+      subject: fromState.subject || (fromState.order_id ? 'Order help' : ''),
       message: fromState.message || '',
+      order_id: fromState.order_id || '',
       prefilled: true,
     };
   }
 
   const subject = searchParams.get('subject') || '';
   const message = searchParams.get('message') || '';
+  const order_id = searchParams.get('order_id') || '';
+  const resolvedSubject = subject || (order_id ? 'Order help' : '');
+  let resolvedMessage = message;
+  if (!resolvedMessage && order_id) {
+    resolvedMessage = [
+      'Assalam o Alaikum!',
+      '',
+      `I need help with my order #${order_id.replace(/^#/, '')}.`,
+      '',
+      'Issue / question:',
+      '',
+    ].join('\n');
+  }
   return {
-    subject,
-    message,
-    prefilled: Boolean(subject || message),
+    subject: resolvedSubject,
+    message: resolvedMessage,
+    order_id,
+    prefilled: Boolean(resolvedSubject || resolvedMessage || order_id),
   };
 }
 

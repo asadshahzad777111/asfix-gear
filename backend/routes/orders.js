@@ -1,6 +1,11 @@
 import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
+import { notifyShopWhatsApp } from '../services/otpDelivery.js';
+import {
+  buildNewOrderShopMessage,
+  buildPaidOrderShopMessage,
+} from '../services/orderNotifications.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
@@ -98,6 +103,7 @@ router.post('/', requireAuth, (req, res) => {
       customer_user_id: customerUserId,
       shipping_address: resolvedAddress,
     });
+    notifyShopWhatsApp(buildNewOrderShopMessage(order)).catch(() => {});
     res.status(201).json({ message: 'Order placed successfully', order });
   } catch (err) {
     if (err instanceof store.StockError) {
@@ -142,6 +148,7 @@ router.patch('/:id/mark-paid', requireAuth, requireRole(...STAFF), (req, res) =>
   try {
     const order = store.markOrderPaid(req.params.id, req.auth.user);
     if (!order) return res.status(404).json({ error: 'Order not found' });
+    notifyShopWhatsApp(buildPaidOrderShopMessage(order)).catch(() => {});
     res.json(order);
   } catch (err) {
     res.status(400).json({ error: err.message });

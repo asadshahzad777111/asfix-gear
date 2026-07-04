@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { api, formatPrice } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
 import PaymentInstructions from './PaymentInstructions';
+import OrderHelpActions from './OrderHelpActions';
 import { mergePaymentSettings } from '../config/payments';
 import { buildOrderReceipt } from '../utils/receipts';
-import { buildContactPath, buildContactPrefill } from '../utils/contactPrefill';
 
 const MOBILE_WALLETS = new Set(['jazzcash', 'easypaisa']);
 const BANK_MODE = 'bank';
@@ -20,8 +20,7 @@ const NEXT_STEPS = ['step1', 'step2', 'step3'];
 
 export default function OrderSuccessPanel({ order, phone, onDone }) {
   const { t } = useTranslation();
-  const { text } = buildOrderReceipt(order);
-  const contactTo = buildContactPath(buildContactPrefill({ type: 'order-receipt', text }));
+  const { waUrl } = buildOrderReceipt(order);
   const [gmail, setGmail] = useState('');
   const [gmailMsg, setGmailMsg] = useState('');
   const [saving, setSaving] = useState(false);
@@ -69,7 +68,7 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
         <p className="order-success-subtitle">{t('orderSuccess.subtitle')}</p>
       </div>
 
-      <div className="order-success-id-card">
+      <div className="order-success-id-card order-success-id-card--hero">
         <span className="order-success-id-label">{t('orderSuccess.orderId')}</span>
         <div className="order-success-id-row">
           <strong className="order-success-id-value">#{order.order_id}</strong>
@@ -77,6 +76,7 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
             {copied ? t('orderSuccess.copied') : t('orderSuccess.copyOrderId')}
           </button>
         </div>
+        <p className="order-success-save-id">{t('orderSuccess.saveIdHint')}</p>
         <p className="order-success-dispatch">{t('orderSuccess.estimatedDelivery')}</p>
       </div>
 
@@ -110,12 +110,16 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
 
       <p className="order-success-hint">{t('orderSuccess.hint')}</p>
 
-      <Link
-        to={contactTo}
+      <a
+        href={waUrl}
+        target="_blank"
+        rel="noopener noreferrer"
         className="btn btn-whatsapp premium-btn premium-btn--liquid order-success-wa"
       >
         {t('orderSuccess.sendWhatsApp')}
-      </Link>
+      </a>
+
+      <OrderHelpActions orderId={order.order_id} phone={phone} />
 
       <div className="order-success-gmail glass-card">
         <p>{t('orderSuccess.gmailPrompt')}</p>

@@ -12,6 +12,7 @@ import PageHeader from '../components/PageHeader';
 
 import RepairRateBot from '../components/account/RepairRateBot';
 import AddressBook from '../components/account/AddressBook';
+import OrderHelpActions from '../components/OrderHelpActions';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
 
 
@@ -470,6 +471,13 @@ export default function Account() {
                             {t('account.trackOrder')}
 
                           </Link>
+
+                          <OrderHelpActions
+                            orderId={orderIdClean}
+                            phone={user?.phone || order.phone || ''}
+                            compact
+                            className="account-order-help"
+                          />
 
                         </li>
 

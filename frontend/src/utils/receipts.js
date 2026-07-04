@@ -1,5 +1,6 @@
 import { SHOP, whatsappLink } from '../config/shop';
 import { mergePaymentSettings } from '../config/payments';
+import { googleMapsUrl } from './maps';
 
 function formatAmount(amount) {
   return `Rs. ${Number(amount).toLocaleString('en-PK')}`;
@@ -24,11 +25,20 @@ function formatItemLine(item, showCost) {
   const lineCost = unitCost * qty;
   const lineProfit = lineSale - lineCost;
 
-  let line = `• ${item.name} ×${qty} — ${formatAmount(lineSale)}`;
+  let line = `- ${item.name} x${qty} - ${formatAmount(lineSale)}`;
   if (showCost && unitCost > 0) {
-    line += ` (asal ${formatAmount(lineCost)}, profit ${formatAmount(lineProfit)})`;
+    line += ` (cost ${formatAmount(lineCost)}, profit ${formatAmount(lineProfit)})`;
   }
   return line;
+}
+
+function shippingLines(order) {
+  const addr = order.shipping_address;
+  if (!addr?.text) return [];
+  const lines = [`Address: ${addr.text}`];
+  const map = googleMapsUrl(addr.lat, addr.lng);
+  if (map) lines.push(`Map: ${map}`);
+  return lines;
 }
 
 export function buildOrderReceipt(order, { showCost = false } = {}) {
@@ -42,7 +52,7 @@ export function buildOrderReceipt(order, { showCost = false } = {}) {
           );
           const profit = Number(order.total_amount) - costTotal;
           return costTotal > 0
-            ? `\n📊 *Cost Total:* ${formatAmount(costTotal)}\n💹 *Profit:* ${formatAmount(profit)}`
+            ? `\nCost Total: ${formatAmount(costTotal)}\nProfit: ${formatAmount(profit)}`
             : '';
         })()
       : '';
@@ -51,35 +61,37 @@ export function buildOrderReceipt(order, { showCost = false } = {}) {
   const paymentBlock =
     order.payment_mode === 'bank'
       ? [
-          `💳 *Pay via:* Bank Transfer (${pay.bank.bankName})`,
-          `👤 *Account:* ${pay.bank.accountName}`,
-          `🔢 *A/C:* ${pay.bank.accountNumber}`,
-          `🏦 *IBAN:* ${pay.bank.iban}`,
+          'Pay via: Bank Transfer',
+          `Bank: ${pay.bank.bankName}`,
+          `Account: ${pay.bank.accountName}`,
+          `A/C: ${pay.bank.accountNumber}`,
+          `IBAN: ${pay.bank.iban}`,
         ].join('\n')
       : order.payment_mode === 'jazzcash' || order.payment_mode === 'easypaisa'
         ? [
-            `💳 *Pay via:* ${order.payment_mode === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}`,
-            `📱 *Number:* ${pay[order.payment_mode].number}`,
-            `👤 *Name:* ${pay[order.payment_mode].accountName}`,
+            `Pay via: ${order.payment_mode === 'jazzcash' ? 'JazzCash' : 'EasyPaisa'}`,
+            `Number: ${pay[order.payment_mode].number}`,
+            `Name: ${pay[order.payment_mode].accountName}`,
           ].join('\n')
         : null;
 
   const text = [
-    '📦 *ASFIX GEAR — ORDER RECEIPT*',
-    '─────────────────────',
-    `📋 *Order ID:* #${order.order_id}`,
-    `📅 *Date:* ${order.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '—'}`,
-    `👤 *Customer:* ${order.customer_name}`,
-    `📞 *Phone:* ${order.phone}`,
-    `📍 *Delivery:* ${deliveryLine(order.city, order.payment_mode)}`,
-    ...(paymentBlock ? ['─────────────────────', paymentBlock] : []),
-    '─────────────────────',
-    '*Items*',
+    'ASFIX GEAR - ORDER RECEIPT',
+    '---------------------',
+    `Order ID: #${order.order_id}`,
+    `Date: ${order.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '—'}`,
+    `Customer: ${order.customer_name}`,
+    `Phone: ${order.phone}`,
+    `Delivery: ${deliveryLine(order.city, order.payment_mode)}`,
+    ...shippingLines(order),
+    ...(paymentBlock ? ['---------------------', paymentBlock] : []),
+    '---------------------',
+    'Items:',
     items || '—',
-    '─────────────────────',
-    `💰 *Sale Total:* ${formatAmount(order.total_amount)}${costNote}`,
-    `🚚 *Status:* ${order.shipping_status || 'Pending Verification'}`,
-    `🏪 ${SHOP.name}`,
+    '---------------------',
+    `Sale Total: ${formatAmount(order.total_amount)}${costNote}`,
+    `Status: ${order.shipping_status || 'Pending Verification'}`,
+    SHOP.name,
   ].join('\n');
 
   return { text, waUrl: whatsappLink(text) };
@@ -88,17 +100,17 @@ export function buildOrderReceipt(order, { showCost = false } = {}) {
 export function buildRepairReceipt(booking) {
   const ref = booking.booking_ref || `ASF-R-${1000 + booking.id}`;
   const device = [booking.device_brand, booking.device_model].filter(Boolean).join(' ');
-  const est = booking.estimated_repair_time ? `\n⏱ *Est. Time:* ${booking.estimated_repair_time}` : '';
+  const est = booking.estimated_repair_time ? `\nEst. Time: ${booking.estimated_repair_time}` : '';
 
   const lines = [
-    '🔧 *ASFIX GEAR - REPAIR INTAKE CONFIRMED!*',
-    `📋 *Reference:* #${ref}`,
-    `👤 *Customer:* ${booking.customer_name} (${booking.phone})`,
-    `📱 *Device:* ${device}`,
-    `🛠 *Issue:* ${booking.issue || 'See intake form'}`,
+    'ASFIX GEAR - REPAIR INTAKE CONFIRMED',
+    `Reference: #${ref}`,
+    `Customer: ${booking.customer_name} (${booking.phone})`,
+    `Device: ${device}`,
+    `Issue: ${booking.issue || 'See intake form'}`,
   ];
   if (est) lines.push(est.trim());
-  lines.push('🚚 *Status:* Pending Review (Our team will contact you shortly).');
+  lines.push('Status: Pending Review (Our team will contact you shortly).');
 
   const text = lines.join('\n');
 
