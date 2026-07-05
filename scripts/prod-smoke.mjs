@@ -54,8 +54,8 @@ if (Array.isArray(products.json) && products.json.length >= 1) {
 }
 
 const shop = await get('/api/shop/status');
-if (shop.json && 'open' in shop.json) pass('Shop status', shop.json.open ? 'open' : 'closed');
-else fail('Shop status');
+if (shop.json && 'is_open' in shop.json) pass('Shop status', shop.json.is_open ? 'open' : 'closed');
+else fail('Shop status', JSON.stringify(shop.json)?.slice(0, 120));
 
 const r2Sample = products.json?.find((p) => String(p.image || '').includes('r2.dev'));
 if (r2Sample) pass('R2 image in catalog', r2Sample.image.slice(0, 60) + '...');

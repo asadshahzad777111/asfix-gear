@@ -103,7 +103,8 @@ async function main() {
   console.log(`Starting production server on port ${PORT}...`);
   const server = spawn(process.execPath, ['backend/server.js'], {
     stdio: 'inherit',
-    env: { ...process.env, NODE_ENV: 'production', PORT: String(PORT) },
+    // NODE_ENV=test keeps loadEnv from overwriting spawn PORT (see backend/server.js).
+    env: { ...process.env, NODE_ENV: 'test', PORT: String(PORT) },
   });
 
   let exited = false;
