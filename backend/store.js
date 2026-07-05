@@ -1603,7 +1603,37 @@ export function trackOrder(orderId, phone) {
   };
 }
 
-export function submitOrderFeedback(orderId, phone, { rating, comment = '' }) {
+function orderItemProductIds(order) {
+  return (order.items || [])
+    .map((item) => Number(item.product_id))
+    .filter((id) => Number.isFinite(id) && id > 0);
+}
+
+function resolveFeedbackProductId(order, fb = {}) {
+  const stored = Number(fb.product_id);
+  const itemIds = orderItemProductIds(order);
+  if (Number.isFinite(stored) && stored > 0 && itemIds.includes(stored)) {
+    return stored;
+  }
+  return itemIds[0] || null;
+}
+
+function feedbackProductSnapshot(order, data, fb = {}) {
+  const productId = resolveFeedbackProductId(order, fb);
+  if (!productId) {
+    return { product_id: null, product_name: null, product_image: null, product_category: null };
+  }
+  const product = data.products.find((p) => p.id === productId);
+  const item = (order.items || []).find((i) => Number(i.product_id) === productId);
+  return {
+    product_id: productId,
+    product_name: product?.name || item?.name || null,
+    product_image: product?.image || null,
+    product_category: product?.category || null,
+  };
+}
+
+export function submitOrderFeedback(orderId, phone, { rating, comment = '', product_id = null }) {
   return withData((data) => {
     const key = String(orderId || '').trim().toUpperCase().replace(/^#/, '');
     const phoneKey = normalizePhone(phone);
@@ -1635,10 +1665,25 @@ export function submitOrderFeedback(orderId, phone, { rating, comment = '' }) {
       throw new Error('Feedback already submitted for this order');
     }
 
+    const itemIds = orderItemProductIds(order);
+    let linkedProductId = null;
+    if (product_id != null && product_id !== '') {
+      const requested = Number(product_id);
+      if (!Number.isFinite(requested) || requested <= 0 || !itemIds.includes(requested)) {
+        throw new Error('Please select a product from your order');
+      }
+      linkedProductId = requested;
+    } else if (itemIds.length === 1) {
+      linkedProductId = itemIds[0];
+    } else if (itemIds.length > 1) {
+      linkedProductId = itemIds[0];
+    }
+
     order.customer_feedback = {
       rating: stars,
       comment: commentText,
       status: 'pending',
+      product_id: linkedProductId,
       submitted_at: now(),
       updated_at: now(),
     };
@@ -1649,9 +1694,10 @@ export function submitOrderFeedback(orderId, phone, { rating, comment = '' }) {
 
 const VALID_FEEDBACK_STATUS = new Set(['pending', 'published', 'hidden']);
 
-function feedbackRow(order) {
+function feedbackRow(order, data) {
   const fb = order.customer_feedback;
   if (!fb?.rating) return null;
+  const product = feedbackProductSnapshot(order, data, fb);
   return {
     order_id: order.id,
     order_ref: order.order_id || formatOrderId(order.id),
@@ -1661,13 +1707,14 @@ function feedbackRow(order) {
     status: fb.status || 'pending',
     submitted_at: fb.submitted_at || order.updated_at,
     updated_at: fb.updated_at || fb.submitted_at || order.updated_at,
+    ...product,
   };
 }
 
 export function listOrderFeedback() {
   return withData((data) =>
     data.orders
-      .map(feedbackRow)
+      .map((order) => feedbackRow(order, data))
       .filter(Boolean)
       .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
   );
@@ -1676,7 +1723,7 @@ export function listOrderFeedback() {
 export function getPublishedReviews(limit = 12) {
   return withData((data) =>
     data.orders
-      .map(feedbackRow)
+      .map((order) => feedbackRow(order, data))
       .filter((row) => row && row.status === 'published')
       .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
       .slice(0, limit)
@@ -1713,7 +1760,7 @@ export function updateOrderFeedback(orderId, patch, staffUser = null) {
       fb.updated_by_name = staffUser.name || staffUser.username || 'Staff';
     }
     order.updated_at = now();
-    return feedbackRow(order);
+    return feedbackRow(order, data);
   });
 }
 

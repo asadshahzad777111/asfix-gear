@@ -1934,6 +1934,38 @@
   margin: 0.35rem 0;
 }
 
+.admin-feedback-product {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin: 0.35rem 0 0.65rem;
+  padding: 0.45rem 0.65rem;
+  background: #f6f7f7;
+  border: 1px solid #dcdcde;
+  border-radius: 4px;
+  text-decoration: none;
+  color: #2271b1;
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.admin-feedback-product:hover {
+  background: #f0f6fc;
+  border-color: #2271b1;
+}
+
+.admin-feedback-product img {
+  width: 36px;
+  height: 36px;
+  object-fit: cover;
+  border-radius: 4px;
+}
+
+.admin-feedback-no-product {
+  margin: 0.35rem 0 0.65rem;
+  font-size: 0.85rem;
+}
+
 .admin-feedback-meta {
   font-size: 0.82rem;
   margin: 0.25rem 0 0.75rem;

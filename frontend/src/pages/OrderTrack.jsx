@@ -364,6 +364,7 @@ export default function OrderTrack() {
                 <OrderFeedbackForm
                   orderId={displayOrder.order_id}
                   phone={phone || displayOrder.phone}
+                  orderItems={displayOrder.items}
                   existing={displayOrder.customer_feedback}
                 />
               )}

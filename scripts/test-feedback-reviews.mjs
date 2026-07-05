@@ -79,6 +79,10 @@ async function main() {
     if (pub.some((r) => r.status && r.status !== 'published')) {
       throw new Error('Non-published in public API');
     }
+    const withProduct = pub.filter((r) => r.product_id);
+    if (withProduct.length > 0 && !withProduct[0].product_name) {
+      throw new Error('Published review missing product_name');
+    }
   });
 
   await check('Hide review', async () => {

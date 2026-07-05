@@ -289,6 +289,9 @@ export const translations = {
       r2: 'Got charger and case here. Good quality, WhatsApp order was easy.',
       r3: 'Battery was weak — now my phone lasts all day. Highly recommend AsFix & Gear!',
     },
+    reviews: {
+      viewProduct: 'View product',
+    },
     admin: {
       messages: 'Customer Chats',
       messagesEmpty: 'No customer messages yet.',
@@ -505,6 +508,10 @@ export const translations = {
       pendingNote: 'Your review is saved. It will appear on our shop after our team approves it.',
       yourRating: 'Your rating',
       stars: 'stars',
+      whichProduct: 'Which product is this review about?',
+      reviewingProduct: 'Reviewing: {name}',
+      reviewedProduct: 'Reviewed: {name}',
+      productRequired: 'Please select which product you are reviewing.',
     },
     repairChat: {
       title: 'Repair Chat',
@@ -1317,6 +1324,9 @@ export const translations = {
       r2: 'Charger aur case dono yahan se liye. Quality achhi hai, WhatsApp order bhi easy tha.',
       r3: 'Battery weak thi — ab poora din chalta hai phone. Highly recommend AsFix & Gear!',
     },
+    reviews: {
+      viewProduct: 'Product dekhein',
+    },
     admin: {
       messages: 'Customer Chats',
       messagesEmpty: 'Abhi koi message nahi.',
@@ -1533,6 +1543,10 @@ export const translations = {
       pendingNote: 'Aap ki review save ho gayi. Team approve karne ke baad shop par dikhegi.',
       yourRating: 'Aap ki rating',
       stars: 'stars',
+      whichProduct: 'Yeh review kis product ke liye hai?',
+      reviewingProduct: 'Review: {name}',
+      reviewedProduct: 'Review ki: {name}',
+      productRequired: 'Pehle product select karein jis par review de rahe hain.',
     },
     repairChat: {
       title: 'Repair Chat',

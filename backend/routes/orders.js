@@ -33,13 +33,13 @@ const VALID_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_deliv
 const VALID_PAYMENT_MODES = ['jazzcash', 'easypaisa', 'bank'];
 
 router.post('/feedback', (req, res) => {
-  const { orderId, phone, rating, comment } = req.body;
+  const { orderId, phone, rating, comment, product_id } = req.body;
   if (!orderId?.trim() || !phone?.trim()) {
     return res.status(400).json({ error: 'Order ID and phone are required' });
   }
 
   try {
-    const order = store.submitOrderFeedback(orderId.trim(), phone.trim(), { rating, comment });
+    const order = store.submitOrderFeedback(orderId.trim(), phone.trim(), { rating, comment, product_id });
     if (!order) return res.status(404).json({ error: 'Order not found — check ID and phone' });
     res.json({
       message: 'Thank you for your feedback',

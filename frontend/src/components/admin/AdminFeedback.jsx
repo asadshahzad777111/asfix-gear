@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
-
+import { getDefaultImage } from '../../config/products';
 const STATUS_LABEL = {
   pending: 'Pending approval',
   published: 'Published',
@@ -171,6 +172,21 @@ export default function AdminFeedback() {
                 </div>
               ) : (
                 <>
+                  {row.product_id ? (
+                    <Link to={`/shop/${row.product_id}`} className="admin-feedback-product" target="_blank" rel="noopener noreferrer">
+                      <img
+                        src={row.product_image || getDefaultImage(row.product_category || 'Cases')}
+                        alt=""
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.src = getDefaultImage(row.product_category || 'Cases');
+                        }}
+                      />
+                      <span>{row.product_name || `Product #${row.product_id}`}</span>
+                    </Link>
+                  ) : (
+                    <p className="wp-muted admin-feedback-no-product">No linked product (order items missing)</p>
+                  )}
                   {row.comment ? <p className="admin-feedback-comment">{row.comment}</p> : <p className="wp-muted">No comment</p>}
                   <p className="wp-muted admin-feedback-meta">
                     Submitted {row.submitted_at ? new Date(row.submitted_at).toLocaleString() : '—'}

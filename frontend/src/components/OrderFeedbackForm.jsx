@@ -1,14 +1,49 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
+import { getDefaultImage } from '../config/products';
 
 const RATINGS = [1, 2, 3, 4, 5];
 
-function FeedbackDone({ rating, comment, t }) {
+function orderProducts(items = []) {
+  const seen = new Set();
+  return items
+    .filter((item) => {
+      const id = Number(item.product_id);
+      if (!Number.isFinite(id) || id <= 0 || seen.has(id)) return false;
+      seen.add(id);
+      return true;
+    })
+    .map((item) => ({
+      product_id: Number(item.product_id),
+      name: item.name || `Product #${item.product_id}`,
+      image: item.image || null,
+      category: item.category || null,
+    }));
+}
+
+function FeedbackDone({ rating, comment, productId, orderItems, t }) {
+  const products = useMemo(() => orderProducts(orderItems), [orderItems]);
+  const product = products.find((p) => p.product_id === productId) || products[0];
+
   return (
     <div className="order-feedback order-feedback--done glass-card">
       <p className="order-feedback-thanks">{t('feedback.thanks')}</p>
       <p className="order-feedback-pending">{t('feedback.pendingNote')}</p>
+      {product ? (
+        <Link to={`/shop/${product.product_id}`} className="order-feedback-product">
+          <img
+            src={product.image || getDefaultImage(product.category || 'Cases')}
+            alt=""
+            loading="lazy"
+            onError={(e) => {
+              e.target.src = getDefaultImage(product.category || 'Cases');
+            }}
+          />
+          <span>{t('feedback.reviewedProduct', { name: product.name })}</span>
+        </Link>
+      ) : null}
       <div className="order-feedback-stars" aria-label={t('feedback.yourRating')}>
         {RATINGS.map((n) => (
           <span key={n} className={n <= rating ? 'on' : ''} aria-hidden="true">★</span>
@@ -19,10 +54,65 @@ function FeedbackDone({ rating, comment, t }) {
   );
 }
 
-export default function OrderFeedbackForm({ orderId, phone, existing, onSubmitted }) {
+function ProductPicker({ products, selectedId, onSelect, t }) {
+  if (products.length <= 1) {
+    const product = products[0];
+    if (!product) return null;
+    return (
+      <div className="order-feedback-product order-feedback-product--static">
+        <img
+          src={product.image || getDefaultImage(product.category || 'Cases')}
+          alt=""
+          loading="lazy"
+          onError={(e) => {
+            e.target.src = getDefaultImage(product.category || 'Cases');
+          }}
+        />
+        <span>{t('feedback.reviewingProduct', { name: product.name })}</span>
+      </div>
+    );
+  }
+
+  return (
+    <fieldset className="order-feedback-product-pick">
+      <legend>{t('feedback.whichProduct')}</legend>
+      <div className="order-feedback-product-options">
+        {products.map((product) => (
+          <label
+            key={product.product_id}
+            className={`order-feedback-product-option ${selectedId === product.product_id ? 'on' : ''}`}
+          >
+            <input
+              type="radio"
+              name="feedback-product"
+              value={product.product_id}
+              checked={selectedId === product.product_id}
+              onChange={() => onSelect(product.product_id)}
+            />
+            <img
+              src={product.image || getDefaultImage(product.category || 'Cases')}
+              alt=""
+              loading="lazy"
+              onError={(e) => {
+                e.target.src = getDefaultImage(product.category || 'Cases');
+              }}
+            />
+            <span>{product.name}</span>
+          </label>
+        ))}
+      </div>
+    </fieldset>
+  );
+}
+
+export default function OrderFeedbackForm({ orderId, phone, orderItems = [], existing, onSubmitted }) {
   const { t } = useTranslation();
+  const products = useMemo(() => orderProducts(orderItems), [orderItems]);
   const [rating, setRating] = useState(existing?.rating || 0);
   const [comment, setComment] = useState(existing?.comment || '');
+  const [productId, setProductId] = useState(
+    existing?.product_id || products[0]?.product_id || null
+  );
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [submitted, setSubmitted] = useState(null);
@@ -32,6 +122,8 @@ export default function OrderFeedbackForm({ orderId, phone, existing, onSubmitte
       <FeedbackDone
         rating={existing.rating}
         comment={existing.comment}
+        productId={existing.product_id || products[0]?.product_id}
+        orderItems={orderItems}
         t={t}
       />
     );
@@ -42,6 +134,8 @@ export default function OrderFeedbackForm({ orderId, phone, existing, onSubmitte
       <FeedbackDone
         rating={submitted.rating}
         comment={submitted.comment}
+        productId={submitted.product_id || productId}
+        orderItems={orderItems}
         t={t}
       />
     );
@@ -53,6 +147,10 @@ export default function OrderFeedbackForm({ orderId, phone, existing, onSubmitte
       setError(t('feedback.ratingRequired'));
       return;
     }
+    if (products.length > 1 && !productId) {
+      setError(t('feedback.productRequired'));
+      return;
+    }
     setSubmitting(true);
     setError('');
     try {
@@ -60,6 +158,7 @@ export default function OrderFeedbackForm({ orderId, phone, existing, onSubmitte
         phone,
         rating,
         comment: comment.trim(),
+        product_id: productId || products[0]?.product_id || undefined,
       });
       setSubmitted(data.feedback);
       onSubmitted?.(data.feedback);
@@ -74,6 +173,15 @@ export default function OrderFeedbackForm({ orderId, phone, existing, onSubmitte
     <form className="order-feedback glass-card" onSubmit={handleSubmit}>
       <h3>{t('feedback.title')}</h3>
       <p className="order-feedback-prompt">{t('feedback.prompt')}</p>
+
+      {products.length > 0 ? (
+        <ProductPicker
+          products={products}
+          selectedId={productId}
+          onSelect={setProductId}
+          t={t}
+        />
+      ) : null}
 
       <div className="order-feedback-stars" role="radiogroup" aria-label={t('feedback.ratingLabel')}>
         {RATINGS.map((n) => (
