@@ -1443,6 +1443,210 @@
   margin: 0.35rem 0;
 }
 
+/* ── Dark-mode site theme: force readable WP-admin light tokens ──
+   Admin content uses white cards; global [data-theme='dark'] vars make text invisible. */
+.wp-admin-shell {
+  color-scheme: light;
+
+  --text: #1d2327;
+  --text-muted: #50575e;
+  --bg: #f0f0f1;
+  --bg-card: #ffffff;
+  --bg-elevated: #f6f7f7;
+  --border: #c3c4c7;
+  --glass: #ffffff;
+  --glass-edge: #c3c4c7;
+  --input-bg: #ffffff;
+  --input-border: #8c8f94;
+  --nav-hover: #f0f0f1;
+  --mint: #007017;
+  --mint-focus: rgba(0, 160, 80, 0.12);
+  --price-color: #c45500;
+  --primary: #2271b1;
+  --primary-glow: rgba(34, 113, 177, 0.25);
+  --shadow-elevated: 0 1px 1px rgba(0, 0, 0, 0.04);
+  --shadow-hover: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.wp-admin-shell ::placeholder {
+  color: #787c82;
+  opacity: 1;
+}
+
+.wp-admin-shell .glass-card {
+  background: #fff;
+  border-color: #c3c4c7;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+  color: #1d2327;
+}
+
+.wp-admin-shell .glass-card:hover {
+  border-color: #2271b1;
+  box-shadow: 0 0 0 1px #2271b1;
+}
+
+.wp-admin-shell .status-select,
+.wp-admin-shell .category-select,
+.wp-admin-shell .form-group input,
+.wp-admin-shell .form-group select,
+.wp-admin-shell .form-group textarea,
+.wp-admin-shell .admin-stock-search,
+.wp-admin-shell .admin-stock-qty-input,
+.wp-admin-shell .admin-booking-cost-input,
+.wp-admin-shell .admin-rider-form input,
+.wp-admin-shell .admin-feedback-edit textarea,
+.wp-admin-shell .admin-feedback-edit select,
+.wp-admin-shell .sales-report-range input[type="date"],
+.wp-admin-shell .wp-search {
+  background: #fff;
+  border-color: #8c8f94;
+  color: #1d2327;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  box-shadow: none;
+}
+
+.wp-admin-shell .status-select option,
+.wp-admin-shell .category-select option,
+.wp-admin-shell .form-group select option {
+  background: #fff;
+  color: #1d2327;
+}
+
+.wp-admin-shell .admin-float-card {
+  background: #fff;
+  border-color: #c3c4c7;
+}
+
+.wp-admin-shell .admin-float-meta,
+.wp-admin-shell .admin-float-sub,
+.wp-admin-shell .admin-float-items,
+.wp-admin-shell .admin-float-item-price,
+.wp-admin-shell .admin-float-activity,
+.wp-admin-shell .admin-float-empty,
+.wp-admin-shell .admin-booking-meta,
+.wp-admin-shell .admin-booking-sub,
+.wp-admin-shell .admin-stock-head p,
+.wp-admin-shell .admin-stock-row-meta,
+.wp-admin-shell .admin-feedback-meta,
+.wp-admin-shell .admin-product-owner,
+.wp-admin-shell .admin-delivery-location__coords,
+.wp-admin-shell .loading,
+.wp-admin-shell .empty-state {
+  color: #50575e;
+}
+
+.wp-admin-shell .admin-table th {
+  background: #f6f7f7;
+  color: #50575e;
+}
+
+.wp-admin-shell .admin-table td {
+  color: #1d2327;
+}
+
+.wp-admin-shell .admin-stock-row {
+  background: #fff;
+  border-color: #c3c4c7;
+}
+
+.wp-admin-shell .admin-stock-feedback--success {
+  color: #007017;
+}
+
+.wp-admin-shell .admin-stock-feedback--error {
+  color: #b32d2e;
+}
+
+.wp-admin-shell .admin-float-feedback {
+  color: #007017;
+}
+
+.wp-admin-shell .admin-float-reply {
+  color: #135e96;
+  background: #f0f6fc;
+  border-color: #c5d9ed;
+}
+
+.wp-admin-shell .btn-outline {
+  background: #fff;
+  color: #2c3338;
+  border-color: #c3c4c7;
+}
+
+.wp-admin-shell .btn-outline:hover {
+  background: #f6f7f7;
+  border-color: #2271b1;
+  color: #2271b1;
+}
+
+.wp-admin-shell .btn-ghost {
+  color: #50575e;
+}
+
+.wp-admin-shell .btn-ghost:hover {
+  color: #1d2327;
+  background: #f0f0f1;
+}
+
+/* Order / delivery status badges — readable on white cards */
+.wp-admin-shell .order-status-pill {
+  color: #1d2327;
+  background: #f0f0f1;
+  border: 1px solid #c3c4c7;
+}
+
+.wp-admin-shell .order-status-pill.status-pending_payment,
+.wp-admin-shell .order-status-pill.status-pending {
+  background: #fcf9e8;
+  color: #996800;
+  border-color: #f0d78c;
+}
+
+.wp-admin-shell .order-status-pill.status-waiting_for_rider,
+.wp-admin-shell .order-status-pill.status-in_progress,
+.wp-admin-shell .order-status-pill.status-out_for_delivery {
+  background: #e8f4fd;
+  color: #135e96;
+  border-color: #9ec5e8;
+}
+
+.wp-admin-shell .order-status-pill.status-rider_assigned {
+  background: #f3e8fd;
+  color: #6b21a8;
+  border-color: #d8b4fe;
+}
+
+.wp-admin-shell .order-status-pill.status-delivered,
+.wp-admin-shell .order-status-pill.status-completed,
+.wp-admin-shell .order-status-pill.status-payment_verified {
+  background: #edfaef;
+  color: #007017;
+  border-color: #68de7c;
+}
+
+.wp-admin-shell .order-status-pill.status-shipped {
+  background: #eef2ff;
+  color: #3730a3;
+  border-color: #a5b4fc;
+}
+
+.wp-admin-shell .order-status-pill.status-cancelled {
+  background: #fcf0f1;
+  color: #b32d2e;
+  border-color: #f1aeb5;
+}
+
+.wp-admin-shell .alert-success {
+  color: #007017;
+}
+
+.wp-admin-shell .alert-error {
+  color: #b32d2e;
+}
+
 
 /* Sortable table headers */
 .wp-sortable-th {
