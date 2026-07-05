@@ -1774,8 +1774,31 @@ export function createCustomer({ name, email, phone, username, password, passwor
 }
 
 export function getOrdersByCustomerId(customerId) {
-  const id = Number(customerId);
-  return getOrders().filter((o) => o.customer_user_id === id);
+  const user = getUserById(customerId);
+  if (!user) return [];
+  return getOrdersForCustomer(user);
+}
+
+/** Orders linked to account by user id, phone, or saved Gmail. */
+export function getOrdersForCustomer(user) {
+  if (!user) return [];
+  const id = Number(user.id);
+  const userPhone = normalizePhone(user.phone);
+  const userEmail = String(user.email || '').trim().toLowerCase();
+  const seen = new Set();
+  const matched = [];
+
+  for (const order of getOrders()) {
+    const byId = Number(order.customer_user_id) === id;
+    const byPhone = userPhone && normalizePhone(order.phone) === userPhone;
+    const byEmail = userEmail && String(order.gmail || '').trim().toLowerCase() === userEmail;
+    if (!byId && !byPhone && !byEmail) continue;
+    if (seen.has(order.id)) continue;
+    seen.add(order.id);
+    matched.push(order);
+  }
+
+  return matched.sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')));
 }
 
 export function getContactMessagesByCustomerId(customerId) {

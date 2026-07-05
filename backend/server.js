@@ -10,6 +10,7 @@ import repairsRouter from './routes/repairs.js';
 import contactRouter from './routes/contact.js';
 import authRouter from './routes/auth.js';
 import ordersRouter from './routes/orders.js';
+import eventsRouter from './routes/events.js';
 import shopRouter from './routes/shop.js';
 import adminRouter from './routes/admin.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
@@ -51,7 +52,7 @@ app.use('/api', (_req, res, next) => {
 // mode this file's own rate-limit isolation was meant to prevent, just one
 // layer higher than the fix originally covered.
 app.use('/api', (req, res, next) => {
-  if (req.path.startsWith('/auth') || req.path === '/ping' || req.path === '/health') return next();
+  if (req.path.startsWith('/auth') || req.path === '/ping' || req.path === '/health' || req.path.startsWith('/events')) return next();
   return apiLimiter(req, res, next);
 });
 
@@ -84,6 +85,7 @@ app.get('/api/stats', (_req, res) => {
 // comment in middleware/rateLimit.js for why a shared/prefix-mounted
 // limiter previously caused correct OTP codes to get silently 429'd.
 app.use('/api/auth', requireStorageReady, authRouter);
+app.use('/api/events', requireStorageReady, eventsRouter);
 app.use('/api/products', requireStorageReady, productsRouter);
 app.use('/api/repairs', writeLimiter, requireStorageReady, repairsRouter);
 app.use('/api/contact', writeLimiter, requireStorageReady, contactRouter);

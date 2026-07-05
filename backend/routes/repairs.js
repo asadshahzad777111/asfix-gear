@@ -3,6 +3,7 @@ import * as store from '../store.js';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
 import { buildRepairStatusCustomerMessage } from '../services/repairNotifications.js';
+import { publishRepairEvent } from '../services/liveEvents.js';
 import { MAZDORI_KEYWORDS } from '../rates/iphone-repair-rates.js';
 
 const router = Router();
@@ -252,6 +253,8 @@ router.post('/book', optionalAuth, (req, res) => {
     `Assalam o Alaikum ${booking.customer_name}! Your repair booking for ${deviceLabel} at AsFix & Gear has been received. Booking ID: ${booking.booking_ref}. Exact issue confirm karne ke liye shop par physical inspection / eye diagnosis hogi — repair se pehle clear quote milega. Track: booking ID + phone on our website.`
   ).catch(() => {});
 
+  publishRepairEvent('repair_created', booking);
+
   res.status(201).json({
     message: 'Repair intake submitted successfully',
     booking,
@@ -278,6 +281,7 @@ router.patch('/bookings/:id/status', requireAuth, requireRole(...STAFF), (req, r
     notifyCustomerWhatsApp(booking.phone, customerMsg).catch(() => {});
   }
 
+  publishRepairEvent('repair_updated', booking);
   res.json(booking);
 });
 
@@ -289,6 +293,7 @@ router.patch('/bookings/:id/estimated-cost', requireAuth, requireRole(...STAFF),
       req.auth.user
     );
     if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    publishRepairEvent('repair_updated', booking);
     res.json(booking);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -310,6 +315,7 @@ router.patch('/bookings/:id/photos', requireAuth, requireRole(...STAFF), (req, r
     req.auth.user
   );
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
+  publishRepairEvent('repair_updated', booking);
   res.json(booking);
 });
 
@@ -322,6 +328,7 @@ router.patch('/bookings/:id/notes', requireAuth, requireRole(...STAFF), (req, re
   const booking = store.addStaffNoteToBooking(req.params.id, note, req.auth.user);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
+  publishRepairEvent('repair_updated', booking);
   res.json(booking);
 });
 

@@ -3,6 +3,7 @@ import multer from 'multer';
 import * as store from '../store.js';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import { isR2Configured, uploadProductImage } from '../services/r2.js';
+import { publishProductEvent } from '../services/liveEvents.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
@@ -224,6 +225,7 @@ router.put('/:id', requireAuth, requireRole(...STAFF), (req, res) => {
     const body = sanitizeProductBody(req.body);
     const product = store.updateProduct(req.params.id, body);
     if (!product) return res.status(404).json({ error: 'Product not found' });
+    publishProductEvent(product);
     res.json(product);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -263,6 +265,7 @@ router.patch('/:id/stock', requireAuth, requireRole(...STAFF), (req, res) => {
       note: req.body.note,
       staffName: req.auth.user.name || req.auth.user.username,
     });
+    publishProductEvent(product);
     res.json(product);
   } catch (err) {
     res.status(400).json({ error: err.message });

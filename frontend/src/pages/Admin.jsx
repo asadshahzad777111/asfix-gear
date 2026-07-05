@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
@@ -22,6 +22,7 @@ import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts, getLowStock
 import AdminStockAlert from '../components/admin/AdminStockAlert';
 import AdminBookingPhotos from '../components/admin/AdminBookingPhotos';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
+import useLiveUpdates from '../hooks/useLiveUpdates';
 
 const VALID_TABS = new Set([
   'dashboard', 'products', 'add', 'categories', 'stock', 'orders', 'customers',
@@ -273,6 +274,14 @@ export default function Admin() {
       alert(err.message);
     }
   };
+
+  const onLiveEvent = useCallback((event) => {
+    if (event.startsWith('order_') || event.startsWith('repair_') || event.startsWith('product_')) {
+      loadData();
+    }
+  }, []);
+
+  useLiveUpdates({ onEvent: onLiveEvent, enabled: Boolean(user) });
 
   useEffect(() => {
     loadData();

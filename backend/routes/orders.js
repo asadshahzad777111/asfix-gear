@@ -7,6 +7,7 @@ import {
   buildPaidOrderShopMessage,
 } from '../services/orderNotifications.js';
 import { sendOrderCompleteEmail } from '../services/orderEmail.js';
+import { publishOrderEvent } from '../services/liveEvents.js';
 
 function findOrderById(id) {
   return store.getOrders().find((o) => o.id === Number(id)) || null;
@@ -121,6 +122,7 @@ router.post('/', requireAuth, (req, res) => {
       shipping_address: resolvedAddress,
     });
     notifyShopWhatsApp(buildNewOrderShopMessage(order)).catch(() => {});
+    publishOrderEvent('order_created', order);
     res.status(201).json({ message: 'Order placed successfully', order });
   } catch (err) {
     if (err instanceof store.StockError) {
@@ -160,6 +162,7 @@ router.patch('/:id/status', requireAuth, requireRole(...STAFF), (req, res) => {
   const order = store.updateOrderStatus(req.params.id, shipping_status, req.auth.user);
   if (!order) return res.status(404).json({ error: 'Order not found' });
   notifyIfNewlyDelivered(order, previous?.shipping_status);
+  publishOrderEvent('order_updated', order);
   res.json(order);
 });
 
@@ -168,6 +171,7 @@ router.patch('/:id/mark-paid', requireAuth, requireRole(...STAFF), (req, res) =>
     const order = store.markOrderPaid(req.params.id, req.auth.user);
     if (!order) return res.status(404).json({ error: 'Order not found' });
     notifyShopWhatsApp(buildPaidOrderShopMessage(order)).catch(() => {});
+    publishOrderEvent('order_updated', order);
     res.json(order);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -183,6 +187,7 @@ router.patch('/:id/assign-rider', requireAuth, requireRole(...STAFF), (req, res)
       req.auth.user
     );
     if (!order) return res.status(404).json({ error: 'Order not found' });
+    publishOrderEvent('order_updated', order);
     res.json(order);
   } catch (err) {
     res.status(400).json({ error: err.message });
@@ -195,6 +200,7 @@ router.patch('/:id/mark-delivered', requireAuth, requireRole(...STAFF), (req, re
     const order = store.markOrderDelivered(req.params.id, req.auth.user);
     if (!order) return res.status(404).json({ error: 'Order not found' });
     notifyIfNewlyDelivered(order, previous?.shipping_status);
+    publishOrderEvent('order_updated', order);
     res.json(order);
   } catch (err) {
     res.status(400).json({ error: err.message });
