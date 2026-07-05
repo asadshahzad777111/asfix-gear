@@ -16,7 +16,7 @@ import PremiumButton, { PremiumLink } from '../components/premium/PremiumButton'
 import CasePreviewer from '../components/premium/CasePreviewer';
 import { DiscountRibbon, ProductPrice } from '../components/DiscountPicker';
 import { getSavings, hasDiscount } from '../utils/pricing';
-import { getStockStatus } from '../utils/stock';
+import { getStockStatus, isInStock, isOutOfStock, normalizeStock } from '../utils/stock';
 import { getProductCardImages } from '../utils/productImages';
 
 export default function ProductDetail() {
@@ -64,13 +64,15 @@ export default function ProductDetail() {
 
   const onSale = hasDiscount(product);
   const animKind = getProductAnimKind(product.category);
+  const stockCount = normalizeStock(product.stock);
   const stockStatus = getStockStatus(product.stock);
+  const inStock = isInStock(product.stock);
   const stockMessage =
     stockStatus === 'out'
       ? t('product.outOfStock')
       : stockStatus === 'low'
-        ? t('product.onlyLeft', { count: product.stock })
-        : t('product.inStock', { count: product.stock });
+        ? t('product.onlyLeft', { count: stockCount })
+        : t('product.inStock', { count: stockCount });
   const { images: galleryImages } = getProductCardImages(product);
 
   const handleAdd = (e) => {
@@ -152,12 +154,12 @@ export default function ProductDetail() {
               <PremiumButton
                 className="btn btn-primary"
                 neon={animKind === 'gaming'}
-                disabled={product.stock <= 0}
+                disabled={!inStock}
                 onClick={handleAdd}
               >
                 {t('product.addToCart')}
               </PremiumButton>
-              {product.stock > 0 ? (
+              {inStock ? (
                 <PremiumLink to={orderProductContactPath(product)} className="btn btn-whatsapp">
                   {t('product.orderWhatsApp')}
                 </PremiumLink>

@@ -14,6 +14,7 @@ import useScrollReveal from '../hooks/useScrollReveal';
 import useProductPop from '../hooks/useProductPop';
 import useProductCardImage from '../hooks/useProductCardImage';
 import ProductCardImageStack from './ProductCardImageStack';
+import { isInStock } from '../utils/stock';
 import ShopLoginPrompt from './ShopLoginPrompt';
 import CustomerLoginModal from './CustomerLoginModal';
 
@@ -30,7 +31,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     loginOpen,
     setLoginOpen,
   } = useShopGate();
-  const inStock = product.stock > 0;
+  const inStock = isInStock(product.stock);
   const contactTo = inStock ? orderProductContactPath(product) : restockInquiryContactPath(product);
   const onSale = hasDiscount(product);
   const { addItem } = useCart();
@@ -170,8 +171,8 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
             <div className="product-price-slot">
               <ProductPrice product={product} size="sm" />
             </div>
-            <span className={`stock-dot ${product.stock > 0 ? 'in' : 'out'}`}>
-              {product.stock > 0 ? t('product.inStockShort') : t('product.soldOut')}
+            <span className={`stock-dot ${inStock ? 'in' : 'out'}`}>
+              {inStock ? t('product.inStockShort') : t('product.soldOut')}
             </span>
           </div>
         </div>
@@ -181,7 +182,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
         <PremiumButton
           ref={addRef}
           className="btn btn-primary btn-sm premium-add-cart"
-          disabled={product.stock <= 0}
+          disabled={!inStock}
           onClick={handleAdd}
         >
           {t('product.addCartShort')}

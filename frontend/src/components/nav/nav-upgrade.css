@@ -805,6 +805,16 @@ body {
   background: var(--nav-hover);
 }
 
+.nav-desktop-link--active {
+  color: var(--text);
+  background: var(--nav-hover);
+}
+
+.nav-desktop-link--gaming.nav-desktop-link--active,
+.nav-desktop-link--gaming:hover {
+  color: #c4b5fd;
+}
+
 @media (min-width: 1025px) {
   .navbar-inner {
     flex-wrap: nowrap;

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { generalContactPath } from '../config/shop';
 import { MODEL_SPECIFIC_CATEGORIES, SHOP_BRANDS, SHOP_CATEGORIES } from '../config/products';
 import { getSeriesForShopBrand } from '../config/repairModels';
@@ -12,7 +12,6 @@ import AddProductModal from './AddProductModal';
 import AccountMenu from './AccountMenu';
 import CustomerLoginModal from './CustomerLoginModal';
 import PhoneFinderModal from './PhoneFinderModal';
-import GamingModeButton from './gaming/GamingModeButton';
 import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
 import NavSearch from './nav/NavSearch';
@@ -108,6 +107,14 @@ export default function Navbar() {
           <div className="nav-desktop-bar">
             <Link to="/" className="nav-desktop-link">{t('nav.home')}</Link>
             <ShopMegaMenu />
+            <NavLink
+              to="/gaming"
+              className={({ isActive }) =>
+                `nav-desktop-link nav-desktop-link--gaming${isActive ? ' nav-desktop-link--active' : ''}`
+              }
+            >
+              {t('nav.gamingAccessories')}
+            </NavLink>
             <Link to="/repair" className="nav-desktop-link">{t('nav.repair')}</Link>
             <Link to="/contact" className="nav-desktop-link">{t('nav.contact')}</Link>
             {isCustomer ? (
@@ -264,8 +271,8 @@ export default function Navbar() {
                   </div>
                 </div>
               </div>
+              <NavDrawerLink to="/gaming" icon="🎮" label={t('nav.gamingAccessories')} onClick={closeMenu} />
               <NavDrawerLink to="/repair" icon="🔧" label={t('nav.repair')} onClick={closeMenu} />
-              <GamingModeButton variant="nav" onAfterClick={closeMenu} />
               <NavDrawerLink to="/track" icon="📦" label={t('nav.track')} className="nav-drawer-link--track" onClick={closeMenu} />
               <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />
             </div>

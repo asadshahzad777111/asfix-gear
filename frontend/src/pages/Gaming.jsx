@@ -2,11 +2,12 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { useCart } from '../context/CartContext';
 import { useGaming } from '../context/GamingContext';
 import { useTranslation } from '../context/LanguageContext';
 import GamingLogo from '../components/gaming/GamingLogo';
 import GamingProductCard from '../components/gaming/GamingProductCard';
-import { gamingContactPath, SHOP } from '../config/shop';
+import { SHOP } from '../config/shop';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import { filterPublishedProducts } from '../utils/productStatus';
 
@@ -19,6 +20,7 @@ export default function Gaming() {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const { exitGamingMode } = useGaming();
+  const { count, setOpen } = useCart();
 
   useEffect(() => {
     const load = () => {
@@ -27,9 +29,6 @@ export default function Gaming() {
         .catch(console.error)
         .finally(() => setLoading(false));
     };
-    // Gaming stock moves fast (walk-in + online sales) — keep it fresh with a
-    // lightweight poll instead of only fetching once on mount, so shoppers
-    // never see an out-of-date "in stock" badge for gear that just sold out.
     return startVisibilityPoll(load, STOCK_POLL_MS);
   }, []);
 
@@ -65,9 +64,11 @@ export default function Gaming() {
 
           <div className="gaming-hero-actions">
             <a href="#gaming-products" className="btn-gaming-primary">{t('gaming.shopGear')}</a>
-            <Link to={gamingContactPath()} className="btn-gaming-outline">
-              {t('gaming.whatsappOrder')}
-            </Link>
+            {count > 0 && (
+              <button type="button" className="btn-gaming-outline" onClick={() => setOpen(true)}>
+                {t('gaming.viewCart', { count })}
+              </button>
+            )}
             <button type="button" className="btn-gaming-outline btn-gaming-exit" onClick={exitGamingMode}>
               {t('gaming.exitMode')}
             </button>
@@ -139,10 +140,10 @@ export default function Gaming() {
         <div className="container gaming-cta-inner">
           <GamingLogo size={60} />
           <h2>{t('gaming.ctaTitle')}</h2>
-          <p>{t('gaming.ctaSub', { phone: SHOP.phone })}</p>
-          <Link to={gamingContactPath()} className="btn-gaming-primary btn-gaming-lg">
-            {t('gaming.ctaBtn', { phone: SHOP.phone })}
-          </Link>
+          <p>{t('gaming.ctaSub')}</p>
+          <a href="#gaming-products" className="btn-gaming-primary btn-gaming-lg">
+            {t('gaming.ctaBtn')}
+          </a>
         </div>
       </section>
     </div>

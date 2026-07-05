@@ -9,7 +9,7 @@ import ProductCardImageStack from '../ProductCardImageStack';
 import { useTranslation } from '../../context/LanguageContext';
 import { DiscountRibbon, ProductPrice } from '../DiscountPicker';
 import { hasDiscount } from '../../utils/pricing';
-import { getStockStatus } from '../../utils/stock';
+import { getStockStatus, isInStock, normalizeStock } from '../../utils/stock';
 import ShopLoginPrompt from '../ShopLoginPrompt';
 import CustomerLoginModal from '../CustomerLoginModal';
 
@@ -41,12 +41,14 @@ export default function HomeProductCard({ product }) {
   const { addItem } = useCart();
   const addRef = useRef(null);
   const onSale = hasDiscount(product);
+  const stockCount = normalizeStock(product.stock);
   const stockStatus = getStockStatus(product.stock);
+  const inStock = isInStock(product.stock);
   const stockLabel =
     stockStatus === 'out'
       ? t('product.soldOut')
       : stockStatus === 'low'
-        ? t('product.onlyLeft', { count: product.stock })
+        ? t('product.onlyLeft', { count: stockCount })
         : t('product.inStockShort');
 
   const handleAdd = (e) => {
@@ -118,7 +120,7 @@ export default function HomeProductCard({ product }) {
             ref={addRef}
             type="button"
             className="btn btn-primary btn-sm"
-            disabled={product.stock <= 0}
+            disabled={!inStock}
             onClick={handleAdd}
           >
             {t('product.addCartShort')}

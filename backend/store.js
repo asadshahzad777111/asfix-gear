@@ -36,6 +36,14 @@ export { getStorageBackend, initStorage, isStorageReady };
 export { formatOrderId, formatBookingRef };
 
 export const LOW_STOCK_THRESHOLD = 5;
+
+/** Salable units only — low stock (>0) remains orderable until stock hits 0. */
+export function normalizeProductStock(stock) {
+  const n = Number(stock);
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  return Math.floor(n);
+}
+
 export const PRODUCT_STATUSES = ['published', 'draft'];
 
 export function normalizeProductStatus(status, fallback = 'published') {
@@ -651,13 +659,14 @@ function prepareOrderItems(rawItems, products) {
     if (!isPublishedProduct(product)) {
       throw new StockError(`"${product.name}" is no longer available`);
     }
-    if (Number(product.stock || 0) < qty) {
+    if (normalizeProductStock(product.stock) < qty) {
+      const available = normalizeProductStock(product.stock);
       throw new StockError(
-        `Insufficient stock for "${product.name}" — only ${product.stock} left`,
+        `Insufficient stock for "${product.name}" — only ${available} left`,
         {
           product_id: product.id,
           name: product.name,
-          available: product.stock,
+          available,
           requested: qty,
         }
       );

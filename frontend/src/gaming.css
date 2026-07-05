@@ -907,8 +907,24 @@ body.gaming-mode-active .navbar {
 }
 
 .gaming-product-add {
-  bottom: 3.25rem;
+  bottom: 1rem;
   background: linear-gradient(135deg, #ff6b2c, #7c3aed) !important;
+}
+
+.gaming-product-stock {
+  display: block;
+  margin-top: 0.35rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.gaming-product-stock--low {
+  color: #fcd34d;
+}
+
+.gaming-product-stock--out {
+  color: #fca5a5;
 }
 
 .gaming-product-card.jumped:hover .gaming-product-order,

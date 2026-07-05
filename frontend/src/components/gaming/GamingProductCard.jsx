@@ -1,7 +1,6 @@
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { orderProductContactPath } from '../../config/shop';
 import { useCart } from '../../context/CartContext';
 import { playProductJump } from '../../utils/gamingSound';
 import { DiscountRibbon, ProductPrice } from '../DiscountPicker';
@@ -10,7 +9,7 @@ import { useShopGate } from '../../hooks/useShopGate';
 import ShopLoginPrompt from '../ShopLoginPrompt';
 import CustomerLoginModal from '../CustomerLoginModal';
 import { useTranslation } from '../../context/LanguageContext';
-import { getStockStatus } from '../../utils/stock';
+import { getStockStatus, isInStock, isOutOfStock, normalizeStock } from '../../utils/stock';
 import useProductPop from '../../hooks/useProductPop';
 
 const TAP_POP = { scale: 1.07, y: -12, rotateX: -4, z: 50 };
@@ -20,7 +19,6 @@ export default function GamingProductCard({ product, index }) {
   const { t } = useTranslation();
   const ref = useRef(null);
   const addRef = useRef(null);
-  const contactTo = orderProductContactPath(product);
   const onSale = hasDiscount(product);
   const { addItem } = useCart();
   const {
@@ -35,6 +33,9 @@ export default function GamingProductCard({ product, index }) {
   const productPath = `/shop/${product.id}`;
   const [hovered, setHovered] = useState(false);
   const [jumped, setJumped] = useState(false);
+  const stockCount = normalizeStock(product.stock);
+  const stockStatus = getStockStatus(product.stock);
+  const inStock = isInStock(product.stock);
 
   useEffect(() => {
     const el = ref.current;
@@ -57,13 +58,9 @@ export default function GamingProductCard({ product, index }) {
     return () => observer.disconnect();
   }, [index]);
 
-  const stockStatus = getStockStatus(product.stock);
-  const cartLabel =
-    stockStatus === 'out'
-      ? t('product.soldOut')
-      : stockStatus === 'low'
-        ? t('product.onlyLeft', { count: product.stock })
-        : '+ CART';
+  const cartLabel = isOutOfStock(product.stock)
+    ? t('product.soldOut')
+    : t('product.addCartShort');
 
   const handleAdd = (e) => {
     e.preventDefault();
@@ -107,6 +104,16 @@ export default function GamingProductCard({ product, index }) {
           <span className="gaming-product-tag">{product.category}</span>
           <h3>{product.name}</h3>
           <ProductPrice product={product} size="sm" />
+          {inStock && stockStatus === 'low' && (
+            <span className="gaming-product-stock gaming-product-stock--low">
+              {t('product.onlyLeft', { count: stockCount })}
+            </span>
+          )}
+          {isOutOfStock(product.stock) && (
+            <span className="gaming-product-stock gaming-product-stock--out">
+              {t('product.outOfStock')}
+            </span>
+          )}
         </div>
       </Link>
       <button
@@ -114,13 +121,11 @@ export default function GamingProductCard({ product, index }) {
         type="button"
         className="gaming-product-order gaming-product-add"
         onClick={handleAdd}
-        disabled={product.stock <= 0}
+        disabled={!inStock}
+        aria-label={t('product.addToCart')}
       >
         {cartLabel}
       </button>
-      <Link to={contactTo} className="gaming-product-order gaming-product-wa">
-        ⚡ ORDER
-      </Link>
     </motion.article>
     <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
     <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
