@@ -1079,7 +1079,7 @@ export const translations = {
       accountSection: 'Account',
       signIn: 'Sign In',
       signUp: 'Sign Up',
-      profile: 'Profile',
+      profile: 'Meri Profile',
       settings: 'Settings',
       myOrders: 'Meray Orders',
     },

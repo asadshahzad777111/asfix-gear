@@ -37,6 +37,12 @@ export default function AccountMenu({ className = '' }) {
     navigate('/');
   };
 
+  const menuItems = [
+    { to: '/account', icon: '👤', label: t('nav.profile') },
+    { to: '/account', icon: '📦', label: t('nav.myOrders') },
+    { to: '/account/settings', icon: '⚙️', label: t('nav.settings') },
+  ];
+
   return (
     <div className={`account-menu ${className}`} ref={menuRef}>
       <button
@@ -57,17 +63,21 @@ export default function AccountMenu({ className = '' }) {
             <strong>{user.name || user.username}</strong>
             {user.email && <span>{user.email}</span>}
           </div>
-          <Link to="/account/settings" className="account-menu-item" role="menuitem" onClick={() => setOpen(false)}>
-            <span aria-hidden="true">👤</span> {t('nav.profile')}
-          </Link>
-          <Link to="/account" className="account-menu-item" role="menuitem" onClick={() => setOpen(false)}>
-            <span aria-hidden="true">📦</span> {t('nav.myOrders')}
-          </Link>
-          <Link to="/account/settings" className="account-menu-item" role="menuitem" onClick={() => setOpen(false)}>
-            <span aria-hidden="true">⚙️</span> {t('nav.settings')}
-          </Link>
+          {menuItems.map(({ to, icon, label }) => (
+            <Link
+              key={`${to}-${label}`}
+              to={to}
+              className="account-menu-item"
+              role="menuitem"
+              onClick={() => setOpen(false)}
+            >
+              <span className="account-menu-item-icon" aria-hidden="true">{icon}</span>
+              <span className="account-menu-item-label">{label}</span>
+            </Link>
+          ))}
           <button type="button" className="account-menu-item account-menu-logout" role="menuitem" onClick={handleLogout}>
-            <span aria-hidden="true">🚪</span> {t('account.logout')}
+            <span className="account-menu-item-icon" aria-hidden="true">🚪</span>
+            <span className="account-menu-item-label">{t('account.logout')}</span>
           </button>
         </div>
       )}

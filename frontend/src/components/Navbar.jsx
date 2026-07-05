@@ -274,7 +274,7 @@ export default function Navbar() {
             <div className="nav-links-account">
               {isCustomer ? (
                 <>
-                  <NavDrawerLink to="/account" icon="👤" label={t('nav.myAccount')} onClick={closeMenu} />
+                  <NavDrawerLink to="/account" icon="👤" label={t('nav.profile')} onClick={closeMenu} />
                   <NavDrawerLink to="/account" icon="📦" label={t('nav.myOrders')} onClick={closeMenu} />
                   <NavDrawerLink to="/account/settings" icon="⚙️" label={t('nav.settings')} onClick={closeMenu} />
                   <NavDrawerButton
