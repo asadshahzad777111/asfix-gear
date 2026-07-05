@@ -21,6 +21,7 @@ import { ProductPrice } from '../components/DiscountPicker';
 import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts, getLowStockProducts } from '../utils/stock';
 import AdminStockAlert from '../components/admin/AdminStockAlert';
 import AdminBookingPhotos from '../components/admin/AdminBookingPhotos';
+import { RepairChatButton, RepairChatModal } from '../components/RepairChatPanel';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import useLiveUpdates from '../hooks/useLiveUpdates';
 
@@ -80,6 +81,9 @@ export default function Admin() {
   const [noteSaving, setNoteSaving] = useState({});
   const [costDrafts, setCostDrafts] = useState({});
   const [costSaving, setCostSaving] = useState({});
+  const [chatBooking, setChatBooking] = useState(null);
+  const [repairChatUnread, setRepairChatUnread] = useState({});
+  const [repairChatUnreadTotal, setRepairChatUnreadTotal] = useState(0);
 
   const showAdminMgmt = canManageTeam(user);
   const showSales = canViewSalesReport(user);
@@ -139,6 +143,23 @@ export default function Admin() {
       setLoading(false);
     }
   };
+
+  const loadRepairChats = useCallback(async () => {
+    try {
+      const [chats, unreadData] = await Promise.all([
+        api.getRepairChats(),
+        api.getRepairChatUnread(),
+      ]);
+      const map = {};
+      for (const chat of chats) {
+        map[chat.booking_id] = chat.unread || 0;
+      }
+      setRepairChatUnread(map);
+      setRepairChatUnreadTotal(unreadData?.count || 0);
+    } catch {
+      /* optional — chat may be empty */
+    }
+  }, []);
 
   const pendingOrders = orders.filter((o) => o.payment_status === 'pending_payment' || o.shipping_status === 'pending').length;
 
@@ -279,14 +300,22 @@ export default function Admin() {
     if (event.startsWith('order_') || event.startsWith('repair_') || event.startsWith('product_')) {
       loadData();
     }
-  }, []);
+    if (event === 'repair_message' || event.startsWith('repair_')) {
+      loadRepairChats();
+    }
+  }, [loadRepairChats]);
 
   useLiveUpdates({ onEvent: onLiveEvent, enabled: Boolean(user) });
 
   useEffect(() => {
     loadData();
-    return startVisibilityPoll(loadData, 45_000);
-  }, []);
+    loadRepairChats();
+    const stop = startVisibilityPoll(() => {
+      loadData();
+      loadRepairChats();
+    }, 45_000);
+    return stop;
+  }, [loadRepairChats]);
 
   useEffect(() => {
     const t = searchParams.get('tab');
@@ -417,7 +446,14 @@ export default function Admin() {
       setTab={setTab}
       editingProduct={editingProduct}
       onEditCancel={() => setEditingProduct(null)}
-      counts={{ products: products.length, orders: orders.length, bookings: bookings.length, pendingOrders, lowStockCount }}
+      counts={{
+        products: products.length,
+        orders: orders.length,
+        bookings: bookings.length,
+        pendingOrders,
+        lowStockCount,
+        repairChatUnread: repairChatUnreadTotal,
+      }}
       flags={{ showSales, showAdminMgmt, showShopControl }}
       pageTitle={pageTitle}
       onStockAlertClick={goToStockAlerts}
@@ -711,12 +747,19 @@ export default function Admin() {
                             {b.alternative_contact ? ` · Alt: ${b.alternative_contact}` : ''}
                           </p>
                         </div>
-                        <select className="status-select" value={b.status} onChange={(e) => updateStatus(b.id, e.target.value)}>
-                          <option value="pending">Pending</option>
-                          <option value="in_progress">In Progress</option>
-                          <option value="completed">Completed</option>
-                          <option value="cancelled">Cancelled</option>
-                        </select>
+                        <div className="admin-booking-head-actions">
+                          <RepairChatButton
+                            booking={b}
+                            unread={repairChatUnread[b.id] || 0}
+                            onClick={() => setChatBooking(b)}
+                          />
+                          <select className="status-select" value={b.status} onChange={(e) => updateStatus(b.id, e.target.value)}>
+                            <option value="pending">Pending</option>
+                            <option value="in_progress">In Progress</option>
+                            <option value="completed">Completed</option>
+                            <option value="cancelled">Cancelled</option>
+                          </select>
+                        </div>
                       </div>
                       <div className="admin-booking-grid">
                         <div>
@@ -822,6 +865,7 @@ export default function Admin() {
                         <th>Issues</th>
                         <th>Est. Time</th>
                         <th>Status</th>
+                        <th>Chat</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -843,6 +887,13 @@ export default function Admin() {
                               <option value="cancelled">Cancelled</option>
                             </select>
                           </td>
+                          <td>
+                            <RepairChatButton
+                              booking={b}
+                              unread={repairChatUnread[b.id] || 0}
+                              onClick={() => setChatBooking(b)}
+                            />
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -851,6 +902,19 @@ export default function Admin() {
               </div>
             </>
           )}
+      {chatBooking ? (
+        <RepairChatModal
+          booking={chatBooking}
+          mode="staff"
+          onClose={() => {
+            setChatBooking(null);
+            loadRepairChats();
+          }}
+          onUnreadChange={(count) => {
+            setRepairChatUnread((prev) => ({ ...prev, [chatBooking.id]: count }));
+          }}
+        />
+      ) : null}
     </AdminLayout>
   );
 }

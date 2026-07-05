@@ -17,6 +17,7 @@ export const DEFAULT_DATA = {
     nextRepairRateQueryId: 1,
     nextCategoryId: 1,
     nextAddressId: 1,
+    nextRepairMessageId: 1,
   },
   users: [],
   sessions: [],
@@ -25,6 +26,7 @@ export const DEFAULT_DATA = {
   repair_bookings: [],
   repair_rates: [],
   repair_rate_queries: [],
+  repair_messages: [],
   contact_messages: [],
   orders: [],
   verification_codes: [],
@@ -55,6 +57,7 @@ export function migrateData(data) {
   data.repair_bookings = data.repair_bookings || [];
   data.repair_rates = data.repair_rates || [];
   data.repair_rate_queries = data.repair_rate_queries || [];
+  data.repair_messages = data.repair_messages || [];
   data.contact_messages = data.contact_messages || [];
   data.orders = data.orders || [];
   data.verification_codes = data.verification_codes || [];
@@ -71,6 +74,7 @@ export function migrateData(data) {
   if (!data.meta.nextRepairRateQueryId) data.meta.nextRepairRateQueryId = 1;
   if (!data.meta.nextCategoryId) data.meta.nextCategoryId = 1;
   if (!data.meta.nextAddressId) data.meta.nextAddressId = 1;
+  if (!data.meta.nextRepairMessageId) data.meta.nextRepairMessageId = 1;
 
   if (!Array.isArray(data.settings.product_categories)) {
     data.settings.product_categories = [];
@@ -194,6 +198,11 @@ export function migrateData(data) {
 
   for (const msg of data.contact_messages) {
     if (msg.customer_user_id == null) msg.customer_user_id = null;
+  }
+
+  for (const msg of data.repair_messages) {
+    if (msg.read_by_customer == null) msg.read_by_customer = msg.sender === 'customer';
+    if (msg.read_by_staff == null) msg.read_by_staff = msg.sender === 'staff';
   }
 
   data.sessions = data.sessions.filter((s) => s.expires_at > nowIso);

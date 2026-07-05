@@ -74,6 +74,8 @@ async function ensureIndexes(database) {
     database.collection('repair_rate_queries').createIndex({ id: 1 }, { unique: true }),
     database.collection('repair_rate_queries').createIndex({ customer_user_id: 1 }),
     database.collection('contact_messages').createIndex({ id: 1 }, { unique: true }),
+    database.collection('repair_messages').createIndex({ id: 1 }, { unique: true }),
+    database.collection('repair_messages').createIndex({ repair_booking_id: 1 }),
     database.collection('orders').createIndex({ id: 1 }, { unique: true }),
     database.collection('verification_codes').createIndex({ id: 1 }, { unique: true }),
     database.collection('verification_codes').createIndex({ purpose: 1, target: 1 }),

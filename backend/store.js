@@ -398,6 +398,9 @@ export function getAdminDashboardStats() {
     bookings: bookings.length,
     pendingBookings: bookings.filter((b) => b.status === 'pending').length,
     unreadMessages: (data.contact_messages || []).filter((m) => !m.staff_reply).length,
+    unreadRepairChats: (data.repair_messages || []).filter(
+      (m) => m.sender === 'customer' && !m.read_by_staff
+    ).length,
   };
 }
 
@@ -865,6 +868,7 @@ function normalizePhotoUrls(value) {
 export function sanitizePublicBooking(booking, services = []) {
   const enriched = enrichBooking(booking, services);
   return {
+    id: enriched.id,
     booking_ref: enriched.booking_ref,
     customer_name: enriched.customer_name,
     device_brand: enriched.device_brand,
@@ -1069,7 +1073,10 @@ export function getRepairBookingsForCustomer({ userId, phone }) {
       return false;
     })
     .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
-    .map((b) => sanitizePublicBooking(b, data.repair_services));
+    .map((b) => ({
+      ...sanitizePublicBooking(b, data.repair_services),
+      unread_repair_messages: getUnreadRepairMessageCountByBooking(b.id, 'customer'),
+    }));
 }
 
 export function addStaffNoteToBooking(id, noteText, staffUser) {
@@ -1163,6 +1170,148 @@ export function deleteContactMessage(id) {
     data.contact_messages = data.contact_messages.filter((m) => m.id !== numId);
     return before !== data.contact_messages.length;
   });
+}
+
+const MAX_REPAIR_MESSAGE_LEN = 2000;
+
+function sanitizeRepairMessageText(text) {
+  return String(text || '')
+    .replace(/<[^>]*>/g, '')
+    .trim()
+    .slice(0, MAX_REPAIR_MESSAGE_LEN);
+}
+
+export function getRepairBookingById(id) {
+  const data = readData();
+  const numId = Number(id);
+  const booking = data.repair_bookings.find((b) => b.id === numId);
+  if (!booking) return null;
+  return enrichBooking(booking, data.repair_services);
+}
+
+export function customerOwnsRepairBooking(booking, user) {
+  if (!booking || !user) return false;
+  const uid = Number(user.id);
+  if (booking.customer_user_id != null && Number(booking.customer_user_id) === uid) return true;
+  const userPhone = normalizePhone(user.phone);
+  const bookingPhone = normalizePhone(booking.phone);
+  return Boolean(userPhone && bookingPhone && userPhone === bookingPhone);
+}
+
+export function createRepairMessage(input) {
+  return withData((data) => {
+    const bookingId = Number(input.repair_booking_id);
+    const booking = data.repair_bookings.find((b) => b.id === bookingId);
+    if (!booking) return null;
+
+    const body = sanitizeRepairMessageText(input.text);
+    if (!body) return null;
+
+    const sender = input.sender === 'staff' ? 'staff' : 'customer';
+    const id = data.meta.nextRepairMessageId++;
+    const created_at = now();
+    const message = {
+      id,
+      repair_booking_id: bookingId,
+      sender,
+      sender_name: String(input.sender_name || '').trim().slice(0, 120),
+      text: body,
+      created_at,
+      read_by_customer: sender === 'customer',
+      read_by_staff: sender === 'staff',
+    };
+    if (!data.repair_messages) data.repair_messages = [];
+    data.repair_messages.push(message);
+    return message;
+  });
+}
+
+export function getRepairMessagesByBookingId(bookingId) {
+  const numId = Number(bookingId);
+  return [...(readData().repair_messages || [])]
+    .filter((m) => m.repair_booking_id === numId)
+    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)));
+}
+
+export function markRepairMessagesRead(bookingId, role) {
+  return withData((data) => {
+    const numId = Number(bookingId);
+    const field = role === 'staff' ? 'read_by_staff' : 'read_by_customer';
+    for (const msg of data.repair_messages || []) {
+      if (msg.repair_booking_id !== numId) continue;
+      const shouldMark =
+        role === 'staff'
+          ? msg.sender === 'customer' && !msg.read_by_staff
+          : msg.sender === 'staff' && !msg.read_by_customer;
+      if (shouldMark) msg[field] = true;
+    }
+  });
+}
+
+export function countUnreadRepairMessagesForStaff() {
+  return (readData().repair_messages || []).filter(
+    (m) => m.sender === 'customer' && !m.read_by_staff
+  ).length;
+}
+
+export function countUnreadRepairMessagesForCustomer(userId, phone) {
+  const phoneKey = normalizePhone(phone);
+  const uid = userId != null ? Number(userId) : null;
+  const data = readData();
+  const ownedBookingIds = new Set(
+    data.repair_bookings
+      .filter((b) => {
+        if (uid && b.customer_user_id === uid) return true;
+        if (phoneKey && normalizePhone(b.phone) === phoneKey) return true;
+        return false;
+      })
+      .map((b) => b.id)
+  );
+  return (data.repair_messages || []).filter(
+    (m) => ownedBookingIds.has(m.repair_booking_id) && m.sender === 'staff' && !m.read_by_customer
+  ).length;
+}
+
+export function getUnreadRepairMessageCountByBooking(bookingId, forRole) {
+  const numId = Number(bookingId);
+  return (readData().repair_messages || []).filter((m) => {
+    if (m.repair_booking_id !== numId) return false;
+    if (forRole === 'staff') return m.sender === 'customer' && !m.read_by_staff;
+    return m.sender === 'staff' && !m.read_by_customer;
+  }).length;
+}
+
+export function getRepairChatsSummaryForStaff() {
+  const data = readData();
+  const byBooking = new Map();
+  for (const msg of data.repair_messages || []) {
+    const bid = msg.repair_booking_id;
+    if (!byBooking.has(bid)) {
+      byBooking.set(bid, { lastMessage: msg, unread: 0 });
+    } else {
+      const entry = byBooking.get(bid);
+      if (String(msg.created_at) > String(entry.lastMessage.created_at)) {
+        entry.lastMessage = msg;
+      }
+    }
+    if (msg.sender === 'customer' && !msg.read_by_staff) {
+      byBooking.get(bid).unread += 1;
+    }
+  }
+  return [...byBooking.entries()]
+    .map(([bookingId, { lastMessage, unread }]) => {
+      const booking = data.repair_bookings.find((b) => b.id === bookingId);
+      return {
+        booking_id: bookingId,
+        booking_ref: booking?.booking_ref || formatBookingRef(bookingId),
+        customer_name: booking?.customer_name || '',
+        device: booking ? `${booking.device_brand} ${booking.device_model}`.trim() : '',
+        last_message: lastMessage,
+        unread,
+        updated_at: lastMessage.created_at,
+      };
+    })
+    .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
 }
 
 export function createOrder(input) {

@@ -1,0 +1,114 @@
+.order-notif-stack {
+  position: fixed;
+  top: calc(var(--nav-height, 64px) + 0.75rem);
+  right: 0.75rem;
+  z-index: 1100;
+  display: flex;
+  flex-direction: column;
+  gap: 0.55rem;
+  width: min(360px, calc(100vw - 1.5rem));
+  pointer-events: none;
+}
+
+.order-notif-toast {
+  pointer-events: auto;
+  display: flex;
+  align-items: stretch;
+  gap: 0.35rem;
+  padding: 0;
+  border-radius: 12px;
+  background: rgba(18, 22, 28, 0.94);
+  color: #f4f6f8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  animation: order-notif-in 0.35s ease;
+}
+
+.order-notif-body {
+  flex: 1;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  padding: 0.75rem 0.35rem 0.75rem 0.85rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.order-notif-body:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.order-notif-icon {
+  font-size: 1.25rem;
+  line-height: 1;
+  margin-top: 0.1rem;
+}
+
+.order-notif-text {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.84rem;
+  line-height: 1.35;
+}
+
+.order-notif-text strong {
+  font-size: 0.88rem;
+}
+
+.order-notif-close {
+  border: none;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.65);
+  padding: 0.65rem 0.75rem;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.order-notif-close:hover {
+  color: #fff;
+}
+
+.order-notif-toast.status-delivered {
+  border-color: rgba(46, 160, 67, 0.45);
+}
+
+.order-notif-toast.status-payment_verified,
+.order-notif-toast.status-paid {
+  border-color: rgba(34, 113, 177, 0.45);
+}
+
+.order-notif-toast.status-cancelled {
+  border-color: rgba(214, 54, 56, 0.45);
+}
+
+@keyframes order-notif-in {
+  from {
+    opacity: 0;
+    transform: translateX(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .order-notif-toast {
+    animation: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .order-notif-stack {
+    top: auto;
+    bottom: calc(var(--float-bottom, 5.5rem) + 0.5rem);
+    right: 0.65rem;
+    left: 0.65rem;
+    width: auto;
+  }
+}

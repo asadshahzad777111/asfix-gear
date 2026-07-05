@@ -342,6 +342,14 @@ export const api = {
       method: 'PATCH',
       body: JSON.stringify({ note }),
     }),
+  getRepairChats: () => request('/repairs/chats'),
+  getRepairMessages: (id) => request(`/repairs/bookings/${id}/messages`),
+  sendRepairMessage: (id, text) =>
+    request(`/repairs/bookings/${id}/messages`, {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    }),
+  getRepairChatUnread: () => request('/repairs/messages/unread'),
 
   placeOrder: (body) => request('/orders', { method: 'POST', body: JSON.stringify(body) }),
   getOrders: () => request('/orders'),

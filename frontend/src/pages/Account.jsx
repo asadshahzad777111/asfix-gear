@@ -9,6 +9,7 @@ import AddressBook from '../components/account/AddressBook';
 import CustomerOrderCard from '../components/account/CustomerOrderCard';
 import RepairTimeline from '../components/RepairTimeline';
 import RepairPhotosGrid from '../components/RepairPhotosGrid';
+import { RepairChatButton, RepairChatModal } from '../components/RepairChatPanel';
 import useLiveUpdates from '../hooks/useLiveUpdates';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
@@ -28,6 +29,7 @@ export default function Account() {
   const [messages, setMessages] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [chatRepair, setChatRepair] = useState(null);
   const [copiedId, setCopiedId] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
 
@@ -57,6 +59,9 @@ export default function Account() {
 
   const onLiveEvent = useCallback((event) => {
     if (event.startsWith('order_') || event.startsWith('repair_')) {
+      loadData();
+    }
+    if (event === 'repair_message') {
       loadData();
     }
   }, [loadData]);
@@ -241,12 +246,19 @@ export default function Account() {
                           <RepairTimeline status={repair.status} statusHistory={repair.status_history} />
                           <RepairPhotosGrid photosBefore={repair.photos_before} photosAfter={repair.photos_after} />
 
-                          <Link
-                            to={`/track?tab=repair&bookingId=${encodeURIComponent(refClean)}&phone=${encodeURIComponent(user?.phone || '')}`}
-                            className="btn btn-outline btn-sm account-track-btn"
-                          >
-                            {t('account.trackRepair')}
-                          </Link>
+                          <div className="account-repair-actions">
+                            <RepairChatButton
+                              booking={repair}
+                              unread={repair.unread_repair_messages || 0}
+                              onClick={() => setChatRepair(repair)}
+                            />
+                            <Link
+                              to={`/track?tab=repair&bookingId=${encodeURIComponent(refClean)}&phone=${encodeURIComponent(user?.phone || '')}`}
+                              className="btn btn-outline btn-sm account-track-btn"
+                            >
+                              {t('account.trackRepair')}
+                            </Link>
+                          </div>
                         </li>
                       );
                     })}
@@ -339,6 +351,16 @@ export default function Account() {
           </div>
         </div>
       </section>
+      {chatRepair ? (
+        <RepairChatModal
+          booking={chatRepair}
+          mode="customer"
+          onClose={() => {
+            setChatRepair(null);
+            loadData();
+          }}
+        />
+      ) : null}
     </>
   );
 }

@@ -6,6 +6,7 @@ import { useTranslation } from '../context/LanguageContext';
 import OrderTimeline from '../components/OrderTimeline';
 import RepairTimeline from '../components/RepairTimeline';
 import RepairPhotosGrid from '../components/RepairPhotosGrid';
+import { RepairChatButton, RepairChatModal, RepairChatLoginPrompt } from '../components/RepairChatPanel';
 import OrderFeedbackForm from '../components/OrderFeedbackForm';
 import OrderHelpActions from '../components/OrderHelpActions';
 import BackButton from '../components/BackButton';
@@ -39,6 +40,7 @@ export default function OrderTrack() {
   const [repair, setRepair] = useState(null);
   const [repairError, setRepairError] = useState('');
   const [repairLoading, setRepairLoading] = useState(false);
+  const [chatRepair, setChatRepair] = useState(null);
 
   const loadMyOrders = useCallback(async () => {
     if (!isCustomer) return;
@@ -65,7 +67,7 @@ export default function OrderTrack() {
     enabled: isCustomer,
     onEvent: (event) => {
       if (event.startsWith('order_')) loadMyOrders();
-      if (event.startsWith('repair_')) lookupRepairFromState();
+      if (event.startsWith('repair_') || event === 'repair_message') lookupRepairFromState();
     },
   });
 
@@ -411,6 +413,12 @@ export default function OrderTrack() {
 
           <RepairPhotosGrid photosBefore={repair.photos_before} photosAfter={repair.photos_after} />
 
+          {isCustomer ? (
+            <RepairChatButton booking={repair} onClick={() => setChatRepair(repair)} />
+          ) : (
+            <RepairChatLoginPrompt />
+          )}
+
           {(repair.status_history || []).length > 0 && (
             <div className="repair-status-notifications glass-card">
               <h4>{t('track.repairNotifications')}</h4>
@@ -439,6 +447,16 @@ export default function OrderTrack() {
           <> · <Link to="/repair">{t('track.newRepair')}</Link></>
         )}
       </p>
+      {chatRepair ? (
+        <RepairChatModal
+          booking={chatRepair}
+          mode="customer"
+          onClose={() => {
+            setChatRepair(null);
+            lookupRepairFromState();
+          }}
+        />
+      ) : null}
     </main>
   );
 }

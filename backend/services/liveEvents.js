@@ -87,6 +87,7 @@ export function publishOrderEvent(event, order) {
     phone: order.phone || '',
     payment_status: order.payment_status,
     shipping_status: order.shipping_status,
+    delivery_status: order.delivery_status ?? null,
   });
 }
 
@@ -98,6 +99,18 @@ export function publishRepairEvent(event, booking) {
     customer_user_id: booking.customer_user_id ?? null,
     phone: booking.phone || '',
     status: booking.status,
+  });
+}
+
+export function publishRepairMessageEvent(message, booking) {
+  if (!message || !booking) return;
+  liveEvents.publish('repair_message', {
+    id: message.id,
+    repair_booking_id: message.repair_booking_id,
+    booking_ref: booking.booking_ref,
+    customer_user_id: booking.customer_user_id ?? null,
+    phone: booking.phone || '',
+    sender: message.sender,
   });
 }
 

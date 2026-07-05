@@ -3,7 +3,8 @@ import * as store from '../store.js';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
 import { buildRepairStatusCustomerMessage } from '../services/repairNotifications.js';
-import { publishRepairEvent } from '../services/liveEvents.js';
+import { publishRepairEvent, publishRepairMessageEvent } from '../services/liveEvents.js';
+import { rateLimit } from '../middleware/rateLimit.js';
 import { MAZDORI_KEYWORDS } from '../rates/iphone-repair-rates.js';
 
 const router = Router();
@@ -40,6 +41,13 @@ const VALID_PART_TYPES = new Set([
 const VALID_BOOKING_STATUSES = new Set(['pending', 'in_progress', 'completed', 'cancelled']);
 const MAX_PHOTO_URL_LEN = 500;
 const MAX_PHOTOS_PER_KIND = 4;
+const MAX_MESSAGE_LEN = 2000;
+
+const repairMessageLimiter = rateLimit({
+  windowMs: 60_000,
+  max: 20,
+  message: 'Too many messages. Please wait a moment.',
+});
 
 function str(value, max) {
   const s = typeof value === 'string' ? value : value == null ? '' : String(value);
@@ -78,6 +86,25 @@ function normalizePhotoUrlList(value) {
     .map((item) => str(item, MAX_PHOTO_URL_LEN))
     .filter((url) => /^https?:\/\//i.test(url))
     .slice(0, MAX_PHOTOS_PER_KIND);
+}
+
+function sanitizeMessageText(text) {
+  return String(text || '')
+    .replace(/<[^>]*>/g, '')
+    .trim()
+    .slice(0, MAX_MESSAGE_LEN);
+}
+
+function assertBookingChatAccess(req, res, booking) {
+  if (!booking) {
+    res.status(404).json({ error: 'Booking not found' });
+    return false;
+  }
+  const user = req.auth?.user;
+  if (STAFF.includes(user?.role)) return true;
+  if (user?.role === 'customer' && store.customerOwnsRepairBooking(booking, user)) return true;
+  res.status(403).json({ error: 'You cannot access this booking chat' });
+  return false;
 }
 
 router.get('/track', (req, res) => {
@@ -265,6 +292,68 @@ router.post('/book', optionalAuth, (req, res) => {
 
 router.get('/bookings', requireAuth, requireRole(...STAFF), (_req, res) => {
   res.json(store.getRepairBookings());
+});
+
+router.get('/chats', requireAuth, requireRole(...STAFF), (_req, res) => {
+  res.json(store.getRepairChatsSummaryForStaff());
+});
+
+router.get('/messages/unread', requireAuth, (req, res) => {
+  const user = req.auth.user;
+  if (STAFF.includes(user.role)) {
+    return res.json({ count: store.countUnreadRepairMessagesForStaff() });
+  }
+  if (CUSTOMER.includes(user.role)) {
+    return res.json({ count: store.countUnreadRepairMessagesForCustomer(user.id, user.phone) });
+  }
+  return res.status(403).json({ error: 'Insufficient permissions' });
+});
+
+router.get('/bookings/:id/messages', requireAuth, (req, res) => {
+  const booking = store.getRepairBookingById(req.params.id);
+  if (!assertBookingChatAccess(req, res, booking)) return;
+
+  const role = STAFF.includes(req.auth.user.role) ? 'staff' : 'customer';
+  const messages = store.getRepairMessagesByBookingId(booking.id);
+  store.markRepairMessagesRead(booking.id, role);
+  res.json({
+    messages,
+    unread: store.getUnreadRepairMessageCountByBooking(booking.id, role),
+  });
+});
+
+router.post('/bookings/:id/messages', repairMessageLimiter, requireAuth, (req, res) => {
+  const booking = store.getRepairBookingById(req.params.id);
+  if (!assertBookingChatAccess(req, res, booking)) return;
+
+  const user = req.auth.user;
+  const isStaff = STAFF.includes(user.role);
+  if (!isStaff && !CUSTOMER.includes(user.role)) {
+    return res.status(403).json({ error: 'Insufficient permissions' });
+  }
+
+  const text = sanitizeMessageText(req.body?.text);
+  if (!text) {
+    return res.status(400).json({ error: 'Message text is required' });
+  }
+
+  const sender = isStaff ? 'staff' : 'customer';
+  const senderName = isStaff
+    ? (user.username || 'Staff')
+    : customerLabel(user);
+
+  const message = store.createRepairMessage({
+    repair_booking_id: booking.id,
+    sender,
+    sender_name: senderName,
+    text,
+  });
+  if (!message) {
+    return res.status(400).json({ error: 'Could not send message' });
+  }
+
+  publishRepairMessageEvent(message, booking);
+  res.status(201).json(message);
 });
 
 router.patch('/bookings/:id/status', requireAuth, requireRole(...STAFF), (req, res) => {

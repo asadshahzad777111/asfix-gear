@@ -24,7 +24,7 @@ export default function AdminLayout({
   onStockAlertClick,
 }) {
   const { t } = useTranslation();
-  const { products = 0, orders = 0, bookings = 0, pendingOrders = 0, lowStockCount = 0 } = counts || {};
+  const { products = 0, orders = 0, bookings = 0, pendingOrders = 0, lowStockCount = 0, repairChatUnread = 0 } = counts || {};
   const { showSales, showAdminMgmt, showShopControl } = flags || {};
   const [menuOpen, setMenuOpen] = useState(false);
 
@@ -140,7 +140,7 @@ export default function AdminLayout({
             ) : null}
             {navItem('orders', 'Orders', pendingOrders > 0 ? pendingOrders : orders || null)}
             {navItem('customers', 'Customers')}
-            {navItem('bookings', 'Repair Intake', bookings || null)}
+            {navItem('bookings', 'Repair Intake', repairChatUnread > 0 ? repairChatUnread : (bookings || null))}
             {navItem('messages', t('admin.messages'))}
             {navItem('feedback', 'Reviews')}
           </div>

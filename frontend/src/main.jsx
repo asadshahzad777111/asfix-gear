@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom';
 import { GamingProvider } from './context/GamingContext';
 import { CartProvider } from './context/CartContext';
 import { AuthProvider } from './context/AuthContext';
+import { OrderNotificationProvider } from './components/OrderNotificationCenter';
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ShopStatusProvider } from './context/ShopStatusContext';
@@ -33,6 +34,7 @@ createRoot(document.getElementById('root')).render(
       <ThemeProvider>
         <LanguageProvider>
           <AuthProvider>
+            <OrderNotificationProvider>
             <ShopStatusProvider>
               <GamingProvider>
                 <CartProvider>
@@ -40,6 +42,7 @@ createRoot(document.getElementById('root')).render(
                 </CartProvider>
               </GamingProvider>
             </ShopStatusProvider>
+            </OrderNotificationProvider>
           </AuthProvider>
         </LanguageProvider>
       </ThemeProvider>
