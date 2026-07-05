@@ -52,8 +52,10 @@
     animation: saleBannerGlow 2.4s ease-in-out infinite;
   }
 
-  .gaming-product-card.on-sale,
-  .premium-gaming-card.on-sale {
+  .gaming-product-card.on-sale.is-hovered,
+  .premium-gaming-card.on-sale.is-hovered,
+  .gaming-product-card.on-sale.is-popping,
+  .premium-gaming-card.on-sale.is-popping {
     animation: saleBorderPulse 2.8s ease-in-out infinite;
   }
 
@@ -101,8 +103,13 @@
 
 /* ── Nav pill animations — desktop nav bar only ── */
 @media (prefers-reduced-motion: no-preference) and (min-width: 1025px) {
-  .gaming-mode-btn--nav {
+  .gaming-mode-btn--nav,
+  .nav-desktop-link--gaming {
     animation: gamingNavGlow 3s ease-in-out infinite;
+  }
+
+  .nav-desktop-link--gaming.nav-desktop-link--active {
+    animation: gamingNavGlow 2.2s ease-in-out infinite;
   }
 
   .shop-mode-btn--nav {
@@ -415,13 +422,11 @@
   }
 
   .premium-product.gaming.is-hovered .premium-rgb-wave,
-  .premium-product.gaming.scroll-revealed .premium-rgb-wave,
   .premium-gaming-card.is-hovered .premium-rgb-wave,
-  .premium-gaming-card.jumped .premium-rgb-wave,
+  .premium-gaming-card.is-popping .premium-rgb-wave,
   .premium-product.gaming.is-hovered .premium-particle,
-  .premium-product.gaming.scroll-revealed .premium-particle,
   .premium-gaming-card.is-hovered .premium-particle,
-  .premium-gaming-card.jumped .premium-particle {
+  .premium-gaming-card.is-popping .premium-particle {
     opacity: 0.35;
   }
 }
@@ -431,6 +436,7 @@
   .gaming-mode-btn--trigger.activating,
   .shop-mode-btn--nav,
   .gaming-mode-btn--nav,
+  .nav-desktop-link--gaming,
   .whatsapp-float,
   .home-collection-card::before,
   .home-collection-card::after,
@@ -439,6 +445,7 @@
   .product-card-wrap--grid.on-sale,
   .product-card-wrap.on-sale .product-card,
   .gaming-product-card.on-sale,
+  .premium-gaming-card.on-sale,
   .detail-sale-banner,
   .price-sale,
   .filter-btn.filter-sale.active,

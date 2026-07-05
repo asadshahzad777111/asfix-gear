@@ -810,9 +810,23 @@ body {
   background: var(--nav-hover);
 }
 
+.nav-desktop-link--gaming {
+  position: relative;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.12), rgba(191, 0, 255, 0.1));
+  border: 1px solid rgba(0, 255, 136, 0.28);
+  color: #00ff88 !important;
+  font-weight: 700;
+  box-shadow: 0 0 12px rgba(0, 255, 136, 0.1);
+  transition: color 0.2s ease, background 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease, transform 0.2s ease;
+}
+
 .nav-desktop-link--gaming.nav-desktop-link--active,
 .nav-desktop-link--gaming:hover {
-  color: #c4b5fd;
+  color: #c4b5fd !important;
+  background: linear-gradient(135deg, rgba(0, 255, 136, 0.22), rgba(191, 0, 255, 0.18));
+  border-color: rgba(0, 255, 136, 0.48);
+  box-shadow: 0 0 22px rgba(0, 255, 136, 0.28);
+  transform: scale(1.03);
 }
 
 @media (min-width: 1025px) {

@@ -271,7 +271,7 @@ export default function Navbar() {
                   </div>
                 </div>
               </div>
-              <NavDrawerLink to="/gaming" icon="🎮" label={t('nav.gamingAccessories')} onClick={closeMenu} />
+              <NavDrawerLink to="/gaming" icon="🎮" label={t('nav.gamingAccessories')} className="nav-drawer-link--gaming" onClick={closeMenu} />
               <NavDrawerLink to="/repair" icon="🔧" label={t('nav.repair')} onClick={closeMenu} />
               <NavDrawerLink to="/track" icon="📦" label={t('nav.track')} className="nav-drawer-link--track" onClick={closeMenu} />
               <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />

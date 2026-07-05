@@ -811,10 +811,18 @@ body.gaming-mode-active .navbar {
   transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
 }
 
-.gaming-product-card.jumped .gaming-product-inner:hover {
-  border-color: rgba(0, 255, 136, 0.5);
-  box-shadow: 0 0 30px rgba(0, 255, 136, 0.15), 0 20px 40px rgba(0, 0, 0, 0.4);
-  transform: translateY(-4px);
+@media (hover: hover) and (pointer: fine) {
+  .gaming-product-card.jumped .gaming-product-inner:hover,
+  .gaming-product-card.is-hovered .gaming-product-inner {
+    border-color: rgba(0, 255, 136, 0.5);
+    box-shadow: 0 0 30px rgba(0, 255, 136, 0.15), 0 20px 40px rgba(0, 0, 0, 0.4);
+    transform: translateY(-4px);
+  }
+}
+
+.gaming-product-card.is-popping .gaming-product-inner {
+  border-color: rgba(0, 255, 136, 0.45);
+  box-shadow: 0 0 24px rgba(0, 255, 136, 0.18);
 }
 
 .gaming-product-img {
@@ -840,9 +848,31 @@ body.gaming-mode-active .navbar {
   position: absolute;
   inset: 0;
   background: linear-gradient(180deg, transparent 40%, rgba(0, 255, 136, 0.08) 50%, transparent 60%);
-  animation: scanMove 3s linear infinite;
+  opacity: 0;
+  animation: none;
   pointer-events: none;
   z-index: 2;
+  transition: opacity 0.25s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gaming-product-inner:hover .gaming-product-scan {
+    opacity: 1;
+    animation: scanMove 3s linear infinite;
+  }
+}
+
+.gaming-product-card.is-popping .gaming-product-scan,
+.gaming-product-card.is-hovered .gaming-product-scan {
+  opacity: 1;
+  animation: scanMove 2.5s linear infinite;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .gaming-product-card:active .gaming-product-scan {
+    opacity: 1;
+    animation: scanMove 2s linear 1;
+  }
 }
 
 @keyframes scanMove {

@@ -32,7 +32,7 @@ export default function GamingModeButton({ variant = 'trigger', onAfterClick }) 
     onAfterClick?.();
   };
 
-  const motionPropsForVariant = coarse || variant === 'nav'
+  const motionPropsForVariant = coarse || variant === 'nav' || transitioning
     ? {}
     : {
         whileHover: { scale: 1.05, x: variant === 'trigger' ? 4 : 0 },

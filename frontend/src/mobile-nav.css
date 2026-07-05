@@ -709,6 +709,17 @@
     border-color: rgba(255, 107, 44, 0.38) !important;
   }
 
+  .nav-drawer-item.nav-drawer-link--gaming.active {
+    background: rgba(0, 255, 136, 0.12) !important;
+    border-color: rgba(0, 255, 136, 0.38) !important;
+    box-shadow: 0 0 16px rgba(0, 255, 136, 0.15);
+  }
+
+  .nav-drawer-item.nav-drawer-link--gaming.active .nav-drawer-item-icon {
+    background: rgba(0, 255, 136, 0.18);
+    border-color: rgba(0, 255, 136, 0.35);
+  }
+
   .nav-drawer-item.active .nav-drawer-item-icon {
     background: rgba(255, 107, 44, 0.2);
     border-color: rgba(255, 107, 44, 0.35);

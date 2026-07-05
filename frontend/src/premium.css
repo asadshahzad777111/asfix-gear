@@ -515,17 +515,46 @@ body.custom-cursor-active {
   opacity: 0;
 }
 
-.premium-product.gaming.is-hovered .premium-rgb-wave,
-.premium-product.gaming.scroll-revealed .premium-rgb-wave,
-.premium-gaming-card.is-hovered .premium-rgb-wave,
-.premium-gaming-card.jumped .premium-rgb-wave {
-  opacity: 0.55;
+@media (hover: hover) and (pointer: fine) {
+  .premium-product.gaming.is-hovered .premium-rgb-wave,
+  .premium-gaming-card.is-hovered .premium-rgb-wave {
+    opacity: 0.55;
+    animation-play-state: running;
+  }
+
+  .premium-gaming-card.is-hovered .premium-rgb-wave--gaming {
+    opacity: 0.55;
+  }
+
+  .premium-product.gaming.is-hovered .premium-particle,
+  .premium-gaming-card.is-hovered .premium-particle {
+    opacity: 1;
+    animation-play-state: running;
+  }
+}
+
+.premium-gaming-card.is-popping .premium-rgb-wave,
+.premium-gaming-card.is-popping .premium-rgb-wave--gaming {
+  opacity: 0.45;
   animation-play-state: running;
 }
 
-.premium-gaming-card.is-hovered .premium-rgb-wave--gaming,
-.premium-gaming-card.jumped .premium-rgb-wave--gaming {
-  opacity: 0.55;
+.premium-gaming-card.is-popping .premium-particle {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+@media (hover: none), (pointer: coarse) {
+  .premium-gaming-card:active .premium-rgb-wave,
+  .premium-gaming-card:active .premium-rgb-wave--gaming {
+    opacity: 0.35;
+    animation-play-state: running;
+  }
+
+  .premium-gaming-card:active .premium-particle {
+    opacity: 0.85;
+    animation-play-state: running;
+  }
 }
 
 @keyframes rgbSpin {
@@ -546,14 +575,6 @@ body.custom-cursor-active {
   animation-play-state: paused;
 }
 
-.premium-product.gaming.is-hovered .premium-particle,
-.premium-product.gaming.scroll-revealed .premium-particle,
-.premium-gaming-card.is-hovered .premium-particle,
-.premium-gaming-card.jumped .premium-particle {
-  opacity: 1;
-  animation-play-state: running;
-}
-
 .premium-particle--1 { top: 20%; left: 15%; animation-delay: 0s; background: #00ff88; }
 .premium-particle--2 { top: 60%; right: 20%; animation-delay: 0.4s; background: #00d4ff; }
 .premium-particle--3 { bottom: 25%; left: 40%; animation-delay: 0.8s; background: #bf00ff; }
@@ -563,9 +584,11 @@ body.custom-cursor-active {
   50% { transform: translate3d(6px, -10px, 0); }
 }
 
-.premium-gaming-card.is-hovered .gaming-product-inner {
-  border-color: rgba(0, 255, 136, 0.55);
-  box-shadow: 0 0 40px rgba(0, 255, 136, 0.2);
+@media (hover: hover) and (pointer: fine) {
+  .premium-gaming-card.is-hovered .gaming-product-inner {
+    border-color: rgba(0, 255, 136, 0.55);
+    box-shadow: 0 0 40px rgba(0, 255, 136, 0.2);
+  }
 }
 
 /* Product card actions row */
@@ -2043,11 +2066,6 @@ body.custom-cursor-active {
 
   body.custom-cursor-active {
     cursor: auto;
-  }
-
-  .premium-rgb-wave {
-    opacity: 0.25 !important;
-    filter: blur(20px);
   }
 
   .premium-product {
