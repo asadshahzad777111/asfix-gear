@@ -17,6 +17,11 @@ export function getStockAlertProducts(products) {
   return products.filter((p) => needsStockAlert(p.stock));
 }
 
+export function getLowStockProducts(products) {
+  if (!Array.isArray(products)) return [];
+  return products.filter((p) => getStockStatus(p.stock) === 'low');
+}
+
 export function maxCartQty(product, currentQty = 0) {
   return Math.max(0, Number(product?.stock) || 0);
 }

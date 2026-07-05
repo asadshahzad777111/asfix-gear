@@ -132,7 +132,7 @@ export default function AdminLayout({
               <button
                 type="button"
                 className={`wp-menu-link wp-menu-link--stock-alert ${tab === 'stock' ? 'is-active' : ''}`}
-                onClick={() => goTab('stock')}
+                onClick={() => (onStockAlertClick ? onStockAlertClick() : goTab('stock'))}
               >
                 <span className="wp-menu-text">{t('admin.stockAlerts')}</span>
                 <span className="wp-menu-badge wp-menu-badge--warn">{lowStockCount}</span>

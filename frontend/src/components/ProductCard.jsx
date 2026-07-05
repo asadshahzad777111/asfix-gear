@@ -48,7 +48,10 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
   const {
     mainImage,
     hoverImage,
+    thirdSrc,
+    imageIndex,
     showAlt,
+    images,
     onMouseEnter: onCardImageEnter,
     onMouseLeave: onCardImageLeave,
     onPointerDown: onCardImagePointerDown,
@@ -95,6 +98,9 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     <ProductCardImageStack
       mainSrc={mainImage}
       altSrc={hoverImage}
+      thirdSrc={thirdSrc}
+      images={images}
+      imageIndex={imageIndex}
       alt={product.name}
       showAlt={showAlt}
       className={className}

@@ -7,6 +7,7 @@ import RepairTimeline from '../components/RepairTimeline';
 import RepairPhotosGrid from '../components/RepairPhotosGrid';
 import OrderFeedbackForm from '../components/OrderFeedbackForm';
 import OrderHelpActions from '../components/OrderHelpActions';
+import BackButton from '../components/BackButton';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
 
 export default function OrderTrack() {
@@ -103,6 +104,9 @@ export default function OrderTrack() {
 
   return (
     <main className="page order-track-page">
+      <div className="container" style={{ paddingTop: '1rem' }}>
+        <BackButton className="back-nav-btn--spaced" />
+      </div>
       <section className="order-track-hero glass-card">
         <span className="section-eyebrow">{t('track.pageEyebrow')}</span>
         <h1>{t('track.pageTitle')}</h1>

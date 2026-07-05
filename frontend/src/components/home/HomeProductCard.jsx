@@ -27,7 +27,10 @@ export default function HomeProductCard({ product }) {
   const {
     mainImage,
     hoverImage,
+    thirdSrc,
+    imageIndex,
     showAlt,
+    images,
     onMouseEnter: onCardImageEnter,
     onMouseLeave: onCardImageLeave,
     onPointerDown: onCardImagePointerDown,
@@ -94,6 +97,9 @@ export default function HomeProductCard({ product }) {
             <ProductCardImageStack
               mainSrc={mainImage}
               altSrc={hoverImage}
+              thirdSrc={thirdSrc}
+              images={images}
+              imageIndex={imageIndex}
               alt={product.name}
               showAlt={showAlt}
               onError={handleImgError}

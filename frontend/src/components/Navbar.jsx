@@ -106,9 +106,15 @@ export default function Navbar() {
           <NavSearch className="navbar-search--desktop" />
 
           <div className="nav-desktop-bar">
+            <Link to="/" className="nav-desktop-link">{t('nav.home')}</Link>
             <ShopMegaMenu />
             <Link to="/repair" className="nav-desktop-link">{t('nav.repair')}</Link>
             <Link to="/contact" className="nav-desktop-link">{t('nav.contact')}</Link>
+            {isCustomer ? (
+              <Link to="/account" className="nav-desktop-link nav-desktop-link--orders">{t('nav.myOrders')}</Link>
+            ) : (
+              <Link to="/track" className="nav-desktop-link nav-desktop-link--track">{t('nav.track')}</Link>
+            )}
           </div>
 
           <nav
@@ -269,6 +275,7 @@ export default function Navbar() {
               {isCustomer ? (
                 <>
                   <NavDrawerLink to="/account" icon="👤" label={t('nav.myAccount')} onClick={closeMenu} />
+                  <NavDrawerLink to="/account" icon="📦" label={t('nav.myOrders')} onClick={closeMenu} />
                   <NavDrawerLink to="/account/settings" icon="⚙️" label={t('nav.settings')} onClick={closeMenu} />
                   <NavDrawerButton
                     icon="🚪"

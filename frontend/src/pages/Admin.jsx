@@ -18,7 +18,7 @@ import AdminOrderCard, { ORDER_STATUSES } from '../components/AdminOrderCard';
 import AdminStockManager from '../components/AdminStockManager';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
-import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts } from '../utils/stock';
+import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts, getLowStockProducts } from '../utils/stock';
 import AdminStockAlert from '../components/admin/AdminStockAlert';
 import AdminBookingPhotos from '../components/admin/AdminBookingPhotos';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
@@ -27,6 +27,8 @@ const VALID_TABS = new Set([
   'dashboard', 'products', 'add', 'categories', 'stock', 'orders', 'customers',
   'bookings', 'messages', 'feedback', 'sales', 'admins', 'settings', 'payments',
 ]);
+
+const STOCK_FILTERS = new Set(['all', 'low_stock', 'out_of_stock']);
 
 function ProductSortHeader({ label, sortKey, activeKey, dir, onSort }) {
   const active = activeKey === sortKey;
@@ -51,8 +53,12 @@ export default function Admin() {
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab');
+  const initialStockFilter = searchParams.get('filter');
   const [tab, setTabState] = useState(
     initialTab && VALID_TABS.has(initialTab) ? initialTab : 'dashboard'
+  );
+  const [stockFilter, setStockFilter] = useState(
+    initialStockFilter && STOCK_FILTERS.has(initialStockFilter) ? initialStockFilter : 'all'
   );
   const [bookings, setBookings] = useState([]);
   const [products, setProducts] = useState([]);
@@ -79,13 +85,33 @@ export default function Admin() {
   const allowDelete = canDeleteProducts(user);
   const showShopControl = canManageShopSettings(user);
 
-  const setTab = (next) => {
+  const setTab = (next, options = {}) => {
     setTabState(next);
-    if (next && next !== 'dashboard') {
-      setSearchParams({ tab: next }, { replace: true });
+    const params = {};
+    if (next && next !== 'dashboard') params.tab = next;
+    const nextFilter = options.stockFilter ?? (next === 'stock' ? stockFilter : null);
+    if (next === 'stock' && nextFilter && nextFilter !== 'all') {
+      params.filter = nextFilter;
+    }
+    if (Object.keys(params).length) {
+      setSearchParams(params, { replace: true });
     } else {
       setSearchParams({}, { replace: true });
     }
+  };
+
+  const goToStockAlerts = () => {
+    setStockFilter('low_stock');
+    setTabState('stock');
+    setSearchParams({ tab: 'stock', filter: 'low_stock' }, { replace: true });
+  };
+
+  const handleStockFilterChange = (filter) => {
+    setStockFilter(filter);
+    setSearchParams(
+      filter === 'all' ? { tab: 'stock' } : { tab: 'stock', filter },
+      { replace: true }
+    );
   };
 
   const toggleProductSort = (key) => {
@@ -116,7 +142,8 @@ export default function Admin() {
   const pendingOrders = orders.filter((o) => o.payment_status === 'pending_payment' || o.shipping_status === 'pending').length;
 
   const stockAlertProducts = getStockAlertProducts(products);
-  const lowStockCount = stockAlertProducts.length;
+  const lowStockProducts = getLowStockProducts(products);
+  const lowStockCount = lowStockProducts.length;
 
   const productCategories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();
 
@@ -256,6 +283,12 @@ export default function Admin() {
     const t = searchParams.get('tab');
     const next = t && VALID_TABS.has(t) ? t : 'dashboard';
     setTabState(next);
+    const f = searchParams.get('filter');
+    if (next === 'stock' && f && STOCK_FILTERS.has(f)) {
+      setStockFilter(f);
+    } else if (next !== 'stock') {
+      setStockFilter('all');
+    }
   }, [searchParams]);
 
   const updateStatus = async (id, status) => {
@@ -378,12 +411,12 @@ export default function Admin() {
       counts={{ products: products.length, orders: orders.length, bookings: bookings.length, pendingOrders, lowStockCount }}
       flags={{ showSales, showAdminMgmt, showShopControl }}
       pageTitle={pageTitle}
-      onStockAlertClick={() => setTab('stock')}
+      onStockAlertClick={goToStockAlerts}
     >
       <AdminStockAlert
         products={stockAlertProducts}
         ready={!loading}
-        onViewStock={() => setTab('stock')}
+        onViewStock={goToStockAlerts}
         onEditProduct={handleEditProduct}
       />
       {loading && !['add', 'admins', 'messages', 'feedback', 'sales', 'dashboard', 'settings', 'payments', 'customers'].includes(tab) ? (
@@ -474,6 +507,9 @@ export default function Admin() {
             <AdminStockManager
               products={products}
               currentUser={user}
+              stockFilter={stockFilter}
+              onStockFilterChange={handleStockFilterChange}
+              lowStockCount={lowStockCount}
               onProductUpdated={(updated) =>
                 setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
               }

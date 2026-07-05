@@ -486,6 +486,40 @@ export async function deliverEmailOtp(email, code, purpose = 'verification') {
   }
 }
 
+/** General transactional email (order complete, etc.) — best-effort, never throws. */
+export async function deliverTransactionalEmail(email, { subject, html, text }) {
+  const to = String(email || '').trim().toLowerCase();
+  const result = { sent: false, devMode: false };
+
+  if (!to || !subject) return { ...result, skipped: true, reason: 'missing_to_or_subject' };
+
+  if (!emailDeliveryConfigured()) {
+    console.log(`[Email dev] To ${to}: ${subject}`);
+    return { ...result, devMode: true, skipped: true, reason: 'not_configured' };
+  }
+
+  const bodyText = text || subject;
+
+  if (resendConfigured()) {
+    try {
+      await sendViaResend({ to, subject, html: html || bodyText, text: bodyText });
+      return { sent: true };
+    } catch (err) {
+      console.error('[Email] Resend send failed:', err.message);
+      return { sent: false, error: err.message };
+    }
+  }
+
+  try {
+    const from = getEmailFrom();
+    await sendMailWithFallback({ from, to, subject, text: bodyText, html: html || bodyText });
+    return { sent: true };
+  } catch (err) {
+    console.error('[Email] SMTP send failed:', err.message);
+    return { sent: false, error: err.message };
+  }
+}
+
 export async function deliverPhoneOtp(phone, code, purpose = 'verification') {
   const e164 = normalizePhoneE164(phone);
   const label = purpose === 'reset' ? 'password reset code' : purpose === 'login' ? 'login code' : 'verification code';

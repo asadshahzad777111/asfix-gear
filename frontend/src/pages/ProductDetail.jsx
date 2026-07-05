@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState } from 'react';
-import { Link, useParams } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useParams } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { api, formatPrice } from '../api/client';
 import { orderProductContactPath, restockInquiryContactPath } from '../config/shop';
@@ -9,12 +9,15 @@ import { useShopGate } from '../hooks/useShopGate';
 import { isPublishedProduct } from '../utils/productStatus';
 import ShopLoginPrompt from '../components/ShopLoginPrompt';
 import CustomerLoginModal from '../components/CustomerLoginModal';
+import BackButton from '../components/BackButton';
+import ProductDetailGallery from '../components/ProductDetailGallery';
 import { getProductAnimKind } from '../utils/productAnimation';
 import PremiumButton, { PremiumLink } from '../components/premium/PremiumButton';
 import CasePreviewer from '../components/premium/CasePreviewer';
 import { DiscountRibbon, ProductPrice } from '../components/DiscountPicker';
 import { getSavings, hasDiscount } from '../utils/pricing';
 import { getStockStatus } from '../utils/stock';
+import { getProductCardImages } from '../utils/productImages';
 
 export default function ProductDetail() {
   const { t } = useTranslation();
@@ -46,21 +49,15 @@ export default function ProductDetail() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [id]);
-
-  const galleryImages = useMemo(() => {
-    if (!product) return [];
-    const extra = Array.isArray(product.gallery) ? product.gallery : [];
-    return [product.image, ...extra.filter((url) => url && url !== product.image)];
-  }, [product]);
+  }, [id, t]);
 
   if (loading) return <div className="loading container">{t('product.loading')}</div>;
 
   if (error || !product) {
     return (
       <div className="container section">
+        <BackButton to="/shop" label={t('product.backToShop')} className="back-nav-btn--spaced" />
         <div className="alert alert-error">{error || t('product.notFound')}</div>
-        <Link to="/shop" className="btn btn-outline">{t('product.backToShop')}</Link>
       </div>
     );
   }
@@ -74,6 +71,7 @@ export default function ProductDetail() {
       : stockStatus === 'low'
         ? t('product.onlyLeft', { count: product.stock })
         : t('product.inStock', { count: product.stock });
+  const { images: galleryImages } = getProductCardImages(product);
 
   const handleAdd = (e) => {
     const btn = e.currentTarget;
@@ -92,9 +90,7 @@ export default function ProductDetail() {
       transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
     >
       <div className="container">
-        <PremiumLink to="/shop" className="btn btn-outline" style={{ marginBottom: '1.5rem' }}>
-          {t('product.backToShop')}
-        </PremiumLink>
+        <BackButton to="/shop" label={t('product.backToShop')} className="back-nav-btn--spaced" />
 
         <div className={`product-detail-grid ${onSale ? 'on-sale' : ''}`}>
           {animKind === 'case' ? (
@@ -116,26 +112,14 @@ export default function ProductDetail() {
               ) : null}
             </>
           ) : (
-            <div className={`product-detail-image premium-product ${animKind}`}>
-              {onSale && <DiscountRibbon percent={product.discount_percent} />}
-              {animKind === 'gaming' && <span className="premium-rgb-wave premium-rgb-wave--gaming" />}
-              {animKind === 'charger' && <span className="premium-charge-ring premium-charge-ring--lg" />}
-              <img src={activeImage || product.image} alt={product.name} />
-              {galleryImages.length > 1 ? (
-                <div className="product-detail-gallery">
-                  {galleryImages.map((url) => (
-                    <button
-                      key={url}
-                      type="button"
-                      className={`product-detail-gallery-thumb ${activeImage === url ? 'is-active' : ''}`}
-                      onClick={() => setActiveImage(url)}
-                    >
-                      <img src={url} alt="" />
-                    </button>
-                  ))}
-                </div>
-              ) : null}
-            </div>
+            <ProductDetailGallery
+              product={product}
+              activeImage={activeImage}
+              onSelect={setActiveImage}
+              onSale={onSale}
+              animKind={animKind}
+              DiscountRibbon={DiscountRibbon}
+            />
           )}
 
           <div className="product-detail-info">

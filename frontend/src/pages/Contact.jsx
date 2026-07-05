@@ -3,6 +3,7 @@ import { useLocation, useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
+import BackButton from '../components/BackButton';
 import LocationSection from '../components/LocationSection';
 import { SHOP, whatsappLink } from '../config/shop';
 import { composeContactWhatsAppBody } from '../utils/contactPrefill';
@@ -141,6 +142,9 @@ export default function Contact() {
 
   return (
     <>
+      <div className="container" style={{ paddingTop: '1rem' }}>
+        <BackButton className="back-nav-btn--spaced" />
+      </div>
       <PageHeader
         eyebrow={`📞 ${t('contact.eyebrow')}`}
         title={t('contact.title')}

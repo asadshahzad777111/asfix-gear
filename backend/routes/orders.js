@@ -6,6 +6,19 @@ import {
   buildNewOrderShopMessage,
   buildPaidOrderShopMessage,
 } from '../services/orderNotifications.js';
+import { sendOrderCompleteEmail } from '../services/orderEmail.js';
+
+function findOrderById(id) {
+  return store.getOrders().find((o) => o.id === Number(id)) || null;
+}
+
+function notifyIfNewlyDelivered(order, previousStatus) {
+  if (!order || order.shipping_status !== 'delivered') return;
+  if (previousStatus === 'delivered') return;
+  sendOrderCompleteEmail(order).catch((err) => {
+    console.error('[OrderEmail] Async send failed:', err.message);
+  });
+}
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
@@ -143,8 +156,10 @@ router.patch('/:id/status', requireAuth, requireRole(...STAFF), (req, res) => {
   if (!VALID_STATUSES.includes(shipping_status)) {
     return res.status(400).json({ error: 'Invalid shipping status' });
   }
+  const previous = findOrderById(req.params.id);
   const order = store.updateOrderStatus(req.params.id, shipping_status, req.auth.user);
   if (!order) return res.status(404).json({ error: 'Order not found' });
+  notifyIfNewlyDelivered(order, previous?.shipping_status);
   res.json(order);
 });
 
@@ -176,8 +191,10 @@ router.patch('/:id/assign-rider', requireAuth, requireRole(...STAFF), (req, res)
 
 router.patch('/:id/mark-delivered', requireAuth, requireRole(...STAFF), (req, res) => {
   try {
+    const previous = findOrderById(req.params.id);
     const order = store.markOrderDelivered(req.params.id, req.auth.user);
     if (!order) return res.status(404).json({ error: 'Order not found' });
+    notifyIfNewlyDelivered(order, previous?.shipping_status);
     res.json(order);
   } catch (err) {
     res.status(400).json({ error: err.message });

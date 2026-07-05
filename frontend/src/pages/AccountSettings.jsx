@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import PageHeader from '../components/PageHeader';
+import BackButton from '../components/BackButton';
 import PasswordField from '../components/auth/PasswordField';
 
 export default function AccountSettings() {
@@ -65,6 +66,9 @@ export default function AccountSettings() {
 
   return (
     <>
+      <div className="container" style={{ paddingTop: '1rem' }}>
+        <BackButton to="/account" label={t('account.backToAccount')} className="back-nav-btn--spaced" />
+      </div>
       <PageHeader
         eyebrow={t('settings.eyebrow')}
         title={t('settings.title')}

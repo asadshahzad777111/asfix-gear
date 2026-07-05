@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api, formatPrice } from '../api/client';
+import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import PaymentInstructions from './PaymentInstructions';
 import OrderHelpActions from './OrderHelpActions';
@@ -20,6 +21,7 @@ const NEXT_STEPS = ['step1', 'step2', 'step3'];
 
 export default function OrderSuccessPanel({ order, phone, onDone }) {
   const { t } = useTranslation();
+  const { isCustomer } = useAuth();
   const { waUrl } = buildOrderReceipt(order);
   const [gmail, setGmail] = useState('');
   const [gmailMsg, setGmailMsg] = useState('');
@@ -139,6 +141,11 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
       </div>
 
       <div className="order-success-actions">
+        {isCustomer ? (
+          <Link to="/account" className="btn btn-primary btn-sm">
+            {t('nav.myOrders')}
+          </Link>
+        ) : null}
         <Link to={`/track?orderId=${encodeURIComponent(order.order_id)}&phone=${encodeURIComponent(phone)}`} className="btn btn-outline btn-sm">
           {t('orderSuccess.trackOrder')}
         </Link>
