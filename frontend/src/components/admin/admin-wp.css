@@ -1495,6 +1495,7 @@
 .wp-admin-shell .admin-stock-search,
 .wp-admin-shell .admin-stock-qty-input,
 .wp-admin-shell .admin-booking-cost-input,
+.wp-admin-shell .admin-booking-note-input,
 .wp-admin-shell .admin-rider-form input,
 .wp-admin-shell .admin-feedback-edit textarea,
 .wp-admin-shell .admin-feedback-edit select,
@@ -1528,6 +1529,7 @@
 .wp-admin-shell .admin-float-empty,
 .wp-admin-shell .admin-booking-meta,
 .wp-admin-shell .admin-booking-sub,
+.wp-admin-shell .admin-booking-ref,
 .wp-admin-shell .admin-stock-head p,
 .wp-admin-shell .admin-stock-row-meta,
 .wp-admin-shell .admin-feedback-meta,
@@ -1538,13 +1540,49 @@
   color: #50575e;
 }
 
+.wp-admin-shell .admin-table td {
+  color: #1d2327;
+}
+
+.wp-admin-shell .admin-booking-card {
+  background: #fff;
+  border: 1px solid #c3c4c7;
+}
+
+.wp-admin-shell .admin-booking-head {
+  border-bottom-color: #dcdcde;
+}
+
+.wp-admin-shell .admin-booking-head h3 {
+  color: #1d2327;
+  font-size: 1.05rem;
+  font-weight: 600;
+}
+
+.wp-admin-shell .admin-booking-label {
+  color: #2271b1;
+}
+
+.wp-admin-shell .admin-booking-grid p {
+  color: #1d2327;
+}
+
+.wp-admin-shell .admin-booking-notes-list li {
+  background: #f6f7f7;
+  border-color: #dcdcde;
+}
+
+.wp-admin-shell .admin-booking-photo-thumb {
+  border-color: #c3c4c7;
+}
+
+.wp-admin-shell .admin-booking-photo-error {
+  color: #b32d2e;
+}
+
 .wp-admin-shell .admin-table th {
   background: #f6f7f7;
   color: #50575e;
-}
-
-.wp-admin-shell .admin-table td {
-  color: #1d2327;
 }
 
 .wp-admin-shell .admin-stock-row {

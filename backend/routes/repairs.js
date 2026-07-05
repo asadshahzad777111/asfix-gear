@@ -4,7 +4,7 @@ import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
 import { buildRepairStatusCustomerMessage } from '../services/repairNotifications.js';
 import { publishRepairEvent, publishRepairMessageEvent } from '../services/liveEvents.js';
-import { rateLimit } from '../middleware/rateLimit.js';
+import { rateLimit, writeLimiter, clientKey } from '../middleware/rateLimit.js';
 import { MAZDORI_KEYWORDS } from '../rates/iphone-repair-rates.js';
 
 const router = Router();
@@ -43,11 +43,33 @@ const MAX_PHOTO_URL_LEN = 500;
 const MAX_PHOTOS_PER_KIND = 4;
 const MAX_MESSAGE_LEN = 2000;
 
-const repairMessageLimiter = rateLimit({
+const STAFF_MESSAGE_LIMIT = 60;
+const CUSTOMER_MESSAGE_LIMIT = 30;
+
+function repairMessageKey(req) {
+  const uid = req.auth?.user?.id;
+  return uid != null ? `user:${uid}` : clientKey(req);
+}
+
+const staffRepairMessageLimiter = rateLimit({
   windowMs: 60_000,
-  max: 20,
+  max: STAFF_MESSAGE_LIMIT,
   message: 'Too many messages. Please wait a moment.',
+  keyFn: repairMessageKey,
 });
+
+const customerRepairMessageLimiter = rateLimit({
+  windowMs: 60_000,
+  max: CUSTOMER_MESSAGE_LIMIT,
+  message: 'Too many messages. Please wait a moment.',
+  keyFn: repairMessageKey,
+});
+
+function repairMessageLimiter(req, res, next) {
+  const role = req.auth?.user?.role;
+  if (STAFF.includes(role)) return staffRepairMessageLimiter(req, res, next);
+  return customerRepairMessageLimiter(req, res, next);
+}
 
 function str(value, max) {
   const s = typeof value === 'string' ? value : value == null ? '' : String(value);
@@ -138,7 +160,7 @@ router.get('/rates/catalog', requireAuth, requireRole(...CUSTOMER), (_req, res) 
 });
 
 /** Customer rate lookup — instant UI message + owner WhatsApp alert with margin breakdown. */
-router.post('/rate-query', requireAuth, requireRole(...CUSTOMER), (req, res) => {
+router.post('/rate-query', writeLimiter, requireAuth, requireRole(...CUSTOMER), (req, res) => {
   const body = req.body || {};
   const model = str(body.model, MAX_LEN.model);
   const part_type = str(body.part_type, MAX_LEN.part_type);
@@ -219,7 +241,7 @@ router.get('/rate-queries', requireAuth, requireRole(...CUSTOMER), (req, res) =>
   res.json(store.getRepairRateQueriesByCustomer(req.auth.user.id));
 });
 
-router.post('/book', optionalAuth, (req, res) => {
+router.post('/book', writeLimiter, optionalAuth, (req, res) => {
   const body = req.body || {};
   const customer_name = str(body.customer_name, MAX_LEN.customer_name);
   const phone = str(body.phone, MAX_LEN.phone);
@@ -322,7 +344,7 @@ router.get('/bookings/:id/messages', requireAuth, (req, res) => {
   });
 });
 
-router.post('/bookings/:id/messages', repairMessageLimiter, requireAuth, (req, res) => {
+router.post('/bookings/:id/messages', requireAuth, repairMessageLimiter, (req, res) => {
   const booking = store.getRepairBookingById(req.params.id);
   if (!assertBookingChatAccess(req, res, booking)) return;
 

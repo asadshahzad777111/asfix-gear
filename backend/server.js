@@ -87,7 +87,9 @@ app.get('/api/stats', (_req, res) => {
 app.use('/api/auth', requireStorageReady, authRouter);
 app.use('/api/events', requireStorageReady, eventsRouter);
 app.use('/api/products', requireStorageReady, productsRouter);
-app.use('/api/repairs', writeLimiter, requireStorageReady, repairsRouter);
+// Repair chat GET polling + staff quick replies must not share the tight
+// public writeLimiter (15/min) — see repairs.js for per-route limits.
+app.use('/api/repairs', requireStorageReady, repairsRouter);
 app.use('/api/contact', writeLimiter, requireStorageReady, contactRouter);
 app.use('/api/orders', writeLimiter, requireStorageReady, ordersRouter);
 app.use('/api/shop', requireStorageReady, shopRouter);

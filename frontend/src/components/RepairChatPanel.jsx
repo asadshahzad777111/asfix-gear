@@ -27,9 +27,11 @@ export default function RepairChatPanel({
   const [draft, setDraft] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [activeTemplateId, setActiveTemplateId] = useState(null);
   const [error, setError] = useState('');
   const threadRef = useRef(null);
   const mountedRef = useRef(true);
+  const sendingRef = useRef(false);
 
   const scrollToBottom = useCallback(() => {
     const el = threadRef.current;
@@ -39,14 +41,14 @@ export default function RepairChatPanel({
   const loadMessages = useCallback(async ({ silent = false } = {}) => {
     if (!bookingId) return;
     if (!silent) setLoading(true);
-    setError('');
+    if (!silent) setError('');
     try {
       const data = await api.getRepairMessages(bookingId);
       if (!mountedRef.current) return;
       setMessages(data.messages || []);
       onUnreadChange?.(data.unread || 0);
     } catch (err) {
-      if (!mountedRef.current) return;
+      if (!mountedRef.current || silent) return;
       setError(err.message || t('repairChat.loadError'));
     } finally {
       if (mountedRef.current) setLoading(false);
@@ -85,26 +87,35 @@ export default function RepairChatPanel({
 
   const sendText = async (text) => {
     const body = String(text || '').trim();
-    if (!body || sending) return;
+    if (!body || sending || sendingRef.current) return;
+    sendingRef.current = true;
     setSending(true);
     setError('');
     try {
       const msg = await api.sendRepairMessage(bookingId, body);
       setMessages((prev) => [...prev, msg]);
       setDraft('');
+      setError('');
       onUnreadChange?.(0);
       scrollToBottom();
     } catch (err) {
       setError(err.message || t('repairChat.sendError'));
     } finally {
+      sendingRef.current = false;
       setSending(false);
     }
   };
 
   const sendTemplate = async (template) => {
-    const name = mode === 'staff' ? booking?.customer_name : (user?.name || user?.username);
-    const text = fillRepairTemplate(template, { name, lang });
-    await sendText(text);
+    if (sending || sendingRef.current) return;
+    setActiveTemplateId(template.id);
+    try {
+      const name = mode === 'staff' ? booking?.customer_name : (user?.name || user?.username);
+      const text = fillRepairTemplate(template, { name, lang });
+      await sendText(text);
+    } finally {
+      setActiveTemplateId(null);
+    }
   };
 
   const templates = mode === 'staff' ? STAFF_REPAIR_TEMPLATES : CUSTOMER_REPAIR_TEMPLATES;
@@ -171,7 +182,7 @@ export default function RepairChatPanel({
               key={tpl.id}
               type="button"
               className="repair-chat-template-btn"
-              disabled={sending}
+              disabled={sending || activeTemplateId === tpl.id}
               title={fillRepairTemplate(tpl, {
                 name: mode === 'staff' ? booking?.customer_name : (user?.name || 'Customer'),
                 lang,

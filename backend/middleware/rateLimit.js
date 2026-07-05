@@ -14,7 +14,7 @@ setInterval(() => {
   }
 }, SWEEP_INTERVAL_MS).unref();
 
-function clientKey(req) {
+export function clientKey(req) {
   return req.ip || req.socket?.remoteAddress || 'unknown';
 }
 
@@ -27,11 +27,16 @@ function clientKey(req) {
  * silently eat into the login limiter's budget for that same visitor,
  * causing confusing false "too many requests" lockouts.
  */
-export function rateLimit({ windowMs = 60_000, max = 60, message = 'Too many requests. Try again later.' } = {}) {
+export function rateLimit({
+  windowMs = 60_000,
+  max = 60,
+  message = 'Too many requests. Try again later.',
+  keyFn = clientKey,
+} = {}) {
   const limiterId = limiterSeq++;
 
   return (req, res, next) => {
-    const key = `${limiterId}:${clientKey(req)}`;
+    const key = `${limiterId}:${keyFn(req)}`;
     const now = Date.now();
     let bucket = buckets.get(key);
 

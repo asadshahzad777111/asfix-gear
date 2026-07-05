@@ -21,6 +21,7 @@ import { ProductPrice } from '../components/DiscountPicker';
 import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts, getLowStockProducts } from '../utils/stock';
 import AdminStockAlert from '../components/admin/AdminStockAlert';
 import AdminBookingPhotos from '../components/admin/AdminBookingPhotos';
+import AdminBookingCard from '../components/admin/AdminBookingCard';
 import { RepairChatButton, RepairChatModal } from '../components/RepairChatPanel';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import useLiveUpdates from '../hooks/useLiveUpdates';
@@ -738,166 +739,24 @@ export default function Admin() {
                   <div className="empty-state glass-card">Abhi koi repair intake nahi.</div>
                 ) : (
                   bookings.map((b) => (
-                    <article key={b.id} className="admin-booking-card glass-card">
-                      <div className="admin-booking-head">
-                        <div>
-                          <h3>{b.customer_name}</h3>
-                          <p className="admin-booking-meta">
-                            {b.phone}
-                            {b.alternative_contact ? ` · Alt: ${b.alternative_contact}` : ''}
-                          </p>
-                        </div>
-                        <div className="admin-booking-head-actions">
-                          <RepairChatButton
-                            booking={b}
-                            unread={repairChatUnread[b.id] || 0}
-                            onClick={() => setChatBooking(b)}
-                          />
-                          <select className="status-select" value={b.status} onChange={(e) => updateStatus(b.id, e.target.value)}>
-                            <option value="pending">Pending</option>
-                            <option value="in_progress">In Progress</option>
-                            <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
-                          </select>
-                        </div>
-                      </div>
-                      <div className="admin-booking-grid">
-                        <div>
-                          <span className="admin-booking-label">Device</span>
-                          <p>{b.device_brand} {b.device_model}</p>
-                        </div>
-                        <div>
-                          <span className="admin-booking-label">Estimated Time</span>
-                          <p>{b.estimated_repair_time || b.service_name || '—'}</p>
-                        </div>
-                        <div>
-                          <span className="admin-booking-label">Estimated Cost (PKR)</span>
-                          <div className="admin-booking-cost-row">
-                            <input
-                              type="number"
-                              min="0"
-                              step="1"
-                              className="admin-booking-cost-input"
-                              placeholder="—"
-                              value={costDrafts[b.id] ?? (b.estimated_cost ?? '')}
-                              onChange={(e) => setCostDrafts((prev) => ({ ...prev, [b.id]: e.target.value }))}
-                            />
-                            <button
-                              type="button"
-                              className="btn btn-outline btn-sm"
-                              disabled={costSaving[b.id]}
-                              onClick={() => saveEstimatedCost(b.id)}
-                            >
-                              {costSaving[b.id] ? '…' : 'Save'}
-                            </button>
-                          </div>
-                        </div>
-                        <div className="admin-booking-span-2">
-                          <span className="admin-booking-label">Issues</span>
-                          <p>{b.issue || '—'}</p>
-                          {b.issue_other ? <p className="admin-booking-sub">Other: {b.issue_other}</p> : null}
-                          {b.screen_quality ? <p className="admin-booking-sub">Screen: {b.screen_quality}</p> : null}
-                          {b.dead_mobile_acknowledged ? <p className="admin-booking-sub">Dead mobile policy: ✓ Accepted (no warranty)</p> : null}
-                        </div>
-                        <div>
-                          <span className="admin-booking-label">Submitted</span>
-                          <p>{b.created_at ? new Date(b.created_at).toLocaleString() : '—'}</p>
-                        </div>
-                        <div>
-                          <span className="admin-booking-label">Terms</span>
-                          <p>{b.terms_accepted ? '✓ Confirmed' : '—'}</p>
-                        </div>
-                        <div className="admin-booking-span-2">
-                          <span className="admin-booking-label">Customer note sent</span>
-                          <p className="admin-booking-sub">{t('admin.standardCustomerNote')}</p>
-                        </div>
-                        {(b.staff_notes || []).length > 0 && (
-                          <div className="admin-booking-span-2 admin-booking-notes">
-                            <span className="admin-booking-label">{t('admin.staffNotes')}</span>
-                            <ul className="admin-booking-notes-list">
-                              {(b.staff_notes || []).map((n) => (
-                                <li key={n.id || n.at}>
-                                  <small>{n.at ? new Date(n.at).toLocaleString() : ''}{n.by_name ? ` · ${n.by_name}` : ''}</small>
-                                  <p>{n.text}</p>
-                                </li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
-                        <div className="admin-booking-span-2 admin-booking-note-form">
-                          <AdminBookingPhotos booking={b} onUpdated={updateBookingInList} />
-                        </div>
-                        <div className="admin-booking-span-2 admin-booking-note-form">
-                          <label className="admin-booking-label" htmlFor={`booking-note-${b.id}`}>{t('admin.staffNotes')}</label>
-                          <textarea
-                            id={`booking-note-${b.id}`}
-                            className="admin-booking-note-input"
-                            rows={3}
-                            value={noteDrafts[b.id] || ''}
-                            onChange={(e) => setNoteDrafts((prev) => ({ ...prev, [b.id]: e.target.value }))}
-                            placeholder={t('admin.bookingNotePlaceholder')}
-                            maxLength={2000}
-                          />
-                          <button
-                            type="button"
-                            className="btn btn-primary btn-sm"
-                            disabled={noteSaving[b.id] || !(noteDrafts[b.id] || '').trim()}
-                            onClick={() => saveBookingNote(b.id)}
-                          >
-                            {noteSaving[b.id] ? '…' : t('admin.saveBookingNote')}
-                          </button>
-                        </div>
-                      </div>
-                    </article>
+                    <AdminBookingCard
+                      key={b.id}
+                      booking={b}
+                      chatUnread={repairChatUnread[b.id] || 0}
+                      onOpenChat={() => setChatBooking(b)}
+                      onStatusChange={updateStatus}
+                      costValue={costDrafts[b.id] ?? (b.estimated_cost ?? '')}
+                      onCostChange={(id, value) => setCostDrafts((prev) => ({ ...prev, [id]: value }))}
+                      onSaveCost={saveEstimatedCost}
+                      costSaving={Boolean(costSaving[b.id])}
+                      noteValue={noteDrafts[b.id] || ''}
+                      onNoteChange={(id, value) => setNoteDrafts((prev) => ({ ...prev, [id]: value }))}
+                      onSaveNote={saveBookingNote}
+                      noteSaving={Boolean(noteSaving[b.id])}
+                      onUpdated={updateBookingInList}
+                      t={t}
+                    />
                   ))
-                )}
-              </div>
-              <div className="admin-table-wrap glass-card admin-table-desktop">
-                {bookings.length === 0 ? (
-                  <div className="empty-state">Abhi koi repair intake nahi.</div>
-                ) : (
-                  <table className="admin-table">
-                    <thead>
-                      <tr>
-                        <th>Customer</th>
-                        <th>Contact</th>
-                        <th>Device</th>
-                        <th>Issues</th>
-                        <th>Est. Time</th>
-                        <th>Status</th>
-                        <th>Chat</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {bookings.map((b) => (
-                        <tr key={b.id}>
-                          <td>{b.customer_name}</td>
-                          <td>
-                            {b.phone}
-                            {b.alternative_contact ? <><br /><small>Alt: {b.alternative_contact}</small></> : null}
-                          </td>
-                          <td>{b.device_brand} {b.device_model}</td>
-                          <td className="admin-table-issues">{b.issue || '—'}</td>
-                          <td>{b.estimated_repair_time || '—'}</td>
-                          <td>
-                            <select className="status-select" value={b.status} onChange={(e) => updateStatus(b.id, e.target.value)}>
-                              <option value="pending">Pending</option>
-                              <option value="in_progress">In Progress</option>
-                              <option value="completed">Completed</option>
-                              <option value="cancelled">Cancelled</option>
-                            </select>
-                          </td>
-                          <td>
-                            <RepairChatButton
-                              booking={b}
-                              unread={repairChatUnread[b.id] || 0}
-                              onClick={() => setChatBooking(b)}
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
                 )}
               </div>
             </>
