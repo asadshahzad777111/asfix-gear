@@ -2922,6 +2922,11 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 /* Modal */
+body.modal-open .guest-welcome-banner {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .modal-overlay {
   position: fixed;
   inset: 0;
@@ -2932,7 +2937,7 @@ img { max-width: 100%; height: auto; display: block; }
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: calc(var(--navbar-height) + 0.75rem) 1rem 1rem;
+  padding: 1rem;
   overflow-y: auto;
   overscroll-behavior: contain;
   animation: fadeIn 0.2s ease;
@@ -2941,7 +2946,7 @@ img { max-width: 100%; height: auto; display: block; }
 .modal-panel {
   position: relative;
   width: min(920px, 100%);
-  max-height: calc(100dvh - var(--navbar-height) - 2rem);
+  max-height: min(90dvh, calc(100dvh - 2rem));
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--bg-elevated);
@@ -2952,6 +2957,8 @@ img { max-width: 100%; height: auto; display: block; }
   padding: 2rem;
   box-shadow: var(--shadow-modal);
   animation: slideUp 0.25s ease;
+  margin: auto;
+  flex-shrink: 0;
 }
 
 .modal-close {
@@ -2969,7 +2976,7 @@ img { max-width: 100%; height: auto; display: block; }
   color: var(--text);
   cursor: pointer;
   font-size: 1rem;
-  z-index: 2;
+  z-index: 3;
   transition: background 0.2s;
 }
 

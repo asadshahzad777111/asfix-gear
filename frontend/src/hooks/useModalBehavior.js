@@ -32,6 +32,7 @@ export default function useModalBehavior(open, onClose) {
 
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    document.body.classList.add('modal-open');
 
     window.history.pushState({ modal: true }, '');
     pushedRef.current = true;
@@ -45,6 +46,7 @@ export default function useModalBehavior(open, onClose) {
 
     return () => {
       document.body.style.overflow = previousOverflow;
+      document.body.classList.remove('modal-open');
       window.removeEventListener('popstate', handlePopState);
       if (pushedRef.current && !closingViaPopRef.current) {
         window.history.back();
