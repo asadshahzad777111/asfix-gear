@@ -106,9 +106,9 @@
 @media (max-width: 640px) {
   .order-notif-stack {
     top: auto;
-    bottom: calc(var(--float-bottom, 5.5rem) + 0.5rem);
-    right: 0.65rem;
-    left: 0.65rem;
+    bottom: calc(var(--float-bottom, var(--float-dock-row, 5.5rem)) + 0.5rem);
+    right: var(--float-dock-right, 0.65rem);
+    left: var(--float-dock-right, 0.65rem);
     width: auto;
   }
 }

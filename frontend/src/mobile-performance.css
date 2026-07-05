@@ -1,235 +1,248 @@
-/* Mobile scroll + interaction performance */
-
-@media (max-width: 1024px), (pointer: coarse) {
-  html {
-    scroll-behavior: auto !important;
-    -webkit-text-size-adjust: 100%;
-  }
-
-  body {
-    background-attachment: scroll !important;
-    overscroll-behavior-y: none;
-    touch-action: manipulation;
-  }
-
-  .app-main {
-    -webkit-overflow-scrolling: touch;
-  }
-
-  :root {
-    --glass-blur: none;
-  }
-
-  /* Drop backdrop-filter on cards/forms only — keep navbar cursor FX intact */
-  .glass-card,
-  .repair-intake-form,
-  .repair-models-panel,
-  .screen-quality-panel,
-  .login-form,
-  .booking-form,
-  .contact-info-card,
-  .location-info,
-  .product-card,
-  .service-card,
-  .repair-intake-section,
-  .form-group input,
-  .form-group select,
-  .form-group textarea,
-  .modal-panel,
-  .staff-access-panel,
-  .floating-cart-panel,
-  .product-category-pill,
-  .filters-bar .filter-btn {
-    backdrop-filter: none !important;
-    -webkit-backdrop-filter: none !important;
-  }
-
-  /* Keep nav + floats out of content-visibility skipping */
-  .navbar,
-  .navbar-inner,
-  .nav-links,
-  .nav-overlay,
-  .footer,
-  .floating-cart-trigger,
-  .whatsapp-float,
-  .chat-fab-trigger,
-  .staff-access,
-  .gaming-mode-btn--trigger,
-  .staff-toolbar,
-  .admin-float-desk,
-  /* Auth OTP verify steps grow well past the 480px intrinsic-size hint on
-     .section — without this, mobile Chrome/Safari paint a blank card after
-     "Send code" even though the OTP inputs exist in the DOM. */
-  .auth-section,
-  .auth-2026-shell {
-    content-visibility: visible !important;
-  }
-
-  .glass-card,
-  .repair-intake-form,
-  .repair-models-panel,
-  .screen-quality-panel,
-  .login-form,
-  .booking-form,
-  .contact-info-card,
-  .location-info,
-  .product-card,
-  .service-card,
-  .repair-intake-section,
-  .form-group input,
-  .form-group select,
-  .form-group textarea,
-  .modal-panel,
-  .staff-access-panel,
-  .floating-cart-panel {
-    background: var(--bg-elevated) !important;
-  }
-
-  .navbar {
-    background: var(--nav-glass) !important;
-  }
-
-  .nav-links.nav-drawer,
-  .nav-links.nav-drawer.open {
-    background: var(--drawer-bg) !important;
-  }
-
-  .ambient-bg {
-    display: none !important;
-  }
-
-  body {
-    background-image: var(--bg-gradient) !important;
-  }
-
-  /* Heavy ambient loops — desktop only (sale/nav pulses live in responsive-floats.css) */
-  .orb,
-  .marquee-track,
-  .phone-mockup {
-    animation: none !important;
-  }
-
-  .whatsapp-float {
-    background: #25d366 !important;
-    color: #fff !important;
-  }
-
-  .chat-fab-trigger {
-    background: linear-gradient(135deg, var(--mint), #22b8a8) !important;
-    color: #06231d !important;
-  }
-
-  .floating-cart-trigger,
-  .staff-access-trigger,
-  .gaming-mode-btn--trigger,
-  .theme-toggle--nav,
-  .menu-toggle {
-    background: var(--bg-elevated) !important;
-    box-shadow: var(--shadow-elevated);
-    transform: translateZ(0);
-  }
-
-  .whatsapp-float,
-  .chat-fab-trigger {
-    box-shadow: var(--shadow-elevated);
-    transform: translateZ(0);
-  }
-
-  /* Premium button press — opacity only on mobile */
-  .btn:active,
-  .filter-btn:active,
-  .repair-issue-chip:active,
-  .fab-add:active,
-  .nav-add-product:active {
-    transform: none !important;
-    opacity: 0.9;
-  }
-
-  .premium-btn-shimmer,
-  .premium-btn-neon-ring,
-  .btn-ripple {
-    display: none !important;
-  }
-
-  .section,
-  .repair-page-block {
-    content-visibility: auto;
-    contain-intrinsic-size: auto 480px;
-  }
-
-  .nav-overlay {
-    background: var(--overlay) !important;
-  }
-
-  /* Cart / staff panels — smooth slide, no blur */
-  .floating-cart-panel,
-  .staff-access-panel {
-    background: var(--cart-panel-bg) !important;
-    -webkit-overflow-scrolling: touch;
-  }
-}
-
-/* Touch / no-hover — prevent sticky :hover lifts (Phase 3 floats keep tap pop) */
-@media (hover: none), (pointer: coarse) {
-  .repair-step:hover,
-  .glass-card:hover,
-  .screen-quality-card:hover,
-  .product-card:hover,
-  .product-card-wrap--grid:hover,
-  .home-product-card:hover,
-  .home-trust-badge:hover,
-  .home-collection-card:hover,
-  .nav-links a:hover,
-  .btn:hover {
-    transform: none !important;
-  }
-
-  /* WA shortcut always visible when hover-reveal is unavailable */
-  .product-card-wrap .product-wa-btn {
-    opacity: 1 !important;
-    transform: none !important;
-  }
-}
-
-/* Page lazy-load fallback */
-.page-fallback {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 0.75rem;
-  min-height: 40vh;
-  padding: 2rem 1rem;
-  color: var(--text-muted);
-  font-size: 0.9rem;
-}
-
-.page-fallback-spinner {
-  width: 1.75rem;
-  height: 1.75rem;
-  border-radius: 50%;
-  border: 2px solid rgba(255, 107, 44, 0.2);
-  border-top-color: var(--primary);
-  animation: pageFallbackSpin 0.7s linear infinite;
-}
-
-@keyframes pageFallbackSpin {
-  to { transform: rotate(360deg); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .page-fallback-spinner {
-    animation: none;
-    border-top-color: var(--primary);
-  }
-
-  .orb,
-  .marquee-track,
-  .nav-links.nav-drawer,
-  .nav-overlay,
-  .page-transition-page {
-    animation: none !important;
-    transition: none !important;
-  }
-}
-
+/* Mobile scroll + interaction performance */
+
+@media (max-width: 1024px), (pointer: coarse) {
+  html {
+    scroll-behavior: auto !important;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-attachment: scroll !important;
+    overscroll-behavior-y: none;
+    touch-action: manipulation;
+  }
+
+  .app-main {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  :root {
+    --glass-blur: none;
+  }
+
+  /* Drop backdrop-filter on cards/forms only — keep navbar cursor FX intact */
+  .glass-card,
+  .repair-intake-form,
+  .repair-models-panel,
+  .screen-quality-panel,
+  .login-form,
+  .booking-form,
+  .contact-info-card,
+  .location-info,
+  .product-card,
+  .service-card,
+  .repair-intake-section,
+  .form-group input,
+  .form-group select,
+  .form-group textarea,
+  .modal-panel,
+  .staff-access-panel,
+  .floating-cart-panel,
+  .product-category-pill,
+  .filters-bar .filter-btn {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+
+  /* Keep nav + floats out of content-visibility skipping */
+  .navbar,
+  .navbar-inner,
+  .nav-links,
+  .nav-overlay,
+  .footer,
+  .floating-cart-trigger,
+  .whatsapp-float,
+  .chat-fab-trigger,
+  .floating-repair-btn,
+  .staff-access,
+  .gaming-mode-btn--trigger,
+  .staff-toolbar,
+  .admin-float-desk,
+  /* Auth OTP verify steps grow well past the 480px intrinsic-size hint on
+     .section — without this, mobile Chrome/Safari paint a blank card after
+     "Send code" even though the OTP inputs exist in the DOM. */
+  .auth-section,
+  .auth-2026-shell {
+    content-visibility: visible !important;
+  }
+
+  .glass-card,
+  .repair-intake-form,
+  .repair-models-panel,
+  .screen-quality-panel,
+  .login-form,
+  .booking-form,
+  .contact-info-card,
+  .location-info,
+  .product-card,
+  .service-card,
+  .repair-intake-section,
+  .form-group input,
+  .form-group select,
+  .form-group textarea,
+  .modal-panel,
+  .staff-access-panel,
+  .floating-cart-panel {
+    background: var(--bg-elevated) !important;
+  }
+
+  .navbar {
+    background: var(--nav-glass) !important;
+  }
+
+  .nav-links.nav-drawer,
+  .nav-links.nav-drawer.open {
+    background: var(--drawer-bg) !important;
+  }
+
+  .ambient-bg {
+    display: none !important;
+  }
+
+  body {
+    background-image: var(--bg-gradient) !important;
+  }
+
+  /* Heavy ambient loops — desktop only (sale/nav pulses live in responsive-floats.css) */
+  .orb,
+  .marquee-track,
+  .phone-mockup {
+    animation: none !important;
+  }
+
+  .whatsapp-float {
+    background: #25d366 !important;
+    color: #fff !important;
+  }
+
+  .chat-fab-trigger {
+    background: linear-gradient(135deg, var(--mint), #22b8a8) !important;
+    color: #06231d !important;
+  }
+
+  .floating-cart-trigger,
+  .staff-access-trigger,
+  .gaming-mode-btn--trigger,
+  .theme-toggle--nav,
+  .menu-toggle {
+    background: var(--bg-elevated) !important;
+    box-shadow: var(--shadow-elevated);
+    transform: translateZ(0);
+  }
+
+  .whatsapp-float,
+  .chat-fab-trigger,
+  .floating-repair-btn {
+    box-shadow: var(--shadow-elevated);
+    transform: translateZ(0);
+  }
+
+  .whatsapp-float {
+    animation: none !important;
+  }
+
+  .whatsapp-float:hover,
+  .whatsapp-float:active,
+  .floating-repair-btn:hover,
+  .floating-repair-btn:active {
+    transform: translateZ(0) !important;
+  }
+
+  /* Premium button press — opacity only on mobile */
+  .btn:active,
+  .filter-btn:active,
+  .repair-issue-chip:active,
+  .fab-add:active,
+  .nav-add-product:active {
+    transform: none !important;
+    opacity: 0.9;
+  }
+
+  .premium-btn-shimmer,
+  .premium-btn-neon-ring,
+  .btn-ripple {
+    display: none !important;
+  }
+
+  .section,
+  .repair-page-block {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 480px;
+  }
+
+  .nav-overlay {
+    background: var(--overlay) !important;
+  }
+
+  /* Cart / staff panels — smooth slide, no blur */
+  .floating-cart-panel,
+  .staff-access-panel {
+    background: var(--cart-panel-bg) !important;
+    -webkit-overflow-scrolling: touch;
+  }
+}
+
+/* Touch / no-hover — prevent sticky :hover lifts (Phase 3 floats keep tap pop) */
+@media (hover: none), (pointer: coarse) {
+  .repair-step:hover,
+  .glass-card:hover,
+  .screen-quality-card:hover,
+  .product-card:hover,
+  .product-card-wrap--grid:hover,
+  .home-product-card:hover,
+  .home-trust-badge:hover,
+  .home-collection-card:hover,
+  .nav-links a:hover,
+  .btn:hover {
+    transform: none !important;
+  }
+
+  /* WA shortcut always visible when hover-reveal is unavailable */
+  .product-card-wrap .product-wa-btn {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* Page lazy-load fallback */
+.page-fallback {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  min-height: 40vh;
+  padding: 2rem 1rem;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+.page-fallback-spinner {
+  width: 1.75rem;
+  height: 1.75rem;
+  border-radius: 50%;
+  border: 2px solid rgba(255, 107, 44, 0.2);
+  border-top-color: var(--primary);
+  animation: pageFallbackSpin 0.7s linear infinite;
+}
+
+@keyframes pageFallbackSpin {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-fallback-spinner {
+    animation: none;
+    border-top-color: var(--primary);
+  }
+
+  .orb,
+  .marquee-track,
+  .nav-links.nav-drawer,
+  .nav-overlay,
+  .page-transition-page {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
