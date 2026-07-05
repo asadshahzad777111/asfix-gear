@@ -4,6 +4,11 @@ import { getProductHoverImage } from '../utils/productImages';
 const HOVER_DELAY_MS = 150;
 const TAP_FLASH_MS = 220;
 
+function deviceHasHover() {
+  if (typeof window === 'undefined') return false;
+  return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
+}
+
 /**
  * Swap shop-card image to gallery[0] on hover (desktop) or tap/pop (mobile).
  */
@@ -42,12 +47,13 @@ export default function useProductCardImage(product, { popping = false } = {}) {
   }, [popping, hoverImage, clearTapTimer]);
 
   const onMouseEnter = useCallback(() => {
-    if (!hoverImage) return;
+    if (!hoverImage || !deviceHasHover()) return;
     clearHoverTimer();
     hoverTimer.current = window.setTimeout(() => setShowAlt(true), HOVER_DELAY_MS);
   }, [hoverImage, clearHoverTimer]);
 
   const onMouseLeave = useCallback(() => {
+    if (!deviceHasHover()) return;
     clearHoverTimer();
     if (!popping) setShowAlt(false);
   }, [popping, clearHoverTimer]);
@@ -76,6 +82,9 @@ export default function useProductCardImage(product, { popping = false } = {}) {
 
   return {
     displayImage,
+    mainImage,
+    hoverImage,
+    showAlt,
     hasHoverImage: Boolean(hoverImage),
     onMouseEnter,
     onMouseLeave,

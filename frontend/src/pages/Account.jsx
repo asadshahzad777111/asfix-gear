@@ -13,12 +13,16 @@ import PageHeader from '../components/PageHeader';
 import RepairRateBot from '../components/account/RepairRateBot';
 import AddressBook from '../components/account/AddressBook';
 import OrderHelpActions from '../components/OrderHelpActions';
+import RepairTimeline from '../components/RepairTimeline';
+import RepairPhotosGrid from '../components/RepairPhotosGrid';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
 
 
 
 const COMPLETED_STATUSES = new Set(['delivered']);
 const PENDING_STATUSES = new Set(['pending', 'pending_payment']);
+const REPAIR_PENDING = new Set(['pending', 'in_progress']);
+const REPAIR_DONE = new Set(['completed']);
 
 
 
@@ -46,6 +50,8 @@ export default function Account() {
 
   const [orders, setOrders] = useState([]);
 
+  const [repairs, setRepairs] = useState([]);
+
   const [messages, setMessages] = useState([]);
 
   const [loading, setLoading] = useState(true);
@@ -64,15 +70,19 @@ export default function Account() {
 
     try {
 
-      const [orderData, messageData] = await Promise.all([
+      const [orderData, repairData, messageData] = await Promise.all([
 
         api.getMyOrders(),
+
+        api.getMyRepairs(),
 
         api.getMyMessages(),
 
       ]);
 
       setOrders(orderData);
+
+      setRepairs(repairData);
 
       setMessages(messageData);
 
@@ -120,6 +130,18 @@ export default function Account() {
 
 
 
+  const repairStats = useMemo(() => ({
+
+    total: repairs.length,
+
+    pending: repairs.filter((r) => REPAIR_PENDING.has(r.status)).length,
+
+    completed: repairs.filter((r) => REPAIR_DONE.has(r.status)).length,
+
+  }), [repairs]);
+
+
+
   const handleLogout = async () => {
 
     await logout();
@@ -157,6 +179,18 @@ export default function Account() {
     const label = t(key);
 
     return label === key ? status : label;
+
+  };
+
+
+
+  const repairStatusLabel = (repair) => {
+
+    const key = `track.repair_status_${repair.status}`;
+
+    const label = t(key);
+
+    return label === key ? repair.status : label;
 
   };
 
@@ -262,6 +296,20 @@ export default function Account() {
 
                 type="button"
 
+                className={tab === 'repairs' ? 'active' : ''}
+
+                onClick={() => setTab('repairs')}
+
+              >
+
+                {t('account.repairsTab')} ({repairs.length})
+
+              </button>
+
+              <button
+
+                type="button"
+
                 className={tab === 'rates' ? 'active' : ''}
 
                 onClick={() => setTab('rates')}
@@ -276,7 +324,7 @@ export default function Account() {
 
 
 
-            {error && tab !== 'rates' && <div className="alert alert-error">{error}</div>}
+            {error && tab !== 'rates' && tab !== 'repairs' && <div className="alert alert-error">{error}</div>}
 
 
 
@@ -287,6 +335,188 @@ export default function Account() {
             ) : tab === 'addresses' ? (
 
               <AddressBook />
+
+            ) : tab === 'repairs' ? (
+
+              loading ? (
+
+                <p className="loading">{t('common.loading')}</p>
+
+              ) : repairs.length === 0 ? (
+
+                <div className="account-empty">
+
+                  <p>{t('account.noRepairs')}</p>
+
+                  <Link to="/repair" className="btn btn-primary">{t('nav.repair')}</Link>
+
+                </div>
+
+              ) : (
+
+                <>
+
+                  <div className="account-order-stats">
+
+                    <div className="account-stat-card">
+
+                      <span className="account-stat-value">{repairStats.total}</span>
+
+                      <span className="account-stat-label">{t('account.repairStatsTotal')}</span>
+
+                    </div>
+
+                    <div className="account-stat-card account-stat-card--pending">
+
+                      <span className="account-stat-value">{repairStats.pending}</span>
+
+                      <span className="account-stat-label">{t('account.repairStatsPending')}</span>
+
+                    </div>
+
+                    <div className="account-stat-card account-stat-card--done">
+
+                      <span className="account-stat-value">{repairStats.completed}</span>
+
+                      <span className="account-stat-label">{t('account.repairStatsCompleted')}</span>
+
+                    </div>
+
+                  </div>
+
+
+
+                  <ul className="account-list account-order-list">
+
+                    {repairs.map((repair) => {
+
+                      const ref = repair.booking_ref || `ASF-R-${repair.id}`;
+
+                      const refClean = String(ref).replace(/^#/, '');
+
+                      return (
+
+                        <li key={refClean} className="account-list-item account-order-card account-repair-card">
+
+                          <div className="order-success-id-card account-order-id-box">
+
+                            <span className="order-success-id-label">{t('account.repairIdLabel')}</span>
+
+                            <div className="order-success-id-row">
+
+                              <strong className="order-success-id-value">#{refClean}</strong>
+
+                              <button
+
+                                type="button"
+
+                                className="btn btn-outline btn-sm order-success-copy"
+
+                                onClick={() => copyOrderId(refClean)}
+
+                              >
+
+                                {copiedId === refClean ? t('account.copied') : t('account.copyOrderId')}
+
+                              </button>
+
+                            </div>
+
+                          </div>
+
+
+
+                          <div className="account-order-head">
+
+                            <span className={`order-status-pill status-${repair.status}`}>
+
+                              {repairStatusLabel(repair)}
+
+                            </span>
+
+                            {repair.estimated_cost != null && Number(repair.estimated_cost) > 0 && (
+
+                              <strong>{formatPrice(repair.estimated_cost)}</strong>
+
+                            )}
+
+                          </div>
+
+
+
+                          <div className="account-order-meta">
+
+                            <p>
+
+                              <span>{t('account.repairDevice')}</span>{' '}
+
+                              <strong>{repair.device_brand} {repair.device_model}</strong>
+
+                            </p>
+
+                            {repair.issue && (
+
+                              <p>
+
+                                <span>{t('account.repairIssue')}</span>{' '}
+
+                                <strong>{repair.issue}</strong>
+
+                              </p>
+
+                            )}
+
+                            {repair.estimated_repair_time && (
+
+                              <p>
+
+                                <span>{t('account.repairEstTime')}</span>{' '}
+
+                                <strong>{repair.estimated_repair_time}</strong>
+
+                              </p>
+
+                            )}
+
+                            <p className="account-list-meta">
+
+                              {new Date(repair.created_at).toLocaleString()}
+
+                            </p>
+
+                          </div>
+
+
+
+                          <RepairTimeline status={repair.status} statusHistory={repair.status_history} />
+
+                          <RepairPhotosGrid photosBefore={repair.photos_before} photosAfter={repair.photos_after} />
+
+
+
+                          <Link
+
+                            to={`/track?tab=repair&bookingId=${encodeURIComponent(refClean)}&phone=${encodeURIComponent(user?.phone || '')}`}
+
+                            className="btn btn-outline btn-sm account-track-btn"
+
+                          >
+
+                            {t('account.trackRepair')}
+
+                          </Link>
+
+                        </li>
+
+                      );
+
+                    })}
+
+                  </ul>
+
+                </>
+
+              )
 
             ) : loading ? (
 

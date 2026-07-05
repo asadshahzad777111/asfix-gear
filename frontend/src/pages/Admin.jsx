@@ -20,6 +20,7 @@ import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
 import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts } from '../utils/stock';
 import AdminStockAlert from '../components/admin/AdminStockAlert';
+import AdminBookingPhotos from '../components/admin/AdminBookingPhotos';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 
 const VALID_TABS = new Set([
@@ -70,6 +71,8 @@ export default function Admin() {
   const [bulkLoading, setBulkLoading] = useState(false);
   const [noteDrafts, setNoteDrafts] = useState({});
   const [noteSaving, setNoteSaving] = useState({});
+  const [costDrafts, setCostDrafts] = useState({});
+  const [costSaving, setCostSaving] = useState({});
 
   const showAdminMgmt = canManageTeam(user);
   const showSales = canViewSalesReport(user);
@@ -257,11 +260,29 @@ export default function Admin() {
 
   const updateStatus = async (id, status) => {
     try {
-      await api.updateBookingStatus(id, status);
-      setBookings((prev) => prev.map((b) => (b.id === id ? { ...b, status } : b)));
+      const updated = await api.updateBookingStatus(id, status);
+      setBookings((prev) => prev.map((b) => (b.id === id ? updated : b)));
     } catch (err) {
       alert(err.message);
     }
+  };
+
+  const saveEstimatedCost = async (id) => {
+    const raw = costDrafts[id];
+    setCostSaving((prev) => ({ ...prev, [id]: true }));
+    try {
+      const value = raw === '' || raw == null ? null : Number(raw);
+      const updated = await api.updateBookingEstimatedCost(id, value);
+      setBookings((prev) => prev.map((b) => (b.id === id ? updated : b)));
+    } catch (err) {
+      alert(err.message);
+    } finally {
+      setCostSaving((prev) => ({ ...prev, [id]: false }));
+    }
+  };
+
+  const updateBookingInList = (updated) => {
+    setBookings((prev) => prev.map((b) => (b.id === updated.id ? updated : b)));
   };
 
   const saveBookingNote = async (id) => {
@@ -661,6 +682,28 @@ export default function Admin() {
                           <span className="admin-booking-label">Estimated Time</span>
                           <p>{b.estimated_repair_time || b.service_name || '—'}</p>
                         </div>
+                        <div>
+                          <span className="admin-booking-label">Estimated Cost (PKR)</span>
+                          <div className="admin-booking-cost-row">
+                            <input
+                              type="number"
+                              min="0"
+                              step="1"
+                              className="admin-booking-cost-input"
+                              placeholder="—"
+                              value={costDrafts[b.id] ?? (b.estimated_cost ?? '')}
+                              onChange={(e) => setCostDrafts((prev) => ({ ...prev, [b.id]: e.target.value }))}
+                            />
+                            <button
+                              type="button"
+                              className="btn btn-outline btn-sm"
+                              disabled={costSaving[b.id]}
+                              onClick={() => saveEstimatedCost(b.id)}
+                            >
+                              {costSaving[b.id] ? '…' : 'Save'}
+                            </button>
+                          </div>
+                        </div>
                         <div className="admin-booking-span-2">
                           <span className="admin-booking-label">Issues</span>
                           <p>{b.issue || '—'}</p>
@@ -693,6 +736,9 @@ export default function Admin() {
                             </ul>
                           </div>
                         )}
+                        <div className="admin-booking-span-2 admin-booking-note-form">
+                          <AdminBookingPhotos booking={b} onUpdated={updateBookingInList} />
+                        </div>
                         <div className="admin-booking-span-2 admin-booking-note-form">
                           <label className="admin-booking-label" htmlFor={`booking-note-${b.id}`}>{t('admin.staffNotes')}</label>
                           <textarea

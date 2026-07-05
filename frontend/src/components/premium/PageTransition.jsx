@@ -1,4 +1,4 @@
-import { lazy, Suspense } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { useLocation, Routes, Route, Navigate } from 'react-router-dom';
 import Home from '../../pages/Home';
 import ProtectedRoute from '../ProtectedRoute';
@@ -26,49 +26,72 @@ const NotFound = lazy(() => import('../../pages/NotFound'));
 
 export default function PageTransition() {
   const location = useLocation();
+  const pageRef = useRef(null);
+  const prefersReducedMotion = useRef(
+    typeof window !== 'undefined'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+  );
+
+  useEffect(() => {
+    const el = pageRef.current;
+    if (!el || prefersReducedMotion.current) return undefined;
+
+    el.classList.remove('page-transition-page--enter');
+    // Force reflow so repeated navigations retrigger the enter animation.
+    void el.offsetWidth;
+    el.classList.add('page-transition-page--enter');
+
+    const timer = window.setTimeout(() => {
+      el.classList.remove('page-transition-page--enter');
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [location.key]);
 
   return (
     <div className="page-transition-shell">
       <Suspense fallback={<PageFallback />}>
-        <Routes location={location}>
-          <Route path="/" element={<Home />} />
-          <Route path="/gaming" element={<Gaming />} />
-          <Route path="/shop" element={<Shop />} />
-          <Route path="/shop/:id" element={<ProductDetail />} />
-          <Route path="/repair" element={<Repair />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/track" element={<OrderTrack />} />
-          <Route path="/account/login" element={<AccountLogin />} />
-          <Route path="/account/forgot-password" element={<AccountForgotPassword />} />
-          <Route path="/account/register" element={<AccountRegister />} />
-          <Route path="/register" element={<Navigate to="/account/register" replace />} />
-          <Route
-            path="/account"
-            element={
-              <CustomerRoute>
-                <Account />
-              </CustomerRoute>
-            }
-          />
-          <Route
-            path="/account/settings"
-            element={
-              <CustomerRoute>
-                <AccountSettings />
-              </CustomerRoute>
-            }
-          />
-          <Route path="/login" element={<Login />} />
-          <Route
-            path="/admin"
-            element={
-              <ProtectedRoute>
-                <Admin />
-              </ProtectedRoute>
-            }
-          />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <div ref={pageRef} className="page-transition-page">
+          <Routes location={location}>
+            <Route path="/" element={<Home />} />
+            <Route path="/gaming" element={<Gaming />} />
+            <Route path="/shop" element={<Shop />} />
+            <Route path="/shop/:id" element={<ProductDetail />} />
+            <Route path="/repair" element={<Repair />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/track" element={<OrderTrack />} />
+            <Route path="/account/login" element={<AccountLogin />} />
+            <Route path="/account/forgot-password" element={<AccountForgotPassword />} />
+            <Route path="/account/register" element={<AccountRegister />} />
+            <Route path="/register" element={<Navigate to="/account/register" replace />} />
+            <Route
+              path="/account"
+              element={
+                <CustomerRoute>
+                  <Account />
+                </CustomerRoute>
+              }
+            />
+            <Route
+              path="/account/settings"
+              element={
+                <CustomerRoute>
+                  <AccountSettings />
+                </CustomerRoute>
+              }
+            />
+            <Route path="/login" element={<Login />} />
+            <Route
+              path="/admin"
+              element={
+                <ProtectedRoute>
+                  <Admin />
+                </ProtectedRoute>
+              }
+            />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </div>
       </Suspense>
     </div>
   );

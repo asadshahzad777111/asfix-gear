@@ -5,6 +5,7 @@ import { useCart } from '../../context/CartContext';
 import { useShopGate } from '../../hooks/useShopGate';
 import useProductPop from '../../hooks/useProductPop';
 import useProductCardImage from '../../hooks/useProductCardImage';
+import ProductCardImageStack from '../ProductCardImageStack';
 import { useTranslation } from '../../context/LanguageContext';
 import { DiscountRibbon, ProductPrice } from '../DiscountPicker';
 import { hasDiscount } from '../../utils/pricing';
@@ -24,8 +25,9 @@ export default function HomeProductCard({ product }) {
   } = useShopGate();
   const { popClass, popping, handleProductLinkClick, linkPopHandlers } = useProductPop();
   const {
-    displayImage,
-    hasHoverImage,
+    mainImage,
+    hoverImage,
+    showAlt,
     onMouseEnter: onCardImageEnter,
     onMouseLeave: onCardImageLeave,
     onPointerDown: onCardImagePointerDown,
@@ -89,12 +91,12 @@ export default function HomeProductCard({ product }) {
         >
           <div className="home-product-img-wrap">
             {onSale && <DiscountRibbon percent={product.discount_percent} compact />}
-            <img
-              src={displayImage}
+            <ProductCardImageStack
+              mainSrc={mainImage}
+              altSrc={hoverImage}
               alt={product.name}
-              loading="lazy"
+              showAlt={showAlt}
               onError={handleImgError}
-              className={hasHoverImage ? 'product-card-img-swap' : undefined}
             />
           </div>
           <div className="home-product-body">

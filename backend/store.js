@@ -851,6 +851,37 @@ function enrichBooking(booking, services) {
   };
 }
 
+const MAX_REPAIR_PHOTOS = 4;
+
+function normalizePhotoUrls(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => String(item || '').trim())
+    .filter((url) => /^https?:\/\//i.test(url))
+    .slice(0, MAX_REPAIR_PHOTOS);
+}
+
+/** Customer-safe repair view — no internal staff notes or activity log. */
+export function sanitizePublicBooking(booking, services = []) {
+  const enriched = enrichBooking(booking, services);
+  return {
+    booking_ref: enriched.booking_ref,
+    customer_name: enriched.customer_name,
+    device_brand: enriched.device_brand,
+    device_model: enriched.device_model,
+    issue: enriched.issue,
+    estimated_repair_time: enriched.estimated_repair_time || '',
+    estimated_cost: enriched.estimated_cost ?? null,
+    status: enriched.status,
+    status_history: enriched.status_history || [],
+    photos_before: enriched.photos_before || [],
+    photos_after: enriched.photos_after || [],
+    created_at: enriched.created_at,
+    updated_at: enriched.updated_at,
+    service_name: enriched.service_name,
+  };
+}
+
 export function createRepairBooking(input) {
   return withData((data) => {
     const id = data.meta.nextBookingId++;
@@ -875,6 +906,10 @@ export function createRepairBooking(input) {
       status: 'pending',
       status_history: [{ status: 'pending', at: createdAt, by: null }],
       activity_log: [],
+      estimated_cost: input.estimated_cost != null ? Number(input.estimated_cost) : null,
+      photos_before: normalizePhotoUrls(input.photos_before),
+      photos_after: normalizePhotoUrls(input.photos_after),
+      customer_user_id: input.customer_user_id != null ? Number(input.customer_user_id) : null,
       updated_at: createdAt,
       created_at: createdAt,
     };
@@ -917,8 +952,124 @@ export function updateBookingStatus(id, status, updatedBy = null) {
       activity_log,
       updated_at: at,
     };
-    return data.repair_bookings[index];
+    return enrichBooking(data.repair_bookings[index], data.repair_services);
   });
+}
+
+export function updateBookingEstimatedCost(id, estimated_cost, staffUser = null) {
+  return withData((data) => {
+    const numId = Number(id);
+    const index = data.repair_bookings.findIndex((b) => b.id === numId);
+    if (index === -1) return null;
+
+    const existing = data.repair_bookings[index];
+    const at = now();
+    let cost = null;
+    if (estimated_cost != null && estimated_cost !== '') {
+      const n = Number(estimated_cost);
+      if (!Number.isFinite(n) || n < 0 || n > 9_999_999) {
+        throw new Error('Estimated cost must be between 0 and 9,999,999');
+      }
+      cost = Math.round(n);
+    }
+
+    const activity_log = [...(existing.activity_log || [])];
+    if (staffUser?.username) {
+      activity_log.push({
+        at,
+        message: cost != null
+          ? `Estimated cost set to PKR ${cost.toLocaleString('en-PK')} by Staff: ${staffUser.username}`
+          : `Estimated cost cleared by Staff: ${staffUser.username}`,
+        by: staffUser.id,
+      });
+    }
+
+    data.repair_bookings[index] = {
+      ...existing,
+      estimated_cost: cost,
+      activity_log,
+      updated_at: at,
+    };
+    return enrichBooking(data.repair_bookings[index], data.repair_services);
+  });
+}
+
+export function updateBookingPhotos(id, { photos_before, photos_after }, staffUser = null) {
+  return withData((data) => {
+    const numId = Number(id);
+    const index = data.repair_bookings.findIndex((b) => b.id === numId);
+    if (index === -1) return null;
+
+    const existing = data.repair_bookings[index];
+    const at = now();
+    const next = { ...existing, updated_at: at };
+    const activity_log = [...(existing.activity_log || [])];
+
+    if (photos_before !== undefined) {
+      next.photos_before = normalizePhotoUrls(photos_before);
+      if (staffUser?.username) {
+        activity_log.push({
+          at,
+          message: `Before photos updated (${next.photos_before.length}) by Staff: ${staffUser.username}`,
+          by: staffUser.id,
+        });
+      }
+    }
+    if (photos_after !== undefined) {
+      next.photos_after = normalizePhotoUrls(photos_after);
+      if (staffUser?.username) {
+        activity_log.push({
+          at,
+          message: `After photos updated (${next.photos_after.length}) by Staff: ${staffUser.username}`,
+          by: staffUser.id,
+        });
+      }
+    }
+
+    next.activity_log = activity_log;
+    data.repair_bookings[index] = next;
+    return enrichBooking(data.repair_bookings[index], data.repair_services);
+  });
+}
+
+export function trackRepairBooking(bookingRef, phone) {
+  const data = readData();
+  const key = String(bookingRef || '').trim().toUpperCase().replace(/^#/, '');
+  const phoneKey = normalizePhone(phone);
+
+  const booking = data.repair_bookings.find((b) => {
+    const ref = String(b.booking_ref || formatBookingRef(b.id)).toUpperCase();
+    const idMatch =
+      ref === key ||
+      ref === `ASF-${key}` ||
+      key === `ASF-R-${1000 + b.id}` ||
+      String(b.id) === key;
+    const phoneMatch =
+      normalizePhone(b.phone) === phoneKey ||
+      (b.alternative_contact && normalizePhone(b.alternative_contact) === phoneKey);
+    return idMatch && phoneMatch;
+  });
+
+  if (!booking) return null;
+  return sanitizePublicBooking(booking, data.repair_services);
+}
+
+export function getRepairBookingsForCustomer({ userId, phone }) {
+  const data = readData();
+  const phoneKey = normalizePhone(phone);
+  const uid = userId != null ? Number(userId) : null;
+
+  return [...data.repair_bookings]
+    .filter((b) => {
+      if (uid && b.customer_user_id === uid) return true;
+      if (phoneKey && normalizePhone(b.phone) === phoneKey) return true;
+      if (phoneKey && b.alternative_contact && normalizePhone(b.alternative_contact) === phoneKey) {
+        return true;
+      }
+      return false;
+    })
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .map((b) => sanitizePublicBooking(b, data.repair_services));
 }
 
 export function addStaffNoteToBooking(id, noteText, staffUser) {

@@ -4,12 +4,16 @@ import { hasDiscount } from '../utils/pricing';
 import { readProductsCache, writeProductsCache } from '../utils/productCache';
 import { filterPublishedProducts } from '../utils/productStatus';
 import HomeHero from '../components/home/HomeHero';
+import TrustBadges from '../components/home/TrustBadges';
 import CollectionGrid from '../components/home/CollectionGrid';
+import BrandGrid from '../components/home/BrandGrid';
+import ModelGrid from '../components/home/ModelGrid';
 import PromoBanners from '../components/home/PromoBanners';
 import ProductCarousel from '../components/home/ProductCarousel';
 import TrendingCategories from '../components/home/TrendingCategories';
 import LocationSection from '../components/LocationSection';
 import Testimonials from '../components/Testimonials';
+import { HomeProductsSkeleton } from '../components/skeleton/ContentSkeletons';
 import { useTranslation } from '../context/LanguageContext';
 
 function filterShopProducts(products) {
@@ -73,30 +77,17 @@ export default function Home() {
   return (
     <>
       <HomeHero product={heroProduct} />
+      <TrustBadges />
       <CollectionGrid />
       <PromoBanners products={saleProducts} />
       {loadError && !topSelling.length ? (
-        <section className="home-section">
-          <div className="container">
-            <div className="empty-state">
-              <p>{t('shop.serverStarting')}</p>
-              <button
-                type="button"
-                className="btn btn-primary"
-                style={{ marginTop: '1rem' }}
-                onClick={() => window.location.reload()}
-              >
-                {t('shop.retryLoad')}
-              </button>
-            </div>
-          </div>
-        </section>
+        <HomeProductsSkeleton
+          coldStart={t('shop.serverStarting')}
+          onRetry={() => window.location.reload()}
+          retryLabel={t('shop.retryLoad')}
+        />
       ) : loading && !topSelling.length ? (
-        <section className="home-section">
-          <div className="container">
-            <div className="loading">{t('shop.loadingProducts')}</div>
-          </div>
-        </section>
+        <HomeProductsSkeleton />
       ) : (
         <>
           <ProductCarousel
@@ -113,10 +104,14 @@ export default function Home() {
         </>
       )}
       <TrendingCategories />
+      <BrandGrid />
+      <ModelGrid />
       <section className="home-section home-reviews">
         <div className="container">
-          <p className="section-eyebrow">{t('home.reviewsEyebrow')}</p>
-          <h2 className="section-title">{t('home.reviewsTitle')}</h2>
+          <div className="home-section-head">
+            <span className="eyebrow">{t('home.reviewsEyebrow')}</span>
+            <h2 className="section-title">{t('home.reviewsTitle')}</h2>
+          </div>
           <Testimonials />
         </div>
       </section>

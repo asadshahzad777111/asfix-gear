@@ -12,7 +12,40 @@ html {
 }
 
 .page-transition-shell {
-  will-change: opacity, transform;
+  position: relative;
+  min-height: 0;
+}
+
+.page-transition-page {
+  min-height: inherit;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .page-transition-page--enter {
+    animation: pageEnter 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) and (hover: none), (prefers-reduced-motion: no-preference) and (pointer: coarse) {
+  .page-transition-page--enter {
+    animation: pageEnterMobile 0.26s ease both;
+  }
+
+  @keyframes pageEnterMobile {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
 }
 
 /* ── Custom cursor (desktop) ── */
@@ -94,7 +127,7 @@ body.custom-cursor-active {
 .staff-access {
   position: fixed;
   right: 1rem;
-  bottom: 5.5rem;
+  bottom: calc(1.5rem + (58px + 0.55rem) * 3);
   z-index: 190;
   display: flex;
   flex-direction: column;
@@ -1243,13 +1276,15 @@ body.custom-cursor-active {
 }
 
 /* Gaming mode page transition polish */
-.app--gaming .page-transition-shell {
-  animation: gamingPageIn 0.5s ease;
+@media (prefers-reduced-motion: no-preference) {
+  .app--gaming .page-transition-page--enter {
+    animation: gamingPageIn 0.42s ease both;
+  }
 }
 
 @keyframes gamingPageIn {
-  from { opacity: 0; filter: brightness(0.6); }
-  to { opacity: 1; filter: brightness(1); }
+  from { opacity: 0; filter: brightness(0.72); transform: translateY(8px); }
+  to { opacity: 1; filter: brightness(1); transform: none; }
 }
 
 /* Reduced motion */
@@ -1264,6 +1299,8 @@ body.custom-cursor-active {
   }
 
   .page-transition-shell,
+  .page-transition-page,
+  .page-transition-page--enter,
   .premium-product,
   .fly-to-cart {
     transition: none !important;
@@ -2816,4 +2853,114 @@ body.custom-cursor-active {
 .leaflet-container {
   font-family: inherit;
   z-index: 0;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.track-tabs {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+
+.track-tabs button {
+  flex: 1;
+  padding: 0.55rem 0.75rem;
+  border-radius: 999px;
+  border: 1px solid var(--glass-edge);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+  cursor: pointer;
+}
+
+.track-tabs button.active {
+  border-color: rgba(255, 107, 44, 0.55);
+  background: rgba(255, 107, 44, 0.12);
+}
+
+.repair-track-issue,
+.repair-track-meta,
+.repair-track-cost {
+  margin: 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.repair-track-cost small {
+  display: block;
+  margin-top: 0.2rem;
+  color: var(--text-muted);
+  font-size: 0.75rem;
+}
+
+.repair-photos-grid {
+  display: grid;
+  gap: 1rem;
+  margin: 1rem 0;
+}
+
+.repair-photos-group h4 {
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
+}
+
+.repair-photos-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.repair-photo-thumb {
+  display: block;
+  width: 5.5rem;
+  height: 5.5rem;
+  border-radius: 0.65rem;
+  overflow: hidden;
+  border: 1px solid var(--glass-edge);
+}
+
+.repair-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.repair-status-notifications {
+  margin-top: 1rem;
+  padding: 0.85rem 1rem;
+}
+
+.repair-status-notifications h4 {
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.repair-status-notifications-list {
+  list-style: none;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.repair-status-notifications-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.order-status-pill.status-pending { background: rgba(255, 193, 7, 0.18); }
+.order-status-pill.status-in_progress { background: rgba(33, 150, 243, 0.18); }
+.order-status-pill.status-completed { background: rgba(76, 175, 80, 0.18); }
+
+.account-repair-card .order-timeline {
+  margin: 0.75rem 0;
 }

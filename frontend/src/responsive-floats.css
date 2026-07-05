@@ -7,12 +7,13 @@
   --float-dock-bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
   --float-dock-size: 3.15rem;
   --float-dock-gap: 0.55rem;
-  /* Reserve room for the full 3-high vertical stack (staff-login, repair,
-     chat) on the phone breakpoint so page content/footer never sits under
-     the floating buttons. */
+  --float-stack-step: calc(var(--float-dock-size) + var(--float-dock-gap));
+  /* Reserve room for the full 4-high vertical stack (WhatsApp, chat,
+     repair, staff-login) on the phone breakpoint. */
   --float-dock-row: calc(
-    var(--float-dock-bottom) + (var(--float-dock-size) * 3) + (var(--float-dock-gap) * 2) + 0.5rem
+    var(--float-dock-bottom) + (var(--float-dock-size) * 4) + (var(--float-dock-gap) * 3) + 0.5rem
   );
+  --float-chat-bottom: calc(1.5rem + 58px + 0.55rem);
 }
 
 /* ── Sale animations — desktop/tablet only (mobile perf) ── */
@@ -159,13 +160,14 @@
     z-index: 199;
   }
 
-  .gaming-mode-btn--trigger:hover,
-  .gaming-mode-btn--trigger.activating {
-    transform: scale(1.05) !important;
-  }
-
   .gaming-mode-btn--trigger.activating {
     animation: triggerPressMobile 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @media (hover: hover) and (pointer: fine) {
+    .gaming-mode-btn--trigger:hover {
+      transform: scale(1.05) !important;
+    }
   }
 
   .gaming-mode-btn--trigger .gaming-btn-label,
@@ -192,13 +194,21 @@
     z-index: 200;
   }
 
+  .chat-fab-trigger {
+    bottom: calc(var(--float-dock-bottom) + var(--float-stack-step));
+    right: 0.65rem;
+    width: var(--float-dock-size);
+    height: var(--float-dock-size);
+    z-index: 200;
+  }
+
   /* Repair, staff-login, and chat all share one clean vertical column at
      the same right offset — straight top-to-bottom stack, not the old
      mismatched layout where repair sat in its own row at a different
      offset than the staff-login + chat pair. */
   .floating-repair-btn {
     right: 0.65rem;
-    bottom: calc(var(--float-dock-bottom) + var(--float-dock-size) + var(--float-dock-gap));
+    bottom: calc(var(--float-dock-bottom) + var(--float-stack-step) * 2);
     width: var(--float-dock-size);
     height: var(--float-dock-size);
     padding: 0;
@@ -216,7 +226,7 @@
   }
 
   .staff-access {
-    bottom: calc(var(--float-dock-bottom) + (var(--float-dock-size) + var(--float-dock-gap)) * 2);
+    bottom: calc(var(--float-dock-bottom) + var(--float-stack-step) * 3);
     right: 0.65rem;
     z-index: 198;
   }
@@ -283,8 +293,10 @@
     padding: 0.55rem 0.9rem 0.55rem 0.55rem;
   }
 
-  .gaming-mode-btn--trigger:hover {
-    transform: translateY(-2px) !important;
+  @media (hover: hover) and (pointer: fine) {
+    .gaming-mode-btn--trigger:hover {
+      transform: translateY(-2px) !important;
+    }
   }
 
   .gaming-mode-btn--trigger.activating {
@@ -306,8 +318,20 @@
     height: 3.35rem;
   }
 
+  .chat-fab-trigger {
+    bottom: calc(1.25rem + 3.35rem + 0.55rem);
+    right: 1rem;
+    width: 3.35rem;
+    height: 3.35rem;
+  }
+
+  .floating-repair-btn {
+    bottom: calc(1.25rem + (3.35rem + 0.55rem) * 2);
+    right: 1rem;
+  }
+
   .staff-access {
-    bottom: 1.25rem;
+    bottom: calc(1.25rem + (3.35rem + 0.55rem) * 3);
     right: calc(1rem + 3.35rem + 0.65rem);
   }
 
@@ -379,9 +403,12 @@
 
 @media (prefers-reduced-motion: reduce) {
   .gaming-mode-btn--trigger .gaming-btn-shine,
+  .gaming-mode-btn--trigger.activating,
   .shop-mode-btn--nav,
   .gaming-mode-btn--nav,
   .whatsapp-float,
+  .home-collection-card::before,
+  .home-collection-card::after,
   .discount-ribbon,
   .discount-ribbon--compact,
   .product-card-wrap--grid.on-sale,
@@ -389,7 +416,8 @@
   .gaming-product-card.on-sale,
   .detail-sale-banner,
   .price-sale,
-  .filter-btn.filter-sale.active {
+  .filter-btn.filter-sale.active,
+  .page-transition-page--enter {
     animation: none !important;
   }
 }

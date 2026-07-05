@@ -20,7 +20,7 @@ export default function ButtonEffects() {
 
     const handler = (e) => {
       const target = e.target.closest(
-        '.btn, .filter-btn, .fab-add, .nav-add-product, .category-chip, .discount-preset, .btn-gaming-primary, .btn-gaming-outline, .product-wa-btn, .gaming-product-order, .whatsapp-float, .nav-links a'
+        '.btn, .filter-btn, .fab-add, .nav-add-product, .category-chip, .discount-preset, .btn-gaming-primary, .btn-gaming-outline, .product-wa-btn, .gaming-product-order, .whatsapp-float, .chat-fab-trigger, .nav-links a'
       );
       if (!target || target.classList.contains('gaming-mode-btn') || target.classList.contains('shop-mode-btn') || target.classList.contains('exit-gaming-btn')) return;
 

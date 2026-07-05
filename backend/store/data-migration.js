@@ -132,6 +132,10 @@ export function migrateData(data) {
     if (!booking.activity_log) booking.activity_log = [];
     if (!booking.staff_notes) booking.staff_notes = [];
     if (!booking.updated_at) booking.updated_at = booking.created_at || nowIso;
+    if (booking.estimated_cost == null) booking.estimated_cost = null;
+    if (!Array.isArray(booking.photos_before)) booking.photos_before = [];
+    if (!Array.isArray(booking.photos_after)) booking.photos_after = [];
+    if (booking.customer_user_id == null) booking.customer_user_id = null;
   }
 
   for (const user of data.users) {

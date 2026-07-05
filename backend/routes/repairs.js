@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import * as store from '../store.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
+import { buildRepairStatusCustomerMessage } from '../services/repairNotifications.js';
 import { MAZDORI_KEYWORDS } from '../rates/iphone-repair-rates.js';
 
 const router = Router();
@@ -35,6 +36,10 @@ const VALID_PART_TYPES = new Set([
   'mazdori',
 ]);
 
+const VALID_BOOKING_STATUSES = new Set(['pending', 'in_progress', 'completed', 'cancelled']);
+const MAX_PHOTO_URL_LEN = 500;
+const MAX_PHOTOS_PER_KIND = 4;
+
 function str(value, max) {
   const s = typeof value === 'string' ? value : value == null ? '' : String(value);
   return max ? s.trim().slice(0, max) : s.trim();
@@ -65,6 +70,35 @@ function isMazdoriInquiry(body) {
 function customerLabel(user) {
   return user?.name || user?.email || user?.phone || user?.username || 'Customer';
 }
+
+function normalizePhotoUrlList(value) {
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((item) => str(item, MAX_PHOTO_URL_LEN))
+    .filter((url) => /^https?:\/\//i.test(url))
+    .slice(0, MAX_PHOTOS_PER_KIND);
+}
+
+router.get('/track', (req, res) => {
+  const bookingId = str(req.query.bookingId, 40);
+  const phone = str(req.query.phone, MAX_LEN.phone);
+  if (!bookingId || !phone) {
+    return res.status(400).json({ error: 'Booking ID and phone are required' });
+  }
+  const booking = store.trackRepairBooking(bookingId, phone);
+  if (!booking) return res.status(404).json({ error: 'Repair booking not found — check ID and phone' });
+  res.json(booking);
+});
+
+router.get('/my-bookings', requireAuth, requireRole(...CUSTOMER), (req, res) => {
+  const user = req.auth.user;
+  res.json(
+    store.getRepairBookingsForCustomer({
+      userId: user.id,
+      phone: user.phone,
+    })
+  );
+});
 
 router.get('/services', (_req, res) => {
   res.json(store.getRepairServices());
@@ -157,7 +191,7 @@ router.get('/rate-queries', requireAuth, requireRole(...CUSTOMER), (req, res) =>
   res.json(store.getRepairRateQueriesByCustomer(req.auth.user.id));
 });
 
-router.post('/book', (req, res) => {
+router.post('/book', optionalAuth, (req, res) => {
   const body = req.body || {};
   const customer_name = str(body.customer_name, MAX_LEN.customer_name);
   const phone = str(body.phone, MAX_LEN.phone);
@@ -199,6 +233,7 @@ router.post('/book', (req, res) => {
     terms_accepted: true,
     service_id: str(service_id, 60) || undefined,
     preferred_date: str(preferred_date, 30) || undefined,
+    customer_user_id: req.auth?.user?.role === 'customer' ? req.auth.user.id : null,
   });
 
   // Best-effort WhatsApp alerts — never block or fail the response (skipped
@@ -214,7 +249,7 @@ router.post('/book', (req, res) => {
 
   notifyCustomerWhatsApp(
     booking.phone,
-    `Assalam o Alaikum ${booking.customer_name}! Your repair booking for ${deviceLabel} at AsFix & Gear has been received. Exact issue confirm karne ke liye shop par physical inspection / eye diagnosis hogi — repair se pehle clear quote milega. We'll contact you shortly.`
+    `Assalam o Alaikum ${booking.customer_name}! Your repair booking for ${deviceLabel} at AsFix & Gear has been received. Booking ID: ${booking.booking_ref}. Exact issue confirm karne ke liye shop par physical inspection / eye diagnosis hogi — repair se pehle clear quote milega. Track: booking ID + phone on our website.`
   ).catch(() => {});
 
   res.status(201).json({
@@ -231,14 +266,50 @@ router.get('/bookings', requireAuth, requireRole(...STAFF), (_req, res) => {
 
 router.patch('/bookings/:id/status', requireAuth, requireRole(...STAFF), (req, res) => {
   const { status } = req.body;
-  const validStatuses = ['pending', 'in_progress', 'completed', 'cancelled'];
-  if (!validStatuses.includes(status)) {
+  if (!VALID_BOOKING_STATUSES.has(status)) {
     return res.status(400).json({ error: 'Invalid status' });
   }
 
   const booking = store.updateBookingStatus(req.params.id, status, req.auth.user);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
+  const customerMsg = buildRepairStatusCustomerMessage(booking, status);
+  if (customerMsg) {
+    notifyCustomerWhatsApp(booking.phone, customerMsg).catch(() => {});
+  }
+
+  res.json(booking);
+});
+
+router.patch('/bookings/:id/estimated-cost', requireAuth, requireRole(...STAFF), (req, res) => {
+  try {
+    const booking = store.updateBookingEstimatedCost(
+      req.params.id,
+      req.body?.estimated_cost,
+      req.auth.user
+    );
+    if (!booking) return res.status(404).json({ error: 'Booking not found' });
+    res.json(booking);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
+router.patch('/bookings/:id/photos', requireAuth, requireRole(...STAFF), (req, res) => {
+  const body = req.body || {};
+  const photos_before = body.photos_before !== undefined ? normalizePhotoUrlList(body.photos_before) : undefined;
+  const photos_after = body.photos_after !== undefined ? normalizePhotoUrlList(body.photos_after) : undefined;
+
+  if (photos_before === undefined && photos_after === undefined) {
+    return res.status(400).json({ error: 'Provide photos_before and/or photos_after arrays' });
+  }
+
+  const booking = store.updateBookingPhotos(
+    req.params.id,
+    { photos_before, photos_after },
+    req.auth.user
+  );
+  if (!booking) return res.status(404).json({ error: 'Booking not found' });
   res.json(booking);
 });
 

@@ -20,6 +20,7 @@ export default function PhoneFinderModal({ open, category, onClose, onNavigate }
   const [brand, setBrand] = useState(null);
   const panelRef = useRef(null);
   const brandGridRef = useRef(null);
+  const overlayRef = useRef(null);
 
   const { closeWithoutHistoryBack } = useModalBehavior(open, onClose);
 
@@ -28,8 +29,10 @@ export default function PhoneFinderModal({ open, category, onClose, onNavigate }
       setBrand(null);
       return;
     }
+    const overlay = overlayRef.current;
     const panel = panelRef.current;
     const grid = brandGridRef.current;
+    if (overlay) overlay.scrollTop = 0;
     if (panel) panel.scrollTop = 0;
     if (grid) grid.scrollTop = 0;
   }, [open, category]);
@@ -57,7 +60,12 @@ export default function PhoneFinderModal({ open, category, onClose, onNavigate }
   if (typeof document === 'undefined') return null;
 
   return createPortal(
-    <div className="modal-overlay" onClick={handleClose} role="presentation">
+    <div
+      ref={overlayRef}
+      className="modal-overlay modal-overlay--phone-finder"
+      onClick={handleClose}
+      role="presentation"
+    >
       <div
         ref={panelRef}
         className="modal-panel phone-finder-panel"

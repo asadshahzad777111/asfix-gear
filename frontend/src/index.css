@@ -35,8 +35,10 @@ img { max-width: 100%; height: auto; display: block; }
   line-height: 1.1;
   margin-bottom: 0.75rem;
 }
-.section-subtitle { color: var(--text-muted); max-width: 540px; font-size: 1.05rem; }
+.section-subtitle { color: var(--text-muted); max-width: 540px; font-size: 1.05rem; line-height: 1.55; }
+.section-subtitle--center { margin-left: auto; margin-right: auto; text-align: center; }
 
+.section-eyebrow,
 .eyebrow {
   display: inline-block;
   font-size: 0.8rem;
@@ -1127,11 +1129,19 @@ img { max-width: 100%; height: auto; display: block; }
     border-color 0.25s ease;
 }
 
-.product-card-wrap--grid:hover {
-  transform: translateY(-5px) !important;
-  box-shadow: var(--shadow-hover);
-  border-color: rgba(255, 107, 44, 0.22);
-  z-index: 2;
+@media (hover: hover) and (pointer: fine) {
+  .product-card-wrap--grid:hover {
+    transform: translateY(-5px) !important;
+    box-shadow: var(--shadow-hover);
+    border-color: rgba(255, 107, 44, 0.22);
+    z-index: 2;
+  }
+}
+
+@media (hover: none), (pointer: coarse) {
+  .product-card-wrap--grid:active:not(.is-popping) {
+    opacity: 0.97;
+  }
 }
 
 .product-card-wrap--grid.is-popping,
@@ -1173,15 +1183,70 @@ img { max-width: 100%; height: auto; display: block; }
   height: 100%;
   object-fit: cover;
   display: block;
-  transition: transform 0.45s ease, opacity 0.15s ease;
+}
+
+/* Dual-image stack — crossfade + zoom on hover */
+.product-card-image-stack {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.product-card-image-stack img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  transition:
+    transform 0.45s cubic-bezier(0.25, 0.46, 0.45, 0.94),
+    opacity 0.28s ease;
+}
+
+.product-card-image-stack.has-alt .product-card-img-primary,
+.product-card-image-stack.has-alt .product-card-img-alt {
+  position: absolute;
+  inset: 0;
+}
+
+.product-card-image-stack.has-alt .product-card-img-alt {
+  opacity: 0;
+}
+
+.product-card-image-stack.has-alt.show-alt .product-card-img-primary {
+  opacity: 0;
+}
+
+.product-card-image-stack.has-alt.show-alt .product-card-img-alt {
+  opacity: 1;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card-wrap--grid:hover .product-card-image-stack img,
+  .home-product-card:hover .product-card-image-stack img {
+    transform: scale(1.06);
+  }
+
+  .product-card-wrap--grid:hover .product-grid-img {
+    transform: scale(1.04);
+  }
+
+  .product-card:hover .product-image img {
+    transform: scale(1.08);
+  }
+
+  .product-card-wrap:hover .product-wa-btn {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.product-card-wrap--grid.is-popping .product-card-image-stack img {
+  transform: scale(1.06);
 }
 
 .product-card-img-swap {
   transition: transform 0.45s ease, opacity 0.15s ease;
-}
-
-.product-card-wrap--grid:hover .product-grid-img {
-  transform: scale(1.04);
 }
 
 .product-card-wrap--grid .product-card-actions {
@@ -1210,6 +1275,11 @@ img { max-width: 100%; height: auto; display: block; }
   background: var(--bg-elevated);
 }
 
+.product-image .product-card-image-stack {
+  width: 100%;
+  height: 100%;
+}
+
 .product-image img {
   width: 100%;
   height: 100%;
@@ -1217,8 +1287,6 @@ img { max-width: 100%; height: auto; display: block; }
   object-fit: cover;
   transition: transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 }
-
-.product-card:hover .product-image img { transform: scale(1.08); }
 
 .product-category-pill {
   position: absolute;
@@ -1332,11 +1400,6 @@ img { max-width: 100%; height: auto; display: block; }
   transition: all 0.25s;
   z-index: 2;
   box-shadow: 0 8px 20px rgba(37,211,102,0.4);
-}
-
-.product-card-wrap:hover .product-wa-btn {
-  opacity: 1;
-  transform: translateY(0);
 }
 
 .product-wa-btn--restock {
@@ -1737,6 +1800,71 @@ img { max-width: 100%; height: auto; display: block; }
   margin-top: 0.25rem;
 }
 
+.admin-booking-cost-row {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  margin-top: 0.25rem;
+}
+
+.admin-booking-cost-input {
+  flex: 1;
+  min-width: 0;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: rgba(255, 255, 255, 0.04);
+  color: inherit;
+}
+
+.admin-booking-photos {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-booking-photo-section strong {
+  display: block;
+  font-size: 0.82rem;
+  margin-bottom: 0.35rem;
+}
+
+.admin-booking-photo-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.admin-booking-photo-thumb {
+  position: relative;
+  width: 4.5rem;
+  height: 4.5rem;
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+.admin-booking-photo-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-booking-photo-thumb button {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  min-width: 1.5rem;
+  min-height: 1.5rem;
+  padding: 0;
+  line-height: 1;
+}
+
+.admin-booking-photo-error {
+  color: #fca5a5;
+  font-size: 0.8rem;
+}
+
 .admin-table-issues {
   max-width: 220px;
   white-space: normal;
@@ -1758,6 +1886,106 @@ img { max-width: 100%; height: auto; display: block; }
 .alert-error { background: rgba(239,68,68,0.12); border: 1px solid rgba(239,68,68,0.25); color: #fca5a5; }
 
 .loading, .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
+
+/* Skeleton placeholders — cold-start / loading states */
+@keyframes skeletonShimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+.skeleton-block {
+  border-radius: 8px;
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.1) 50%,
+    rgba(255, 255, 255, 0.04) 100%
+  );
+  background-size: 200% 100%;
+  animation: skeletonShimmer 1.4s ease-in-out infinite;
+}
+
+.skeleton-line {
+  height: 0.85rem;
+  margin-bottom: 0.55rem;
+  border-radius: 6px;
+}
+
+.skeleton-line--title {
+  width: min(220px, 55%);
+  height: 1.35rem;
+  margin-bottom: 0.65rem;
+}
+
+.skeleton-line--sub {
+  width: min(320px, 72%);
+  height: 0.75rem;
+  margin-bottom: 1.1rem;
+  opacity: 0.7;
+}
+
+.skeleton-line--md { width: 88%; height: 0.8rem; }
+.skeleton-line--sm { width: 55%; height: 0.65rem; opacity: 0.75; }
+.skeleton-line--price { width: 40%; height: 0.9rem; margin-top: 0.35rem; }
+.skeleton-line--btn { width: 100%; height: 2.25rem; margin-top: 0.65rem; border-radius: 999px; }
+
+.skeleton-home-card,
+.skeleton-shop-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.skeleton-home-card-img,
+.skeleton-shop-card-img {
+  aspect-ratio: 1;
+  width: 100%;
+  border-radius: 0;
+}
+
+.skeleton-home-card-body,
+.skeleton-shop-card-body {
+  padding: 0.85rem 0.9rem 1rem;
+}
+
+.skeleton-carousel-track {
+  pointer-events: none;
+}
+
+.skeleton-cold-start-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-top: -0.5rem;
+  margin-bottom: 1.5rem;
+  padding: 0.85rem 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--glass-edge);
+  background: var(--bg-card);
+  text-align: center;
+}
+
+.skeleton-cold-start-note p {
+  margin: 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  max-width: 36rem;
+}
+
+.skeleton-cold-start-note--shop {
+  margin-top: 1.25rem;
+  flex-direction: column;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-block {
+    animation: none;
+    background: rgba(255, 255, 255, 0.06);
+  }
+}
 
 /* Filters */
 .filters-bar {
@@ -2934,19 +3162,25 @@ body.modal-open .guest-welcome-banner {
   background: var(--overlay);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  /* margin:auto on panel centers when short; overflow-y on overlay scrolls when tall */
   display: flex;
+  flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: 1rem;
+  padding: max(1rem, env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px))
+    max(1rem, env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px));
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
+  -webkit-overflow-scrolling: touch;
   animation: fadeIn 0.2s ease;
 }
 
 .modal-panel {
   position: relative;
   width: min(920px, 100%);
+  max-width: 100%;
   max-height: min(90dvh, calc(100dvh - 2rem));
+  overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   background: var(--bg-elevated);
@@ -2958,7 +3192,13 @@ body.modal-open .guest-welcome-banner {
   box-shadow: var(--shadow-modal);
   animation: slideUp 0.25s ease;
   margin: auto;
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  align-self: center;
+  box-sizing: border-box;
+}
+
+.modal-overlay--phone-finder {
+  -webkit-overflow-scrolling: touch;
 }
 
 .modal-close {
@@ -2988,11 +3228,20 @@ body.modal-open .guest-welcome-banner {
 /* Phone finder (brand → model guided picker) */
 .phone-finder-panel {
   width: min(560px, 100%);
+  max-width: 100%;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .phone-finder-step {
   display: flex;
   flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  flex: 1 1 auto;
+  overflow: hidden;
+  padding-top: 0.25rem;
 }
 
 .phone-finder-eyebrow {
@@ -3002,6 +3251,7 @@ body.modal-open .guest-welcome-banner {
   text-transform: uppercase;
   color: var(--primary);
   margin-bottom: 0.35rem;
+  flex-shrink: 0;
 }
 
 .phone-finder-title {
@@ -3009,24 +3259,39 @@ body.modal-open .guest-welcome-banner {
   font-size: 1.35rem;
   font-weight: 800;
   margin-bottom: 0.35rem;
+  flex-shrink: 0;
 }
 
 .phone-finder-sub {
   color: var(--text-muted);
   font-size: 0.88rem;
   margin-bottom: 1.25rem;
+  flex-shrink: 0;
 }
 
 .phone-finder-brand-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 0.6rem;
   margin-bottom: 1.25rem;
-  max-height: min(52vh, 460px);
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  max-height: min(52vh, 420px);
   overflow-y: auto;
+  overflow-x: hidden;
   overscroll-behavior: contain;
   padding-right: 0.25rem;
   scroll-padding-top: 0.5rem;
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+@media (min-width: 480px) {
+  .phone-finder-brand-grid {
+    grid-template-columns: repeat(auto-fill, minmax(min(110px, 100%), 1fr));
+  }
 }
 
 .phone-finder-brand-btn {
@@ -3044,6 +3309,17 @@ body.modal-open .guest-welcome-banner {
   cursor: pointer;
   text-align: center;
   transition: border-color 0.18s ease, transform 0.18s ease, background 0.18s ease;
+  min-width: 0;
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.phone-finder-brand-btn > span:last-child {
+  width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .phone-finder-brand-btn:hover {
@@ -3076,6 +3352,8 @@ body.modal-open .guest-welcome-banner {
 }
 
 .phone-finder-skip {
+  flex-shrink: 0;
+  margin-top: auto;
   align-self: center;
   background: none;
   border: none;
@@ -4964,11 +5242,26 @@ body.modal-open .guest-welcome-banner {
     transition: none;
   }
 
+  .product-card-wrap--grid:hover,
+  .product-card-wrap--grid:active {
+    transform: none !important;
+  }
+
   .product-card-wrap--grid.is-popping,
   .product-card-wrap--grid.scroll-reveal.scroll-revealed.is-popping,
   .home-product-card.is-popping {
     transform: translateY(-4px) !important;
     transition: none;
+  }
+
+  .product-card-wrap--grid:hover .product-card-image-stack img,
+  .home-product-card:hover .product-card-image-stack img,
+  .product-card-wrap--grid.is-popping .product-card-image-stack img {
+    transform: none;
+  }
+
+  .product-card-image-stack img {
+    transition: opacity 0.15s ease;
   }
 }
 
@@ -4976,7 +5269,7 @@ body.modal-open .guest-welcome-banner {
 .floating-repair-btn {
   position: fixed;
   right: 1rem;
-  bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+  bottom: calc(1.5rem + (58px + 0.55rem) * 2 + env(safe-area-inset-bottom, 0px));
   z-index: 198;
   display: inline-flex;
   align-items: center;

@@ -360,6 +360,7 @@
   body.nav-open .floating-cart-trigger,
   body.nav-open .gaming-mode-btn--trigger,
   body.nav-open .whatsapp-float,
+  body.nav-open .chat-fab-trigger,
   body.nav-open .floating-repair-btn,
   body.nav-open .staff-access {
     visibility: hidden;

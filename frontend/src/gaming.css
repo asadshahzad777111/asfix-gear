@@ -22,6 +22,7 @@ body.gaming-mode-active .navbar {
 }
 
 .app--gaming .whatsapp-float,
+.app--gaming .chat-fab-trigger,
 .app--gaming .fab-add {
   display: none;
 }

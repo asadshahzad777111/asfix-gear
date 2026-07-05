@@ -227,7 +227,7 @@ export default function ChatAssistant() {
     <>
       <button
         type="button"
-        className={`whatsapp-float chat-fab-trigger ${open ? 'is-open' : ''}`}
+        className={`chat-fab-trigger ${open ? 'is-open' : ''}`}
         aria-label={t('chatbot.fabAria')}
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}

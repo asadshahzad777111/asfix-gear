@@ -13,6 +13,7 @@ import { readProductsCache, writeProductsCache } from '../utils/productCache';
 import { filterPublishedProducts } from '../utils/productStatus';
 import ShopModelPicker from '../components/shop/ShopModelPicker';
 import BrandPickerDropdown from '../components/BrandPickerDropdown';
+import { ShopGridSkeleton } from '../components/skeleton/ContentSkeletons';
 
 const STOCK_POLL_MS = 25_000;
 
@@ -236,14 +237,13 @@ export default function Shop() {
           </div>
 
           {loadError && products.length === 0 ? (
-            <div className="empty-state">
-              <p>{t('shop.serverStarting')}</p>
-              <button type="button" className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => loadProducts()}>
-                {t('shop.retryLoad')}
-              </button>
-            </div>
+            <ShopGridSkeleton
+              coldStart={t('shop.serverStarting')}
+              onRetry={() => loadProducts()}
+              retryLabel={t('shop.retryLoad')}
+            />
           ) : loading && products.length === 0 ? (
-            <div className="loading">{t('shop.loadingProducts')}</div>
+            <ShopGridSkeleton />
           ) : products.length === 0 ? (
             <div className="empty-state">
               <p>{t('shop.emptyCategory')}</p>

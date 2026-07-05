@@ -10,8 +10,8 @@ import { isPublishedProduct } from '../utils/productStatus';
 import ShopLoginPrompt from '../components/ShopLoginPrompt';
 import CustomerLoginModal from '../components/CustomerLoginModal';
 import { getProductAnimKind } from '../utils/productAnimation';
-import CasePreviewer from '../components/premium/CasePreviewer';
 import PremiumButton, { PremiumLink } from '../components/premium/PremiumButton';
+import CasePreviewer from '../components/premium/CasePreviewer';
 import { DiscountRibbon, ProductPrice } from '../components/DiscountPicker';
 import { getSavings, hasDiscount } from '../utils/pricing';
 import { getStockStatus } from '../utils/stock';
@@ -67,7 +67,6 @@ export default function ProductDetail() {
 
   const onSale = hasDiscount(product);
   const animKind = getProductAnimKind(product.category);
-  const showCasePreview = animKind === 'case';
   const stockStatus = getStockStatus(product.stock);
   const stockMessage =
     stockStatus === 'out'
@@ -98,8 +97,24 @@ export default function ProductDetail() {
         </PremiumLink>
 
         <div className={`product-detail-grid ${onSale ? 'on-sale' : ''}`}>
-          {showCasePreview ? (
-            <CasePreviewer product={product} />
+          {animKind === 'case' ? (
+            <>
+              <CasePreviewer product={{ ...product, image: activeImage || product.image }} />
+              {galleryImages.length > 1 ? (
+                <div className="product-detail-gallery">
+                  {galleryImages.map((url) => (
+                    <button
+                      key={url}
+                      type="button"
+                      className={`product-detail-gallery-thumb ${activeImage === url ? 'is-active' : ''}`}
+                      onClick={() => setActiveImage(url)}
+                    >
+                      <img src={url} alt="" />
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </>
           ) : (
             <div className={`product-detail-image premium-product ${animKind}`}>
               {onSale && <DiscountRibbon percent={product.discount_percent} />}

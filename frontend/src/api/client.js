@@ -317,10 +317,25 @@ export const api = {
     request('/repairs/rate-query', { method: 'POST', body: JSON.stringify(body) }),
   bookRepair: (body) => request('/repairs/book', { method: 'POST', body: JSON.stringify(body) }),
   getBookings: () => request('/repairs/bookings'),
+  getMyRepairs: () => request('/repairs/my-bookings'),
+  trackRepair: (bookingId, phone) => {
+    const q = new URLSearchParams({ bookingId, phone }).toString();
+    return request(`/repairs/track?${q}`);
+  },
   updateBookingStatus: (id, status) =>
     request(`/repairs/bookings/${id}/status`, {
       method: 'PATCH',
       body: JSON.stringify({ status }),
+    }),
+  updateBookingEstimatedCost: (id, estimated_cost) =>
+    request(`/repairs/bookings/${id}/estimated-cost`, {
+      method: 'PATCH',
+      body: JSON.stringify({ estimated_cost }),
+    }),
+  updateBookingPhotos: (id, body) =>
+    request(`/repairs/bookings/${id}/photos`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
     }),
   addBookingNote: (id, note) =>
     request(`/repairs/bookings/${id}/notes`, {
