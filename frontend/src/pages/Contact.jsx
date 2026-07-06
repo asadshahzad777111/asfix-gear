@@ -5,9 +5,11 @@ import { useAuth } from '../context/AuthContext';
 import PageHeader from '../components/PageHeader';
 import BackButton from '../components/BackButton';
 import LocationSection from '../components/LocationSection';
+import ContactSuccessPanel from '../components/ContactSuccessPanel';
 import { SHOP, whatsappLink } from '../config/shop';
 import { composeContactWhatsAppBody } from '../utils/contactPrefill';
 import { useTranslation } from '../context/LanguageContext';
+import useScrollIntoView from '../hooks/useScrollIntoView';
 
 function readPrefill(searchParams, locationState) {
   const fromState = locationState?.contactPrefill;
@@ -55,7 +57,9 @@ export default function Contact() {
 
   const [submitting, setSubmitting] = useState(false);
   const [sendingWhatsApp, setSendingWhatsApp] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
+  const successRef = useScrollIntoView(submitted);
   const [form, setForm] = useState({
     name: '',
     email: '',
@@ -110,8 +114,9 @@ export default function Contact() {
     setSubmitting(true);
     setMessage({ type: '', text: '' });
     try {
-      const res = await submitContactMessage();
-      setMessage({ type: 'success', text: res.message });
+      await submitContactMessage();
+      setSubmitted(true);
+      setMessage({ type: '', text: '' });
       setForm({ name: '', email: '', phone: '', subject: '', message: '' });
       setIsPrefilled(false);
     } catch (err) {
@@ -197,6 +202,11 @@ export default function Contact() {
             </a>
           </div>
 
+          {submitted ? (
+            <div id="contact-form" ref={successRef}>
+              <ContactSuccessPanel onSendAnother={() => setSubmitted(false)} />
+            </div>
+          ) : (
           <form id="contact-form" className="glass-card booking-form" onSubmit={handleSubmit}>
             <h2>{t('contact.sendMessage')}</h2>
             <p>{t('contact.formHint')}</p>
@@ -207,8 +217,8 @@ export default function Contact() {
               </div>
             )}
 
-            {message.text && (
-              <div className={`alert alert-${message.type === 'success' ? 'success' : 'error'}`}>{message.text}</div>
+            {message.text && message.type === 'error' && (
+              <div className="alert alert-error">{message.text}</div>
             )}
 
             <div className="form-group">
@@ -247,6 +257,7 @@ export default function Contact() {
               {t('contact.whatsappHint')}
             </p>
           </form>
+          )}
         </div>
       </section>
 

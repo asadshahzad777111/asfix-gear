@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
 import { getDefaultImage } from '../config/products';
+import useScrollIntoView from '../hooks/useScrollIntoView';
 
 const RATINGS = [1, 2, 3, 4, 5];
 
@@ -23,14 +24,19 @@ function orderProducts(items = []) {
     }));
 }
 
-function FeedbackDone({ rating, comment, productId, orderItems, t }) {
+function FeedbackDone({ rating, comment, productId, orderItems, t, scrollOnMount = false }) {
   const products = useMemo(() => orderProducts(orderItems), [orderItems]);
   const product = products.find((p) => p.product_id === productId) || products[0];
+  const panelRef = useScrollIntoView(scrollOnMount);
 
   return (
-    <div className="order-feedback order-feedback--done glass-card">
-      <p className="order-feedback-thanks">{t('feedback.thanks')}</p>
-      <p className="order-feedback-pending">{t('feedback.pendingNote')}</p>
+    <div ref={panelRef} className="order-success-panel glass-card order-feedback order-feedback--done">
+      <div className="order-success-icon-ring">
+        <span className="order-success-icon">★</span>
+      </div>
+      <h3 className="order-feedback-thanks">{t('feedback.submittedTitle')}</h3>
+      <p className="order-success-subtitle">{t('feedback.thanks')}</p>
+      <p className="order-success-hint order-feedback-pending">{t('feedback.pendingNote')}</p>
       {product ? (
         <Link to={`/shop/${product.product_id}`} className="order-feedback-product">
           <img
@@ -137,6 +143,7 @@ export default function OrderFeedbackForm({ orderId, phone, orderItems = [], exi
         productId={submitted.product_id || productId}
         orderItems={orderItems}
         t={t}
+        scrollOnMount
       />
     );
   }

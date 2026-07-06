@@ -29,6 +29,8 @@ export default function RepairChatPanel({
   const [sending, setSending] = useState(false);
   const [activeTemplateId, setActiveTemplateId] = useState(null);
   const [sendError, setSendError] = useState('');
+  const [sentConfirm, setSentConfirm] = useState(false);
+  const sentTimerRef = useRef(null);
   const threadRef = useRef(null);
   const mountedRef = useRef(true);
   const sendingRef = useRef(false);
@@ -117,6 +119,12 @@ export default function RepairChatPanel({
     scrollToBottom();
   }, [messages, scrollToBottom]);
 
+  useEffect(() => {
+    return () => {
+      if (sentTimerRef.current) window.clearTimeout(sentTimerRef.current);
+    };
+  }, []);
+
   useLiveUpdates({
     enabled: Boolean(user && bookingId),
     onEvent: (event, data) => {
@@ -144,6 +152,9 @@ export default function RepairChatPanel({
       setMessages((prev) => [...prev, msg]);
       setDraft('');
       setSendError('');
+      setSentConfirm(true);
+      if (sentTimerRef.current) window.clearTimeout(sentTimerRef.current);
+      sentTimerRef.current = window.setTimeout(() => setSentConfirm(false), 3500);
       onUnreadChangeRef.current?.(0);
       scrollToBottom();
     } catch (err) {
@@ -219,6 +230,14 @@ export default function RepairChatPanel({
           })
         )}
       </div>
+
+      <p
+        className={`repair-chat-sent${sentConfirm ? ' repair-chat-sent--visible' : ''}`}
+        role="status"
+        aria-live="polite"
+      >
+        {sentConfirm ? t('repairChat.sentConfirm') : '\u00a0'}
+      </p>
 
       <p
         className={`repair-chat-error${sendError ? ' repair-chat-error--visible' : ''}`}

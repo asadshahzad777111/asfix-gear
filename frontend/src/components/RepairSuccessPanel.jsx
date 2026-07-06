@@ -3,9 +3,11 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from '../context/LanguageContext';
 import { buildRepairReceipt } from '../utils/receipts';
 import { buildContactPath, buildContactPrefill } from '../utils/contactPrefill';
+import useScrollIntoView from '../hooks/useScrollIntoView';
 
 export default function RepairSuccessPanel({ booking, onReset }) {
   const { t } = useTranslation();
+  const panelRef = useScrollIntoView(Boolean(booking));
   const { text } = buildRepairReceipt(booking);
   const contactTo = buildContactPath(buildContactPrefill({ type: 'repair-receipt', text }));
   const [copied, setCopied] = useState(false);
@@ -23,10 +25,13 @@ export default function RepairSuccessPanel({ booking, onReset }) {
   };
 
   return (
-    <div className="order-success-panel glass-card repair-success-panel">
-      <div className="order-success-icon">🔧</div>
+    <div ref={panelRef} className="order-success-panel glass-card repair-success-panel">
+      <div className="order-success-icon-ring">
+        <span className="order-success-icon">🔧</span>
+      </div>
       <h3>{t('repairSuccess.title')}</h3>
       <p className="order-success-subtitle">{t('repairSuccess.subtitle')}</p>
+      <p className="order-success-hint repair-success-wait">{t('repairSuccess.waitForReply')}</p>
 
       <div className="order-success-id-card order-success-id-card--hero">
         <span className="order-success-id-label">{t('repairSuccess.bookingId')}</span>

@@ -123,6 +123,19 @@
   transition: color 0.2s ease;
 }
 
+.repair-chat-sent {
+  margin: 0 1rem;
+  min-height: 1.25rem;
+  color: transparent;
+  font-size: 0.84rem;
+  line-height: 1.25rem;
+  transition: color 0.2s ease;
+}
+
+.repair-chat-sent--visible {
+  color: var(--mint, #00f5d4);
+}
+
 .repair-chat-error--visible {
   color: #b32d2e;
 }
