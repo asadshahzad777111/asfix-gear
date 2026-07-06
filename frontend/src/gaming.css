@@ -16,6 +16,69 @@ body.gaming-mode-active {
   background: var(--game-dark);
 }
 
+body.gaming-mode-active .app-main {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  body.gaming-mode-active .gaming-hex-grid {
+    animation: gamingHexPulse 8s ease-in-out infinite;
+  }
+
+  body.gaming-mode-active .gaming-page-glow--1 {
+    animation: gamingGlowDrift1 12s ease-in-out infinite;
+  }
+
+  body.gaming-mode-active .gaming-page-glow--2 {
+    animation: gamingGlowDrift2 14s ease-in-out infinite;
+  }
+
+  .gaming-page--entered .gaming-hero-badge,
+  .gaming-page--entered .gaming-hero-title,
+  .gaming-page--entered .gaming-hero-sub,
+  .gaming-page--entered .gaming-tags,
+  .gaming-page--entered .gaming-hero-actions,
+  .gaming-page--entered .gaming-stats {
+    animation: gamingSectionIn 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .gaming-page--entered .gaming-hero-title { animation-delay: 0.06s; }
+  .gaming-page--entered .gaming-hero-sub { animation-delay: 0.12s; }
+  .gaming-page--entered .gaming-tags { animation-delay: 0.18s; }
+  .gaming-page--entered .gaming-hero-actions { animation-delay: 0.24s; }
+  .gaming-page--entered .gaming-stats { animation-delay: 0.3s; }
+
+  .gaming-page--entered .gaming-product-card {
+    animation: gamingCardIn 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation-delay: calc(var(--card-i, 0) * 0.05s + 0.15s);
+  }
+}
+
+@keyframes gamingHexPulse {
+  0%, 100% { opacity: 0.04; }
+  50% { opacity: 0.07; }
+}
+
+@keyframes gamingGlowDrift1 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; }
+  50% { transform: translate(30px, 20px); opacity: 0.85; }
+}
+
+@keyframes gamingGlowDrift2 {
+  0%, 100% { transform: translate(0, 0); opacity: 1; }
+  50% { transform: translate(-24px, -16px); opacity: 0.9; }
+}
+
+@keyframes gamingSectionIn {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes gamingCardIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
 body.gaming-mode-active .navbar {
   background: rgba(3, 3, 8, 0.9);
   border-bottom-color: rgba(0, 255, 136, 0.15);

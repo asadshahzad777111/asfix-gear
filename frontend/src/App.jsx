@@ -6,7 +6,6 @@ import Footer from './components/Footer';
 import ChatAssistant from './components/ChatAssistant';
 import FloatingWhatsApp from './components/FloatingWhatsApp';
 import GamingTransition from './components/gaming/GamingTransition';
-import GamingModeButton from './components/gaming/GamingModeButton';
 import ExitGamingButton from './components/gaming/ExitGamingButton';
 import ButtonEffects from './components/ButtonEffects';
 import FloatingCart from './components/premium/FloatingCart';
@@ -45,7 +44,6 @@ function AppContent() {
       {!isAdminRoute && !isGamingPage && <FloatingRepairButton />}
       {showCart && <FloatingCart />}
       <FlyToCart />
-      {!isGamingPage && !isAdminRoute && <GamingModeButton variant="trigger" />}
       <ExitGamingButton />
       <GamingTransition />
       <ButtonEffects />

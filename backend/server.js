@@ -51,8 +51,20 @@ app.use('/api', (_req, res, next) => {
 // forward after entering the code" with no obvious cause — the same failure
 // mode this file's own rate-limit isolation was meant to prevent, just one
 // layer higher than the fix originally covered.
+/** Authenticated repair-chat GET polling — must not share the 120/min IP bucket with the rest of the site (admin desk + customer WiFi). */
+function isRepairChatRead(req) {
+  if (req.method !== 'GET') return false;
+  const p = req.path;
+  return (
+    p === '/repairs/messages/unread'
+    || p === '/repairs/chats'
+    || /^\/repairs\/bookings\/\d+\/messages$/.test(p)
+  );
+}
+
 app.use('/api', (req, res, next) => {
   if (req.path.startsWith('/auth') || req.path === '/ping' || req.path === '/health' || req.path.startsWith('/events')) return next();
+  if (isRepairChatRead(req)) return next();
   return apiLimiter(req, res, next);
 });
 

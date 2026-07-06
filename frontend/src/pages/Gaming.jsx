@@ -19,8 +19,14 @@ export default function Gaming() {
   const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pageReady, setPageReady] = useState(false);
   const { exitGamingMode } = useGaming();
   const { count, setOpen } = useCart();
+
+  useEffect(() => {
+    const frame = requestAnimationFrame(() => setPageReady(true));
+    return () => cancelAnimationFrame(frame);
+  }, []);
 
   useEffect(() => {
     const load = () => {
@@ -33,7 +39,7 @@ export default function Gaming() {
   }, []);
 
   return (
-    <div className="gaming-page">
+    <div className={`gaming-page${pageReady ? ' gaming-page--entered' : ''}`}>
       <div className="gaming-page-bg">
         <div className="gaming-hex-grid" />
         <div className="gaming-page-glow gaming-page-glow--1" />

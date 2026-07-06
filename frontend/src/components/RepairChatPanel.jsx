@@ -9,10 +9,10 @@ import {
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import useLiveUpdates from '../hooks/useLiveUpdates';
-import { startVisibilityPoll } from '../utils/visibilityPoll';
 import './repair-chat.css';
 
-const POLL_MS = 30_000;
+const POLL_MS = 60_000;
+const POLL_MS_MAX = 300_000;
 
 export default function RepairChatPanel({
   bookingId,
@@ -28,10 +28,17 @@ export default function RepairChatPanel({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [activeTemplateId, setActiveTemplateId] = useState(null);
-  const [error, setError] = useState('');
+  const [sendError, setSendError] = useState('');
   const threadRef = useRef(null);
   const mountedRef = useRef(true);
   const sendingRef = useRef(false);
+  const onUnreadChangeRef = useRef(onUnreadChange);
+  const bookingIdRef = useRef(bookingId);
+  const pollDelayRef = useRef(POLL_MS);
+  const pollFailuresRef = useRef(0);
+
+  onUnreadChangeRef.current = onUnreadChange;
+  bookingIdRef.current = bookingId;
 
   const scrollToBottom = useCallback(() => {
     const el = threadRef.current;
@@ -39,31 +46,72 @@ export default function RepairChatPanel({
   }, []);
 
   const loadMessages = useCallback(async ({ silent = false } = {}) => {
-    if (!bookingId) return;
+    const id = bookingIdRef.current;
+    if (!id) return;
     if (!silent) setLoading(true);
-    if (!silent) setError('');
     try {
-      const data = await api.getRepairMessages(bookingId);
+      const data = await api.getRepairMessages(id);
       if (!mountedRef.current) return;
       setMessages(data.messages || []);
-      onUnreadChange?.(data.unread || 0);
-    } catch (err) {
-      if (!mountedRef.current || silent) return;
-      setError(err.message || t('repairChat.loadError'));
+      onUnreadChangeRef.current?.(data.unread || 0);
+      pollFailuresRef.current = 0;
+      pollDelayRef.current = POLL_MS;
+    } catch {
+      if (!mountedRef.current || silent) {
+        if (mountedRef.current && silent) {
+          pollFailuresRef.current += 1;
+          pollDelayRef.current = Math.min(
+            POLL_MS * 2 ** pollFailuresRef.current,
+            POLL_MS_MAX,
+          );
+        }
+        return;
+      }
     } finally {
-      if (mountedRef.current) setLoading(false);
+      if (mountedRef.current && !silent) setLoading(false);
     }
-  }, [bookingId, onUnreadChange, t]);
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
-    loadMessages();
-    const stop = startVisibilityPoll(() => loadMessages({ silent: true }), POLL_MS);
-    return () => {
-      mountedRef.current = false;
-      stop();
+    pollFailuresRef.current = 0;
+    pollDelayRef.current = POLL_MS;
+
+    let pollTimer = null;
+    let cancelled = false;
+
+    const schedulePoll = () => {
+      pollTimer = window.setTimeout(async () => {
+        if (cancelled) return;
+        if (!document.hidden) {
+          await loadMessages({ silent: true });
+        }
+        if (!cancelled) schedulePoll();
+      }, pollDelayRef.current);
     };
-  }, [loadMessages]);
+
+    loadMessages();
+    schedulePoll();
+
+    const onVisibility = () => {
+      if (document.hidden || cancelled) return;
+      if (pollTimer) {
+        clearTimeout(pollTimer);
+        pollTimer = null;
+      }
+      loadMessages({ silent: true });
+      schedulePoll();
+    };
+
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      cancelled = true;
+      mountedRef.current = false;
+      if (pollTimer) clearTimeout(pollTimer);
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+  }, [bookingId, loadMessages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -90,16 +138,16 @@ export default function RepairChatPanel({
     if (!body || sending || sendingRef.current) return;
     sendingRef.current = true;
     setSending(true);
-    setError('');
+    setSendError('');
     try {
       const msg = await api.sendRepairMessage(bookingId, body);
       setMessages((prev) => [...prev, msg]);
       setDraft('');
-      setError('');
-      onUnreadChange?.(0);
+      setSendError('');
+      onUnreadChangeRef.current?.(0);
       scrollToBottom();
     } catch (err) {
-      setError(err.message || t('repairChat.sendError'));
+      setSendError(err.message || t('repairChat.sendError'));
     } finally {
       sendingRef.current = false;
       setSending(false);
@@ -172,7 +220,13 @@ export default function RepairChatPanel({
         )}
       </div>
 
-      {error ? <p className="repair-chat-error">{error}</p> : null}
+      <p
+        className={`repair-chat-error${sendError ? ' repair-chat-error--visible' : ''}`}
+        role={sendError ? 'alert' : undefined}
+        aria-live="polite"
+      >
+        {sendError || '\u00a0'}
+      </p>
 
       <div className="repair-chat-templates" aria-label={t('repairChat.templatesLabel')}>
         <span className="repair-chat-templates-label">{t('repairChat.templatesLabel')}</span>

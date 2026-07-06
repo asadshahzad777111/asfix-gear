@@ -158,49 +158,6 @@
     z-index: 200;
   }
 
-  .gaming-mode-btn--trigger {
-    top: auto !important;
-    bottom: var(--float-dock-bottom) !important;
-    left: calc(0.65rem + var(--float-dock-size) + var(--float-dock-gap)) !important;
-    right: auto !important;
-    transform: none !important;
-    flex-direction: row;
-    width: var(--float-dock-size);
-    height: var(--float-dock-size);
-    padding: 0.35rem !important;
-    border-radius: 50% !important;
-    justify-content: center;
-    align-items: center;
-    background: linear-gradient(145deg, rgba(0, 255, 136, 0.2), rgba(3, 3, 8, 0.85)) !important;
-    z-index: 199;
-  }
-
-  .gaming-mode-btn--trigger.activating {
-    animation: triggerPressMobile 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .gaming-mode-btn--trigger:hover {
-      transform: scale(1.05) !important;
-    }
-  }
-
-  .gaming-mode-btn--trigger .gaming-btn-label,
-  .gaming-mode-btn--trigger .gaming-btn-ring,
-  .gaming-mode-btn--trigger .premium-btn-neon-ring {
-    display: none !important;
-  }
-
-  .gaming-mode-btn--trigger .gaming-btn-shine {
-    animation-duration: 4s;
-  }
-
-  .gaming-mode-btn--trigger .gaming-btn-core svg,
-  .gaming-mode-btn--trigger .gaming-btn-core {
-    width: 2rem !important;
-    height: 2rem !important;
-  }
-
   .whatsapp-float {
     position: fixed;
     top: auto;
@@ -315,34 +272,6 @@
     height: 3.35rem;
   }
 
-  .gaming-mode-btn--trigger {
-    top: auto;
-    bottom: 1.25rem;
-    left: calc(1rem + 3.35rem + 0.65rem);
-    transform: none;
-    flex-direction: row;
-    border-radius: 999px;
-    padding: 0.55rem 0.9rem 0.55rem 0.55rem;
-  }
-
-  @media (hover: hover) and (pointer: fine) {
-    .gaming-mode-btn--trigger:hover {
-      transform: translateY(-2px) !important;
-    }
-  }
-
-  .gaming-mode-btn--trigger.activating {
-    animation: triggerPressMobile 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
-  }
-
-  .gaming-mode-btn--trigger .gaming-btn-ring {
-    display: none;
-  }
-
-  .gaming-mode-btn--trigger .gaming-btn-label {
-    display: flex;
-  }
-
   .whatsapp-float {
     bottom: 1.25rem;
     right: 1rem;
@@ -379,32 +308,10 @@
   }
 }
 
-/* ── Desktop / Windows ── */
-@media (min-width: 1025px) {
-  .gaming-mode-btn--trigger {
-    top: 50%;
-    bottom: auto;
-    left: 0;
-    transform: translateY(-50%);
-  }
-
-  .gaming-mode-btn--trigger:hover {
-    transform: translateY(-50%) translateX(4px);
-  }
-}
-
 /* ── Large screens / TV ── */
 @media (min-width: 1600px) {
   :root {
     --float-dock-size: 3.5rem;
-  }
-
-  .gaming-mode-btn--trigger {
-    padding: 1rem 0.65rem 1rem 0.5rem;
-  }
-
-  .gaming-mode-btn--trigger .gaming-btn-label strong {
-    font-size: 0.75rem;
   }
 
   .whatsapp-float {
@@ -415,7 +322,6 @@
 
 /* Touch devices — simpler motion (no broken hover transforms) */
 @media (pointer: coarse) {
-  .gaming-mode-btn--trigger,
   .shop-mode-btn--trigger,
   .whatsapp-float {
     -webkit-tap-highlight-color: transparent;
@@ -432,8 +338,6 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .gaming-mode-btn--trigger .gaming-btn-shine,
-  .gaming-mode-btn--trigger.activating,
   .shop-mode-btn--nav,
   .gaming-mode-btn--nav,
   .nav-desktop-link--gaming,

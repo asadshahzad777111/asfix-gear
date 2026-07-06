@@ -116,8 +116,15 @@
 
 .repair-chat-error {
   margin: 0 1rem;
-  color: #b32d2e;
+  min-height: 1.25rem;
+  color: transparent;
   font-size: 0.84rem;
+  line-height: 1.25rem;
+  transition: color 0.2s ease;
+}
+
+.repair-chat-error--visible {
+  color: #b32d2e;
 }
 
 .repair-chat-compose {

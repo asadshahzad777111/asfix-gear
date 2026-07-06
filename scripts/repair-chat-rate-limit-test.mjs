@@ -71,6 +71,15 @@ async function main() {
     }
     console.log('OK: 20 repair GET polls — no writeLimiter 429');
 
+    // Repair chat GET reads must not share the 120/min global apiLimiter bucket
+    for (let i = 0; i < 130; i += 1) {
+      const poll = await jsonFetch('/api/repairs/messages/unread');
+      if (poll.status === 429 && poll.data.error === 'Too many requests. Try again later.') {
+        throw new Error(`Repair chat unread GET #${i + 1} hit global apiLimiter: ${poll.data.error}`);
+      }
+    }
+    console.log('OK: 130 repair chat unread GETs — no global apiLimiter 429');
+
     // Optional staff POST test when credentials work locally
     const login = await jsonFetch('/api/auth/login', {
       method: 'POST',

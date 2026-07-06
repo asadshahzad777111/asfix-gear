@@ -76,7 +76,7 @@ export default function GamingProductCard({ product, index }) {
     <motion.article
       ref={ref}
       className={`gaming-product-card premium-gaming-card ${jumped ? 'jumped' : ''} ${onSale ? 'on-sale' : ''} ${hovered ? 'is-hovered' : ''} ${popClass}`.trim()}
-      style={{ '--jump-delay': `${index * 0.12}s`, transformPerspective: 900 }}
+      style={{ '--jump-delay': `${index * 0.12}s`, '--card-i': index, transformPerspective: 900 }}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
       whileHover={{ y: -6, scale: 1.02 }}
