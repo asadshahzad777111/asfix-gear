@@ -82,7 +82,7 @@ export default function GamingLogo({ size = 48, className = '', animated = true 
       <circle cx="79" cy="63" r="3" fill={`url(#${grad})`} opacity="0.55" />
 
       <rect x="44" y="14" width="32" height="16" rx="5" fill={`url(#${grad})`} />
-      <text x="60" y="25" textAnchor="middle" fill="#06060f" fontSize="10" fontWeight="900" fontFamily="Syne,sans-serif">AsG</text>
+      <text x="60" y="25" textAnchor="middle" fill="#06060f" fontSize="10" fontWeight="900" fontFamily="Plus Jakarta Sans,sans-serif">AsG</text>
 
       <path
         d="M60 28 L56 36 L62 36 L58 44"

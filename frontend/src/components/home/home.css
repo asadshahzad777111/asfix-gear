@@ -519,6 +519,53 @@
 }
 
 /* ── Product carousel ── */
+.home-carousel-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
+  text-align: left;
+}
+
+.home-carousel-head .section-subtitle {
+  margin-left: 0;
+  margin-right: 0;
+  text-align: left;
+}
+
+.home-carousel-nav {
+  display: flex;
+  gap: 0.5rem;
+  flex-shrink: 0;
+  margin-bottom: 0.15rem;
+}
+
+.home-carousel-btn {
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: var(--bg-card);
+  color: var(--text);
+  font-size: 1.35rem;
+  line-height: 1;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: border-color 0.2s ease, background 0.2s ease, transform 0.15s ease;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .home-carousel-btn:hover {
+    border-color: rgba(255, 107, 44, 0.45);
+    background: var(--bg-elevated);
+  }
+}
+
+.home-carousel-btn:active {
+  transform: scale(0.94);
+}
+
 .home-carousel-wrap {
   position: relative;
   overflow: hidden;

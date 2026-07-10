@@ -7,7 +7,8 @@ export function loadDisplayFonts() {
     const link = document.createElement('link');
     link.id = 'asfix-display-fonts';
     link.rel = 'stylesheet';
-    link.href = 'https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&display=swap';
+    link.href =
+      'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap';
     document.head.appendChild(link);
   };
 

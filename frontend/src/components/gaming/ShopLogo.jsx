@@ -59,7 +59,7 @@ export default function ShopLogo({ size = 48, className = '', animated = true })
 
       {/* Badge */}
       <rect x="40" y="16" width="40" height="16" rx="5" fill={`url(#${grad})`} />
-      <text x="60" y="27" textAnchor="middle" fill="#0f0a08" fontSize="8" fontWeight="900" fontFamily="Syne,sans-serif">SHOP</text>
+      <text x="60" y="27" textAnchor="middle" fill="#0f0a08" fontSize="8" fontWeight="900" fontFamily="Plus Jakarta Sans,sans-serif">SHOP</text>
     </svg>
   );
 }

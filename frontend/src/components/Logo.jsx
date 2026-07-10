@@ -53,7 +53,7 @@ export default function Logo({ size = 44, showText = true, className = '' }) {
 
           {/* "As" monogram badge — bottom-left corner, clear of the phone icon */}
           <rect x="14" y="80" width="26" height="18" rx="6" fill="url(#logoGradMain)" />
-          <text x="27" y="93" textAnchor="middle" fill="#050508" fontSize="9.5" fontWeight="800" fontFamily="Syne, sans-serif">As</text>
+          <text x="27" y="93" textAnchor="middle" fill="#050508" fontSize="9.5" fontWeight="800" fontFamily="Plus Jakarta Sans, Inter, sans-serif">As</text>
         </g>
       </svg>
 
