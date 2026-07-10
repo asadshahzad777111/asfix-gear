@@ -24,6 +24,7 @@ import './components/nav/nav-upgrade.css';
 import './components/chat-assistant.css';
 import './auth-2026.css';
 import './components/admin/admin-wp.css';
+import './loco.css';
 import { registerSW } from 'virtual:pwa-register';
 
 registerSW({ immediate: true });

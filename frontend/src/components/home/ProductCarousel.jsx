@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import HomeProductCard from './HomeProductCard';
 import { useTranslation } from '../../context/LanguageContext';
+import Reveal from '../motion/Reveal';
 
 const AUTO_SCROLL_MS = 3500;
 
@@ -38,10 +39,10 @@ export default function ProductCarousel({ titleKey, subtitleKey, products = [], 
   return (
     <section className="home-section">
       <div className="container">
-        <div className="home-section-head">
+        <Reveal className="home-section-head">
           <h2 className="section-title">{t(titleKey)}</h2>
           {subtitleKey && <p className="section-subtitle">{t(subtitleKey)}</p>}
-        </div>
+        </Reveal>
         <div
           className="home-carousel-wrap"
           onMouseEnter={() => setPaused(true)}

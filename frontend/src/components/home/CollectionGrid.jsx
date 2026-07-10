@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { DEFAULT_IMAGES, HOME_COLLECTIONS, MODEL_SPECIFIC_CATEGORIES } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
 import PhoneFinderModal from '../PhoneFinderModal';
+import Reveal from '../motion/Reveal';
 
 const COLLECTION_HINTS = {
   Cases: 'home.collectionCases',
@@ -27,11 +28,11 @@ export default function CollectionGrid() {
   return (
     <section className="home-section">
       <div className="container">
-        <div className="home-section-head">
+        <Reveal className="home-section-head">
           <span className="eyebrow">{t('home.collectionsEyebrow')}</span>
           <h2 className="section-title">{t('home.shopCollection')}</h2>
           <p className="section-subtitle">{t('home.shopCollectionSub')}</p>
-        </div>
+        </Reveal>
         <div className="home-collection-grid">
           {HOME_COLLECTIONS.map((category) => (
             <button

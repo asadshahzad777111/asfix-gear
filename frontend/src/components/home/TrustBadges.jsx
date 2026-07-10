@@ -1,10 +1,10 @@
 import { useTranslation } from '../../context/LanguageContext';
 
 const BADGES = [
-  { key: 'trustWarranty', icon: '🛡️' },
-  { key: 'trustGenuine', icon: '✓' },
-  { key: 'trustFastService', icon: '⚡' },
-  { key: 'trustExpert', icon: '🔧' },
+  { key: 'trustWarranty', icon: '01' },
+  { key: 'trustGenuine', icon: '02' },
+  { key: 'trustFastService', icon: '03' },
+  { key: 'trustExpert', icon: '04' },
 ];
 
 export default function TrustBadges() {
@@ -15,7 +15,7 @@ export default function TrustBadges() {
       <div className="container">
         <div className="home-trust-row">
           {BADGES.map(({ key, icon }) => (
-            <div key={key} className="home-trust-badge glass-card">
+            <div key={key} className="home-trust-badge">
               <span className="home-trust-icon" aria-hidden="true">{icon}</span>
               <span className="home-trust-label">{t(`home.${key}`)}</span>
             </div>

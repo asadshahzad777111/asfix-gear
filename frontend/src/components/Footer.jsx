@@ -13,13 +13,13 @@ export default function Footer() {
       <div className="container footer-grid">
         <div className="footer-brand">
           <Link to="/" aria-label={SHOP.name}>
-            <Logo size={44} showText />
+            <Logo size={40} showText />
           </Link>
           <p>{t('footer.tagline')}</p>
           <div className="footer-meta">
-            <strong>📍 {SHOP.addressLine1}</strong>
+            <strong>{SHOP.addressLine1}</strong>
             <p>{SHOP.addressLine2}</p>
-            <p>📞 {SHOP.phone} · 🕐 {t('shop.hours')}</p>
+            <p>{SHOP.phone} · {t('shop.hours')}</p>
           </div>
         </div>
 
@@ -27,7 +27,7 @@ export default function Footer() {
           <div className="footer-col footer-col--explore">
             <h4>{t('common.explore')}</h4>
             <ul className="footer-links">
-              <li><Link to="/gaming">🎮 {t('common.gamingZone')}</Link></li>
+              <li><Link to="/gaming">{t('common.gamingZone')}</Link></li>
               <li><Link to="/shop">{t('common.accessoriesShop')}</Link></li>
               {isStaff && <li><Link to="/shop?add=1">{t('common.addProductStaff')}</Link></li>}
               <li><Link to="/repair">{t('common.bookRepair')}</Link></li>

@@ -59,8 +59,8 @@ export default function Logo({ size = 44, showText = true, className = '' }) {
 
       {showText && (
         <div className="brand-logo-text">
-          <strong>Fix & Gear</strong>
-          <small>Fix • Shop • Care</small>
+          <strong>AsFix & Gear</strong>
+          <small>Repair · Shop · Game</small>
         </div>
       )}
     </div>
