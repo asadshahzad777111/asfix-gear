@@ -1,12 +1,11 @@
+import { OpenBadgeLarge } from '../OpenBadge';
 import { PremiumLink } from '../premium/PremiumButton';
 import { getDefaultImage } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
-import ScrambleText from '../motion/ScrambleText';
 
 export default function HomeHero({ product }) {
   const { t } = useTranslation();
   const imageSrc = product?.image || getDefaultImage(product?.category || 'Cases');
-  const productLabel = product?.name || t('home.heroVisualFallback');
 
   const handleImgError = (e) => {
     e.target.onerror = null;
@@ -14,54 +13,48 @@ export default function HomeHero({ product }) {
   };
 
   return (
-    <section className="loco-hero" aria-label={t('home.heroAria')}>
-      <div className="loco-hero__grain" aria-hidden="true" />
-
-      <div className="loco-hero__inner">
-        <div className="loco-hero__copy">
-          <h1 className="loco-hero__brand">
-            <ScrambleText text="AsFix" delay={80} duration={700} />
-            {' '}
-            <em>
-              <ScrambleText text="& Gear" as="span" delay={220} duration={800} />
-            </em>
-          </h1>
-
-          <p className="loco-hero__headline">
-            <ScrambleText text={t('home.heroHeadline')} delay={400} duration={900} />
-          </p>
-
-          <p className="loco-hero__line">{t('home.heroDesc')}</p>
-
-          <div className="loco-hero__actions">
-            <PremiumLink to="/repair" className="btn btn-primary">
-              {t('home.bookRepair')}
-            </PremiumLink>
-            <PremiumLink to="/shop" className="btn btn-outline">
-              {t('home.shopGear')}
-            </PremiumLink>
-          </div>
-        </div>
-
-        <div className="loco-hero__visual">
-          <div className="loco-hero__frame">
-            <img
-              src={imageSrc}
-              alt={productLabel}
-              loading="eager"
-              onError={handleImgError}
-            />
-            <div className="loco-hero__frame-meta">
-              <span>{t('home.heroVisualLabel')}</span>
-              <span>Lahore</span>
+    <section className="hero section--hero home-hero">
+      <div className="container">
+        <div className="hero-bento">
+          <div className="hero-main">
+            <span className="hero-tag">{t('home.heroTag')}</span>
+            <h1 className="hero-title">
+              {t('home.heroTitle1')}
+              <br />
+              <span className="grad">{t('home.heroTitle2')}</span>
+            </h1>
+            <p className="hero-promo">{t('home.heroPromo')}</p>
+            <p className="hero-desc">{t('home.heroDesc')}</p>
+            <div className="hero-actions">
+              <PremiumLink to="/shop" className="btn btn-primary">
+                {t('home.shopNow')}
+              </PremiumLink>
             </div>
+            <OpenBadgeLarge />
+          </div>
+
+          <div className="glass-card hero-bento-card">
+            <div className="bento-stat-num">500+</div>
+            <div className="bento-stat-label">{t('home.repairsDone')}</div>
+          </div>
+
+          <div className="glass-card bento-phone">
+            {product ? (
+              <img
+                src={imageSrc}
+                alt={product.name}
+                className="bento-product-img"
+                loading="eager"
+                onError={handleImgError}
+              />
+            ) : (
+              <div className="phone-mock">
+                <span className="phone-mock-icon">📱</span>
+                <span className="phone-mock-text">ASFIX READY</span>
+              </div>
+            )}
           </div>
         </div>
-      </div>
-
-      <div className="loco-hero__scroll" aria-hidden="true">
-        <span className="loco-hero__scroll-line" />
-        {t('home.scroll')}
       </div>
     </section>
   );
