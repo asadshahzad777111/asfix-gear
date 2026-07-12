@@ -18,7 +18,14 @@ export const DEFAULT_PAYMENTS = {
     bankName: 'Meezan Bank',
     branch: 'BATAPUR BRANCH LHR',
   },
+  /** Cash on Delivery — mainly Lahore; no wallet/bank fields. */
+  cod: {
+    enabled: true,
+  },
 };
+
+export const PAYMENT_METHOD_IDS = ['jazzcash', 'easypaisa', 'bank', 'cod'];
+export const ADVANCE_PAYMENT_MODES = new Set(['jazzcash', 'easypaisa', 'bank']);
 
 function normalizeSavedPayments(saved) {
   return saved && typeof saved === 'object' ? saved : {};
@@ -30,10 +37,15 @@ export function mergePaymentSettings(saved) {
     jazzcash: { ...DEFAULT_PAYMENTS.jazzcash, ...(s.jazzcash || {}) },
     easypaisa: { ...DEFAULT_PAYMENTS.easypaisa, ...(s.easypaisa || {}) },
     bank: { ...DEFAULT_PAYMENTS.bank, ...(s.bank || {}) },
+    cod: { ...DEFAULT_PAYMENTS.cod, ...(s.cod || {}) },
   };
 }
 
 export function enabledPaymentMethods(settings) {
   const merged = mergePaymentSettings(settings);
-  return ['jazzcash', 'easypaisa', 'bank'].filter((id) => merged[id]?.enabled !== false);
+  return PAYMENT_METHOD_IDS.filter((id) => merged[id]?.enabled !== false);
+}
+
+export function isCodPayment(mode) {
+  return String(mode || '').toLowerCase() === 'cod';
 }

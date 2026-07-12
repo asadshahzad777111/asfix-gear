@@ -12,7 +12,7 @@ export default function ProductPermalinkPanel({ slug, name, productId, onSlugCha
           <span className="wp-product-permalink-slug">{slugify(slug || name) || 'your-product-slug'}</span>
         </p>
         <p className="wp-product-hint wp-product-hint--muted">
-          Live URL today: {productId ? `/shop/${productId}` : 'save product first'} — slug stored for future pretty URLs.
+          Pretty URL: {preview}. Numeric URL still works: {productId ? `/shop/${productId}` : 'save product first'}.
         </p>
         <label htmlFor="product-slug" className="wp-product-permalink-label">
           URL slug

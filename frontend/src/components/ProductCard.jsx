@@ -17,6 +17,7 @@ import ProductCardImageStack from './ProductCardImageStack';
 import { isInStock } from '../utils/stock';
 import ShopLoginPrompt from './ShopLoginPrompt';
 import CustomerLoginModal from './CustomerLoginModal';
+import { productPath as buildProductPath } from '../utils/slug';
 
 const TAP_POP = { scale: 1.06, y: -10, rotateX: -4, z: 40 };
 const TAP_SPRING = { type: 'spring', stiffness: 420, damping: 26 };
@@ -59,7 +60,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     onPointerUp: onCardImagePointerUp,
     onPointerLeave: onCardImagePointerLeave,
   } = useProductCardImage(product, { popping });
-  const productPath = `/shop/${product.id}`;
+  const productPath = buildProductPath(product);
 
   const animKind = getProductAnimKind(product.category);
 

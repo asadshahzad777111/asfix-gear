@@ -13,7 +13,9 @@ function deliveryLine(city, paymentMode) {
       ? 'EasyPaisa'
       : paymentMode === 'bank'
         ? 'Bank Transfer'
-        : 'Advance Payment';
+        : paymentMode === 'cod'
+          ? 'Cash on Delivery'
+          : 'Advance Payment';
   return `${city || 'Other City'} — ${mode}`;
 }
 
@@ -73,7 +75,9 @@ export function buildOrderReceipt(order, { showCost = false } = {}) {
             `Number: ${pay[order.payment_mode].number}`,
             `Name: ${pay[order.payment_mode].accountName}`,
           ].join('\n')
-        : null;
+        : order.payment_mode === 'cod'
+          ? 'Pay via: Cash on Delivery (pay rider on delivery)'
+          : null;
 
   const text = [
     'ASFIX GEAR - ORDER RECEIPT',

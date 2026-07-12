@@ -21,8 +21,9 @@ import { buildContactPath, buildContactPrefill } from '../../utils/contactPrefil
 import OrderSuccessPanel from '../OrderSuccessPanel';
 import PaymentInstructions from '../PaymentInstructions';
 import MapAddressPicker from '../MapAddressPicker';
-import { enabledPaymentMethods, mergePaymentSettings } from '../../config/payments';
+import { enabledPaymentMethods, mergePaymentSettings, isCodPayment } from '../../config/payments';
 import { SHOP } from '../../config/shop';
+import { getEstimatedDeliveryFee, isLahoreCity } from '../../config/delivery';
 
 import ShopLoginPrompt from '../ShopLoginPrompt';
 
@@ -37,16 +38,11 @@ const CITIES = ['Lahore', 'Karachi', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'M
 const CHECKOUT_STEPS = ['cart', 'delivery', 'payment', 'confirm'];
 
 const PAYMENT_METHODS = [
-
   { id: 'jazzcash', icon: '📱', brandClass: 'checkout-payment-card--jazzcash' },
-
   { id: 'easypaisa', icon: '💳', brandClass: 'checkout-payment-card--easypaisa' },
-
   { id: 'bank', icon: '🏦', brandClass: '' },
-
+  { id: 'cod', icon: '💵', brandClass: 'checkout-payment-card--cod' },
 ];
-
-
 
 const PAYMENT_INSTRUCTION_MODES = new Set(['jazzcash', 'easypaisa', 'bank']);
 
@@ -110,8 +106,15 @@ export default function FloatingCart() {
 
   const itemCount = items.reduce((sum, i) => sum + i.qty, 0);
   const activePaymentIds = enabledPaymentMethods(paymentSettings);
-  const checkoutPaymentMethods = PAYMENT_METHODS.filter(({ id }) => activePaymentIds.includes(id));
+  const lahore = isLahoreCity(form.city);
+  const estimatedDeliveryFee = getEstimatedDeliveryFee(form.city);
+  const checkoutPaymentMethods = PAYMENT_METHODS.filter(({ id }) => {
+    if (!activePaymentIds.includes(id)) return false;
+    if (id === 'cod' && !lahore) return false;
+    return true;
+  });
   const showPaymentInstructions = PAYMENT_INSTRUCTION_MODES.has(form.payment_mode);
+  const isCod = isCodPayment(form.payment_mode);
 
   useEffect(() => {
     api.getPaymentSettings()
@@ -120,12 +123,13 @@ export default function FloatingCart() {
   }, []);
 
   useEffect(() => {
-    if (!activePaymentIds.includes(form.payment_mode) && activePaymentIds[0]) {
-      setForm((prev) => ({ ...prev, payment_mode: activePaymentIds[0] }));
+    const ids = checkoutPaymentMethods.map((m) => m.id);
+    if (!ids.includes(form.payment_mode) && ids[0]) {
+      setForm((prev) => ({ ...prev, payment_mode: ids[0] }));
     }
-  }, [activePaymentIds, form.payment_mode]);
+  }, [form.city, form.payment_mode, activePaymentIds.join(',')]);
 
-  const showWalletInstructions = showPaymentInstructions;
+  const showWalletInstructions = showPaymentInstructions && !isCod;
 
 
 
@@ -337,6 +341,14 @@ export default function FloatingCart() {
 
       }
 
+      if (isCodPayment(form.payment_mode) && !isLahoreCity(form.city)) {
+
+        setOrderMsg(t('cart.codOutsideLahore'));
+
+        return;
+
+      }
+
     }
 
     setCheckoutStep((s) => Math.min(s + 1, 3));
@@ -366,6 +378,11 @@ export default function FloatingCart() {
     }
 
     if (!validateDeliveryAddress()) return;
+
+    if (isCodPayment(form.payment_mode) && !isLahoreCity(form.city)) {
+      setOrderMsg(t('cart.codOutsideLahore'));
+      return;
+    }
 
     setSubmitting(true);
 
@@ -647,6 +664,17 @@ export default function FloatingCart() {
 
                         </div>
 
+                        {lahore && estimatedDeliveryFee != null && (
+                          <p className="checkout-delivery-fee-note">
+                            {t('cart.estimatedDeliveryFee')}: <strong>{formatPrice(estimatedDeliveryFee)}</strong>
+                            {' — '}
+                            {t('cart.deliveryFeeConfirmNote')}
+                          </p>
+                        )}
+                        {!lahore && (
+                          <p className="checkout-delivery-fee-note">{t('cart.deliveryFeeOtherCity')}</p>
+                        )}
+
                         <textarea
 
                           className="checkout-notes"
@@ -797,7 +825,13 @@ export default function FloatingCart() {
 
                         <h3 className="checkout-section-title">{t('cart.paymentTitle')}</h3>
 
-                        <p className="checkout-payment-note">{t('cart.advancePaymentHint')}</p>
+                        <p className="checkout-payment-note">
+                          {isCod ? t('cart.codPaymentHint') : t('cart.advancePaymentHint')}
+                        </p>
+
+                        {!lahore && activePaymentIds.includes('cod') && (
+                          <p className="checkout-payment-note checkout-payment-note--muted">{t('cart.codOutsideLahore')}</p>
+                        )}
 
                         <div className="checkout-payment-grid" role="radiogroup" aria-label={t('cart.paymentTitle')}>
 
@@ -845,6 +879,13 @@ export default function FloatingCart() {
 
                         )}
 
+                        {isCod && (
+                          <div className="checkout-payment-instructions glass-card">
+                            <h4 className="checkout-payment-instructions-title">{t('cart.cod')}</h4>
+                            <p className="checkout-payment-note" style={{ marginBottom: 0 }}>{t('cart.codPaymentHint')}</p>
+                          </div>
+                        )}
+
                       </section>
 
                     )}
@@ -883,13 +924,37 @@ export default function FloatingCart() {
 
                           </ul>
 
-                          <div className="checkout-summary-row checkout-summary-total">
+                          <div className="checkout-summary-row">
 
-                            <span>{t('cart.total')}</span>
+                            <span>{t('cart.subtotal')}</span>
 
                             <strong>{formatPrice(total)}</strong>
 
                           </div>
+
+                          {estimatedDeliveryFee != null ? (
+                            <div className="checkout-summary-row">
+                              <span>{t('cart.estimatedDeliveryFee')}</span>
+                              <strong>{formatPrice(estimatedDeliveryFee)}</strong>
+                            </div>
+                          ) : (
+                            <p className="checkout-delivery-fee-note">{t('cart.deliveryFeeOtherCity')}</p>
+                          )}
+
+                          <div className="checkout-summary-row checkout-summary-total">
+
+                            <span>{t('cart.total')}</span>
+
+                            <strong>
+                              {formatPrice(total + (estimatedDeliveryFee || 0))}
+                              {estimatedDeliveryFee != null ? '*' : ''}
+                            </strong>
+
+                          </div>
+
+                          {estimatedDeliveryFee != null && (
+                            <p className="checkout-delivery-fee-note">{t('cart.deliveryFeeConfirmNote')}</p>
+                          )}
 
                         </div>
 
@@ -925,6 +990,10 @@ export default function FloatingCart() {
 
                           </>
 
+                        )}
+
+                        {isCod && (
+                          <p className="checkout-payment-reminder">{t('cart.codPaymentHint')}</p>
                         )}
 
                       </section>

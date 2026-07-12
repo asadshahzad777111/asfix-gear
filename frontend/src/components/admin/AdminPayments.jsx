@@ -6,6 +6,7 @@ const METHODS = [
   { id: 'jazzcash', title: 'JazzCash', fields: ['number', 'accountName'] },
   { id: 'easypaisa', title: 'EasyPaisa', fields: ['number', 'accountName'] },
   { id: 'bank', title: 'Bank Transfer', fields: ['bankName', 'accountName', 'accountNumber', 'iban', 'branch'] },
+  { id: 'cod', title: 'Cash on Delivery (Lahore)', fields: [] },
 ];
 
 const FIELD_LABELS = {
@@ -68,7 +69,7 @@ export default function AdminPayments() {
   return (
     <div className="wp-payments">
       <p style={{ fontSize: '0.88rem', color: '#50575e', marginTop: 0 }}>
-        Checkout par customer ko yeh accounts dikhenge. JazzCash aur EasyPaisa abhi same number use karte hain.
+        Checkout par customer ko yeh accounts dikhenge. JazzCash aur EasyPaisa abhi same number use karte hain. COD Lahore delivery ke liye — advance transfer nahi.
       </p>
       {METHODS.map(({ id, title, fields }) => (
         <div key={id} className="wp-postbox">
@@ -80,18 +81,24 @@ export default function AdminPayments() {
             </label>
           </div>
           <div className="wp-postbox-body">
-            <div className="wp-payments-grid">
-              {fields.map((field) => (
-                <label key={field} className="wp-payments-field">
-                  <span>{FIELD_LABELS[field]}</span>
-                  <input
-                    type="text"
-                    value={form[id]?.[field] || ''}
-                    onChange={(e) => setField(id, field, e.target.value)}
-                  />
-                </label>
-              ))}
-            </div>
+            {id === 'cod' ? (
+              <p style={{ margin: 0, fontSize: '0.88rem', color: '#50575e' }}>
+                No account fields. Customer pays cash on delivery (Lahore). Orders show as <strong>COD</strong> in admin.
+              </p>
+            ) : (
+              <div className="wp-payments-grid">
+                {fields.map((field) => (
+                  <label key={field} className="wp-payments-field">
+                    <span>{FIELD_LABELS[field]}</span>
+                    <input
+                      type="text"
+                      value={form[id]?.[field] || ''}
+                      onChange={(e) => setField(id, field, e.target.value)}
+                    />
+                  </label>
+                ))}
+              </div>
+            )}
           </div>
         </div>
       ))}

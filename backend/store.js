@@ -196,6 +196,14 @@ export function getProductById(id) {
   return readData().products.find((p) => p.id === numId) || null;
 }
 
+export function getProductBySlug(slug) {
+  const normalized = slugify(String(slug || '').trim());
+  if (!normalized) return null;
+  return (
+    readData().products.find((p) => slugify(p.slug || '') === normalized) || null
+  );
+}
+
 const MAX_GALLERY_IMAGES = 8;
 
 export function normalizeGallery(value) {
@@ -2629,6 +2637,7 @@ const DEFAULT_PAYMENT_SETTINGS = {
     bankName: 'Meezan Bank',
     branch: 'BATAPUR BRANCH LHR',
   },
+  cod: { enabled: true },
 };
 
 export function getPaymentSettings() {
@@ -2637,6 +2646,7 @@ export function getPaymentSettings() {
     jazzcash: { ...DEFAULT_PAYMENT_SETTINGS.jazzcash, ...(saved.jazzcash || {}) },
     easypaisa: { ...DEFAULT_PAYMENT_SETTINGS.easypaisa, ...(saved.easypaisa || {}) },
     bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
+    cod: { ...DEFAULT_PAYMENT_SETTINGS.cod, ...(saved.cod || {}) },
     updated_at: saved.updated_at ?? null,
     updated_by: saved.updated_by ?? null,
   };
@@ -2650,9 +2660,10 @@ export function setPaymentSettings(input, userId) {
       jazzcash: { ...DEFAULT_PAYMENT_SETTINGS.jazzcash, ...(saved.jazzcash || {}) },
       easypaisa: { ...DEFAULT_PAYMENT_SETTINGS.easypaisa, ...(saved.easypaisa || {}) },
       bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
+      cod: { ...DEFAULT_PAYMENT_SETTINGS.cod, ...(saved.cod || {}) },
     };
 
-    for (const key of ['jazzcash', 'easypaisa', 'bank']) {
+    for (const key of ['jazzcash', 'easypaisa', 'bank', 'cod']) {
       if (!input[key]) continue;
       const patch = input[key];
       next[key] = {

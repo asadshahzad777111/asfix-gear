@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import { ProductPrice } from '../DiscountPicker';
 import { getDefaultImage } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
+import { productPath } from '../../utils/slug';
 
 export default function PromoBanners({ products = [] }) {
   const { t } = useTranslation();
@@ -19,7 +20,7 @@ export default function PromoBanners({ products = [] }) {
           {products.slice(0, 2).map((product) => (
             <Link
               key={product.id}
-              to={`/shop/${product.id}`}
+              to={productPath(product)}
               className="home-promo-banner on-sale"
             >
               <img

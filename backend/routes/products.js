@@ -154,8 +154,22 @@ router.post('/upload-image', requireAuth, requireRole(...STAFF), (req, res, next
   }
 });
 
+router.get('/by-slug/:slug', optionalAuth, (req, res) => {
+  const product = store.getProductBySlug(req.params.slug);
+  if (!product) return res.status(404).json({ error: 'Product not found' });
+  const staff = isStaffUser(req.auth?.user);
+  if (!staff && !store.isPublishedProduct(product)) {
+    return res.status(404).json({ error: 'Product not found' });
+  }
+  res.json(staff ? product : store.stripProductCost(product));
+});
+
 router.get('/:id', optionalAuth, (req, res) => {
-  const product = store.getProductById(req.params.id);
+  const param = req.params.id;
+  let product = store.getProductById(param);
+  if (!product && param && !/^\d+$/.test(String(param))) {
+    product = store.getProductBySlug(param);
+  }
   if (!product) return res.status(404).json({ error: 'Product not found' });
   const staff = isStaffUser(req.auth?.user);
   if (!staff && !store.isPublishedProduct(product)) {

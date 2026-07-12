@@ -295,6 +295,7 @@ export const api = {
     return request(`/products${query ? `?${query}` : ''}`);
   },
   getProduct: (id) => request(`/products/${id}`),
+  getProductBySlug: (slug) => request(`/products/by-slug/${encodeURIComponent(slug)}`),
   getCategories: (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return request(`/products/categories${query ? `?${query}` : ''}`);

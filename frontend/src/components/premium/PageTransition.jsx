@@ -23,6 +23,12 @@ const AccountForgotPassword = lazy(() => import('../../pages/AccountForgotPasswo
 const AccountRegister = lazy(() => import('../../pages/AccountRegister'));
 const AccountSettings = lazy(() => import('../../pages/AccountSettings'));
 const NotFound = lazy(() => import('../../pages/NotFound'));
+const PrivacyPage = lazy(() => import('../../pages/legal').then((m) => ({ default: m.PrivacyPage })));
+const RefundPage = lazy(() => import('../../pages/legal').then((m) => ({ default: m.RefundPage })));
+const TermsPage = lazy(() => import('../../pages/legal').then((m) => ({ default: m.TermsPage })));
+const ShippingWarrantyPage = lazy(() =>
+  import('../../pages/legal').then((m) => ({ default: m.ShippingWarrantyPage }))
+);
 
 export default function PageTransition() {
   const location = useLocation();
@@ -56,7 +62,12 @@ export default function PageTransition() {
             <Route path="/" element={<Home />} />
             <Route path="/gaming" element={<Gaming />} />
             <Route path="/shop" element={<Shop />} />
+            <Route path="/shop/p/:slug" element={<ProductDetail />} />
             <Route path="/shop/:id" element={<ProductDetail />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/refund" element={<RefundPage />} />
+            <Route path="/terms" element={<TermsPage />} />
+            <Route path="/shipping" element={<ShippingWarrantyPage />} />
             <Route path="/repair" element={<Repair />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/track" element={<OrderTrack />} />

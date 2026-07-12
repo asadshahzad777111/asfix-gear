@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, Navigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { api, formatPrice } from '../api/client';
 import { orderProductContactPath, restockInquiryContactPath } from '../config/shop';
@@ -18,10 +18,13 @@ import { DiscountRibbon, ProductPrice } from '../components/DiscountPicker';
 import { getSavings, hasDiscount } from '../utils/pricing';
 import { getStockStatus, isInStock, isOutOfStock, normalizeStock } from '../utils/stock';
 import { getProductCardImages } from '../utils/productImages';
+import DocumentHead from '../components/seo/DocumentHead';
+import { ProductJsonLd } from '../components/seo/JsonLd';
+import { productPath } from '../utils/slug';
 
 export default function ProductDetail() {
   const { t } = useTranslation();
-  const { id } = useParams();
+  const { id, slug } = useParams();
   const [product, setProduct] = useState(null);
   const [activeImage, setActiveImage] = useState('');
   const [loading, setLoading] = useState(true);
@@ -37,7 +40,12 @@ export default function ProductDetail() {
   } = useShopGate();
 
   useEffect(() => {
-    api.getProduct(id)
+    setLoading(true);
+    setError('');
+    const fetcher = slug
+      ? api.getProductBySlug(slug)
+      : api.getProduct(id);
+    fetcher
       .then((data) => {
         if (!isPublishedProduct(data)) {
           setError(t('product.notFound'));
@@ -49,7 +57,7 @@ export default function ProductDetail() {
       })
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
-  }, [id, t]);
+  }, [id, slug, t]);
 
   if (loading) return <div className="loading container">{t('product.loading')}</div>;
 
@@ -62,6 +70,12 @@ export default function ProductDetail() {
     );
   }
 
+  // Prefer canonical slug URL when product has a slug but visitor used /shop/:id
+  if (!slug && product.slug && String(id) === String(product.id)) {
+    return <Navigate to={productPath(product)} replace />;
+  }
+
+  const canonicalPath = productPath(product);
   const onSale = hasDiscount(product);
   const animKind = getProductAnimKind(product.category);
   const stockCount = normalizeStock(product.stock);
@@ -85,6 +99,12 @@ export default function ProductDetail() {
 
   return (
     <>
+    <DocumentHead
+      title={product.name}
+      description={String(product.description || `${product.name} — AsFix & Gear Lahore`).slice(0, 155)}
+      path={canonicalPath}
+    />
+    <ProductJsonLd product={product} path={canonicalPath} />
     <motion.section
       className="product-detail"
       initial={{ opacity: 0, y: 16 }}

@@ -16,6 +16,8 @@ import Testimonials from '../components/Testimonials';
 import Reveal from '../components/motion/Reveal';
 import { HomeProductsSkeleton } from '../components/skeleton/ContentSkeletons';
 import { useTranslation } from '../context/LanguageContext';
+import DocumentHead from '../components/seo/DocumentHead';
+import { LocalBusinessJsonLd } from '../components/seo/JsonLd';
 
 function filterShopProducts(products) {
   return filterPublishedProducts(products).filter((p) => p.category !== 'Gaming');
@@ -75,6 +77,12 @@ export default function Home() {
 
   return (
     <>
+      <DocumentHead
+        title={null}
+        description="AsFix & Gear Lahore — expert mobile repair, accessories, and gaming gear. WhatsApp 03039227000."
+        path="/"
+      />
+      <LocalBusinessJsonLd />
       <HomeHero product={heroProduct} />
       <FeaturedWork />
       <HomeAbout />

@@ -13,6 +13,7 @@ import FloatingRepairButton from './components/FloatingRepairButton';
 import FlyToCart from './components/premium/FlyToCart';
 import GuestWelcomeBanner from './components/GuestWelcomeBanner';
 import PageTransition from './components/premium/PageTransition';
+import Analytics from './components/seo/Analytics';
 import { useLocation } from 'react-router-dom';
 import { useGaming } from './context/GamingContext';
 import { wakeApiServer } from './api/client';
@@ -29,6 +30,7 @@ function AppContent() {
 
   return (
     <div className={`app ${isGamingPage ? 'app--gaming' : ''} ${isAdminRoute ? 'app--admin' : ''}`}>
+      <Analytics />
       {!isGamingPage && !isAdminRoute && <AmbientBackground />}
       {!isAdminRoute && <Navbar />}
       {!isAdminRoute && <GuestWelcomeBanner />}

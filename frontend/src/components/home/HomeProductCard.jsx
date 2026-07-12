@@ -12,6 +12,7 @@ import { hasDiscount } from '../../utils/pricing';
 import { getStockStatus, isInStock, normalizeStock } from '../../utils/stock';
 import ShopLoginPrompt from '../ShopLoginPrompt';
 import CustomerLoginModal from '../CustomerLoginModal';
+import { productPath as buildProductPath } from '../../utils/slug';
 
 export default function HomeProductCard({ product }) {
   const { t } = useTranslation();
@@ -37,7 +38,7 @@ export default function HomeProductCard({ product }) {
     onPointerUp: onCardImagePointerUp,
     onPointerLeave: onCardImagePointerLeave,
   } = useProductCardImage(product, { popping });
-  const productPath = `/shop/${product.id}`;
+  const productPath = buildProductPath(product);
   const { addItem } = useCart();
   const addRef = useRef(null);
   const onSale = hasDiscount(product);

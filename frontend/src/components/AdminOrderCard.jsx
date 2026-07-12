@@ -166,7 +166,12 @@ export default function AdminOrderCard({
         <strong>#{o.order_id || o.id} · {o.customer_name}</strong>
         <span>{formatPrice(o.total_amount)}</span>
       </div>
-      <p className="admin-float-meta">{o.phone} · {o.city || 'No city'} · {o.payment_mode}</p>
+      <p className="admin-float-meta">
+        {o.phone} · {o.city || 'No city'} ·{' '}
+        <span className={o.payment_mode === 'cod' ? 'admin-payment-cod' : undefined}>
+          {o.payment_mode === 'cod' ? 'COD (Cash on Delivery)' : o.payment_mode}
+        </span>
+      </p>
       {addr && <DeliveryLocationBlock addr={addr} t={t} />}
       {o.gmail && <p className="admin-float-sub">Gmail: {o.gmail}</p>}
       <p className="admin-float-sub">
@@ -225,7 +230,7 @@ export default function AdminOrderCard({
       <div className="admin-order-actions admin-order-actions--delivery">
         {o.payment_status === 'pending_payment' && onMarkPaid && (
           <button type="button" className="btn btn-primary btn-sm" onClick={() => onMarkPaid(o.id)}>
-            {t('admin.markPaid')}
+            {o.payment_mode === 'cod' ? t('admin.confirmCod') : t('admin.markPaid')}
           </button>
         )}
         {o.delivery_status === 'waiting_for_rider' && onAssignRider && !showRiderForm && (

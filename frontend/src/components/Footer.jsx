@@ -60,6 +60,15 @@ export default function Footer() {
         </div>
       </div>
 
+      <div className="container footer-legal">
+        <ul className="footer-legal-links">
+          <li><Link to="/privacy">{t('footer.privacy')}</Link></li>
+          <li><Link to="/terms">{t('footer.terms')}</Link></li>
+          <li><Link to="/refund">{t('footer.refund')}</Link></li>
+          <li><Link to="/shipping">{t('footer.shipping')}</Link></li>
+        </ul>
+      </div>
+
       <div className="container footer-bottom">
         <p className="footer-bottom-copy">
           © {new Date().getFullYear()} {SHOP.name} — {SHOP.owner}. {t('footer.crafted')}

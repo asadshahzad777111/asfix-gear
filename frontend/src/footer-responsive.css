@@ -42,6 +42,85 @@
   padding-bottom: 0.5rem;
 }
 
+.footer-legal {
+  padding-top: 0.5rem;
+  padding-bottom: 0.75rem;
+  border-top: 1px solid color-mix(in srgb, var(--text, #e8e8ef) 12%, transparent);
+}
+
+.footer-legal-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem 1.25rem;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  justify-content: center;
+}
+
+.footer-legal-links a {
+  font-size: 0.82rem;
+  opacity: 0.85;
+  text-decoration: none;
+}
+
+.footer-legal-links a:hover {
+  opacity: 1;
+  text-decoration: underline;
+}
+
+.legal-page {
+  max-width: 42rem;
+  padding-bottom: 3rem;
+}
+
+.legal-intro {
+  font-size: 1.05rem;
+  line-height: 1.65;
+  margin: 0 0 1.75rem;
+  opacity: 0.9;
+}
+
+.legal-section {
+  margin-bottom: 1.75rem;
+}
+
+.legal-section h2 {
+  font-size: 1.15rem;
+  margin: 0 0 0.65rem;
+}
+
+.legal-section p {
+  margin: 0 0 0.55rem;
+  line-height: 1.6;
+  opacity: 0.88;
+}
+
+.legal-contact-cta {
+  margin-top: 2rem;
+}
+
+.admin-payment-cod {
+  font-weight: 700;
+  color: var(--accent, #0ea5e9);
+}
+
+.checkout-delivery-fee-note {
+  font-size: 0.82rem;
+  line-height: 1.45;
+  opacity: 0.85;
+  margin: 0.5rem 0 0;
+}
+
+.checkout-payment-note--muted {
+  opacity: 0.75;
+  font-size: 0.85rem;
+}
+
+.checkout-payment-card--cod.checkout-payment-card--selected {
+  border-color: color-mix(in srgb, #22c55e 55%, transparent);
+}
+
 /* ── Phone ── */
 @media (max-width: 768px) {
   .footer {

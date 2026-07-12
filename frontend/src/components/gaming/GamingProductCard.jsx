@@ -11,6 +11,7 @@ import CustomerLoginModal from '../CustomerLoginModal';
 import { useTranslation } from '../../context/LanguageContext';
 import { getStockStatus, isInStock, isOutOfStock, normalizeStock } from '../../utils/stock';
 import useProductPop from '../../hooks/useProductPop';
+import { productPath as buildProductPath } from '../../utils/slug';
 
 const TAP_POP = { scale: 1.07, y: -12, rotateX: -4, z: 50 };
 const TAP_SPRING = { type: 'spring', stiffness: 420, damping: 26 };
@@ -30,7 +31,7 @@ export default function GamingProductCard({ product, index }) {
     setLoginOpen,
   } = useShopGate();
   const { popClass, handleProductLinkClick, linkPopHandlers } = useProductPop();
-  const productPath = `/shop/${product.id}`;
+  const productPath = buildProductPath(product);
   const [hovered, setHovered] = useState(false);
   const [jumped, setJumped] = useState(false);
   const stockCount = normalizeStock(product.stock);

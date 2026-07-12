@@ -18,3 +18,11 @@ export function productPermalinkPreview(slug, productId) {
   if (productId) return `/shop/${productId}`;
   return '/shop/p/your-product-slug';
 }
+
+/** Live product URL — prefer slug when present; keep numeric id links working. */
+export function productPath(product) {
+  if (!product) return '/shop';
+  const s = slugify(product.slug);
+  if (s) return `/shop/p/${s}`;
+  return `/shop/${product.id}`;
+}

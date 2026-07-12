@@ -1,12 +1,17 @@
 import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
-import { notifyShopWhatsApp } from '../services/otpDelivery.js';
+import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
 import {
   buildNewOrderShopMessage,
   buildPaidOrderShopMessage,
+  buildOrderStatusCustomerMessage,
 } from '../services/orderNotifications.js';
-import { sendOrderCompleteEmail } from '../services/orderEmail.js';
+import {
+  sendOrderCompleteEmail,
+  sendOrderPlacedEmail,
+  sendOrderStatusEmail,
+} from '../services/orderEmail.js';
 import { publishOrderEvent } from '../services/liveEvents.js';
 
 function findOrderById(id) {
@@ -21,6 +26,20 @@ function notifyIfNewlyDelivered(order, previousStatus) {
   });
 }
 
+function notifyCustomerStatusChange(order, previousStatus) {
+  if (!order || !previousStatus) return;
+  if (order.shipping_status === previousStatus) return;
+  if (order.shipping_status === 'delivered') return; // completion email handles this
+
+  const waText = buildOrderStatusCustomerMessage(order, order.shipping_status);
+  if (waText) {
+    notifyCustomerWhatsApp(order.phone, waText).catch(() => {});
+  }
+  sendOrderStatusEmail(order, previousStatus).catch((err) => {
+    console.error('[OrderEmail] Status email failed:', err.message);
+  });
+}
+
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
 const MAX_NAME = 120;
@@ -30,7 +49,7 @@ const MAX_ITEMS = 20;
 const MAX_GMAIL = 120;
 const MAX_NOTES = 500;
 const VALID_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
-const VALID_PAYMENT_MODES = ['jazzcash', 'easypaisa', 'bank'];
+const VALID_PAYMENT_MODES = ['jazzcash', 'easypaisa', 'bank', 'cod'];
 
 router.post('/feedback', (req, res) => {
   const { orderId, phone, rating, comment, product_id } = req.body;
@@ -92,6 +111,20 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Invalid payment method' });
   }
 
+  const paySettings = store.getPaymentSettings();
+  if (paySettings[mode]?.enabled === false) {
+    return res.status(400).json({ error: 'Payment method is not available' });
+  }
+
+  if (mode === 'cod') {
+    const cityNorm = String(city || '').trim().toLowerCase();
+    if (cityNorm !== 'lahore') {
+      return res.status(400).json({
+        error: 'Cash on Delivery is available for Lahore delivery only',
+      });
+    }
+  }
+
   let resolvedAddress = null;
   try {
     if (address_id != null) {
@@ -122,6 +155,13 @@ router.post('/', requireAuth, (req, res) => {
       shipping_address: resolvedAddress,
     });
     notifyShopWhatsApp(buildNewOrderShopMessage(order)).catch(() => {});
+    sendOrderPlacedEmail(order).catch((err) => {
+      console.error('[OrderEmail] Place email failed:', err.message);
+    });
+    const placedWa = buildOrderStatusCustomerMessage(order, 'placed');
+    if (placedWa) {
+      notifyCustomerWhatsApp(order.phone, placedWa).catch(() => {});
+    }
     publishOrderEvent('order_created', order);
     res.status(201).json({ message: 'Order placed successfully', order });
   } catch (err) {
@@ -162,15 +202,18 @@ router.patch('/:id/status', requireAuth, requireRole(...STAFF), (req, res) => {
   const order = store.updateOrderStatus(req.params.id, shipping_status, req.auth.user);
   if (!order) return res.status(404).json({ error: 'Order not found' });
   notifyIfNewlyDelivered(order, previous?.shipping_status);
+  notifyCustomerStatusChange(order, previous?.shipping_status);
   publishOrderEvent('order_updated', order);
   res.json(order);
 });
 
 router.patch('/:id/mark-paid', requireAuth, requireRole(...STAFF), (req, res) => {
   try {
+    const previous = findOrderById(req.params.id);
     const order = store.markOrderPaid(req.params.id, req.auth.user);
     if (!order) return res.status(404).json({ error: 'Order not found' });
     notifyShopWhatsApp(buildPaidOrderShopMessage(order)).catch(() => {});
+    notifyCustomerStatusChange(order, previous?.shipping_status || 'pending');
     publishOrderEvent('order_updated', order);
     res.json(order);
   } catch (err) {
@@ -187,6 +230,11 @@ router.patch('/:id/assign-rider', requireAuth, requireRole(...STAFF), (req, res)
       req.auth.user
     );
     if (!order) return res.status(404).json({ error: 'Order not found' });
+    const riderWa = buildOrderStatusCustomerMessage(order, 'out_for_delivery');
+    if (riderWa) {
+      notifyCustomerWhatsApp(order.phone, riderWa).catch(() => {});
+    }
+    sendOrderStatusEmail(order, 'payment_verified').catch(() => {});
     publishOrderEvent('order_updated', order);
     res.json(order);
   } catch (err) {

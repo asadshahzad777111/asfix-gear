@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import PaymentInstructions from './PaymentInstructions';
 import OrderHelpActions from './OrderHelpActions';
-import { mergePaymentSettings } from '../config/payments';
+import { mergePaymentSettings, isCodPayment } from '../config/payments';
 import { buildOrderReceipt } from '../utils/receipts';
 
 const MOBILE_WALLETS = new Set(['jazzcash', 'easypaisa']);
@@ -90,6 +90,13 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
           paymentMode={order.payment_mode}
           settings={paymentSettings}
         />
+      )}
+
+      {isCodPayment(order.payment_mode) && (
+        <div className="checkout-payment-instructions glass-card">
+          <h4 className="checkout-payment-instructions-title">{t('cart.cod')}</h4>
+          <p className="checkout-payment-note" style={{ marginBottom: 0 }}>{t('cart.codPaymentHint')}</p>
+        </div>
       )}
 
       <div className="order-success-trust">
