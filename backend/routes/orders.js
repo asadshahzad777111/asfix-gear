@@ -1,4 +1,5 @@
 import { Router } from 'express';
+import multer from 'multer';
 import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
@@ -13,6 +14,7 @@ import {
   sendOrderStatusEmail,
 } from '../services/orderEmail.js';
 import { publishOrderEvent } from '../services/liveEvents.js';
+import { isR2Configured, uploadPaymentProof } from '../services/r2.js';
 
 function findOrderById(id) {
   return store.getOrders().find((o) => o.id === Number(id)) || null;
@@ -48,8 +50,33 @@ const MAX_CITY = 80;
 const MAX_ITEMS = 20;
 const MAX_GMAIL = 120;
 const MAX_NOTES = 500;
+const MAX_PROOF_BYTES = 5 * 1024 * 1024;
 const VALID_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 const VALID_PAYMENT_MODES = ['jazzcash', 'easypaisa', 'bank', 'cod'];
+const SHOP_PICKUP_COORDS = { lat: 31.59375, lng: 74.46745 };
+
+const proofUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: MAX_PROOF_BYTES, files: 1 },
+  fileFilter(_req, file, cb) {
+    if (!file.mimetype?.startsWith('image/')) {
+      cb(new Error('Only image files are allowed'));
+      return;
+    }
+    cb(null, true);
+  },
+});
+
+function buildPickupAddress({ name, phone }) {
+  return {
+    name: String(name || '').trim().slice(0, 120),
+    phone: String(phone || '').trim().slice(0, 30),
+    text: 'Shop pickup — AsFix & Gear, Lahore (Google Maps pin)',
+    lat: SHOP_PICKUP_COORDS.lat,
+    lng: SHOP_PICKUP_COORDS.lng,
+    is_pickup: true,
+  };
+}
 
 router.post('/feedback', (req, res) => {
   const { orderId, phone, rating, comment, product_id } = req.body;
@@ -69,8 +96,10 @@ router.post('/feedback', (req, res) => {
   }
 });
 
-router.get('/reviews', (_req, res) => {
-  res.json(store.getPublishedReviews(12));
+router.get('/reviews', (req, res) => {
+  const productId = req.query.product_id;
+  const limit = productId ? 24 : 12;
+  res.json(store.getPublishedReviews(limit, { productId }));
 });
 
 router.get('/track', (req, res) => {
@@ -89,7 +118,17 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(403).json({ error: 'Please sign in as a customer to place an order' });
   }
 
-  const { customer_name, phone, city, payment_mode, items, notes, shipping_address, address_id } = req.body;
+  const {
+    customer_name,
+    phone,
+    city,
+    payment_mode,
+    items,
+    notes,
+    shipping_address,
+    address_id,
+    fulfillment_method,
+  } = req.body;
   if (!customer_name?.trim() || !phone?.trim()) {
     return res.status(400).json({ error: 'Name and phone are required' });
   }
@@ -106,6 +145,10 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Notes too long' });
   }
 
+  const fulfillment = String(fulfillment_method || 'delivery').trim().toLowerCase() === 'pickup'
+    ? 'pickup'
+    : 'delivery';
+
   const mode = String(payment_mode || 'jazzcash').trim().toLowerCase();
   if (!VALID_PAYMENT_MODES.includes(mode)) {
     return res.status(400).json({ error: 'Invalid payment method' });
@@ -116,18 +159,25 @@ router.post('/', requireAuth, (req, res) => {
     return res.status(400).json({ error: 'Payment method is not available' });
   }
 
+  const resolvedCity = fulfillment === 'pickup' ? 'Lahore' : (city?.trim() || '');
+
   if (mode === 'cod') {
-    const cityNorm = String(city || '').trim().toLowerCase();
+    const cityNorm = String(resolvedCity || '').trim().toLowerCase();
     if (cityNorm !== 'lahore') {
       return res.status(400).json({
-        error: 'Cash on Delivery is available for Lahore delivery only',
+        error: 'Cash on Delivery is available for Lahore delivery or shop pickup only',
       });
     }
   }
 
   let resolvedAddress = null;
   try {
-    if (address_id != null) {
+    if (fulfillment === 'pickup') {
+      resolvedAddress = buildPickupAddress({
+        name: customer_name.trim(),
+        phone: phone.trim(),
+      });
+    } else if (address_id != null) {
       resolvedAddress = store.resolveCustomerAddress(user.id, address_id);
       if (!resolvedAddress) {
         return res.status(400).json({ error: 'Saved address not found' });
@@ -147,8 +197,9 @@ router.post('/', requireAuth, (req, res) => {
     const order = store.createOrder({
       customer_name: customer_name.trim(),
       phone: phone.trim(),
-      city: city?.trim() || '',
+      city: resolvedCity,
       payment_mode: mode,
+      fulfillment_method: fulfillment,
       items,
       notes: notes?.trim() || '',
       customer_user_id: customerUserId,
@@ -169,6 +220,62 @@ router.post('/', requireAuth, (req, res) => {
       return res.status(409).json({ error: err.message, details: err.details });
     }
     throw err;
+  }
+});
+
+router.post('/:id/payment-proof', requireAuth, (req, res, next) => {
+  proofUpload.single('image')(req, res, (err) => {
+    if (err) {
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({ error: 'Image must be 5MB or smaller' });
+      }
+      return res.status(400).json({ error: err.message || 'Invalid upload' });
+    }
+    next();
+  });
+}, async (req, res) => {
+  const user = req.auth.user;
+  if (user.role !== 'customer' || !user.active || user.blocked) {
+    return res.status(403).json({ error: 'Customer login required' });
+  }
+  if (!isR2Configured()) {
+    return res.status(503).json({
+      error: 'Payment proof upload is not configured. WhatsApp the screenshot to the shop instead.',
+    });
+  }
+  if (!req.file) {
+    return res.status(400).json({ error: 'No image file provided (field name: image)' });
+  }
+
+  try {
+    const url = await uploadPaymentProof(
+      req.file.buffer,
+      req.file.originalname,
+      req.file.mimetype
+    );
+    const order = store.setOrderPaymentProof(req.params.id, {
+      url,
+      customerUserId: user.id,
+      phone: user.phone,
+    });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    publishOrderEvent('order_updated', order);
+    res.status(201).json({
+      message: 'Payment proof uploaded',
+      payment_proof_url: order.payment_proof_url,
+      order_id: order.order_id,
+    });
+  } catch (err) {
+    if (
+      err.message?.includes('Not authorized')
+      || err.message?.includes('only for')
+      || err.message?.includes('already')
+      || err.message?.includes('Invalid payment')
+    ) {
+      return res.status(400).json({ error: err.message });
+    }
+    console.error('[R2] payment proof upload failed:', err.message);
+    res.status(500).json({ error: 'Payment proof upload failed' });
   }
 });
 

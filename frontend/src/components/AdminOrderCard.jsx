@@ -171,7 +171,16 @@ export default function AdminOrderCard({
         <span className={o.payment_mode === 'cod' ? 'admin-payment-cod' : undefined}>
           {o.payment_mode === 'cod' ? 'COD (Cash on Delivery)' : o.payment_mode}
         </span>
+        {o.fulfillment_method === 'pickup' ? ' · Pickup' : ''}
       </p>
+      {o.payment_proof_url ? (
+        <p className="admin-float-sub">
+          Payment proof:{' '}
+          <a href={o.payment_proof_url} target="_blank" rel="noopener noreferrer">
+            View screenshot
+          </a>
+        </p>
+      ) : null}
       {addr && <DeliveryLocationBlock addr={addr} t={t} />}
       {o.gmail && <p className="admin-float-sub">Gmail: {o.gmail}</p>}
       <p className="admin-float-sub">

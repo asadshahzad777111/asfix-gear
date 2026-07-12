@@ -29,6 +29,7 @@ const TermsPage = lazy(() => import('../../pages/legal').then((m) => ({ default:
 const ShippingWarrantyPage = lazy(() =>
   import('../../pages/legal').then((m) => ({ default: m.ShippingWarrantyPage }))
 );
+const Faq = lazy(() => import('../../pages/Faq'));
 
 export default function PageTransition() {
   const location = useLocation();
@@ -68,6 +69,7 @@ export default function PageTransition() {
             <Route path="/refund" element={<RefundPage />} />
             <Route path="/terms" element={<TermsPage />} />
             <Route path="/shipping" element={<ShippingWarrantyPage />} />
+            <Route path="/faq" element={<Faq />} />
             <Route path="/repair" element={<Repair />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/track" element={<OrderTrack />} />

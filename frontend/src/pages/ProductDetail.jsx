@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { api, formatPrice } from '../api/client';
 import { orderProductContactPath, restockInquiryContactPath } from '../config/shop';
@@ -11,12 +11,13 @@ import ShopLoginPrompt from '../components/ShopLoginPrompt';
 import CustomerLoginModal from '../components/CustomerLoginModal';
 import BackButton from '../components/BackButton';
 import ProductDetailGallery from '../components/ProductDetailGallery';
+import ProductCard from '../components/ProductCard';
 import { getProductAnimKind } from '../utils/productAnimation';
 import PremiumButton, { PremiumLink } from '../components/premium/PremiumButton';
 import CasePreviewer from '../components/premium/CasePreviewer';
 import { DiscountRibbon, ProductPrice } from '../components/DiscountPicker';
 import { getSavings, hasDiscount } from '../utils/pricing';
-import { getStockStatus, isInStock, isOutOfStock, normalizeStock } from '../utils/stock';
+import { getStockStatus, isInStock, normalizeStock } from '../utils/stock';
 import { getProductCardImages } from '../utils/productImages';
 import DocumentHead from '../components/seo/DocumentHead';
 import { ProductJsonLd } from '../components/seo/JsonLd';
@@ -29,6 +30,8 @@ export default function ProductDetail() {
   const [activeImage, setActiveImage] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [reviews, setReviews] = useState([]);
+  const [related, setRelated] = useState([]);
   const { addItem } = useCart();
   const {
     requireCustomer,
@@ -58,6 +61,50 @@ export default function ProductDetail() {
       .catch((err) => setError(err.message))
       .finally(() => setLoading(false));
   }, [id, slug, t]);
+
+  useEffect(() => {
+    if (!product?.id) {
+      setReviews([]);
+      setRelated([]);
+      return undefined;
+    }
+    let cancelled = false;
+    api.getPublishedReviews({ product_id: product.id })
+      .then((data) => {
+        if (!cancelled && Array.isArray(data)) setReviews(data);
+      })
+      .catch(() => {
+        if (!cancelled) setReviews([]);
+      });
+
+    const params = {};
+    if (product.category) params.category = product.category;
+    api.getProducts(params)
+      .then((list) => {
+        if (cancelled || !Array.isArray(list)) return;
+        const others = list
+          .filter((p) => isPublishedProduct(p) && Number(p.id) !== Number(product.id))
+          .slice(0, 4);
+        if (others.length >= 2 || !product.brand) {
+          setRelated(others);
+          return;
+        }
+        return api.getProducts({ brand: product.brand }).then((brandList) => {
+          if (cancelled || !Array.isArray(brandList)) return;
+          const byBrand = brandList
+            .filter((p) => isPublishedProduct(p) && Number(p.id) !== Number(product.id))
+            .slice(0, 4);
+          setRelated(byBrand.length ? byBrand : others);
+        });
+      })
+      .catch(() => {
+        if (!cancelled) setRelated([]);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [product?.id, product?.category, product?.brand]);
 
   if (loading) return <div className="loading container">{t('product.loading')}</div>;
 
@@ -192,6 +239,39 @@ export default function ProductDetail() {
             </div>
           </div>
         </div>
+
+        <section className="product-detail-reviews" aria-labelledby="product-reviews-heading">
+          <h2 id="product-reviews-heading">{t('product.reviewsTitle')}</h2>
+          {reviews.length === 0 ? (
+            <p className="product-detail-reviews-empty">{t('product.reviewsEmpty')}</p>
+          ) : (
+            <ul className="product-detail-reviews-list">
+              {reviews.map((r) => (
+                <li key={r.order_ref || r.order_id || `${r.customer_name}-${r.submitted_at}`} className="product-detail-review">
+                  <div className="product-detail-review-stars" aria-label={`${r.rating} stars`}>
+                    {'★'.repeat(Number(r.rating) || 0)}
+                  </div>
+                  <p>{r.comment || t('feedback.thanks')}</p>
+                  <footer>— {r.customer_name || 'Customer'}</footer>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+
+        {related.length > 0 ? (
+          <section className="product-detail-related" aria-labelledby="related-products-heading">
+            <h2 id="related-products-heading">{t('product.relatedTitle')}</h2>
+            <div className="products-grid">
+              {related.map((p, idx) => (
+                <ProductCard key={p.id} product={p} inGrid revealIndex={idx} />
+              ))}
+            </div>
+            <p className="product-detail-related-more">
+              <Link to="/shop">{t('product.backToShop')}</Link>
+            </p>
+          </section>
+        ) : null}
       </div>
     </motion.section>
     <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />

@@ -52,4 +52,18 @@ router.patch('/payments', requireAuth, requireRole(...SHOP_MANAGERS), (req, res)
   res.json(payments);
 });
 
+router.get('/delivery', (_req, res) => {
+  res.json(store.getDeliverySettings());
+});
+
+router.patch('/delivery', requireAuth, requireRole(...SHOP_MANAGERS), (req, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const delivery = store.setDeliverySettings(body, req.auth.user.id);
+    res.json(delivery);
+  } catch (err) {
+    res.status(400).json({ error: err.message });
+  }
+});
+
 export default router;

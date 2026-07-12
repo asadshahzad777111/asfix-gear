@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { DEFAULT_PAYMENTS, mergePaymentSettings } from '../../config/payments';
+import { DEFAULT_DELIVERY, mergeDeliverySettings } from '../../config/delivery';
 
 const METHODS = [
   { id: 'jazzcash', title: 'JazzCash', fields: ['number', 'accountName'] },
@@ -20,14 +21,22 @@ const FIELD_LABELS = {
 
 export default function AdminPayments() {
   const [form, setForm] = useState(mergePaymentSettings());
+  const [delivery, setDelivery] = useState(mergeDeliverySettings());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [savingDelivery, setSavingDelivery] = useState(false);
   const [msg, setMsg] = useState('');
+  const [deliveryMsg, setDeliveryMsg] = useState('');
 
   useEffect(() => {
-    api.getPaymentSettings()
-      .then((data) => setForm(mergePaymentSettings(data)))
-      .catch(() => setForm(mergePaymentSettings()))
+    Promise.all([
+      api.getPaymentSettings().catch(() => null),
+      api.getDeliverySettings().catch(() => null),
+    ])
+      .then(([pay, del]) => {
+        setForm(mergePaymentSettings(pay));
+        setDelivery(mergeDeliverySettings(del));
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -59,6 +68,20 @@ export default function AdminPayments() {
     }
   };
 
+  const saveDelivery = async () => {
+    setSavingDelivery(true);
+    setDeliveryMsg('');
+    try {
+      const saved = await api.setDeliverySettings(delivery);
+      setDelivery(mergeDeliverySettings(saved));
+      setDeliveryMsg('Delivery settings saved.');
+    } catch (err) {
+      setDeliveryMsg(err.message || 'Save failed');
+    } finally {
+      setSavingDelivery(false);
+    }
+  };
+
   const resetDefaults = () => {
     if (!confirm('Reset all payment details to defaults?')) return;
     setForm(mergePaymentSettings(DEFAULT_PAYMENTS));
@@ -69,7 +92,7 @@ export default function AdminPayments() {
   return (
     <div className="wp-payments">
       <p style={{ fontSize: '0.88rem', color: '#50575e', marginTop: 0 }}>
-        Checkout par customer ko yeh accounts dikhenge. JazzCash aur EasyPaisa abhi same number use karte hain. COD Lahore delivery ke liye — advance transfer nahi.
+        Checkout par customer ko yeh accounts dikhenge. JazzCash aur EasyPaisa abhi same number use karte hain. COD Lahore delivery / shop pickup ke liye — advance transfer nahi.
       </p>
       {METHODS.map(({ id, title, fields }) => (
         <div key={id} className="wp-postbox">
@@ -83,7 +106,7 @@ export default function AdminPayments() {
           <div className="wp-postbox-body">
             {id === 'cod' ? (
               <p style={{ margin: 0, fontSize: '0.88rem', color: '#50575e' }}>
-                No account fields. Customer pays cash on delivery (Lahore). Orders show as <strong>COD</strong> in admin.
+                No account fields. Customer pays cash on delivery or at shop pickup (Lahore). Orders show as <strong>COD</strong> in admin.
               </p>
             ) : (
               <div className="wp-payments-grid">
@@ -111,6 +134,42 @@ export default function AdminPayments() {
         </button>
       </div>
       {msg ? <p className="wp-payments-msg">{msg}</p> : null}
+
+      <div className="wp-postbox" style={{ marginTop: '1.5rem' }}>
+        <div className="wp-postbox-head">Delivery estimate (checkout)</div>
+        <div className="wp-postbox-body">
+          <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
+            Lahore estimated fee checkout par dikhegi. Final rider charge ab bhi order assign karte waqt set hota hai. Default: Rs. {DEFAULT_DELIVERY.lahore_fee}.
+          </p>
+          <div className="wp-payments-grid">
+            <label className="wp-payments-field">
+              <span>Lahore estimated fee (PKR)</span>
+              <input
+                type="number"
+                min={0}
+                max={50000}
+                step={1}
+                value={delivery.lahore_fee}
+                onChange={(e) => setDelivery((d) => ({ ...d, lahore_fee: e.target.value }))}
+              />
+            </label>
+            <label className="wp-payments-field" style={{ gridColumn: '1 / -1' }}>
+              <span>Outside Lahore note</span>
+              <input
+                type="text"
+                value={delivery.outside_note || ''}
+                onChange={(e) => setDelivery((d) => ({ ...d, outside_note: e.target.value }))}
+              />
+            </label>
+          </div>
+          <div className="wp-payments-actions" style={{ marginTop: '1rem' }}>
+            <button type="button" className="wp-button" onClick={saveDelivery} disabled={savingDelivery}>
+              {savingDelivery ? 'Saving…' : 'Save delivery settings'}
+            </button>
+          </div>
+          {deliveryMsg ? <p className="wp-payments-msg">{deliveryMsg}</p> : null}
+        </div>
+      </div>
     </div>
   );
 }

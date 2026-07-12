@@ -49,6 +49,10 @@ export function buildProductImageKey(originalName, mimetype) {
   return `products/${randomUUID()}${pickExtension(mimetype, originalName)}`;
 }
 
+export function buildPaymentProofKey(originalName, mimetype) {
+  return `orders/proofs/${randomUUID()}${pickExtension(mimetype, originalName)}`;
+}
+
 export async function uploadProductImage(buffer, originalName, mimetype) {
   if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
     throw new Error('Empty image file');
@@ -65,6 +69,28 @@ export async function uploadProductImage(buffer, originalName, mimetype) {
       Body: buffer,
       ContentType: mimetype || 'application/octet-stream',
       CacheControl: 'public, max-age=31536000, immutable',
+    })
+  );
+
+  return `${publicBase}/${key}`;
+}
+
+export async function uploadPaymentProof(buffer, originalName, mimetype) {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw new Error('Empty image file');
+  }
+
+  const key = buildPaymentProofKey(originalName, mimetype);
+  const bucket = process.env.R2_BUCKET_NAME.trim();
+  const publicBase = process.env.R2_PUBLIC_BASE_URL.trim().replace(/\/$/, '');
+
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: mimetype || 'application/octet-stream',
+      CacheControl: 'private, max-age=86400',
     })
   );
 

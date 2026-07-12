@@ -17,6 +17,7 @@ import { securityHeaders, getCorsOptions } from './middleware/security.js';
 import { requireStorageReady } from './middleware/storageReady.js';
 import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
 import { isR2Configured } from './services/r2.js';
+import { buildSitemapXml } from './services/sitemap.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 // In test/smoke runs, keep spawn-provided PORT (loadEnv would otherwise overwrite from .env).
@@ -106,6 +107,24 @@ app.use('/api/contact', writeLimiter, requireStorageReady, contactRouter);
 app.use('/api/orders', writeLimiter, requireStorageReady, ordersRouter);
 app.use('/api/shop', requireStorageReady, shopRouter);
 app.use('/api/admin', requireStorageReady, adminRouter);
+
+/** Dynamic sitemap — static pages + published product URLs (overrides dist copy in prod). */
+app.get('/sitemap.xml', (req, res) => {
+  const ready = isStorageReady();
+  if (ready == null || ready === false) {
+    return res.status(503).type('text/plain').send('Sitemap unavailable while storage starts');
+  }
+  try {
+    const xml = buildSitemapXml();
+    res
+      .type('application/xml')
+      .set('Cache-Control', 'public, max-age=3600')
+      .send(xml);
+  } catch (err) {
+    console.error('[sitemap]', err.message);
+    res.status(500).type('text/plain').send('Sitemap error');
+  }
+});
 
 // Common automated-scanner probe paths (WordPress, phpMyAdmin, env/git
 // leaks, PHP info pages, etc.) — this app is a static React SPA + JSON API

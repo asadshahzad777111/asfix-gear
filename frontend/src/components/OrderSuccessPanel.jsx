@@ -7,6 +7,7 @@ import PaymentInstructions from './PaymentInstructions';
 import OrderHelpActions from './OrderHelpActions';
 import { mergePaymentSettings, isCodPayment } from '../config/payments';
 import { buildOrderReceipt } from '../utils/receipts';
+import { compressImageForUpload } from '../utils/compressImage';
 
 const MOBILE_WALLETS = new Set(['jazzcash', 'easypaisa']);
 const BANK_MODE = 'bank';
@@ -28,6 +29,11 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
   const [saving, setSaving] = useState(false);
   const [copied, setCopied] = useState(false);
   const [paymentSettings, setPaymentSettings] = useState(null);
+  const [proofUrl, setProofUrl] = useState(order?.payment_proof_url || '');
+  const [proofMsg, setProofMsg] = useState('');
+  const [proofUploading, setProofUploading] = useState(false);
+
+  const needsProof = MOBILE_WALLETS.has(order.payment_mode) || order.payment_mode === BANK_MODE;
 
   useEffect(() => {
     api.getPaymentSettings()
@@ -60,6 +66,25 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
     }
   };
 
+  const onProofSelected = async (e) => {
+    const file = e.target.files?.[0];
+    e.target.value = '';
+    if (!file) return;
+    setProofUploading(true);
+    setProofMsg('');
+    try {
+      const compressed = await compressImageForUpload(file, 200 * 1024);
+      if (!compressed) throw new Error(t('orderSuccess.proofTooLarge'));
+      const result = await api.uploadOrderPaymentProof(order.id, compressed);
+      setProofUrl(result.payment_proof_url || '');
+      setProofMsg(t('orderSuccess.proofSaved'));
+    } catch (err) {
+      setProofMsg(err.message || t('orderSuccess.proofFailed'));
+    } finally {
+      setProofUploading(false);
+    }
+  };
+
   return (
     <div className="order-success-panel order-success-panel--daraz">
       <div className="order-success-hero">
@@ -79,10 +104,14 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
           </button>
         </div>
         <p className="order-success-save-id">{t('orderSuccess.saveIdHint')}</p>
-        <p className="order-success-dispatch">{t('orderSuccess.estimatedDelivery')}</p>
+        <p className="order-success-dispatch">
+          {order.fulfillment_method === 'pickup'
+            ? t('orderSuccess.estimatedPickup')
+            : t('orderSuccess.estimatedDelivery')}
+        </p>
       </div>
 
-      {(MOBILE_WALLETS.has(order.payment_mode) || order.payment_mode === BANK_MODE) && (
+      {needsProof && (
         <PaymentInstructions
           t={t}
           amount={formatPrice(order.total_amount)}
@@ -92,10 +121,35 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
         />
       )}
 
+      {needsProof && isCustomer && (
+        <div className="order-success-proof glass-card">
+          <h4>{t('orderSuccess.proofTitle')}</h4>
+          <p className="checkout-payment-note">{t('orderSuccess.proofHint')}</p>
+          {proofUrl ? (
+            <p className="order-success-proof-done">
+              <a href={proofUrl} target="_blank" rel="noopener noreferrer">{t('orderSuccess.proofView')}</a>
+            </p>
+          ) : null}
+          <label className="btn btn-outline btn-sm">
+            {proofUploading ? t('orderSuccess.proofUploading') : t('orderSuccess.proofUpload')}
+            <input
+              type="file"
+              accept="image/*"
+              hidden
+              disabled={proofUploading}
+              onChange={onProofSelected}
+            />
+          </label>
+          {proofMsg ? <p className="order-success-gmail-msg">{proofMsg}</p> : null}
+        </div>
+      )}
+
       {isCodPayment(order.payment_mode) && (
         <div className="checkout-payment-instructions glass-card">
           <h4 className="checkout-payment-instructions-title">{t('cart.cod')}</h4>
-          <p className="checkout-payment-note" style={{ marginBottom: 0 }}>{t('cart.codPaymentHint')}</p>
+          <p className="checkout-payment-note" style={{ marginBottom: 0 }}>
+            {order.fulfillment_method === 'pickup' ? t('cart.codPickupHint') : t('cart.codPaymentHint')}
+          </p>
         </div>
       )}
 

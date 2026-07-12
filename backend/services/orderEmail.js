@@ -92,9 +92,15 @@ export function buildOrderPlacedEmail(order) {
   const name = String(order.customer_name || 'Customer').trim();
   const orderId = order.order_id || order.id;
   const isCod = String(order.payment_mode || '').toLowerCase() === 'cod';
+  const isPickup = String(order.fulfillment_method || '').toLowerCase() === 'pickup';
   const payHint = isCod
-    ? 'Payment: Cash on Delivery — rider ko delivery par cash dein.'
+    ? (isPickup
+      ? 'Payment: Cash on pickup — shop par cash dein.'
+      : 'Payment: Cash on Delivery — rider ko delivery par cash dein.')
     : `Payment: ${paymentLabel(order.payment_mode)} — Order ID transfer note mein likhein.`;
+  const fulfillHint = isPickup
+    ? 'Fulfillment: Shop pickup (Lahore) — hum ready hone par WhatsApp karenge.'
+    : 'Fulfillment: Home delivery.';
 
   const bodyText = [
     `Shukriya! Aapka order #${orderId} receive ho gaya hai.`,
@@ -104,6 +110,7 @@ export function buildOrderPlacedEmail(order) {
     '',
     `Total: ${formatAmount(order.total_amount)}`,
     payHint,
+    fulfillHint,
     '',
     'Hum jald verify / dispatch karenge. Status Track page se check kar sakte hain.',
   ].join('\n');
@@ -117,6 +124,7 @@ export function buildOrderPlacedEmail(order) {
       <pre style="margin:0;font-size:13px;color:#e2e8f0;white-space:pre-wrap;font-family:inherit;line-height:1.5;">${escapeHtml(itemLines(order.items))}</pre>
       <p style="margin:12px 0 0;font-size:16px;font-weight:700;color:#4ade80;">Total: ${formatAmount(order.total_amount)}</p>
       <p style="margin:8px 0 0;font-size:13px;color:#94a3b8;">${escapeHtml(payHint)}</p>
+      <p style="margin:4px 0 0;font-size:13px;color:#94a3b8;">${escapeHtml(fulfillHint)}</p>
     </div>
     <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;line-height:1.5;">
       Hum jald verify / dispatch karenge. Sawal ho to WhatsApp 03039227000.

@@ -31,6 +31,7 @@ export default function Footer() {
               <li><Link to="/shop">{t('common.accessoriesShop')}</Link></li>
               {isStaff && <li><Link to="/shop?add=1">{t('common.addProductStaff')}</Link></li>}
               <li><Link to="/repair">{t('common.bookRepair')}</Link></li>
+              <li><Link to="/faq">{t('footer.faq')}</Link></li>
               <li><Link to="/contact">{t('common.contactMap')}</Link></li>
             </ul>
           </div>
@@ -62,6 +63,7 @@ export default function Footer() {
 
       <div className="container footer-legal">
         <ul className="footer-legal-links">
+          <li><Link to="/faq">{t('footer.faq')}</Link></li>
           <li><Link to="/privacy">{t('footer.privacy')}</Link></li>
           <li><Link to="/terms">{t('footer.terms')}</Link></li>
           <li><Link to="/refund">{t('footer.refund')}</Link></li>

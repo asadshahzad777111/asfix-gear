@@ -199,6 +199,49 @@ async function uploadProductImage(file, { timeoutMs = 45000 } = {}) {
   return data;
 }
 
+async function uploadOrderPaymentProof(orderId, file, { timeoutMs = 45000 } = {}) {
+  const token = getAuthToken();
+  if (!token) throw new Error('Sign in required to upload payment proof');
+
+  const form = new FormData();
+  form.append('image', file);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/orders/${orderId}/payment-proof`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error('Upload timed out. Try a smaller screenshot.');
+    }
+    throw new Error('Network error — could not upload payment proof.');
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  const text = await res.text();
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      /* non-JSON */
+    }
+  }
+
+  if (!res.ok) {
+    throw new Error(data.error || 'Payment proof upload failed');
+  }
+  return data;
+}
+
 async function downloadDataBackup() {
   const token = getAuthToken();
   if (!token) throw new Error('Authentication required');
@@ -311,6 +354,7 @@ export const api = {
   bulkDeleteProducts: (ids) =>
     request('/products/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
   uploadProductImage: (file) => uploadProductImage(file),
+  uploadOrderPaymentProof: (orderId, file) => uploadOrderPaymentProof(orderId, file),
 
   getRepairServices: () => request('/repairs/services'),
   getRepairRateCatalog: () => request('/repairs/rates/catalog'),
@@ -395,7 +439,12 @@ export const api = {
     request(`/admin/feedback/${orderId}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteAdminFeedback: (orderId) =>
     request(`/admin/feedback/${orderId}`, { method: 'DELETE' }),
-  getPublishedReviews: () => request('/orders/reviews'),
+  getPublishedReviews: (params = {}) => {
+    const q = new URLSearchParams();
+    if (params.product_id != null) q.set('product_id', params.product_id);
+    const qs = q.toString();
+    return request(`/orders/reviews${qs ? `?${qs}` : ''}`);
+  },
   getAdminCategories: () => request('/admin/categories'),
   createCategory: (body) =>
     request('/admin/categories', { method: 'POST', body: JSON.stringify(body) }),
@@ -411,6 +460,9 @@ export const api = {
   getPaymentSettings: () => request('/shop/payments'),
   setPaymentSettings: (body) =>
     request('/shop/payments', { method: 'PATCH', body: JSON.stringify(body) }),
+  getDeliverySettings: () => request('/shop/delivery'),
+  setDeliverySettings: (body) =>
+    request('/shop/delivery', { method: 'PATCH', body: JSON.stringify(body) }),
 };
 
 export function formatPrice(amount) {

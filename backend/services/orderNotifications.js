@@ -36,6 +36,7 @@ export function buildNewOrderShopMessage(order) {
     order.payment_mode === 'cod'
       ? 'COD (Cash on Delivery)'
       : order.payment_mode || 'jazzcash';
+  const isPickup = String(order.fulfillment_method || '').toLowerCase() === 'pickup';
   const lines = [
     'NEW ORDER - ASFIX GEAR',
     '---------------------',
@@ -43,15 +44,17 @@ export function buildNewOrderShopMessage(order) {
     `Customer: ${order.customer_name}`,
     `Phone: ${order.phone}`,
     `City: ${order.city || '—'}`,
+    `Fulfillment: ${isPickup ? 'SHOP PICKUP' : 'DELIVERY'}`,
     `Payment: ${pay}`,
-    ...locationBlock(order.shipping_address),
+    ...(isPickup ? ['Pickup at shop when ready.'] : locationBlock(order.shipping_address)),
+    order.payment_proof_url ? `Payment proof: ${order.payment_proof_url}` : null,
     '---------------------',
     'Items:',
     ...itemLines(order.items),
     '---------------------',
     `Total: ${formatAmount(order.total_amount)}`,
     `Status: ${order.shipping_status || 'pending'}`,
-  ];
+  ].filter(Boolean);
   return lines.join('\n');
 }
 

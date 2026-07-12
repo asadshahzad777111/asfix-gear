@@ -1,13 +1,58 @@
-import { createContext, useCallback, useContext, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { isInStock, maxCartQty } from '../utils/stock';
 import { isPublishedProduct } from '../utils/productStatus';
 
 const CartContext = createContext(null);
+const CART_KEY = 'asfix_cart';
+
+function loadCart() {
+  try {
+    const raw = localStorage.getItem(CART_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((item) => item && item.id != null && Number(item.qty) > 0)
+      .map((item) => ({
+        ...item,
+        id: Number(item.id) || item.id,
+        qty: Math.max(1, Math.min(99, Number(item.qty) || 1)),
+      }));
+  } catch {
+    return [];
+  }
+}
+
+function persistCart(items) {
+  try {
+    const slim = items.map((i) => ({
+      id: i.id,
+      qty: i.qty,
+      name: i.name,
+      price: i.price,
+      image: i.image,
+      stock: i.stock,
+      category: i.category,
+      brand: i.brand,
+      slug: i.slug,
+      discount_percent: i.discount_percent,
+      status: i.status,
+      warranty: i.warranty,
+    }));
+    localStorage.setItem(CART_KEY, JSON.stringify(slim));
+  } catch {
+    /* quota / private mode */
+  }
+}
 
 export function CartProvider({ children }) {
-  const [items, setItems] = useState([]);
+  const [items, setItems] = useState(() => loadCart());
   const [open, setOpen] = useState(false);
   const [fly, setFly] = useState(null);
+
+  useEffect(() => {
+    persistCart(items);
+  }, [items]);
 
   const addItem = useCallback((product, fromRect) => {
     if (!product || !isPublishedProduct(product) || !isInStock(product.stock)) return;

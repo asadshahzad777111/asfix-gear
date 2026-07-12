@@ -1347,6 +1347,7 @@ export function createOrder(input) {
       phone: input.phone,
       city: input.city || '',
       payment_mode: input.payment_mode || 'jazzcash',
+      fulfillment_method: input.fulfillment_method === 'pickup' ? 'pickup' : 'delivery',
       items,
       total_amount: total,
       shipping_status: 'pending',
@@ -1355,6 +1356,7 @@ export function createOrder(input) {
       rider_phone: '',
       delivery_charge: 0,
       shipping_address: input.shipping_address || null,
+      payment_proof_url: null,
       gmail: '',
       notes: input.notes || '',
       customer_user_id: input.customer_user_id ?? null,
@@ -1737,14 +1739,56 @@ export function listOrderFeedback() {
   );
 }
 
-export function getPublishedReviews(limit = 12) {
+export function getPublishedReviews(limit = 12, { productId } = {}) {
+  const pid = productId != null && productId !== '' ? Number(productId) : null;
   return withData((data) =>
     data.orders
       .map((order) => feedbackRow(order, data))
-      .filter((row) => row && row.status === 'published')
+      .filter((row) => {
+        if (!row || row.status !== 'published') return false;
+        if (pid != null && Number.isFinite(pid)) {
+          return Number(row.product_id) === pid;
+        }
+        return true;
+      })
       .sort((a, b) => new Date(b.submitted_at) - new Date(a.submitted_at))
       .slice(0, limit)
   );
+}
+
+/** Customer attaches JazzCash/EasyPaisa/bank transfer screenshot after order. */
+export function setOrderPaymentProof(orderId, { url, customerUserId, phone }) {
+  return withData((data) => {
+    const id = Number(orderId);
+    const order = data.orders.find((o) => o.id === id);
+    if (!order) return null;
+
+    const ownsByUser =
+      customerUserId != null && Number(order.customer_user_id) === Number(customerUserId);
+    const ownsByPhone =
+      phone && normalizePhone(order.phone) === normalizePhone(phone);
+    if (!ownsByUser && !ownsByPhone) {
+      throw new Error('Not authorized to update this order');
+    }
+
+    const mode = String(order.payment_mode || '').toLowerCase();
+    if (!['jazzcash', 'easypaisa', 'bank'].includes(mode)) {
+      throw new Error('Payment proof is only for JazzCash, EasyPaisa, or bank transfer');
+    }
+    if (order.payment_status === 'paid') {
+      throw new Error('Payment already verified');
+    }
+
+    const proofUrl = String(url || '').trim();
+    if (!/^https:\/\//i.test(proofUrl) || proofUrl.length > 500) {
+      throw new Error('Invalid payment proof URL');
+    }
+
+    order.payment_proof_url = proofUrl;
+    order.payment_proof_at = now();
+    order.updated_at = now();
+    return order;
+  });
 }
 
 export function updateOrderFeedback(orderId, patch, staffUser = null) {
@@ -2639,6 +2683,55 @@ const DEFAULT_PAYMENT_SETTINGS = {
   },
   cod: { enabled: true },
 };
+
+const DEFAULT_DELIVERY_SETTINGS = {
+  lahore_fee: 150,
+  outside_note:
+    'Delivery fee for your city will be confirmed by staff on WhatsApp before dispatch.',
+};
+
+export function getDeliverySettings() {
+  const saved = readData().settings?.delivery || {};
+  const fee = Number(saved.lahore_fee);
+  return {
+    lahore_fee: Number.isFinite(fee) && fee >= 0 ? Math.round(fee) : DEFAULT_DELIVERY_SETTINGS.lahore_fee,
+    outside_note:
+      saved.outside_note != null && String(saved.outside_note).trim()
+        ? String(saved.outside_note).trim().slice(0, 300)
+        : DEFAULT_DELIVERY_SETTINGS.outside_note,
+    updated_at: saved.updated_at ?? null,
+    updated_by: saved.updated_by ?? null,
+  };
+}
+
+export function setDeliverySettings(input, userId) {
+  return withData((data) => {
+    if (!data.settings) data.settings = {};
+    const current = getDeliverySettings();
+    const next = { ...current };
+
+    if (input?.lahore_fee != null) {
+      const fee = Number(input.lahore_fee);
+      if (!Number.isFinite(fee) || fee < 0 || fee > 50000) {
+        throw new Error('Lahore delivery fee must be between 0 and 50000');
+      }
+      next.lahore_fee = Math.round(fee);
+    }
+    if (input?.outside_note != null) {
+      next.outside_note = String(input.outside_note).trim().slice(0, 300)
+        || DEFAULT_DELIVERY_SETTINGS.outside_note;
+    }
+
+    const payload = {
+      lahore_fee: next.lahore_fee,
+      outside_note: next.outside_note,
+      updated_at: now(),
+      updated_by: userId ?? null,
+    };
+    data.settings.delivery = payload;
+    return payload;
+  });
+}
 
 export function getPaymentSettings() {
   const saved = readData().settings?.payments || {};

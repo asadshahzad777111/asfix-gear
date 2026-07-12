@@ -1,57 +1,54 @@
 # AsFix & Gear
 
-**Mobile Repair + Accessories Shop** by Asad.
+**Mobile Repair + Accessories Shop** by Asad Shahzad — Lahore.
 
-A full-stack website with a modern React frontend and Node.js/Express backend with SQLite database.
+Full-stack shop: React (Vite) frontend + Node/Express API with JSON or MongoDB storage.
 
 ## Features
 
-- **Home** — Hero, services overview, featured products
-- **Shop** — Browse accessories with category filters and search
-- **Repair** — View repair services and book appointments
-- **Contact** — Send messages to the shop
-- **Admin** — Manage repair bookings and products
-
-## Tech Stack
-
-| Layer    | Technology              |
-|----------|-------------------------|
-| Frontend | React 19 + Vite         |
-| Backend  | Node.js + Express       |
-| Database | SQLite (better-sqlite3) |
+- Shop, Gaming Zone, Repair intake, Contact, Order track / Account
+- COD (Lahore) + JazzCash / EasyPaisa / bank advance checkout
+- Shop pickup option, cart persistence, product reviews & related items
+- FAQ, legal pages, dynamic product sitemap, optional GA4
+- Staff admin: products, orders, payments, delivery fee estimate, feedback
 
 ## Setup
 
 ```bash
-# Install all dependencies
 npm run install:all
-
-# Seed sample products & repair services
 npm run seed
-
-# Run frontend + backend together
 npm run dev
 ```
 
 - Frontend: http://localhost:5173
-- Backend API: http://localhost:5000
+- Backend: http://localhost:5000
 
-## API Endpoints
+Copy `.env.example` → `.env` / `frontend/.env` as needed. Never commit real secrets.
 
-| Method | Endpoint                        | Description           |
-|--------|---------------------------------|-----------------------|
-| GET    | `/api/products`                 | List products         |
-| GET    | `/api/products/:id`             | Product detail        |
-| POST   | `/api/products`                 | Add product (admin)   |
-| GET    | `/api/repairs/services`         | Repair services       |
-| POST   | `/api/repairs/book`             | Book repair           |
-| GET    | `/api/repairs/bookings`         | All bookings (admin)  |
-| POST   | `/api/contact`                  | Send contact message  |
+## Analytics & SEO (you must configure)
 
-## Customize
+### Google Analytics 4
 
-Update your shop details in `frontend/src/pages/Contact.jsx`:
-- Shop address
-- Phone / WhatsApp number
-- Email
-- Opening hours
+1. Create a GA4 property → copy Measurement ID (`G-XXXXXXXX`).
+2. Set **`VITE_GA_MEASUREMENT_ID`** in the **frontend build** environment (Vercel / Render static / `frontend/.env`).
+3. Redeploy the frontend. Analytics only loads when the ID starts with `G-`.
+
+### Google Search Console
+
+1. Add property `https://asfixgear.com`.
+2. Verify via DNS TXT or HTML meta tag (or Google Analytics ownership).
+3. Submit sitemap: `https://asfixgear.com/sitemap.xml` (dynamic route includes published products).
+
+## Deploy notes
+
+- See `DEPLOY.md` and `npm run setup:check`.
+- After first deploy: `npm run reset-admin`.
+- Production health: `/api/health` should show ready storage (+ R2 for image / payment-proof uploads).
+
+## Scripts
+
+| Script | Purpose |
+|--------|---------|
+| `npm run check:i18n` | EN vs Roman Urdu key parity |
+| `npm run check:secrets` | Block tracked secrets |
+| `npm run build` | Frontend production build |

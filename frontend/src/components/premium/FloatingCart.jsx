@@ -23,7 +23,7 @@ import PaymentInstructions from '../PaymentInstructions';
 import MapAddressPicker from '../MapAddressPicker';
 import { enabledPaymentMethods, mergePaymentSettings, isCodPayment } from '../../config/payments';
 import { SHOP } from '../../config/shop';
-import { getEstimatedDeliveryFee, isLahoreCity } from '../../config/delivery';
+import { getEstimatedDeliveryFee, isLahoreCity, mergeDeliverySettings } from '../../config/delivery';
 
 import ShopLoginPrompt from '../ShopLoginPrompt';
 
@@ -75,6 +75,8 @@ export default function FloatingCart() {
 
   const [successPhone, setSuccessPhone] = useState('');
   const [paymentSettings, setPaymentSettings] = useState(() => mergePaymentSettings());
+  const [deliverySettings, setDeliverySettings] = useState(() => mergeDeliverySettings());
+  const [fulfillment, setFulfillment] = useState('delivery');
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [addressMode, setAddressMode] = useState('saved');
   const [selectedAddressId, setSelectedAddressId] = useState(null);
@@ -106,8 +108,10 @@ export default function FloatingCart() {
 
   const itemCount = items.reduce((sum, i) => sum + i.qty, 0);
   const activePaymentIds = enabledPaymentMethods(paymentSettings);
-  const lahore = isLahoreCity(form.city);
-  const estimatedDeliveryFee = getEstimatedDeliveryFee(form.city);
+  const isPickup = fulfillment === 'pickup';
+  const effectiveCity = isPickup ? 'Lahore' : form.city;
+  const lahore = isLahoreCity(effectiveCity);
+  const estimatedDeliveryFee = isPickup ? 0 : getEstimatedDeliveryFee(form.city, deliverySettings);
   const checkoutPaymentMethods = PAYMENT_METHODS.filter(({ id }) => {
     if (!activePaymentIds.includes(id)) return false;
     if (id === 'cod' && !lahore) return false;
@@ -120,6 +124,9 @@ export default function FloatingCart() {
     api.getPaymentSettings()
       .then((data) => setPaymentSettings(mergePaymentSettings(data)))
       .catch(() => setPaymentSettings(mergePaymentSettings()));
+    api.getDeliverySettings()
+      .then((data) => setDeliverySettings(mergeDeliverySettings(data)))
+      .catch(() => setDeliverySettings(mergeDeliverySettings()));
   }, []);
 
   useEffect(() => {
@@ -127,7 +134,7 @@ export default function FloatingCart() {
     if (!ids.includes(form.payment_mode) && ids[0]) {
       setForm((prev) => ({ ...prev, payment_mode: ids[0] }));
     }
-  }, [form.city, form.payment_mode, activePaymentIds.join(',')]);
+  }, [form.city, form.payment_mode, fulfillment, activePaymentIds.join(',')]);
 
   const showWalletInstructions = showPaymentInstructions && !isCod;
 
@@ -238,39 +245,27 @@ export default function FloatingCart() {
 
 
   const validateDeliveryAddress = () => {
+    if (fulfillment === 'pickup') return true;
 
     if (addressMode === 'saved') {
-
       if (!selectedAddressId) {
-
         setOrderMsg(t('cart.selectAddress'));
-
         return false;
-
       }
-
       return true;
-
     }
 
     if (!newAddress.name.trim() || !newAddress.phone.trim() || !newAddress.text.trim()) {
-
       setOrderMsg(t('cart.addressRequired'));
-
       return false;
-
     }
 
     if (!Number.isFinite(Number(newAddress.lat)) || !Number.isFinite(Number(newAddress.lng))) {
-
       setOrderMsg(t('cart.mapPinRequired'));
-
       return false;
-
     }
 
     return true;
-
   };
 
 
@@ -341,7 +336,7 @@ export default function FloatingCart() {
 
       }
 
-      if (isCodPayment(form.payment_mode) && !isLahoreCity(form.city)) {
+      if (isCodPayment(form.payment_mode) && !isLahoreCity(effectiveCity)) {
 
         setOrderMsg(t('cart.codOutsideLahore'));
 
@@ -379,7 +374,7 @@ export default function FloatingCart() {
 
     if (!validateDeliveryAddress()) return;
 
-    if (isCodPayment(form.payment_mode) && !isLahoreCity(form.city)) {
+    if (isCodPayment(form.payment_mode) && !isLahoreCity(effectiveCity)) {
       setOrderMsg(t('cart.codOutsideLahore'));
       return;
     }
@@ -393,6 +388,10 @@ export default function FloatingCart() {
       const payload = {
 
         ...form,
+
+        city: isPickup ? 'Lahore' : form.city,
+
+        fulfillment_method: fulfillment,
 
         items: items.map((i) => ({
 
@@ -408,14 +407,12 @@ export default function FloatingCart() {
 
       };
 
-      if (addressMode === 'saved') {
-
-        payload.address_id = selectedAddressId;
-
-      } else {
-
-        payload.shipping_address = newAddress;
-
+      if (fulfillment === 'delivery') {
+        if (addressMode === 'saved') {
+          payload.address_id = selectedAddressId;
+        } else {
+          payload.shipping_address = newAddress;
+        }
       }
 
       const { order } = await api.placeOrder(payload);
@@ -427,6 +424,8 @@ export default function FloatingCart() {
       clearCart();
 
       resetCheckout();
+
+      setFulfillment('delivery');
 
       setForm({ customer_name: '', phone: '', city: 'Lahore', payment_mode: 'jazzcash', notes: '' });
 
@@ -618,6 +617,33 @@ export default function FloatingCart() {
 
                         <h3 className="checkout-section-title">{t('cart.deliveryTitle')}</h3>
 
+                        <div className="checkout-fulfillment-mode" role="radiogroup" aria-label={t('cart.fulfillmentLabel')}>
+                          <button
+                            type="button"
+                            role="radio"
+                            aria-checked={!isPickup}
+                            className={`btn btn-outline btn-sm${fulfillment === 'delivery' ? ' active' : ''}`}
+                            onClick={() => setFulfillment('delivery')}
+                          >
+                            {t('cart.fulfillmentDelivery')}
+                          </button>
+                          <button
+                            type="button"
+                            role="radio"
+                            aria-checked={isPickup}
+                            className={`btn btn-outline btn-sm${fulfillment === 'pickup' ? ' active' : ''}`}
+                            onClick={() => {
+                              setFulfillment('pickup');
+                              setForm((f) => ({ ...f, city: 'Lahore' }));
+                            }}
+                          >
+                            {t('cart.fulfillmentPickup')}
+                          </button>
+                        </div>
+                        {isPickup ? (
+                          <p className="checkout-delivery-fee-note">{t('cart.pickupHint')}</p>
+                        ) : null}
+
                         <input
 
                           placeholder={t('cart.fullName')}
@@ -642,6 +668,8 @@ export default function FloatingCart() {
 
                         />
 
+                        {!isPickup ? (
+                          <>
                         <label className="checkout-field-label">{t('cart.cityLabel')}</label>
 
                         <select value={form.city} onChange={(e) => setForm((f) => ({ ...f, city: e.target.value }))}>
@@ -655,6 +683,10 @@ export default function FloatingCart() {
                           <option value="Other">{t('cart.cityOther')}</option>
 
                         </select>
+                          </>
+                        ) : (
+                          <p className="checkout-field-label">{t('cart.cityLabel')}: Lahore</p>
+                        )}
 
                         <div className="checkout-city-banner checkout-city-banner--advance">
 
@@ -664,15 +696,20 @@ export default function FloatingCart() {
 
                         </div>
 
-                        {lahore && estimatedDeliveryFee != null && (
+                        {!isPickup && lahore && estimatedDeliveryFee != null && (
                           <p className="checkout-delivery-fee-note">
                             {t('cart.estimatedDeliveryFee')}: <strong>{formatPrice(estimatedDeliveryFee)}</strong>
                             {' — '}
                             {t('cart.deliveryFeeConfirmNote')}
                           </p>
                         )}
-                        {!lahore && (
-                          <p className="checkout-delivery-fee-note">{t('cart.deliveryFeeOtherCity')}</p>
+                        {!isPickup && !lahore && (
+                          <p className="checkout-delivery-fee-note">
+                            {deliverySettings.outside_note || t('cart.deliveryFeeOtherCity')}
+                          </p>
+                        )}
+                        {isPickup && (
+                          <p className="checkout-delivery-fee-note">{t('cart.pickupFeeNote')}</p>
                         )}
 
                         <textarea
@@ -689,6 +726,7 @@ export default function FloatingCart() {
 
                         />
 
+                        {!isPickup ? (
                         <div className="checkout-address-section">
 
                           <h4 className="checkout-section-subtitle">{t('cart.deliveryAddress')}</h4>
@@ -812,6 +850,7 @@ export default function FloatingCart() {
                           )}
 
                         </div>
+                        ) : null}
 
                       </section>
 
@@ -932,13 +971,20 @@ export default function FloatingCart() {
 
                           </div>
 
-                          {estimatedDeliveryFee != null ? (
+                          {estimatedDeliveryFee != null && !isPickup ? (
                             <div className="checkout-summary-row">
                               <span>{t('cart.estimatedDeliveryFee')}</span>
                               <strong>{formatPrice(estimatedDeliveryFee)}</strong>
                             </div>
+                          ) : isPickup ? (
+                            <div className="checkout-summary-row">
+                              <span>{t('cart.fulfillmentPickup')}</span>
+                              <strong>{t('cart.pickupFeeNote')}</strong>
+                            </div>
                           ) : (
-                            <p className="checkout-delivery-fee-note">{t('cart.deliveryFeeOtherCity')}</p>
+                            <p className="checkout-delivery-fee-note">
+                              {deliverySettings.outside_note || t('cart.deliveryFeeOtherCity')}
+                            </p>
                           )}
 
                           <div className="checkout-summary-row checkout-summary-total">
@@ -946,13 +992,13 @@ export default function FloatingCart() {
                             <span>{t('cart.total')}</span>
 
                             <strong>
-                              {formatPrice(total + (estimatedDeliveryFee || 0))}
-                              {estimatedDeliveryFee != null ? '*' : ''}
+                              {formatPrice(total + (isPickup ? 0 : (estimatedDeliveryFee || 0)))}
+                              {!isPickup && estimatedDeliveryFee != null ? '*' : ''}
                             </strong>
 
                           </div>
 
-                          {estimatedDeliveryFee != null && (
+                          {!isPickup && estimatedDeliveryFee != null && (
                             <p className="checkout-delivery-fee-note">{t('cart.deliveryFeeConfirmNote')}</p>
                           )}
 
@@ -960,11 +1006,16 @@ export default function FloatingCart() {
 
                         <div className="checkout-summary-meta">
 
-                          <p><span>{t('cart.deliverTo')}</span> <strong>{form.customer_name}</strong>, {form.city}</p>
+                          <p>
+                            <span>{isPickup ? t('cart.pickupFor') : t('cart.deliverTo')}</span>{' '}
+                            <strong>{form.customer_name}</strong>, {effectiveCity}
+                          </p>
 
                           <p><span>{t('cart.phone')}</span> <strong>{form.phone}</strong></p>
 
-                          {addressMode === 'saved' && selectedSavedAddress ? (
+                          {isPickup ? (
+                            <p><span>{t('cart.fulfillmentPickup')}</span> {SHOP.addressLine1}, {SHOP.addressLine2}</p>
+                          ) : addressMode === 'saved' && selectedSavedAddress ? (
 
                             <p><span>{t('cart.deliveryAddress')}</span> {selectedSavedAddress.text}</p>
 
