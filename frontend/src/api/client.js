@@ -1,4 +1,9 @@
-const API_BASE = String(import.meta.env.VITE_API_BASE || '/api').replace(/\/$/, '');
+// Vercel/Pages builds often omit VITE_API_BASE — fall back to the public Render API
+// in production so /api is not rewritten to index.html on the static host.
+const API_BASE = String(
+  import.meta.env.VITE_API_BASE
+  || (import.meta.env.PROD ? 'https://asfix-gear.onrender.com/api' : '/api')
+).replace(/\/$/, '');
 const TOKEN_KEY = 'asfix_auth_token';
 const DEFAULT_TIMEOUT_MS = 8000;
 /** OTP send hits Gmail SMTP on the server — can take 15–40s on Render cold start. */

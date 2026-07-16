@@ -61,7 +61,7 @@ Aapko URL milega jaise: `https://asfix-gear.onrender.com`
 
 **Architecture:** Customers open the site on **Vercel** (CDN). The React app calls the API on **Render** (`https://asfix-gear.onrender.com/api`). Render can keep serving the old combined UI+API until you cut DNS over — then treat Render as **API-only**.
 
-`frontend/src/api/client.js` reads `VITE_API_BASE` (default `/api`). Production builds use `frontend/.env.production` (`https://asfix-gear.onrender.com/api`). You can still override the same var in Vercel Project Settings if the API host changes.
+`frontend/src/api/client.js` reads `VITE_API_BASE`. Dev defaults to `/api` (Vite proxy). Production builds without the env var fall back to `https://asfix-gear.onrender.com/api`. CI smoke sets `VITE_API_BASE=/api` so Playwright hits the local Express server.
 
 ### Backend (Render — keep running)
 

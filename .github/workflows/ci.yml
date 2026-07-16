@@ -42,7 +42,7 @@ jobs:
 
       - name: Build frontend
         # Relative /api so Playwright smoke hits the local Express server.
-        # Vercel production builds use frontend/.env.production (Render API URL).
+        # Production (Vercel) builds omit this and fall back to the Render API URL.
         run: VITE_API_BASE=/api npm run build
 
       - name: Backend smoke test
