@@ -240,7 +240,8 @@
     padding: 0.7rem 0.45rem 0.6rem;
   }
 
-  .repair-model-card-img {
+  .model-thumb.repair-model-card-img,
+  .repair-model-card .model-thumb {
     width: 64px;
     height: 64px;
   }
