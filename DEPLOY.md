@@ -59,7 +59,7 @@ Aapko URL milega jaise: `https://asfix-gear.onrender.com`
 
 ## Option 2: Vercel frontend + Render API (fast UI)
 
-**Architecture:** Customers open the site on **Vercel** (CDN). The React app calls the API on **Render** (`https://asfix-gear.onrender.com/api`). Render can keep serving the old combined UI+API until you cut DNS over — then treat Render as **API-only**.
+**Architecture:** Customers open the site on **Vercel** (CDN). The React app calls the API on **Render** (`https://asfix-gear.onrender.com/api`). Render can keep serving the old combined UI+API on `*.onrender.com` — treat that host as **API-only** for customers; brand domain must stay on Vercel.
 
 `frontend/src/api/client.js` reads `VITE_API_BASE`. Dev defaults to `/api` (Vite proxy). Production builds without the env var fall back to `https://asfix-gear.onrender.com/api`. CI smoke sets `VITE_API_BASE=/api` so Playwright hits the local Express server.
 
@@ -67,6 +67,7 @@ Aapko URL milega jaise: `https://asfix-gear.onrender.com`
 
 - Keep the existing Web Service (`asfix-gear.onrender.com`).
 - Start stays: `NODE_ENV=production node backend/server.js`
+- **Do not** attach `asfixgear.com` / `www.asfixgear.com` as Render Custom Domains while Vercel owns the brand domain — that causes DNS/SSL conflict. Remove them in Render → Settings → Custom Domains if listed; leave the Web Service itself running.
 - Production CORS already allows:
   - `https://asfixgear.com`, `https://www.asfixgear.com`
   - `https://*.vercel.app` (preview + production `*.vercel.app` URLs)
@@ -274,7 +275,13 @@ Recommended domain: **asfixgear.com** (+ optional **asfixgear.com.pk**).
 
 **Full step-by-step (Roman Urdu + English):** [DOMAIN-SETUP.md](./DOMAIN-SETUP.md)
 
-Short version (Render — single Web Service):
+**Production (Jul 2026):** brand domain → **Vercel** (see [Option 2](#option-2-vercel-frontend--render-api-fast-ui)). Short Vercel version:
+
+1. Vercel → Domains → `asfixgear.com` + `www`
+2. Cloudflare: CNAME `@` + `www` → Vercel DNS target (DNS only)
+3. Render Custom Domains se brand domain **remove** if present — API on `asfix-gear.onrender.com` rakhein
+
+Short version (Render — single Web Service **only if you are NOT using Vercel**):
 
 1. Domain kharidein (Cloudflare ~$10/yr, Namecheap, ya Hostinger PK for `.com.pk`)
 2. Render → Web Service → **Settings → Custom Domains** → add `asfixgear.com` and `www.asfixgear.com`
@@ -285,7 +292,7 @@ Short version (Render — single Web Service):
 4. Render **Environment** → `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com` (your `*.onrender.com` URL works automatically — no need to add it)
 5. SSL automatic — wait for DNS verify, then open `https://asfixgear.com`
 
-> Single-server Render deploy (Option 1): API same origin hai — `VITE_API_BASE` change ki zaroorat nahi. Split Vercel+Render ke liye [Option 2](#option-2-vercel-frontend--render-api-fast-ui) aur DOMAIN-SETUP.md dekhein.
+> Single-server Render deploy (Option 1): API same origin hai — `VITE_API_BASE` change ki zaroorat nahi. Split Vercel+Render (production) ke liye Option 2 — **domain Vercel par, API Render par**.
 
 ---
 

@@ -1,8 +1,29 @@
 # AsFix & Gear — Custom Domain Setup
 
-**Roman Urdu + English guide** — apna domain kharidein aur Render par live site se connect karein.
+**Roman Urdu + English guide** — production domain + API hosting.
 
 Pehle site live honi chahiye. Agar abhi deploy nahi hua, pehle [DEPLOY.md](./DEPLOY.md) follow karein.
+
+---
+
+## ⚠️ Production rule (Jul 2026) — domain conflict
+
+**Live proof (no conflict today):** `https://www.asfixgear.com` → `Server: Vercel`.  
+`https://asfix-gear.onrender.com` → Render API (+ optional old combined UI). DNS for `asfixgear.com` / `www` does **not** point at Render (`216.24.57.x`).
+
+| Host | Role |
+|------|------|
+| **Vercel** | Customer website (`asfixgear.com` / `www`) |
+| **Render Web Service** | **API only** — keep `asfix-gear.onrender.com` running |
+
+**Render dashboard check (aap ko click karna hai):**  
+Render → Web Service `asfix-gear` → **Settings → Custom Domains**
+
+- Agar `asfixgear.com` ya `www.asfixgear.com` **attached** dikhe → **Remove** kar dein (API service delete mat karna).
+- Domain sirf Vercel + Cloudflare DNS par rehni chahiye.
+- Agar dono jagah same domain attach ho, SSL/DNS conflict ho sakta hai — site kabhi Vercel, kabhi Render dikhegi.
+
+Health check API: `https://asfix-gear.onrender.com/api/health` (not `asfixgear.com/api/...` — woh Vercel SPA HTML deta hai).
 
 ---
 
@@ -16,7 +37,8 @@ Pehle site live honi chahiye. Agar abhi deploy nahi hua, pehle [DEPLOY.md](./DEP
 | 2 | Vercel → Project **asfix-gear** → **Settings → Domains** → add `asfixgear.com` + `www.asfixgear.com` |
 | 3 | Cloudflare DNS → **DNS only** (grey cloud) CNAME records (see [Vercel + Cloudflare](#vercel--cloudflare-jul-2026)) |
 | 4 | Render API stays at `asfix-gear.onrender.com` — `VITE_API_BASE` on Vercel already points there |
-| 5 | Wait 5–15 min → `https://asfixgear.com` serves Vercel CDN; API calls go to Render |
+| 5 | **Remove** `asfixgear.com` / `www` from Render **Custom Domains** if still listed |
+| 6 | Wait 5–15 min → `https://asfixgear.com` serves Vercel CDN; API calls go to Render |
 
 ---
 
@@ -83,7 +105,18 @@ Extra costs: privacy/WHOIS often free on Cloudflare & Namecheap. Renewal kabhi p
 
 ---
 
-## Step 2: Render par custom domain add karein
+## Step 2: Custom domain — Vercel (production) vs Render (legacy only)
+
+### Production (current): domain on **Vercel** — skip Render custom domains
+
+1. Vercel → Project → **Settings → Domains** → `asfixgear.com` + `www.asfixgear.com`
+2. Cloudflare DNS → Vercel CNAMEs (table below)
+3. Render → **Custom Domains** se brand domain **hata dein** agar pehle add ki thi
+4. Render Web Service **chalti rahe** — sirf `*.onrender.com` API ke liye
+
+### Legacy only: domain on **Render** (full site Option 1 — NOT used with Vercel)
+
+Agar aap **poori** site sirf Render par chalata ho (Vercel nahi), tab:
 
 1. [dashboard.render.com](https://dashboard.render.com) → login
 2. Apni **Web Service** (AsFix & Gear) par click karein
@@ -97,7 +130,7 @@ Render ab DNS records dikhayega — **copy karein** apna exact target:
 - Root (`asfixgear.com`): usually **A → `216.24.57.1`** *or* **ALIAS/ANAME → `your-service.onrender.com`**
 - `www`: **CNAME → `your-service.onrender.com`**
 
-> Important: Har service ka `onrender.com` name alag hota hai — apne dashboard wala use karein, example copy mat karein.
+> **Conflict:** Vercel + Render dono par same `asfixgear.com` mat lagao. Production split deploy mein domain sirf Vercel par.
 
 ---
 
@@ -213,8 +246,9 @@ Agar UI **Vercel** par ho aur API **Render** par (fast CDN — see [DEPLOY.md Op
 1. Vercel → Project → **Settings → Environment Variables**
 2. Add: `VITE_API_BASE` = `https://asfix-gear.onrender.com/api` (must include `/api`)
 3. Vercel → **Settings → Domains** → add `asfixgear.com` + `www` → set DNS at registrar to **Vercel** (not Render)
-4. Backend CORS already allows `asfixgear.com`, `www`, and `https://*.vercel.app`. Optional extra origins via Render `CORS_ORIGIN`
-5. Redeploy Vercel after env change (Vite bakes `VITE_*` at build time)
+4. Render → **Custom Domains** → brand domain **remove** (API `asfix-gear.onrender.com` rakhein)
+5. Backend CORS already allows `asfixgear.com`, `www`, and `https://*.vercel.app`. Optional extra origins via Render `CORS_ORIGIN`
+6. Redeploy Vercel after env change (Vite bakes `VITE_*` at build time)
 
 **GitHub Pages:** production domain should point to Vercel once ready; Pages can stay as a backup URL.
 
@@ -222,10 +256,11 @@ Agar UI **Vercel** par ho aur API **Render** par (fast CDN — see [DEPLOY.md Op
 
 ## Step 6: Test checklist
 
-- [ ] `https://asfixgear.com` — home page load
-- [ ] `https://www.asfixgear.com` — same site (ya redirect — Render "redirect www" option check karein)
+- [ ] `https://asfixgear.com` — home page load (`Server: Vercel`)
+- [ ] `https://www.asfixgear.com` — same site (ya redirect to www)
 - [ ] Shop, repair form, contact — submit test
-- [ ] `https://asfixgear.com/api/health` — `{"status":"ok",...}`
+- [ ] `https://asfix-gear.onrender.com/api/health` — `{"status":"ok",...}` (API host, not brand domain)
+- [ ] Browser Network: shop calls `asfix-gear.onrender.com/api/products` → 200 + CORS OK
 - [ ] Admin login staff panel
 - [ ] Mobile par site + WhatsApp link
 
@@ -303,8 +338,9 @@ See also: [.env.example](./.env.example)
 2. **Cloudflare:** `asfixgear.com` → **DNS → Records**  
 3. **Delete:** purana A `216.24.57.1`, purana CNAME `onrender` / GitHub Pages  
 4. **Add:** CNAME `@` aur `www` → `33fc1b84b766b58b.vercel-dns-017.com` — proxy **grey** (DNS only)  
-5. **Vercel:** Domains page par **Refresh** → **Valid Configuration**  
-6. **5–15 min wait** → `https://asfixgear.com` Vercel se load hoga; API Render par rahegi  
+5. **Render:** Custom Domains se `asfixgear.com` / `www` **hatao** agar attached hon — API service mat delete karo  
+6. **Vercel:** Domains page par **Refresh** → **Valid Configuration**  
+7. **Check:** `curl -I https://www.asfixgear.com` → `Server: Vercel`; API health Render URL se  
 
 ### Cloudflare click-by-click (Roman Urdu)
 
