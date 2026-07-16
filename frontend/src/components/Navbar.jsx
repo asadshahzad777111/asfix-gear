@@ -358,7 +358,7 @@ export default function Navbar() {
               </div>
             )}
             <LanguageToggle className="lang-toggle--toolbar" />
-            <ThemeToggle className="theme-toggle--nav" />
+            <ThemeToggle className="theme-switch--nav" />
             <button
               type="button"
               className={`menu-toggle ${menuOpen ? 'is-open' : ''}`}
