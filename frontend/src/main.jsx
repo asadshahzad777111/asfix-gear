@@ -26,6 +26,7 @@ import './auth-2026.css';
 import './components/admin/admin-wp.css';
 import './loco.css';
 import './shop-ui.css';
+import './phonecase-storefront.css';
 import { registerSW } from 'virtual:pwa-register';
 
 // Register the self-destroying SW so any prior controlling worker is replaced,

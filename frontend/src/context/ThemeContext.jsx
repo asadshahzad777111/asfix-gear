@@ -32,8 +32,8 @@ function applyTheme(mode) {
 
 export function ThemeProvider({ children }) {
   const [mode, setModeState] = useState(() => {
-    if (typeof window === 'undefined') return 'auto';
-    return localStorage.getItem(STORAGE_KEY) || 'auto';
+    if (typeof window === 'undefined') return 'light';
+    return localStorage.getItem(STORAGE_KEY) || 'light';
   });
 
   const setMode = useCallback((next) => {

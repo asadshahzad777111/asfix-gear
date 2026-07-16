@@ -99,7 +99,7 @@ export default function Navbar() {
 
   return (
     <>
-      <header className="navbar navbar--mobile-pro">
+      <header className="navbar navbar--mobile-pro navbar--pc">
         <div className="container navbar-inner">
           <LogoLink onNavigate={closeMenu} />
 
@@ -116,7 +116,9 @@ export default function Navbar() {
             >
               {t('nav.gamingAccessories')}
             </NavLink>
-            <Link to="/repair" className="nav-desktop-link">{t('nav.repair')}</Link>
+            <Link to="/repair" className="nav-desktop-link nav-desktop-link--repair-text">
+              {t('nav.repair')}
+            </Link>
             <Link to="/contact" className="nav-desktop-link">{t('nav.contact')}</Link>
             {isCustomer ? (
               <Link to="/account" className="nav-desktop-link nav-desktop-link--orders">{t('nav.myOrders')}</Link>
@@ -341,6 +343,12 @@ export default function Navbar() {
           </nav>
 
           <div className="navbar-aside">
+            <Link to="/repair" className="nav-repair-cta" onClick={closeMenu}>
+              <span className="nav-repair-cta-icon" aria-hidden="true">
+                🔧
+              </span>
+              <span>{t('nav.repair')}</span>
+            </Link>
             <OpenBadge compact />
             {isCustomer ? (
               <AccountMenu className="account-menu--toolbar" />

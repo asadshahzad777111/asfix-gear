@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { OpenBadgeLarge } from '../OpenBadge';
 import { PremiumLink } from '../premium/PremiumButton';
 import { getDefaultImage } from '../../config/products';
@@ -13,7 +14,7 @@ export default function HomeHero({ product }) {
   };
 
   return (
-    <section className="hero section--hero home-hero">
+    <section className="hero section--hero home-hero home-hero--pc">
       <div className="container">
         <div className="hero-bento">
           <div className="hero-main">
@@ -25,10 +26,13 @@ export default function HomeHero({ product }) {
             </h1>
             <p className="hero-promo">{t('home.heroPromo')}</p>
             <p className="hero-desc">{t('home.heroDesc')}</p>
-            <div className="hero-actions">
+            <div className="hero-actions" style={{ display: 'flex', flexWrap: 'wrap', gap: '0.65rem' }}>
               <PremiumLink to="/shop" className="btn btn-primary">
                 {t('home.shopNow')}
               </PremiumLink>
+              <Link to="/repair" className="btn btn-ghost" style={{ borderColor: 'rgba(255,255,255,0.35)', color: '#fff' }}>
+                {t('nav.repair')}
+              </Link>
             </div>
             <OpenBadgeLarge />
           </div>
@@ -49,7 +53,9 @@ export default function HomeHero({ product }) {
               />
             ) : (
               <div className="phone-mock">
-                <span className="phone-mock-icon">📱</span>
+                <span className="phone-mock-icon" aria-hidden="true">
+                  📱
+                </span>
                 <span className="phone-mock-text">ASFIX READY</span>
               </div>
             )}
