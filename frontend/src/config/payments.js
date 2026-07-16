@@ -1,13 +1,15 @@
+import { SHOP } from './shop';
+
 /** Default payment accounts — admin can override via Settings → Payments (stored in API). */
 export const DEFAULT_PAYMENTS = {
   jazzcash: {
     enabled: true,
-    number: '03039227000',
+    number: SHOP.phone,
     accountName: 'ASAD SHAHZAD',
   },
   easypaisa: {
     enabled: true,
-    number: '03039227000',
+    number: SHOP.phone,
     accountName: 'ASAD SHAHZAD',
   },
   bank: {

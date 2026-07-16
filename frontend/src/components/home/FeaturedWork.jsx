@@ -1,12 +1,13 @@
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../context/LanguageContext';
+import { SHOP } from '../../config/shop';
 import Reveal from '../motion/Reveal';
 
 const FEATURED = [
   { to: '/repair', index: '01', nameKey: 'home.featuredRepair', metaKey: 'home.featuredRepairMeta' },
   { to: '/shop', index: '02', nameKey: 'home.featuredShop', metaKey: 'home.featuredShopMeta' },
   { to: '/gaming', index: '03', nameKey: 'home.featuredGaming', metaKey: 'home.featuredGamingMeta' },
-  { to: '/contact', index: '04', nameKey: 'home.featuredContact', metaKey: 'home.featuredContactMeta' },
+  { to: '/contact', index: '04', nameKey: 'home.featuredContact', metaKey: null },
 ];
 
 export default function FeaturedWork() {
@@ -28,7 +29,9 @@ export default function FeaturedWork() {
               <Link to={item.to} className="loco-featured__link">
                 <span className="loco-featured__index">{item.index}</span>
                 <h3 className="loco-featured__name">{t(item.nameKey)}</h3>
-                <span className="loco-featured__meta">{t(item.metaKey)}</span>
+                <span className="loco-featured__meta">
+                  {item.metaKey ? t(item.metaKey) : `${SHOP.phone} · ${SHOP.city}`}
+                </span>
               </Link>
             </Reveal>
           ))}

@@ -95,7 +95,9 @@ export default function Shop() {
   };
 
   useEffect(() => {
-    api.getCategories().then(setCategories).catch(console.error);
+    api.getCategories()
+      .then((data) => setCategories(Array.isArray(data) ? data : []))
+      .catch(console.error);
   }, []);
 
   useEffect(() => {
@@ -177,7 +179,9 @@ export default function Shop() {
 
   const handleProductAdded = () => {
     loadProducts();
-    api.getCategories().then(setCategories).catch(console.error);
+    api.getCategories()
+      .then((data) => setCategories(Array.isArray(data) ? data : []))
+      .catch(console.error);
   };
 
   return (
@@ -204,7 +208,7 @@ export default function Shop() {
           )}
           <div className="filters-bar">
             <button type="button" className={`filter-btn ${activeCategory === 'all' ? 'active' : ''}`} onClick={() => handleCategorySelect('all')}>{t('shop.all')}</button>
-            {categories.map((cat) => (
+            {(Array.isArray(categories) ? categories : []).map((cat) => (
               <button key={cat} type="button" className={`filter-btn ${activeCategory === cat ? 'active' : ''}`} onClick={() => handleCategorySelect(cat)}>{cat}</button>
             ))}
             <button type="button" className={`filter-btn filter-sale ${showSaleOnly ? 'active' : ''}`} onClick={() => setShowSaleOnly((s) => !s)}>

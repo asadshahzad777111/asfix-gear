@@ -146,7 +146,12 @@ app.use((req, res, next) => {
   next();
 });
 
-if (process.env.NODE_ENV === 'production') {
+// Production always serves the built SPA. Browser smoke sets SERVE_SPA=1 with
+// NODE_ENV=test so loadEnv does not clobber the spawn PORT from .env, while
+// still exercising the same static + index.html fallback path as production.
+const serveSpa =
+  process.env.NODE_ENV === 'production' || process.env.SERVE_SPA === '1';
+if (serveSpa) {
   const frontendDist = path.join(__dirname, '..', 'frontend', 'dist');
   // Hashed JS/CSS can stay cached; index.html must stay fresh so deploys
   // swap asset hashes immediately (mobile browsers often keep old index.html

@@ -1,3 +1,5 @@
+import { SHOP } from '../config/shop';
+
 /** FAQ content — English + Roman Urdu (same shape as legal pages). */
 export const FAQ_UPDATED = 'July 2026';
 
@@ -24,7 +26,7 @@ const FAQ = {
       },
       {
         q: 'How do I prove I paid via JazzCash / EasyPaisa / bank?',
-        a: 'After placing the order, upload a payment screenshot on the success screen (if uploads are enabled), or WhatsApp the screenshot with your Order ID to 03039227000.',
+        a: `After placing the order, upload a payment screenshot on the success screen (if uploads are enabled), or WhatsApp the screenshot with your Order ID to ${SHOP.phone}.`,
       },
       {
         q: 'What warranty do products have?',
@@ -62,7 +64,7 @@ const FAQ = {
       },
       {
         q: 'JazzCash / EasyPaisa / bank payment ka proof kaise doon?',
-        a: 'Order place ke baad success screen par screenshot upload karein (agar upload on ho), ya Order ID ke sath screenshot WhatsApp 03039227000 par bhej dein.',
+        a: `Order place ke baad success screen par screenshot upload karein (agar upload on ho), ya Order ID ke sath screenshot WhatsApp ${SHOP.phone} par bhej dein.`,
       },
       {
         q: 'Products ki warranty kya hai?',

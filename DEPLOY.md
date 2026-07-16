@@ -61,7 +61,7 @@ Aapko URL milega jaise: `https://asfix-gear.onrender.com`
 
 **Architecture:** Customers open the site on **Vercel** (CDN). The React app calls the API on **Render** (`https://asfix-gear.onrender.com/api`). Render can keep serving the old combined UI+API until you cut DNS over — then treat Render as **API-only**.
 
-`frontend/src/api/client.js` reads `VITE_API_BASE` (default `/api`). On Vercel you **must** set the full Render API URL at build time.
+`frontend/src/api/client.js` reads `VITE_API_BASE` (default `/api`). Production builds use `frontend/.env.production` (`https://asfix-gear.onrender.com/api`). You can still override the same var in Vercel Project Settings if the API host changes.
 
 ### Backend (Render — keep running)
 
@@ -95,10 +95,12 @@ SPA routing is handled by `frontend/vercel.json` (all routes → `/index.html`).
 1. Vercel → Project → **Settings → Domains** → add `asfixgear.com` and `www.asfixgear.com`
 2. At your **registrar DNS** (Cloudflare / Namecheap / Hostinger), point the domain to Vercel (Vercel shows exact records):
 
-| Type | Name | Value (typical) |
-|------|------|-----------------|
-| **A** | `@` | `76.76.21.21` (confirm in Vercel Domains UI) |
-| **CNAME** | `www` | `cname.vercel-dns.com` (or the host Vercel shows) |
+| Type | Name | Value (asfix-gear project, Jul 2026) |
+|------|------|--------------------------------------|
+| **CNAME** | `@` | `33fc1b84b766b58b.vercel-dns-017.com` (Cloudflare: DNS only / grey cloud) |
+| **CNAME** | `www` | `33fc1b84b766b58b.vercel-dns-017.com` (DNS only) |
+
+> On **Cloudflare**, use CNAME for both `@` and `www` — not A records. Delete old Render A (`216.24.57.1`) and GitHub Pages CNAMEs first.
 
 3. Remove old **A/CNAME** that pointed at Render (or GitHub Pages) for the apex/`www` once you cut over.
 4. Wait for SSL (usually a few minutes). Open `https://asfixgear.com`.

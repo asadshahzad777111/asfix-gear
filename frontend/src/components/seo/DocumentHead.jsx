@@ -1,9 +1,10 @@
 import { useEffect } from 'react';
+import { SHOP } from '../../config/shop';
 
 const SITE = 'https://asfixgear.com';
 const DEFAULT_TITLE = 'AsFix & Gear | Mobile Repair & Accessories — Asad Shahzad';
 const DEFAULT_DESC =
-  'AsFix & Gear by Asad Shahzad — Expert mobile repair & premium accessories. WhatsApp: 03039227000. Open 9 AM – 9 PM.';
+  `AsFix & Gear by Asad Shahzad — Expert mobile repair & premium accessories. WhatsApp: ${SHOP.phone}. Open 9 AM – 9 PM.`;
 
 function upsertMeta(attr, key, content) {
   if (typeof document === 'undefined' || !content) return;

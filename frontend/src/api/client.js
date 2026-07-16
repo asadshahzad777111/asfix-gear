@@ -123,13 +123,15 @@ async function request(path, options = {}) {
     try {
       data = JSON.parse(text);
     } catch {
-      if (!res.ok) {
-        throw new Error(
-          res.status === 502 || res.status === 503 || res.status === 504
-            ? 'Backend server is not running. Start it with: npm run dev (port 5000)'
+      // SPA hosts (Vercel/Pages) often return 200 HTML for unknown /api/*
+      // when VITE_API_BASE is missing — never treat that as a JSON body.
+      throw new Error(
+        res.status === 502 || res.status === 503 || res.status === 504
+          ? 'Backend server is not running. Start it with: npm run dev (port 5000)'
+          : text.trimStart().startsWith('<')
+            ? 'API base misconfigured — set VITE_API_BASE to the Render API URL (e.g. https://asfix-gear.onrender.com/api).'
             : 'Something went wrong'
-        );
-      }
+      );
     }
   }
 

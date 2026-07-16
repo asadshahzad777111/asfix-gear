@@ -104,7 +104,8 @@ async function main() {
   const server = spawn(process.execPath, ['backend/server.js'], {
     stdio: 'inherit',
     // NODE_ENV=test keeps loadEnv from overwriting spawn PORT (see backend/server.js).
-    env: { ...process.env, NODE_ENV: 'test', PORT: String(PORT) },
+    // SERVE_SPA=1 still mounts frontend/dist the same way production does.
+    env: { ...process.env, NODE_ENV: 'test', PORT: String(PORT), SERVE_SPA: '1' },
   });
 
   let exited = false;

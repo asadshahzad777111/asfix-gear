@@ -8,13 +8,15 @@ Pehle site live honi chahiye. Agar abhi deploy nahi hua, pehle [DEPLOY.md](./DEP
 
 ## Quick summary (English)
 
+**Production (Jul 2026):** Frontend on **Vercel**, API on **Render** (`asfix-gear.onrender.com`).
+
 | Step | Action |
 |------|--------|
-| 1 | Buy **asfixgear.com** (optional: **asfixgear.com.pk**) |
-| 2 | Render → your Web Service → **Settings → Custom Domains** → add `asfixgear.com` and `www.asfixgear.com` |
-| 3 | At your registrar/DNS: **A** or **ALIAS** for `@` (root), **CNAME** for `www` → your `*.onrender.com` URL |
-| 4 | Render → **Environment** → set `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com` |
-| 5 | Wait for DNS + free SSL (usually 5–30 min) → open `https://asfixgear.com` |
+| 1 | Domain **asfixgear.com** on Cloudflare (already owned) |
+| 2 | Vercel → Project **asfix-gear** → **Settings → Domains** → add `asfixgear.com` + `www.asfixgear.com` |
+| 3 | Cloudflare DNS → **DNS only** (grey cloud) CNAME records (see [Vercel + Cloudflare](#vercel--cloudflare-jul-2026)) |
+| 4 | Render API stays at `asfix-gear.onrender.com` — `VITE_API_BASE` on Vercel already points there |
+| 5 | Wait 5–15 min → `https://asfixgear.com` serves Vercel CDN; API calls go to Render |
 
 ---
 
@@ -112,16 +114,32 @@ DNS registrar ya DNS provider (Cloudflare, Namecheap, Hostinger) par yeh records
 
 **ALIAS / ANAME (agar provider support kare):** root `@` ke liye A ki jagah **ALIAS** → `your-service.onrender.com` (IP change par auto-update — preferred jahan available ho).
 
-### Cloudflare-specific
+### Vercel + Cloudflare (Jul 2026)
 
-Cloudflare par **A record use mat karein** root ke liye — Render docs ke mutabiq:
+Frontend **Vercel** par hai — DNS **Vercel** ko point karein, Render ko nahi.
+
+Vercel → **Settings → Domains** par exact value confirm karein. Current target:
+
+| Type | Name | Target | Proxy |
+|------|------|--------|-------|
+| **CNAME** | `@` | `33fc1b84b766b58b.vercel-dns-017.com` | **DNS only** (grey cloud) |
+| **CNAME** | `www` | `33fc1b84b766b58b.vercel-dns-017.com` | **DNS only** (grey cloud) |
+
+**Cleanup (zaroori):** Purane records delete karein jo conflict karein:
+- **A** `@` → `216.24.57.1` (Render)
+- **CNAME** `www` → `*.onrender.com` ya GitHub Pages
+- **AAAA** records (IPv6)
+
+SSL verify hone ke baad optional: proxy (orange cloud) on kar sakte hain.
+
+### Cloudflare + Render only (legacy single-server)
+
+Agar poori site sirf Render par ho (Option 1 [DEPLOY.md](./DEPLOY.md)):
 
 | Type | Name | Target | Proxy |
 |------|------|--------|-------|
 | **CNAME** | `@` | `your-service.onrender.com` | **DNS only** (grey cloud) |
 | **CNAME** | `www` | `your-service.onrender.com` | **DNS only** |
-
-SSL verify hone ke baad optional: proxy (orange cloud) on kar sakte hain.
 
 Full guide: [Render — Configure Cloudflare DNS](https://render.com/docs/configure-cloudflare-dns)
 
@@ -231,12 +249,25 @@ Ya **.com.pk** ko registrar **domain forwarding** se `https://asfixgear.com` par
 
 | Problem | Fix |
 |---------|-----|
+| Vercel **Invalid Configuration** (Jul 2026) | DNS abhi Vercel par nahi — check: `nslookup asfixgear.com` agar `185.199.x.x` (GitHub Pages) dikhe to Cloudflare mein purane records delete karo aur Vercel CNAME lagao (table upar) |
+| `www` CNAME → `*.github.io` | Delete karo; replace with `33fc1b84b766b58b.vercel-dns-017.com` (DNS only) |
+| Apex **A** → `185.199.108.153` etc. | GitHub Pages — delete; add CNAME `@` → Vercel target (Cloudflare CNAME flattening) |
 | "Domain not verified" on Render | DNS records double-check; 30 min wait; `dig asfixgear.com` ya [dnschecker.org](https://dnschecker.org) |
-| SSL pending | DNS must point to Render; remove AAAA records |
-| Site opens on .onrender.com but not custom domain | Custom domain Render par add kiya? DNS propagated? |
+| SSL pending | DNS must point to Vercel/Render; remove conflicting AAAA |
+| Site opens on `.vercel.app` but not custom domain | Cloudflare DNS updated? Vercel Domains → **Refresh** |
 | API 403 Forbidden | `CORS_ORIGIN` exact `https://` URLs — trailing slash nahi |
-| www works, root doesn't | Root **A** ya **ALIAS** record missing |
+| www works, root doesn't | Root CNAME `@` missing ya purana A record baqi hai |
 | Cloudflare "too many redirects" | Proxy off (DNS only) during setup |
+
+### Current DNS state (checked Jul 16, 2026)
+
+| Record | Current (broken) | Required (Vercel) |
+|--------|------------------|-------------------|
+| `@` apex | A → `185.199.108–111.153` (GitHub Pages) | CNAME → `33fc1b84b766b58b.vercel-dns-017.com` |
+| `www` | CNAME → `asadshahzad777111.github.io` | CNAME → `33fc1b84b766b58b.vercel-dns-017.com` |
+| NS | `leanna.ns.cloudflare.com`, `luke.ns.cloudflare.com` | (unchanged — Cloudflare) |
+
+Until Cloudflare records change, `https://asfixgear.com` serves **GitHub Pages**; `https://asfix-gear.vercel.app` serves **Vercel** (correct).
 
 ---
 
@@ -266,13 +297,23 @@ See also: [.env.example](./.env.example)
 
 ---
 
-## Roman Urdu — short recap
+## Roman Urdu — short recap (Vercel + Render)
 
-1. **Domain lo:** `asfixgear.com` — Cloudflare sasta, Hostinger PK agar `.com.pk` chahiye  
-2. **Render:** Settings → Custom Domains → `asfixgear.com` + `www` add karo  
-3. **DNS:** `@` par A (`216.24.57.1`) ya ALIAS; `www` par CNAME → `tumhara-service.onrender.com`  
-4. **Env:** `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com`  
-5. **SSL:** Render khud laga deta hai — kuch extra nahi  
-6. **Test:** browser mein HTTPS kholo, shop + admin check karo  
+1. **Vercel:** Project `asfix-gear` → Domains → `asfixgear.com` + `www` add (ho chuka)  
+2. **Cloudflare:** `asfixgear.com` → **DNS → Records**  
+3. **Delete:** purana A `216.24.57.1`, purana CNAME `onrender` / GitHub Pages  
+4. **Add:** CNAME `@` aur `www` → `33fc1b84b766b58b.vercel-dns-017.com` — proxy **grey** (DNS only)  
+5. **Vercel:** Domains page par **Refresh** → **Valid Configuration**  
+6. **5–15 min wait** → `https://asfixgear.com` Vercel se load hoga; API Render par rahegi  
 
-Koi step atke to DEPLOY.md aur Render dashboard ke error messages screenshot bhej dein.
+### Cloudflare click-by-click (Roman Urdu)
+
+1. [dash.cloudflare.com](https://dash.cloudflare.com) → login  
+2. **asfixgear.com** par click  
+3. Left menu → **DNS** → **Records**  
+4. Har purana record jisme `@` ya `www` ho aur Render/GitHub target ho → **Edit** → **Delete**  
+5. **Add record** → Type **CNAME**, Name **@**, Target `33fc1b84b766b58b.vercel-dns-017.com`, Proxy **DNS only** (grey cloud) → **Save**  
+6. Dubara **Add record** → Type **CNAME**, Name **www**, same Target, same grey proxy → **Save**  
+7. Vercel → Domains → **Refresh**  
+
+Koi step atke to DEPLOY.md aur dashboard screenshot bhej dein.

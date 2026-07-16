@@ -16,6 +16,7 @@ import Testimonials from '../components/Testimonials';
 import Reveal from '../components/motion/Reveal';
 import { HomeProductsSkeleton } from '../components/skeleton/ContentSkeletons';
 import { useTranslation } from '../context/LanguageContext';
+import { SHOP } from '../config/shop';
 import DocumentHead from '../components/seo/DocumentHead';
 import { LocalBusinessJsonLd } from '../components/seo/JsonLd';
 
@@ -79,7 +80,7 @@ export default function Home() {
     <>
       <DocumentHead
         title={null}
-        description="AsFix & Gear Lahore — expert mobile repair, accessories, and gaming gear. WhatsApp 03039227000."
+        description={`AsFix & Gear Lahore — expert mobile repair, accessories, and gaming gear. WhatsApp ${SHOP.phone}.`}
         path="/"
       />
       <LocalBusinessJsonLd />
