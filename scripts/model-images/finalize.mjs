@@ -73,19 +73,23 @@ function extractModels() {
 function findExisting(fileBase) {
   const dir = dirname(join(OUT_DIR, fileBase));
   const base = slugify(fileBase.split('/').pop());
-  if (!existsSync(dir)) return null;
-  for (const name of readdirSync(dir)) {
-    if (name.replace(extname(name), '') === base) {
-      const full = join(dir, name);
-      if (statSync(full).size > 500) return full;
-    }
-  }
-  // Also try exact path with common extensions
-  for (const ext of ['.jpg', '.jpeg', '.png', '.webp', '.svg']) {
+  // Prefer compressed photos over leftover catalog SVGs when both exist.
+  const prefer = ['.webp', '.jpg', '.jpeg', '.png', '.gif', '.svg'];
+  for (const ext of prefer) {
     const p = join(OUT_DIR, fileBase + ext);
     if (existsSync(p) && statSync(p).size > 500) return p;
   }
-  return null;
+  if (!existsSync(dir)) return null;
+  const ranked = [];
+  for (const name of readdirSync(dir)) {
+    if (name.replace(extname(name), '') !== base) continue;
+    const full = join(dir, name);
+    if (statSync(full).size <= 500) continue;
+    const rank = prefer.indexOf(extname(name).toLowerCase());
+    ranked.push({ full, rank: rank === -1 ? 99 : rank });
+  }
+  ranked.sort((a, b) => a.rank - b.rank);
+  return ranked[0]?.full || null;
 }
 
 function toPublicUrl(absPath) {
