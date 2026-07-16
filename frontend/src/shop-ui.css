@@ -27,13 +27,15 @@
 .home-product-img-wrap,
 .gaming-product-img {
   position: relative;
+  isolation: isolate;
+  overflow: hidden;
 }
 
 .product-card-hover-actions {
   position: absolute;
   top: 0.65rem;
   right: 0.65rem;
-  z-index: 6;
+  z-index: 20;
   display: flex;
   flex-direction: column;
   gap: 0.45rem;
@@ -45,6 +47,13 @@
   pointer-events: none;
 }
 
+.product-image .product-card-image-stack,
+.home-product-img-wrap .product-card-image-stack,
+.gaming-product-img .product-card-image-stack {
+  position: relative;
+  z-index: 1;
+}
+
 .product-card-wrap--grid.is-hovered .product-card-hover-actions,
 .product-card-wrap--grid:hover .product-card-hover-actions,
 .home-product-card:hover .product-card-hover-actions,
@@ -53,6 +62,12 @@
   opacity: 1;
   transform: translateY(0);
   pointer-events: auto;
+}
+
+.product-card-hover-actions .product-card-action-btn {
+  pointer-events: auto;
+  position: relative;
+  z-index: 1;
 }
 
 @media (hover: none), (pointer: coarse) {
