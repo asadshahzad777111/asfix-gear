@@ -185,22 +185,20 @@ Phir seed / data sync strategy apni deploy setup ke mutabiq (local reset Render 
 
 Frontend aur API **same origin** par hain (`asfixgear.com` + `/api`).
 
-- **`VITE_API_URL` ki zaroorat nahi** — `frontend/src/api/client.js` already `/api` use karta hai
+- **`VITE_API_BASE` ki zaroorat nahi** — `frontend/src/api/client.js` default `/api` use karta hai
 - Sirf `CORS_ORIGIN` Render par set karein (security best practice)
 
 ### Option B: Split deploy — Vercel (frontend) + Render (backend)
 
-Agar frontend alag domain par ho (jaise Vercel):
+Agar UI **Vercel** par ho aur API **Render** par (fast CDN — see [DEPLOY.md Option 2](./DEPLOY.md#option-2-vercel-frontend--render-api-fast-ui)):
 
 1. Vercel → Project → **Settings → Environment Variables**
-2. Add: `VITE_API_URL` = `https://your-backend.onrender.com` (ya custom API subdomain)
-3. `CORS_ORIGIN` on Render mein **Vercel URL** bhi include karein, jaise:
-   ```
-   https://asfixgear.com,https://www.asfixgear.com,https://your-app.vercel.app
-   ```
-4. Redeploy **dono** sides
+2. Add: `VITE_API_BASE` = `https://asfix-gear.onrender.com/api` (must include `/api`)
+3. Vercel → **Settings → Domains** → add `asfixgear.com` + `www` → set DNS at registrar to **Vercel** (not Render)
+4. Backend CORS already allows `asfixgear.com`, `www`, and `https://*.vercel.app`. Optional extra origins via Render `CORS_ORIGIN`
+5. Redeploy Vercel after env change (Vite bakes `VITE_*` at build time)
 
-Is project mein abhi split deploy default nahi hai — Option A use karein agar mumkin ho.
+**GitHub Pages:** production domain should point to Vercel once ready; Pages can stay as a backup URL.
 
 ---
 

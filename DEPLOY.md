@@ -57,26 +57,69 @@ Aapko URL milega jaise: `https://asfix-gear.onrender.com`
 
 ---
 
-## Option 2: Vercel (Frontend) + Render (Backend)
+## Option 2: Vercel frontend + Render API (fast UI)
 
-Agar alag deploy karna ho:
+**Architecture:** Customers open the site on **Vercel** (CDN). The React app calls the API on **Render** (`https://asfix-gear.onrender.com/api`). Render can keep serving the old combined UI+API until you cut DNS over — then treat Render as **API-only**.
 
-### Backend (Render)
-- Root: `backend`
-- Start: `node server.js`
-- Build: `npm install && node seed.js`
+`frontend/src/api/client.js` reads `VITE_API_BASE` (default `/api`). On Vercel you **must** set the full Render API URL at build time.
+
+### Backend (Render — keep running)
+
+- Keep the existing Web Service (`asfix-gear.onrender.com`).
+- Start stays: `NODE_ENV=production node backend/server.js`
+- Production CORS already allows:
+  - `https://asfixgear.com`, `https://www.asfixgear.com`
+  - `https://*.vercel.app` (preview + production `*.vercel.app` URLs)
+  - GitHub Pages origin (backup)
+  - Your `RENDER_EXTERNAL_URL`
+- Optional: set `CORS_ORIGIN` on Render if you add more custom fronts.
 
 ### Frontend (Vercel)
-1. https://vercel.com par sign up
-2. Import GitHub repo
-3. Root Directory: `frontend`
-4. Build: `npm run build`
-5. Environment variable add karein:
-   - `VITE_API_URL` = aapka Render backend URL
 
-> Note: Is option ke liye `frontend/src/api/client.js` mein API URL update karna padega.
+1. https://vercel.com → **Sign up / Log in** → **Add New… → Project**
+2. **Import** the GitHub repo `asfix-gear` (connect GitHub if asked)
+3. Configure project:
+   - **Root Directory:** `frontend` (click Edit → select `frontend`)
+   - **Framework Preset:** Vite (auto)
+   - **Build Command:** `npm run build` (default)
+   - **Output Directory:** `dist` (default)
+4. **Environment Variables** → add for Production (+ Preview if you want):
+   - Name: `VITE_API_BASE`
+   - Value: `https://asfix-gear.onrender.com/api`
+5. **Deploy** → wait for build → open the `*.vercel.app` URL and test shop / login / repair
 
----
+SPA routing is handled by `frontend/vercel.json` (all routes → `/index.html`).
+
+### Custom domain `asfixgear.com` → Vercel
+
+1. Vercel → Project → **Settings → Domains** → add `asfixgear.com` and `www.asfixgear.com`
+2. At your **registrar DNS** (Cloudflare / Namecheap / Hostinger), point the domain to Vercel (Vercel shows exact records):
+
+| Type | Name | Value (typical) |
+|------|------|-----------------|
+| **A** | `@` | `76.76.21.21` (confirm in Vercel Domains UI) |
+| **CNAME** | `www` | `cname.vercel-dns.com` (or the host Vercel shows) |
+
+3. Remove old **A/CNAME** that pointed at Render (or GitHub Pages) for the apex/`www` once you cut over.
+4. Wait for SSL (usually a few minutes). Open `https://asfixgear.com`.
+
+> **API stays on Render.** Do **not** point `asfixgear.com` at Render if the UI is on Vercel. Health check: `https://asfix-gear.onrender.com/api/health`.
+
+### Dual deploy / GitHub Pages backup
+
+- **GitHub Pages** workflow can stay as a backup frontend CDN.
+- Once `asfixgear.com` DNS points to **Vercel**, that is production. Pages URL remains available but is not the brand domain.
+- Render may still serve static `dist` at `*.onrender.com` — customers should use the Vercel/custom domain for speed.
+
+### Roman Urdu — Vercel dashboard (aap ko click karna hai)
+
+1. vercel.com par login
+2. **Add New → Project** → GitHub se `asfix-gear` import
+3. **Root Directory** = `frontend`
+4. Env: `VITE_API_BASE` = `https://asfix-gear.onrender.com/api`
+5. **Deploy** dabao
+6. Domains mein `asfixgear.com` add karo → registrar par DNS records Vercel ke mutabiq set karo
+7. Render pe API chalti rahe — CORS pehle se Vercel allow karta hai
 
 ## Option 3: Hostinger / cPanel (Shared Hosting)
 
@@ -240,7 +283,7 @@ Short version (Render — single Web Service):
 4. Render **Environment** → `CORS_ORIGIN=https://asfixgear.com,https://www.asfixgear.com` (your `*.onrender.com` URL works automatically — no need to add it)
 5. SSL automatic — wait for DNS verify, then open `https://asfixgear.com`
 
-> Single-server Render deploy (Option 1): API same origin hai — `VITE_API_URL` change ki zaroorat nahi. Split Vercel+Render ke liye DOMAIN-SETUP.md dekhein.
+> Single-server Render deploy (Option 1): API same origin hai — `VITE_API_BASE` change ki zaroorat nahi. Split Vercel+Render ke liye [Option 2](#option-2-vercel-frontend--render-api-fast-ui) aur DOMAIN-SETUP.md dekhein.
 
 ---
 
