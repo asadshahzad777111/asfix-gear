@@ -1,5 +1,6 @@
 import ShopStatusControl from '../ShopStatusControl';
 import AdminPayments from './AdminPayments';
+import AdminStorefrontImages from './AdminStorefrontImages';
 
 export default function AdminSettings({ onDownloadBackup, backupLoading, showBackup, section = 'general' }) {
   if (section === 'payments') {
@@ -14,6 +15,7 @@ export default function AdminSettings({ onDownloadBackup, backupLoading, showBac
           <ShopStatusControl />
         </div>
       </div>
+      <AdminStorefrontImages />
       {showBackup && (
         <div className="wp-postbox">
           <div className="wp-postbox-head">Backup</div>

@@ -39,8 +39,14 @@ export default function Navbar() {
   const [addOpen, setAddOpen] = useState(false);
   const [loginOpen, setLoginOpen] = useState(false);
   const [finderCategory, setFinderCategory] = useState(null);
+  const [drawerTab, setDrawerTab] = useState('menu');
+  const [drawerBrand, setDrawerBrand] = useState(null);
 
-  const closeMenu = () => setMenuOpen(false);
+  const closeMenu = () => {
+    setMenuOpen(false);
+    setDrawerTab('menu');
+    setDrawerBrand(null);
+  };
 
   const openLoginModal = () => {
     closeMenu();
@@ -105,6 +111,19 @@ export default function Navbar() {
     <>
       <header className="navbar navbar--mobile-pro navbar--pc">
         <div className="container navbar-inner">
+          <button
+            type="button"
+            className={`menu-toggle menu-toggle--leading ${menuOpen ? 'is-open' : ''}`}
+            onClick={() => setMenuOpen((open) => !open)}
+            aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
+            aria-expanded={menuOpen}
+            aria-controls="main-nav"
+          >
+            <span className="menu-toggle-bar" />
+            <span className="menu-toggle-bar" />
+            <span className="menu-toggle-bar" />
+          </button>
+
           <LogoLink onNavigate={closeMenu} />
 
           <NavSearch className="navbar-search--desktop" />
@@ -120,7 +139,7 @@ export default function Navbar() {
             >
               {t('nav.gamingAccessories')}
             </NavLink>
-            <Link to="/repair" className="nav-desktop-link nav-desktop-link--repair-text">
+            <Link to="/repair" className="nav-desktop-link">
               {t('nav.repair')}
             </Link>
             <Link to="/contact" className="nav-desktop-link">{t('nav.contact')}</Link>
@@ -133,17 +152,33 @@ export default function Navbar() {
 
           <nav
             id="main-nav"
-            className={`nav-links nav-drawer ${menuOpen ? 'open' : ''}`}
+            className={`nav-links nav-drawer nav-drawer--pc ${menuOpen ? 'open' : ''}`}
             aria-hidden={!menuOpen}
           >
-            <div className="nav-drawer-head">
-              <div className="nav-drawer-head-text">
-                <span className="nav-drawer-title">{t('nav.menu')}</span>
-                <span className="nav-drawer-subtitle">{t('nav.menuSub')}</span>
+            <div className="nav-drawer-head nav-drawer-head--pc">
+              <div className="pc-drawer-tabs" role="tablist">
+                <button
+                  type="button"
+                  role="tab"
+                  className={`pc-drawer-tab${drawerTab === 'menu' ? ' is-active' : ''}`}
+                  aria-selected={drawerTab === 'menu'}
+                  onClick={() => setDrawerTab('menu')}
+                >
+                  {t('nav.menu')}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  className={`pc-drawer-tab${drawerTab === 'model' ? ' is-active' : ''}`}
+                  aria-selected={drawerTab === 'model'}
+                  onClick={() => setDrawerTab('model')}
+                >
+                  {t('nav.selectModel')}
+                </button>
               </div>
               <button
                 type="button"
-                className="nav-drawer-close"
+                className="nav-drawer-close nav-drawer-close--pc"
                 onClick={closeMenu}
                 aria-label={t('nav.closeMenu')}
               >
@@ -151,8 +186,54 @@ export default function Navbar() {
               </button>
             </div>
 
-            <LanguageToggle className="lang-toggle--drawer" />
+            {drawerTab === 'model' && (
+              <div className="pc-drawer-model-panel">
+                {!drawerBrand ? (
+                  <div className="pc-drawer-brand-list">
+                    {SHOP_BRANDS.map((brand) => (
+                      <button
+                        key={brand.id}
+                        type="button"
+                        className="pc-drawer-brand-row"
+                        onClick={() => setDrawerBrand(brand.id)}
+                      >
+                        <SearchBrandIcon brandId={brand.id} />
+                        <span>{brand.label}</span>
+                        <span aria-hidden="true">›</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : (
+                  <>
+                    <button
+                      type="button"
+                      className="pc-drawer-brand-back"
+                      onClick={() => setDrawerBrand(null)}
+                    >
+                      ← {t('repair.changeCompany')}
+                    </button>
+                    <div className="pc-drawer-model-list">
+                      {getSeriesForShopBrand(drawerBrand).flatMap((series) =>
+                        series.models.map((model) => (
+                          <Link
+                            key={`${series.name}-${model}`}
+                            className="pc-drawer-model-row"
+                            to={`/shop?brand=${encodeURIComponent(drawerBrand)}&search=${encodeURIComponent(model)}`}
+                            onClick={closeMenu}
+                          >
+                            {model}
+                          </Link>
+                        ))
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            )}
 
+            {drawerTab === 'menu' && (
+              <>
+            <LanguageToggle className="lang-toggle--drawer" />
             <span className="nav-drawer-section-label">{t('nav.explore')}</span>
 
             <div className="nav-links-primary">
@@ -344,15 +425,11 @@ export default function Navbar() {
               className="nav-whatsapp"
               onClick={closeMenu}
             />
+              </>
+            )}
           </nav>
 
           <div className="navbar-aside">
-            <Link to="/repair" className="nav-repair-cta" onClick={closeMenu}>
-              <span className="nav-repair-cta-icon" aria-hidden="true">
-                🔧
-              </span>
-              <span>{t('nav.repair')}</span>
-            </Link>
             <OpenBadge compact />
             <div className="nav-pc-icons">
               {isCustomer ? (
@@ -388,18 +465,6 @@ export default function Navbar() {
             </div>
             <LanguageToggle className="lang-toggle--toolbar" />
             <ThemeToggle className="theme-switch--nav" />
-            <button
-              type="button"
-              className={`menu-toggle ${menuOpen ? 'is-open' : ''}`}
-              onClick={() => setMenuOpen((open) => !open)}
-              aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
-              aria-expanded={menuOpen}
-              aria-controls="main-nav"
-            >
-              <span className="menu-toggle-bar" />
-              <span className="menu-toggle-bar" />
-              <span className="menu-toggle-bar" />
-            </button>
           </div>
         </div>
 

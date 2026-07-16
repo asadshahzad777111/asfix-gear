@@ -66,4 +66,17 @@ router.patch('/delivery', requireAuth, requireRole(...SHOP_MANAGERS), (req, res)
   }
 });
 
+router.get('/storefront-images', (_req, res) => {
+  res.json(store.getStorefrontImages());
+});
+
+router.patch('/storefront-images', requireAuth, requireRole(...SHOP_MANAGERS), (req, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    res.json(store.setStorefrontImages(body, req.auth.user.id));
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Invalid storefront images' });
+  }
+});
+
 export default router;

@@ -1,11 +1,8 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { hasDiscount } from '../utils/pricing';
 import { readProductsCache, writeProductsCache } from '../utils/productCache';
 import { filterPublishedProducts } from '../utils/productStatus';
 import HomeHero from '../components/home/HomeHero';
-import FeaturedWork from '../components/home/FeaturedWork';
-import HomeAbout from '../components/home/HomeAbout';
 import TrustBadges from '../components/home/TrustBadges';
 import CollectionGrid from '../components/home/CollectionGrid';
 import BrandGrid from '../components/home/BrandGrid';
@@ -26,7 +23,6 @@ function filterShopProducts(products) {
 
 export default function Home() {
   const { t } = useTranslation();
-  const [heroProduct, setHeroProduct] = useState(null);
   const [topSelling, setTopSelling] = useState([]);
   const [newArrivals, setNewArrivals] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -35,9 +31,7 @@ export default function Home() {
   const applyProducts = (all) => {
     const shop = filterShopProducts(all);
     const featured = shop.filter((p) => p.featured);
-    const onSale = shop.filter((p) => hasDiscount(p));
 
-    setHeroProduct(featured[0] || onSale[0] || shop[0] || null);
     setTopSelling((featured.length ? featured : shop).slice(0, 8));
     setNewArrivals([...shop].sort((a, b) => Number(b.id) - Number(a.id)).slice(0, 8));
   };
@@ -84,12 +78,10 @@ export default function Home() {
         path="/"
       />
       <LocalBusinessJsonLd />
-      <HomeHero product={heroProduct} />
-      <FeaturedWork />
-      <HomeAbout />
+      <HomeHero />
       <TrustBadges />
-      <CollectionGrid />
       <BrandGrid />
+      <CollectionGrid />
       <TrendingCollections />
 
       {loadError && !topSelling.length ? (

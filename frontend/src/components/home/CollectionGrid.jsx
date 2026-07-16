@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { DEFAULT_IMAGES, HOME_COLLECTIONS, MODEL_SPECIFIC_CATEGORIES } from '../../config/products';
+import { api } from '../../api/client';
 import { useTranslation } from '../../context/LanguageContext';
 import PhoneFinderModal from '../PhoneFinderModal';
 import Reveal from '../motion/Reveal';
@@ -16,6 +17,16 @@ export default function CollectionGrid() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const [finderCategory, setFinderCategory] = useState(null);
+  const [imageOverrides, setImageOverrides] = useState({});
+
+  useEffect(() => {
+    api
+      .getStorefrontImages()
+      .then((data) => {
+        if (data?.category_images) setImageOverrides(data.category_images);
+      })
+      .catch(() => {});
+  }, []);
 
   const handleClick = (category) => {
     if (MODEL_SPECIFIC_CATEGORIES.includes(category)) {
@@ -42,7 +53,7 @@ export default function CollectionGrid() {
               className="home-collection-card"
             >
               <img
-                src={DEFAULT_IMAGES[category]}
+                src={imageOverrides[category] || DEFAULT_IMAGES[category]}
                 alt={category}
                 loading="lazy"
               />

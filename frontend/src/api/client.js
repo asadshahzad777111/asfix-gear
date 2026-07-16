@@ -470,6 +470,9 @@ export const api = {
   getDeliverySettings: () => request('/shop/delivery'),
   setDeliverySettings: (body) =>
     request('/shop/delivery', { method: 'PATCH', body: JSON.stringify(body) }),
+  getStorefrontImages: () => request('/shop/storefront-images'),
+  updateStorefrontImages: (body) =>
+    request('/shop/storefront-images', { method: 'PATCH', body: JSON.stringify(body) }),
 };
 
 export function formatPrice(amount) {

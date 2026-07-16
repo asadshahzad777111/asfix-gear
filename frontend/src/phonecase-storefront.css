@@ -90,37 +90,7 @@
   background: var(--pc-accent-soft);
 }
 
-/* Repair CTA — always visible in header (desktop + mobile) */
-.nav-repair-cta {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.35rem;
-  flex-shrink: 0;
-  min-height: 38px;
-  padding: 0.45rem 0.95rem;
-  border-radius: var(--pc-radius-pill);
-  background: var(--pc-accent);
-  color: #fff !important;
-  font-size: 0.78rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  text-decoration: none;
-  box-shadow: 0 4px 14px rgba(255, 102, 0, 0.35);
-  transition: transform var(--pc-anim) ease, box-shadow var(--pc-anim) ease, background var(--pc-anim) ease;
-}
-
-.nav-repair-cta:hover {
-  background: #e85d00;
-  transform: translateY(-1px);
-  box-shadow: 0 8px 20px rgba(255, 102, 0, 0.4);
-  color: #fff !important;
-}
-
-.nav-repair-cta-icon {
-  font-size: 0.95rem;
-  line-height: 1;
-}
+/* Header Repair CTA removed — floating repair FAB only */
 
 .navbar--pc .navbar-aside {
   display: flex;
@@ -612,8 +582,233 @@
   font-size: 0.72rem;
 }
 
-/* Hide nav Repair text link when CTA button is shown (avoid duplicate) */
-.navbar--pc .nav-desktop-link--repair-text {
+/* Leading hamburger (PhoneCase left menu) */
+.navbar--pc .menu-toggle--leading {
+  display: grid;
+  order: -1;
+}
+
+@media (min-width: 1025px) {
+  .navbar--pc .menu-toggle--leading {
+    display: none;
+  }
+}
+
+.navbar--pc .navbar-inner {
+  grid-template-columns: auto auto minmax(0, 1fr) auto;
+}
+
+/* PhoneCase left drawer tabs */
+.nav-drawer-head--pc {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  padding: 0 !important;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pc-drawer-tabs {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+.pc-drawer-tab {
+  flex: 1;
+  padding: 0.95rem 0.5rem;
+  border: none;
+  background: #f3f4f6;
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+  cursor: pointer;
+  border-bottom: 3px solid transparent;
+}
+
+.pc-drawer-tab.is-active {
+  background: #fff;
+  color: #111;
+  border-bottom-color: var(--pc-accent, #ff6600);
+}
+
+.nav-drawer-close--pc {
+  width: 48px !important;
+  height: auto !important;
+  min-height: 100%;
+  border-radius: 0 !important;
+  background: #1f2937 !important;
+  color: #fff !important;
+}
+
+.pc-drawer-model-panel {
+  padding: 0.75rem;
+  overflow: auto;
+}
+
+.pc-drawer-brand-row,
+.pc-drawer-model-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.85rem 0.5rem;
+  border: none;
+  border-bottom: 1px solid #e5e7eb;
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.pc-drawer-brand-row span:nth-child(2) {
+  flex: 1;
+}
+
+.pc-drawer-brand-back {
+  margin-bottom: 0.5rem;
+  border: none;
+  background: #f3f4f6;
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* Full-bleed hero carousel */
+.pc-hero-carousel {
+  position: relative;
+  min-height: clamp(320px, 62vw, 520px);
+  overflow: hidden;
+  background: #111;
+}
+
+.pc-hero-slide {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  transition: opacity 0.7s ease;
+}
+
+.pc-hero-slide.is-active {
+  opacity: 1;
+  z-index: 1;
+}
+
+.pc-hero-slide-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.pc-hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  background: linear-gradient(90deg, rgba(0, 0, 0, 0.62) 0%, rgba(0, 0, 0, 0.28) 55%, rgba(0, 0, 0, 0.15) 100%);
+}
+
+.pc-hero-content {
+  position: relative;
+  z-index: 3;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  min-height: clamp(320px, 62vw, 520px);
+  padding-block: 2rem;
+  color: #fff;
+}
+
+.pc-hero-kicker {
+  margin: 0 0 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #ffb366;
+}
+
+.pc-hero-title {
+  margin: 0 0 0.5rem;
+  font-size: clamp(1.75rem, 5.5vw, 3rem);
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1.1;
+  color: #fff;
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.35);
+}
+
+.pc-hero-sub {
+  margin: 0 0 1.1rem;
+  max-width: 28rem;
+  font-size: 1rem;
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.pc-hero-cta {
+  align-self: flex-start;
+  border-radius: 999px !important;
+  background: #111 !important;
+  border-color: #111 !important;
+  color: #fff !important;
+  font-weight: 700;
+}
+
+.pc-hero-cta:hover {
+  background: var(--pc-accent) !important;
+  border-color: var(--pc-accent) !important;
+}
+
+.pc-hero-dots {
+  display: flex;
+  gap: 0.4rem;
+  margin-top: 1.25rem;
+}
+
+.pc-hero-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  border: 1.5px solid rgba(255, 255, 255, 0.85);
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+}
+
+.pc-hero-dot.is-active {
+  width: 22px;
+  background: #fff;
+}
+
+/* Light mode: force readable text on storefront surfaces */
+[data-theme='light'] .pc-trending-label,
+[data-theme='light'] .home-brand-card--pc .home-brand-label,
+[data-theme='light'] .section-title,
+[data-theme='light'] .section-subtitle {
+  color: #111827;
+}
+
+[data-theme='dark'] .pc-trending-label {
+  color: #f3f4f6 !important;
+}
+
+[data-theme='dark'] .pc-trending-title {
+  color: #fff;
+}
+
+[data-theme='dark'] .pc-trending-title::after {
+  background: #fff;
+}
+
+[data-theme='dark'] .pc-trending-circle {
+  background: #1f2937;
+}
+
+.case-previewer--simple .case-previewer-swatches,
+.case-previewer--simple .case-previewer-label {
   display: none;
 }
 
@@ -975,14 +1170,27 @@
     display: inline-flex;
   }
 
-  .navbar--pc .nav-repair-cta {
-    min-height: 36px;
-    padding: 0.4rem 0.7rem;
-    font-size: 0.7rem;
-  }
-
   .navbar--pc .nav-pc-icon-btn {
     width: 36px;
     height: 36px;
+  }
+
+  .navbar--pc .logo {
+    max-width: none;
+    flex: 1 1 auto;
+  }
+}
+
+/* Drawer from left like PhoneCase */
+@media (max-width: 1024px) {
+  .navbar--pc .nav-links.nav-drawer.nav-drawer--pc {
+    left: 0;
+    right: auto;
+    width: min(86vw, 340px);
+    transform: translate3d(-105%, 0, 0);
+  }
+
+  .navbar--pc .nav-links.nav-drawer.nav-drawer--pc.open {
+    transform: translate3d(0, 0, 0);
   }
 }

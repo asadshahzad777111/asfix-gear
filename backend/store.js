@@ -2736,6 +2736,60 @@ export function setDeliverySettings(input, userId) {
   });
 }
 
+export function getStorefrontImages() {
+  const saved = readData().settings?.storefront_images || {};
+  return {
+    category_images:
+      saved.category_images && typeof saved.category_images === 'object'
+        ? saved.category_images
+        : {},
+    hero_slides: Array.isArray(saved.hero_slides) ? saved.hero_slides : [],
+    updated_at: saved.updated_at ?? null,
+    updated_by: saved.updated_by ?? null,
+  };
+}
+
+export function setStorefrontImages(input, userId) {
+  return withData((data) => {
+    if (!data.settings) data.settings = {};
+    const current = getStorefrontImages();
+    const nextCategory = { ...current.category_images };
+    if (input?.category_images && typeof input.category_images === 'object') {
+      for (const [key, value] of Object.entries(input.category_images)) {
+        const k = String(key).trim().slice(0, 80);
+        const v = String(value || '').trim().slice(0, 800);
+        if (!k) continue;
+        if (!v) {
+          delete nextCategory[k];
+        } else if (/^https?:\/\//i.test(v) || v.startsWith('/')) {
+          nextCategory[k] = v;
+        }
+      }
+    }
+    let nextHero = current.hero_slides;
+    if (Array.isArray(input?.hero_slides)) {
+      nextHero = input.hero_slides
+        .slice(0, 8)
+        .map((s, i) => ({
+          id: String(s?.id || `slide-${i}`).slice(0, 40),
+          image: String(s?.image || '').trim().slice(0, 800),
+          title: String(s?.title || '').trim().slice(0, 120),
+          subtitle: String(s?.subtitle || '').trim().slice(0, 200),
+          href: String(s?.href || '/shop').trim().slice(0, 200),
+        }))
+        .filter((s) => s.image && (/^https?:\/\//i.test(s.image) || s.image.startsWith('/')));
+    }
+    const payload = {
+      category_images: nextCategory,
+      hero_slides: nextHero,
+      updated_at: now(),
+      updated_by: userId ?? null,
+    };
+    data.settings.storefront_images = payload;
+    return payload;
+  });
+}
+
 export function getPaymentSettings() {
   const saved = readData().settings?.payments || {};
   return {
