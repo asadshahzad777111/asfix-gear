@@ -33,12 +33,11 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
 
   const series = useMemo(() => (brand ? getSeriesForShopBrand(brand.id) : []), [brand]);
 
-  const filteredSeries = useMemo(() => {
+  const models = useMemo(() => {
+    const all = series.flatMap((s) => s.models);
     const term = query.trim().toLowerCase();
-    if (!term) return series;
-    return series
-      .map((s) => ({ ...s, models: s.models.filter((m) => m.toLowerCase().includes(term)) }))
-      .filter((s) => s.models.length > 0);
+    if (!term) return all;
+    return all.filter((m) => m.toLowerCase().includes(term));
   }, [series, query]);
 
   const updatePanelPos = useCallback(() => {
@@ -170,27 +169,26 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
         />
 
         <div className="phone-finder-model-scroll shop-model-picker-scroll" ref={scrollRef}>
-          {filteredSeries.length === 0 ? (
+          {models.length === 0 ? (
             <p className="phone-finder-no-match">{t('phoneFinder.noModelMatch')}</p>
           ) : (
-            filteredSeries.map((s) => (
-              <div key={s.name} className="phone-finder-series">
-                <p className="phone-finder-series-name">{s.name}</p>
-                <div className="phone-finder-model-chips">
-                  {s.models.map((model) => (
-                    <button
-                      key={model}
-                      type="button"
-                      className={`phone-finder-model-chip ${selectedModel === model ? 'is-selected' : ''}`}
-                      onClick={() => pickModel(model)}
-                    >
-                      <ModelThumb brand={SHOP_BRAND_TO_REPAIR_BRAND[brand.id]} model={model} />
-                      <span>{model}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ))
+            <div className="phone-finder-model-cards">
+              {models.map((model) => (
+                <button
+                  key={model}
+                  type="button"
+                  className={`phone-finder-model-card ${selectedModel === model ? 'is-selected' : ''}`}
+                  onClick={() => pickModel(model)}
+                >
+                  <ModelThumb
+                    brand={SHOP_BRAND_TO_REPAIR_BRAND[brand.id]}
+                    model={model}
+                    className="phone-finder-model-card-img"
+                  />
+                  <span className="phone-finder-model-card-name">{model}</span>
+                </button>
+              ))}
+            </div>
           )}
         </div>
 

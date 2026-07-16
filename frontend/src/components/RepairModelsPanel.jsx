@@ -9,48 +9,41 @@ export default function RepairModelsPanel() {
   const { t } = useTranslation();
 
   return (
-    <div className="repair-models-panel glass-card">
+    <div className="repair-models-panel">
       <div className="repair-models-head">
-        <span className="eyebrow">📱 {t('repair.modelsEyebrow')}</span>
+        <span className="eyebrow">{t('repair.modelsEyebrow')}</span>
         <h3>{t('repair.modelsHead')}</h3>
         <p>{t('repair.modelsDesc')}</p>
       </div>
 
-      <div className="repair-models-grid">
-        {REPAIR_DEVICE_BRANDS.map((group) => (
-          <div key={group.brand} className="repair-model-group">
-            <strong className="repair-model-group-brand">
-              <SearchBrandIcon brandId={getShopBrandIdFromRepairBrand(group.brand)} />
-              <span>{group.brand}</span>
-            </strong>
-            <div className="repair-model-group-body">
-              {group.series.map((series) => (
-                <div key={series.name} className="repair-model-series">
-                  <span className="repair-model-series-name">{series.name}</span>
-                  <div className="repair-model-chips">
-                    {series.models.map((model) => (
-                      <Link
-                        key={model}
-                        to={generalRepairQuoteContactPath(`${group.brand} ${model}`)}
-                        className="repair-model-chip"
-                      >
-                        <ModelThumb brand={group.brand} model={model} />
-                        <span>{model}</span>
-                      </Link>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        ))}
+      <div className="repair-models-list">
+        {REPAIR_DEVICE_BRANDS.map((group) => {
+          const models = group.series.flatMap((series) => series.models);
+          return (
+            <section key={group.brand} className="repair-brand-block">
+              <h4 className="repair-brand-heading">
+                <SearchBrandIcon brandId={getShopBrandIdFromRepairBrand(group.brand)} />
+                <span>{group.brand}</span>
+              </h4>
+              <div className="repair-model-cards">
+                {models.map((model) => (
+                  <Link
+                    key={model}
+                    to={generalRepairQuoteContactPath(`${group.brand} ${model}`)}
+                    className="repair-model-card"
+                  >
+                    <ModelThumb brand={group.brand} model={model} className="repair-model-card-img" />
+                    <span className="repair-model-card-name">{model}</span>
+                  </Link>
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
 
-      <Link
-        to={generalRepairQuoteContactPath()}
-        className="btn btn-whatsapp btn-block"
-      >
-        💬 {t('repair.modelsWhatsApp')}
+      <Link to={generalRepairQuoteContactPath()} className="btn btn-whatsapp btn-block">
+        {t('repair.modelsWhatsApp')}
       </Link>
     </div>
   );

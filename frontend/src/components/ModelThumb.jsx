@@ -1,18 +1,23 @@
+import { useState } from 'react';
 import { getModelImageUrl, modelImageAlt } from '../utils/modelImage';
 
 /**
- * Tiny product thumb next to a model name in menus/chips/cards.
- * Falls back to a letter mark if mapping is missing.
+ * Product thumb next to a model name in menus / grids / cards.
+ * Falls back to a letter mark if mapping is missing or the image fails.
  */
 export default function ModelThumb({ brand, model, className = '' }) {
   const src = getModelImageUrl(brand, model);
-  if (!src) {
+  const [failedSrc, setFailedSrc] = useState(null);
+  const showImg = Boolean(src) && failedSrc !== src;
+
+  if (!showImg) {
     return (
       <span className={`model-thumb model-thumb--fallback ${className}`.trim()} aria-hidden="true">
         {(model || '?').trim().charAt(0)}
       </span>
     );
   }
+
   return (
     <img
       className={`model-thumb ${className}`.trim()}
@@ -20,8 +25,9 @@ export default function ModelThumb({ brand, model, className = '' }) {
       alt={modelImageAlt(brand, model)}
       loading="lazy"
       decoding="async"
-      width={40}
-      height={40}
+      width={72}
+      height={72}
+      onError={() => setFailedSrc(src)}
     />
   );
 }

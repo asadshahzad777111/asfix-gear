@@ -140,28 +140,19 @@
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  overflow: hidden;
 }
 
-.repair-models-grid {
+.repair-models-list,
+.repair-brand-block,
+.repair-model-cards {
   width: 100%;
   min-width: 0;
 }
 
-.repair-model-group {
-  min-width: 0;
-}
-
-.repair-model-chips {
-  max-width: 100%;
-}
-
-.repair-model-chip {
+.repair-model-card {
   max-width: 100%;
   box-sizing: border-box;
   word-break: break-word;
-  text-align: left;
-  line-height: 1.35;
 }
 
 .repair-models-panel > .btn-block {
@@ -238,18 +229,24 @@
   }
 
   .repair-models-panel {
-    padding: 1rem;
+    padding: 0.25rem 0 1rem;
   }
 
-  .repair-models-grid {
-    grid-template-columns: 1fr;
-    gap: 1.1rem;
+  .repair-models-list {
+    gap: 1.5rem;
   }
 
-  .repair-model-chip {
-    font-size: 0.72rem;
-    padding: 0.45rem 0.65rem;
-    white-space: normal;
+  .repair-model-card {
+    padding: 0.7rem 0.45rem 0.6rem;
+  }
+
+  .repair-model-card-img {
+    width: 64px;
+    height: 64px;
+  }
+
+  .repair-model-card-name {
+    font-size: 0.76rem;
   }
 
   .repair-page-block--models {
@@ -271,10 +268,6 @@
 }
 
 @media (min-width: 769px) and (max-width: 1024px) {
-  .repair-models-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-
   .repair-page-block--screen .screen-quality-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }

@@ -137,13 +137,14 @@ function PhoneFinderBrandStep({ category, onSelectBrand, onSkip, t, brandGridRef
 function PhoneFinderModelStep({ brand, series, onBack, onSelectModel, onViewAllBrand, t }) {
   const [query, setQuery] = useState('');
 
-  const filteredSeries = useMemo(() => {
+  const models = useMemo(() => {
+    const all = series.flatMap((s) => s.models);
     const term = query.trim().toLowerCase();
-    if (!term) return series;
-    return series
-      .map((s) => ({ ...s, models: s.models.filter((m) => m.toLowerCase().includes(term)) }))
-      .filter((s) => s.models.length > 0);
+    if (!term) return all;
+    return all.filter((m) => m.toLowerCase().includes(term));
   }, [series, query]);
+
+  const repairBrand = SHOP_BRAND_TO_REPAIR_BRAND[brand.id];
 
   return (
     <div className="phone-finder-step">
@@ -167,27 +168,22 @@ function PhoneFinderModelStep({ brand, series, onBack, onSelectModel, onViewAllB
       />
 
       <div className="phone-finder-model-scroll">
-        {filteredSeries.length === 0 ? (
+        {models.length === 0 ? (
           <p className="phone-finder-no-match">{t('phoneFinder.noModelMatch')}</p>
         ) : (
-          filteredSeries.map((s) => (
-            <div key={s.name} className="phone-finder-series">
-              <p className="phone-finder-series-name">{s.name}</p>
-              <div className="phone-finder-model-chips">
-                {s.models.map((model) => (
-                  <button
-                    key={model}
-                    type="button"
-                    className="phone-finder-model-chip"
-                    onClick={() => onSelectModel(model)}
-                  >
-                    <ModelThumb brand={SHOP_BRAND_TO_REPAIR_BRAND[brand.id]} model={model} />
-                    <span>{model}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          ))
+          <div className="phone-finder-model-cards">
+            {models.map((model) => (
+              <button
+                key={model}
+                type="button"
+                className="phone-finder-model-card"
+                onClick={() => onSelectModel(model)}
+              >
+                <ModelThumb brand={repairBrand} model={model} className="phone-finder-model-card-img" />
+                <span className="phone-finder-model-card-name">{model}</span>
+              </button>
+            ))}
+          </div>
         )}
       </div>
 
