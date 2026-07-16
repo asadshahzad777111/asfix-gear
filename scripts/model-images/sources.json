@@ -1,0 +1,2007 @@
+{
+  "Apple iPhone|iPhone 17 Pro Max": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/IPhone_17_Pro_Vector.svg/1280px-IPhone_17_Pro_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 17 Pro Max"
+  },
+  "Apple iPhone|iPhone 17 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/IPhone_17_Pro_Vector.svg/1280px-IPhone_17_Pro_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 17 Pro"
+  },
+  "Apple iPhone|iPhone Air": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/20/IPhone_Air_Vector.svg/1280px-IPhone_Air_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone Air"
+  },
+  "Apple iPhone|iPhone 17": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e6/IPhone_17_Vector.svg/1280px-IPhone_17_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 17"
+  },
+  "Apple iPhone|iPhone 17e": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/90/IPhone_17e_Vector.svg/1280px-IPhone_17e_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 17e"
+  },
+  "Apple iPhone|iPhone 16 Pro Max": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/IPhone_16_Pro_Vector.svg/1280px-IPhone_16_Pro_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 16 Pro Max"
+  },
+  "Apple iPhone|iPhone 16 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d2/IPhone_16_Pro_Vector.svg/1280px-IPhone_16_Pro_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 16 Pro"
+  },
+  "Apple iPhone|iPhone 16 Plus": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/IPhone_16_Vector.svg/1280px-IPhone_16_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 16 Plus"
+  },
+  "Apple iPhone|iPhone 16": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/7/7c/IPhone_16_Vector.svg/1280px-IPhone_16_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 16"
+  },
+  "Apple iPhone|iPhone 16e": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/5d/IPhone_16e_Vector.svg/1280px-IPhone_16e_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 16e"
+  },
+  "Apple iPhone|iPhone 15 Pro Max": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/IPhone_15_Pro_Vector.svg/1280px-IPhone_15_Pro_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 15 Pro Max"
+  },
+  "Apple iPhone|iPhone 15 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/f/f5/IPhone_15_Pro_Vector.svg/1280px-IPhone_15_Pro_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 15 Pro"
+  },
+  "Apple iPhone|iPhone 15 Plus": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/IPhone_15_Vector.svg/1280px-IPhone_15_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 15 Plus"
+  },
+  "Apple iPhone|iPhone 15": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ee/IPhone_15_Vector.svg/1280px-IPhone_15_Vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 15"
+  },
+  "Apple iPhone|iPhone 14 Pro Max": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/IPhone_14_Pro_vector.svg/1280px-IPhone_14_Pro_vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 14 Pro Max"
+  },
+  "Apple iPhone|iPhone 14 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9f/IPhone_14_Pro_vector.svg/1280px-IPhone_14_Pro_vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 14 Pro"
+  },
+  "Apple iPhone|iPhone 14 Plus": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/IPhone_14_vector.svg/1280px-IPhone_14_vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 14 Plus"
+  },
+  "Apple iPhone|iPhone 14": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/61/IPhone_14_vector.svg/1280px-IPhone_14_vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 14"
+  },
+  "Apple iPhone|iPhone 13 Pro Max": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/IPhone_13_Pro_vector.svg/1280px-IPhone_13_Pro_vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 13 Pro Max"
+  },
+  "Apple iPhone|iPhone 13 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b5/IPhone_13_Pro_vector.svg/1280px-IPhone_13_Pro_vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 13 Pro"
+  },
+  "Apple iPhone|iPhone 13": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/IPhone_13_vector.svg/1280px-IPhone_13_vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 13"
+  },
+  "Apple iPhone|iPhone 13 Mini": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/0c/IPhone_13_vector.svg/1280px-IPhone_13_vector.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 13 Mini"
+  },
+  "Apple iPhone|iPhone 12 Pro Max": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/IPhone_12_Pro_Gold.svg/1280px-IPhone_12_Pro_Gold.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 12 Pro Max"
+  },
+  "Apple iPhone|iPhone 12 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/3e/IPhone_12_Pro_Gold.svg/1280px-IPhone_12_Pro_Gold.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 12 Pro"
+  },
+  "Apple iPhone|iPhone 12": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/IPhone_12_Blue.svg/1280px-IPhone_12_Blue.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 12"
+  },
+  "Apple iPhone|iPhone 12 Mini": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/3/34/IPhone_12_Blue.svg/1280px-IPhone_12_Blue.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 12 Mini"
+  },
+  "Apple iPhone|iPhone 11 Pro Max": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/IPhone_11_Pro_Midnight_Green.svg/1280px-IPhone_11_Pro_Midnight_Green.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 11 Pro Max"
+  },
+  "Apple iPhone|iPhone 11 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/IPhone_11_Pro_Midnight_Green.svg/1280px-IPhone_11_Pro_Midnight_Green.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 11 Pro"
+  },
+  "Apple iPhone|iPhone 11": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/54/IPhone_11_White.svg/1280px-IPhone_11_White.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone 11"
+  },
+  "Apple iPhone|iPhone XS Max": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/IPhone_XS_Gold.svg/1280px-IPhone_XS_Gold.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone XS Max"
+  },
+  "Apple iPhone|iPhone XS": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/0/06/IPhone_XS_Gold.svg/1280px-IPhone_XS_Gold.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "iPhone XS"
+  },
+  "Samsung|S26 Ultra": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9f/20260227_%EC%82%BC%EC%84%B1_%EA%B0%A4%EB%9F%AD%EC%8B%9C_S26_%EC%8B%9C%EB%A6%AC%EC%A6%88.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S26 Ultra"
+  },
+  "Samsung|S26+": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9f/20260227_%EC%82%BC%EC%84%B1_%EA%B0%A4%EB%9F%AD%EC%8B%9C_S26_%EC%8B%9C%EB%A6%AC%EC%A6%88.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S26+"
+  },
+  "Samsung|S26": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9f/20260227_%EC%82%BC%EC%84%B1_%EA%B0%A4%EB%9F%AD%EC%8B%9C_S26_%EC%8B%9C%EB%A6%AC%EC%A6%88.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S26"
+  },
+  "Samsung|S23 Ultra": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/79/Galaxy_S23.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S23 Ultra"
+  },
+  "Samsung|S23+": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/79/Galaxy_S23.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S23+"
+  },
+  "Samsung|S23": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/79/Galaxy_S23.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S23"
+  },
+  "Samsung|S22 Ultra": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8f/SamsungGalaxyS22Series.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S22 Ultra"
+  },
+  "Samsung|S22+": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8f/SamsungGalaxyS22Series.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S22+"
+  },
+  "Samsung|S22": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8f/SamsungGalaxyS22Series.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S22"
+  },
+  "Samsung|S21+": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/96/GalaxyS21.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S21+"
+  },
+  "Samsung|S21": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/96/GalaxyS21.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S21"
+  },
+  "Samsung|S21 FE": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/96/GalaxyS21.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S21 FE"
+  },
+  "Samsung|S20 Ultra": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/18/Galaxy_S20.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S20 Ultra"
+  },
+  "Samsung|S20+": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/18/Galaxy_S20.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S20+"
+  },
+  "Samsung|S20": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/18/Galaxy_S20.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S20"
+  },
+  "Samsung|S20 FE": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/18/Galaxy_S20.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S20 FE"
+  },
+  "Samsung|S10 Plus": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Samsung_S10_Phone.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S10 Plus"
+  },
+  "Samsung|S10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bf/Samsung_S10_Phone.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S10"
+  },
+  "Samsung|S9 Plus": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/10/Samsung_Galaxy_S9_and_S9_Plus.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S9 Plus"
+  },
+  "Samsung|S9": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/10/Samsung_Galaxy_S9_and_S9_Plus.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S9"
+  },
+  "Samsung|S8 Plus": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Samsung_Galaxy_S8_and_S8_Plus.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S8 Plus"
+  },
+  "Samsung|S8": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8e/Samsung_Galaxy_S8_and_S8_Plus.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy S8"
+  },
+  "Samsung|Note 20 Ultra": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/Samsung_Galaxy_Note_20_front.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Note 20 Ultra"
+  },
+  "Samsung|Note 20": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/Samsung_Galaxy_Note_20_front.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Note 20"
+  },
+  "Samsung|Note 10 Plus": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Samsung|Note 10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/e/eb/Samsung_Galaxy_Note_10_Phone.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Note 10"
+  },
+  "Samsung|Note 9": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Samsung_Galaxy_Note_9.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Note 9"
+  },
+  "Samsung|Note 8": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3b/Samsung_Galaxy_Note_8.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Note 8"
+  },
+  "Samsung|A55": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8b/Samsung_Galaxy_A55_5G_2024.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A55"
+  },
+  "Samsung|A35": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/ca/Samsung_Galaxy_A35_5G_2024_%281%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A35"
+  },
+  "Samsung|A15": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/78/Logo_Samsung_Galaxy_A15.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A15"
+  },
+  "Samsung|A05s": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/13/Samsung_Galaxy_A05s_2024.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A05s"
+  },
+  "Samsung|A54": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/95/Back_of_the_Samsung_Galaxy_A54_5G.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A54"
+  },
+  "Samsung|A34": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2b/%EC%82%BC%EC%84%B1_%EA%B0%A4%EB%9F%AD%EC%8B%9C_A34.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A34"
+  },
+  "Samsung|A24": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/%EC%82%BC%EC%84%B1_%EA%B0%A4%EB%9F%AD%EC%8B%9C_A24.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A24"
+  },
+  "Samsung|A14": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Samsung_Galaxy_A14_5G_2023_model_%28cropped%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A14"
+  },
+  "Samsung|A04s": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0b/Samsung_Galaxy_A04e_back_side%2C_with_the_copper_color.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A04s"
+  },
+  "Samsung|A73": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5d/Samsung_Galaxy_A73_5G_%2809-11-2022%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A73"
+  },
+  "Samsung|A53": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5a/SamsungGalaxyA535G.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A53"
+  },
+  "Samsung|A33": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/92/Samsung_Galaxy_A33_5G.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A33"
+  },
+  "Samsung|A23": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d4/Samsung_Galaxy_A23.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A23"
+  },
+  "Samsung|A13": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/d/dd/Samsung_Galaxy_A13_%28cropped%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A13"
+  },
+  "Samsung|A72": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8d/Samsung_Galaxy_A7_%282018%29.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A7 (2018)"
+  },
+  "Samsung|A52": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2a/Samsung-Galaxy-A52-Awesome-White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A52"
+  },
+  "Samsung|A22": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/52/HK_WC_%E7%81%A3%E4%BB%94%E9%81%93_Wan_Chai_Road_%E8%8C%82%E8%98%BF%E8%A1%97_Mallory_Street_shop_%E6%95%B8%E7%A2%BC%E9%80%9A_SmarTone_Digital_smartphone_window_display_June_2022_Px3_03_%28cropped%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A22"
+  },
+  "Samsung|A12": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6e/Galaxy_A12_front_and_Back.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A12"
+  },
+  "Samsung|A71": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/03/GalaxyA71.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A71"
+  },
+  "Samsung|A51": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/52/Samsung_Galaxy_A51_front.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A51"
+  },
+  "Samsung|A31": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/d7/Samsung_Galaxy_A_Series_Logo.svg/1280px-Samsung_Galaxy_A_Series_Logo.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A31"
+  },
+  "Samsung|A21s": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2c/20200903_%EC%82%BC%EC%84%B1_%EA%B0%A4%EB%9F%AD%EC%8B%9C_A21.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A21s"
+  },
+  "Samsung|A11": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6b/Samsung_Galaxy_A11_Logo.svg/1280px-Samsung_Galaxy_A11_Logo.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A11"
+  },
+  "Samsung|A70": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c7/GalaxyA70Phone.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A70"
+  },
+  "Samsung|A50": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/86/A_vector_illustration_of_the_front_of_the_Samsung_Galaxy_A50_in_Blue_3.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A50"
+  },
+  "Samsung|A30": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9f/Samsung_Galaxy_A30.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A30"
+  },
+  "Samsung|A20": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5b/%EC%82%BC%EC%84%B1_%EA%B0%A4%EB%9F%AD%EC%8B%9C_%EC%99%80%EC%9D%B4%EB%93%9C4.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A20"
+  },
+  "Samsung|A10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/07/GalaxyA10.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy A10"
+  },
+  "Samsung|Z Fold 6": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/0c/Samsung_Galaxy_Z_Fold6.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Z Fold 6"
+  },
+  "Samsung|Z Flip 6": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e3/%E4%B8%89%E6%98%9FGalaxy_Z_Flip6.png",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Z Flip 6"
+  },
+  "Samsung|Z Fold 5": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4d/Samsung_Galaxy_Fold_5.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Z Fold 5"
+  },
+  "Samsung|Z Flip 5": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f3/20230729_%EC%82%BC%EC%84%B1_%EA%B0%A4%EB%9F%AD%EC%8B%9C_Z_%ED%94%8C%EB%A6%BD5_%ED%8E%BC%EC%B9%9C%EC%83%81%ED%83%9C.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Z Flip 5"
+  },
+  "Samsung|Z Fold 4": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Samsung_Galaxy_Z_Fold_4.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Z Fold 4"
+  },
+  "Samsung|Z Flip 4": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1a/Front_of_the_Samsung_Galaxy_Z_Flip_4.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Samsung Galaxy Z Flip 4"
+  },
+  "OnePlus|OnePlus 13": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/95/OnePlus_13_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 13"
+  },
+  "OnePlus|OnePlus 13R": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1a/Oneplus_Nord_2.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus Nord"
+  },
+  "OnePlus|OnePlus 12": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3e/OnePlus_Ace_3_Black.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 12R"
+  },
+  "OnePlus|OnePlus 12R": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3e/OnePlus_Ace_3_Black.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 12R"
+  },
+  "OnePlus|OnePlus 11": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1a/Oneplus_Nord_2.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus Nord"
+  },
+  "OnePlus|OnePlus 11R": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1a/Oneplus_Nord_2.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus Nord"
+  },
+  "OnePlus|OnePlus 10 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/91/OnePlus_8_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 8 Pro"
+  },
+  "OnePlus|10R": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1a/Oneplus_Nord_2.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus Nord"
+  },
+  "OnePlus|9 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b3/OnePlus_9_Pro_Camera_Module_with_Hasselblad_logo.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 9 Pro"
+  },
+  "OnePlus|9": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b3/OnePlus_9_Pro_Camera_Module_with_Hasselblad_logo.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 9"
+  },
+  "OnePlus|9R": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/79/OnePlus_8T.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 9R"
+  },
+  "OnePlus|8 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/91/OnePlus_8_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 8 Pro"
+  },
+  "OnePlus|8": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/91/OnePlus_8_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 8"
+  },
+  "OnePlus|8T": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/79/OnePlus_8T.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 8T"
+  },
+  "OnePlus|7 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9d/OnePlus_7_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 7 Pro"
+  },
+  "OnePlus|7": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9d/OnePlus_7_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 7"
+  },
+  "OnePlus|7T": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1a/Oneplus_Nord_2.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus Nord"
+  },
+  "OnePlus|7T Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/91/OnePlus_8_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 8 Pro"
+  },
+  "OnePlus|6": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/40/OnePlus_6_Front1.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 6"
+  },
+  "OnePlus|6T": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/1d/Oneplus_6T.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "OnePlus 6T"
+  },
+  "OnePlus|Nord 4": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/6/68/Nord_140_4213.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Nord 4.061 to 4.340"
+  },
+  "OnePlus|Nord CE 4": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5a/N4-logo_black.png",
+    "provider": "wikipedia",
+    "searchTitle": "Nordic 4 Championship"
+  },
+  "OnePlus|Nord 3": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e9/Logo_NDR_Fernsehen_2017.svg/1280px-Logo_NDR_Fernsehen_2017.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Nord 3"
+  },
+  "OnePlus|Nord CE 3": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d4/CT.41.png",
+    "provider": "wikipedia",
+    "searchTitle": "Nord CT41"
+  },
+  "OnePlus|Nord CE 3 Lite": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "OnePlus|Nord 2": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/5b/Nord_260A_Super_Broussard.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Nord 260"
+  },
+  "OnePlus|Nord CE 2": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d4/CT.41.png",
+    "provider": "wikipedia",
+    "searchTitle": "Nord CT41"
+  },
+  "OnePlus|Nord CE 2 Lite": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "OnePlus|Nord N20": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b4/French_Nord_Noratlas.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Nord Noratlas"
+  },
+  "OnePlus|Nord N10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b4/French_Nord_Noratlas.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Nord Noratlas"
+  },
+  "Xiaomi / Redmi / POCO|Xiaomi 15 Ultra": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Xiaomi_15_Ultra_001.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 15 Ultra"
+  },
+  "Xiaomi / Redmi / POCO|14 Ultra": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c5/23116PN5BC.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 14 Ultra"
+  },
+  "Xiaomi / Redmi / POCO|14": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c5/23116PN5BC.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 14"
+  },
+  "Xiaomi / Redmi / POCO|13T Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/93/Shibuya-Tokyo---2024-08-28_064.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 13T Pro"
+  },
+  "Xiaomi / Redmi / POCO|13T": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/24/Xiaomi_13T_Series_sample.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 13T"
+  },
+  "Xiaomi / Redmi / POCO|13 Ultra": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/04/Xiaomi_13_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 13 Ultra"
+  },
+  "Xiaomi / Redmi / POCO|13": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/04/Xiaomi_13_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 13"
+  },
+  "Xiaomi / Redmi / POCO|12 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/21/Xiaomi_12.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 12 Pro"
+  },
+  "Xiaomi / Redmi / POCO|12": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/21/Xiaomi_12.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 12"
+  },
+  "Xiaomi / Redmi / POCO|12T": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c5/23116PN5BC.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 14"
+  },
+  "Xiaomi / Redmi / POCO|12T Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4c/Xiaomi_17_Pro_Max.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 17 Pro"
+  },
+  "Xiaomi / Redmi / POCO|11T": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cb/HK_MK_%E6%97%BA%E8%A7%92_Mongkok_%E5%BD%8C%E6%95%A6%E9%81%93_601_Nathan_Road_%E5%89%B5%E8%88%88%E5%BB%A3%E5%A0%B4_Chong_Hing_Square_shop_%E5%B0%8F%E7%B1%B3%E4%B9%8B%E5%AE%B6_%E6%97%97%E8%89%A6%E5%BA%97_XiaoMi_Store_December_2021_SS2_18.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 11T"
+  },
+  "Xiaomi / Redmi / POCO|11T Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cb/HK_MK_%E6%97%BA%E8%A7%92_Mongkok_%E5%BD%8C%E6%95%A6%E9%81%93_601_Nathan_Road_%E5%89%B5%E8%88%88%E5%BB%A3%E5%A0%B4_Chong_Hing_Square_shop_%E5%B0%8F%E7%B1%B3%E4%B9%8B%E5%AE%B6_%E6%97%97%E8%89%A6%E5%BA%97_XiaoMi_Store_December_2021_SS2_18.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Xiaomi 11T Pro"
+  },
+  "Xiaomi / Redmi / POCO|Mi 11 Lite": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c0/Veduta_di_Militello.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Militello in Val di Catania"
+  },
+  "Xiaomi / Redmi / POCO|Mi 10T": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Empresa_Estatal_de_Transporte_por_Cable_Mi_Telef%C3%A9rico_Logo.svg/1280px-Empresa_Estatal_de_Transporte_por_Cable_Mi_Telef%C3%A9rico_Logo.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Mi Teleférico"
+  },
+  "Xiaomi / Redmi / POCO|Redmi Note 14 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/be/Redmi_Note_12_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 12 Pro"
+  },
+  "Xiaomi / Redmi / POCO|Note 14 5G": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/be/Redmi_Note_12_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 12 5G"
+  },
+  "Xiaomi / Redmi / POCO|Note 13 Pro Plus": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/be/Redmi_Note_12_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 12 Pro Plus"
+  },
+  "Xiaomi / Redmi / POCO|Note 13 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/09/SZ_%E6%B7%B1%E5%9C%B3_Shenzhen_shop_%E5%B0%8F%E7%B1%B3%E7%B4%85%E7%B1%B3%E5%95%86%E5%BA%97_Xiaomi_Redmi_Store_May_2024_R12S_06.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 13 Pro"
+  },
+  "Xiaomi / Redmi / POCO|Note 13": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/09/SZ_%E6%B7%B1%E5%9C%B3_Shenzhen_shop_%E5%B0%8F%E7%B1%B3%E7%B4%85%E7%B1%B3%E5%95%86%E5%BA%97_Xiaomi_Redmi_Store_May_2024_R12S_06.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 13"
+  },
+  "Xiaomi / Redmi / POCO|Note 12 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/be/Redmi_Note_12_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 12 Pro"
+  },
+  "Xiaomi / Redmi / POCO|Note 12": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/be/Redmi_Note_12_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 12"
+  },
+  "Xiaomi / Redmi / POCO|Note 11 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/20/Redmi_Note_11_Pro_%28Star_Blue%29.png",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 11 Pro"
+  },
+  "Xiaomi / Redmi / POCO|Note 11": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/20/Redmi_Note_11_Pro_%28Star_Blue%29.png",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 11"
+  },
+  "Xiaomi / Redmi / POCO|Note 10 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/02/Xiaomi_Redmi_Note_10_Pro_%28Global%29_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 10 Pro"
+  },
+  "Xiaomi / Redmi / POCO|Note 10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/02/Xiaomi_Redmi_Note_10_Pro_%28Global%29_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 10"
+  },
+  "Xiaomi / Redmi / POCO|Note 9 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/05/Redmi_K30S.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 9 Pro 5G"
+  },
+  "Xiaomi / Redmi / POCO|Note 9": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/bd/Redmi_10X%284G%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 9"
+  },
+  "Xiaomi / Redmi / POCO|Note 8 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/77/Redmi_Note_8_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 8 Pro"
+  },
+  "Xiaomi / Redmi / POCO|Note 8": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/77/Redmi_Note_8_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi Note 8"
+  },
+  "Xiaomi / Redmi / POCO|Redmi 14C": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/ba/Redmi_katrina.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi"
+  },
+  "Xiaomi / Redmi / POCO|Redmi 14": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/ba/Redmi_katrina.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi"
+  },
+  "Xiaomi / Redmi / POCO|Redmi 13C": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/ba/Redmi_katrina.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi"
+  },
+  "Xiaomi / Redmi / POCO|Redmi 13": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/39/Redmi_13_Product_photography_05.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi 13"
+  },
+  "Xiaomi / Redmi / POCO|Redmi 12": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/73/Redmi_12_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi 12"
+  },
+  "Xiaomi / Redmi / POCO|Redmi 12C": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8a/Redmi_12C_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi 12C"
+  },
+  "Xiaomi / Redmi / POCO|Redmi 10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/6/6f/HK_MK_%E6%97%BA%E8%A7%92_Mongkok_%E5%BD%8C%E6%95%A6%E9%81%93_601_Nathan_Road_%E5%89%B5%E8%88%88%E5%BB%A3%E5%A0%B4_Chong_Hing_Square_shop_%E5%B0%8F%E7%B1%B3%E4%B9%8B%E5%AE%B6_%E6%97%97%E8%89%A6%E5%BA%97_XiaoMi_Store_December_2021_SS2_08.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi 10"
+  },
+  "Xiaomi / Redmi / POCO|Redmi A3": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/ba/Redmi_katrina.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi"
+  },
+  "Xiaomi / Redmi / POCO|Redmi A2 Plus": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9e/XiaomiRedmiNote5front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Redmi 5 Plus and Redmi Note 5"
+  },
+  "Xiaomi / Redmi / POCO|POCO F6 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Poco_M7_Pro_5G.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Poco M7 Pro 5G"
+  },
+  "Xiaomi / Redmi / POCO|F6": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/49/PocoBand07.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Poco (band)"
+  },
+  "Xiaomi / Redmi / POCO|X6 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Poco_M7_Pro_5G.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Poco M7 Pro 5G"
+  },
+  "Xiaomi / Redmi / POCO|X6": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/49/PocoBand07.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Poco (band)"
+  },
+  "Xiaomi / Redmi / POCO|M6 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/09/SZ_%E6%B7%B1%E5%9C%B3_Shenzhen_shop_%E5%B0%8F%E7%B1%B3%E7%B4%85%E7%B1%B3%E5%95%86%E5%BA%97_Xiaomi_Redmi_Store_May_2024_R12S_06.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "POCO M6 Pro"
+  },
+  "Xiaomi / Redmi / POCO|F5": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/be/Redmi_Note_12_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "POCO F5"
+  },
+  "Xiaomi / Redmi / POCO|X5 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/be/Redmi_Note_12_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "POCO X5 Pro"
+  },
+  "Xiaomi / Redmi / POCO|F4": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fe/The_back_of_Redmi_K40.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Poco F4"
+  },
+  "Xiaomi / Redmi / POCO|X4 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/cb/Poco_M7_Pro_5G.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Poco M7 Pro 5G"
+  },
+  "Xiaomi / Redmi / POCO|X3 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7c/Poco_X3_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Poco X3 Pro"
+  },
+  "Xiaomi / Redmi / POCO|X3 GT": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/02/Xiaomi_Redmi_Note_10_Pro_%28Global%29_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "POCO X3 GT"
+  },
+  "Xiaomi / Redmi / POCO|F3": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/fe/The_back_of_Redmi_K40.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Poco F3"
+  },
+  "Vivo / iQOO|V40 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|V40": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|V40 Lite": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Vivo / iQOO|V30 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|V30": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|V30e": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|V29 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Vivo_Mansion_%28Nanjing%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V15 Pro"
+  },
+  "Vivo / iQOO|V29": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|V29e": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|V27 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Vivo_Mansion_%28Nanjing%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V15 Pro"
+  },
+  "Vivo / iQOO|V27": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Vivo_Mansion_%28Nanjing%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V27"
+  },
+  "Vivo / iQOO|V25 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Vivo_Mansion_%28Nanjing%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V15 Pro"
+  },
+  "Vivo / iQOO|V25": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|V23 5G": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Vivo / iQOO|V23e": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|V21": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|V21e": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|V20": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|V19": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|Y200": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|Y100": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|Y38": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|Y28": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|Y18": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Vivo_Logo.svg/1280px-Vivo_Logo.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo Y400"
+  },
+  "Vivo / iQOO|Y17s": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Vivo_Mansion_%28Nanjing%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo Y19s"
+  },
+  "Vivo / iQOO|Y27": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|Y36": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|Y02s": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Vivo_Y20s_%28G%29_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo Y20g"
+  },
+  "Vivo / iQOO|Y22": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|Y35": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|Y16": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/17/Vivo_X60_Pro%2B_Orange.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X60"
+  },
+  "Vivo / iQOO|Y21": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|Y20": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Vivo_Y20s_%28G%29_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo Y20g"
+  },
+  "Vivo / iQOO|Y30": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|Y51": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Vivo_Logo.svg/1280px-Vivo_Logo.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo Y51"
+  },
+  "Vivo / iQOO|Y19": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a5/Vivo_Mansion_%28Nanjing%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo Y19s"
+  },
+  "Vivo / iQOO|Y15": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Vivo_Logo.svg/1280px-Vivo_Logo.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo Y400"
+  },
+  "Vivo / iQOO|Y12": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f6/Vivo_V20_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo V20"
+  },
+  "Vivo / iQOO|Y93": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|X100 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|X90 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/af/The_front_of_the_unreleased_vivo_X300_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Vivo X300 Pro"
+  },
+  "Vivo / iQOO|iQOO 12": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Vivo / iQOO|iQOO Neo 9": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Vivo / iQOO|iQOO Z9": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Oppo|Reno 12 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15 Pro"
+  },
+  "Oppo|Reno 12": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15"
+  },
+  "Oppo|Reno 11 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15 Pro"
+  },
+  "Oppo|Reno 11": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15"
+  },
+  "Oppo|Reno 11F": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15"
+  },
+  "Oppo|Reno 10 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15 Pro"
+  },
+  "Oppo|Reno 10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15"
+  },
+  "Oppo|Reno 8 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15 Pro"
+  },
+  "Oppo|Reno 8": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15"
+  },
+  "Oppo|Reno 8T": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15"
+  },
+  "Oppo|Reno 7": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15"
+  },
+  "Oppo|Reno 6 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15 Pro"
+  },
+  "Oppo|Reno 6": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f7/Oppo_Reno15_Aurora_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Reno15"
+  },
+  "Oppo|Reno 5": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Oppo|A60": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/90/OPPO_A38_in_Glowing_Gold.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo A18"
+  },
+  "Oppo|A38": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/90/OPPO_A38_in_Glowing_Gold.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo A38"
+  },
+  "Oppo|A18": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/90/OPPO_A38_in_Glowing_Gold.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo A18"
+  },
+  "Oppo|A78": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/8c/Oppo_R7_Plus_smartphone_%2826420357270%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo R7s"
+  },
+  "Oppo|A58": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Oppo|A98": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/90/OPPO_A38_in_Glowing_Gold.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo A18"
+  },
+  "Oppo|A17": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/95/R17_pro_%282%29.png",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo R17"
+  },
+  "Oppo|A57": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/95/R17_pro_%282%29.png",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo R17"
+  },
+  "Oppo|A77": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/95/R17_pro_%282%29.png",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo R17"
+  },
+  "Oppo|A96": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/90/OPPO_A38_in_Glowing_Gold.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo A18"
+  },
+  "Oppo|A76": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Oppo|A16": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Oppo|A54": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Oppo|A53": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Oppo|A15": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/95/R17_pro_%282%29.png",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo R17"
+  },
+  "Oppo|A5 2020": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/24/Oppo_A5_%282025%29_front_panel.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo A5 (2025)"
+  },
+  "Oppo|A9 2020": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/24/Oppo_A5_%282025%29_front_panel.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo A5 (2025)"
+  },
+  "Oppo|Find X7 Ultra": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Oppo_Find_X7_Ultra.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Find X7 Ultra"
+  },
+  "Oppo|Find X6 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/38/Oppo_Find_X6_Pro.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Oppo Find X6 Pro"
+  },
+  "Oppo|Find N3 Flip": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|GT 20 Pro": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|GT 10 Pro": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Zero 40": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Zero 30 5G": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Zero 30 4G": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Zero Ultra": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Zero 20": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Note 50 Pro": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Note 50": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Note 40 Pro": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Note 40": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Note 30 Pro": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Note 30": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Note 12": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Note 12 G96": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Note 11": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Note 10 Pro": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Hot 60 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Infinix_Hot_9_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Hot 9 Pro"
+  },
+  "Infinix|Hot 60i": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Hot 50 Pro Plus": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Hot 50": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Infinix_Hot_9_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Hot 9 Pro"
+  },
+  "Infinix|Hot 40 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Infinix_Hot_9_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Hot 9 Pro"
+  },
+  "Infinix|Hot 40": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Infinix_Hot_9_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Hot 9 Pro"
+  },
+  "Infinix|Hot 40i": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Hot 30": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Infinix_Hot_9_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Hot 9 Pro"
+  },
+  "Infinix|Hot 30i": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Infinix|Hot 20": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Infinix_Hot_9_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Hot 9 Pro"
+  },
+  "Infinix|Hot 12": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Infinix_Hot_9_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Hot 9 Pro"
+  },
+  "Infinix|Hot 11": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Infinix_Hot_9_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Hot 9 Pro"
+  },
+  "Infinix|Hot 10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Infinix_Hot_9_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Hot 9 Pro"
+  },
+  "Infinix|Hot 9": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9a/Infinix_Hot_9_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Hot 9 Pro"
+  },
+  "Infinix|Smart 8": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Infinix_Smart_10_series.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Smart 10"
+  },
+  "Infinix|Smart 7": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Infinix_Smart_10_series.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Smart 10"
+  },
+  "Infinix|Smart 6": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/a/a0/Infinix_Smart_10_series.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Infinix Smart 10"
+  },
+  "Tecno|Camon 30 Premier": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/ff/Tecno_Camon_15_Premier.png",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Camon 15 Premier"
+  },
+  "Tecno|Camon 30 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/86/Camon_12_Air_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Camon 12 Pro"
+  },
+  "Tecno|Camon 30": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/86/Camon_12_Air_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Camon 12"
+  },
+  "Tecno|Camon 20 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/86/Camon_12_Air_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Camon 12 Pro"
+  },
+  "Tecno|Camon 20": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d2/Camon_20_Premier_5G.png",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Camon 20"
+  },
+  "Tecno|Camon 19 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/86/Camon_12_Air_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Camon 12 Pro"
+  },
+  "Tecno|Camon 18": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/2e/Back_of_Tecno_Camon_18_Premier.png",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Camon 18"
+  },
+  "Tecno|Camon 17": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/8/86/Camon_12_Air_back.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Camon 12"
+  },
+  "Tecno|Spark 20 Pro Plus": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Tecno|Spark 20 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/99/Tecno_Spark_20.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Spark 20 Pro"
+  },
+  "Tecno|Spark 20": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/99/Tecno_Spark_20.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Spark 20"
+  },
+  "Tecno|Spark 20C": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/99/Tecno_Spark_20.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Spark 20"
+  },
+  "Tecno|Spark 10 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/99/Tecno_Spark_20.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Spark 20 Pro"
+  },
+  "Tecno|Spark 10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/2/27/Back_of_Spark_10_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Spark 10"
+  },
+  "Tecno|Spark 8 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/99/Tecno_Spark_20.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Spark 20 Pro"
+  },
+  "Tecno|Spark 7": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/99/Tecno_Spark_20.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Spark 20"
+  },
+  "Tecno|Pova 6 Pro": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Tecno|Pova 6": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Tecno|Pova 5 Pro": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Tecno|Pova 4": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Tecno|Pop 8": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Tecno_Pouvoir_4_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Pouvoir 4"
+  },
+  "Tecno|Pop 7": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3f/Tecno_Pouvoir_4_Pro.png",
+    "provider": "wikipedia",
+    "searchTitle": "Tecno Pouvoir 4"
+  },
+  "Google Pixel|Pixel 10 Pro XL": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Pixel_10_Pro_Fold_inside_%28Moonstone%29.svg/1280px-Pixel_10_Pro_Fold_inside_%28Moonstone%29.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 10 Pro Fold"
+  },
+  "Google Pixel|Pixel 10 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e8/Pixel_10_Pro_Fold_inside_%28Moonstone%29.svg/1280px-Pixel_10_Pro_Fold_inside_%28Moonstone%29.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 10 Pro Fold"
+  },
+  "Google Pixel|Pixel 10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/ec/Pixel_10_front_%28Indigo%29.svg/1280px-Pixel_10_front_%28Indigo%29.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 10"
+  },
+  "Google Pixel|Pixel 9 Pro XL": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg/1280px-Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 9 Pro Fold"
+  },
+  "Google Pixel|Pixel 9 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg/1280px-Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 9 Pro Fold"
+  },
+  "Google Pixel|Pixel 9": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg/1280px-Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 9 Pro Fold"
+  },
+  "Google Pixel|Pixel 9a": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/29/Google_Pixel_9a_%28Peony%29_front.svg/1280px-Google_Pixel_9a_%28Peony%29_front.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 9a"
+  },
+  "Google Pixel|Pixel 8 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg/1280px-Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 9 Pro Fold"
+  },
+  "Google Pixel|Pixel 8": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Google_Pixel_8a_front.svg/1280px-Google_Pixel_8a_front.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 8a"
+  },
+  "Google Pixel|Pixel 8a": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/5/56/Google_Pixel_8a_front.svg/1280px-Google_Pixel_8a_front.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 8a"
+  },
+  "Google Pixel|Pixel 7 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg/1280px-Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 9 Pro Fold"
+  },
+  "Google Pixel|Pixel 7": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Pixel_7a_%282023%29.svg/1280px-Pixel_7a_%282023%29.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 7a"
+  },
+  "Google Pixel|Pixel 7a": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/2/22/Pixel_7a_%282023%29.svg/1280px-Pixel_7a_%282023%29.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 7a"
+  },
+  "Google Pixel|Pixel 6 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/9d/Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg/1280px-Google_Pixel_9_Pro_Fold_%28Porcelain%29_unfolded.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 9 Pro Fold"
+  },
+  "Google Pixel|Pixel 6": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Pixel_6a_%282022%29.svg/1280px-Pixel_6a_%282022%29.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 6a"
+  },
+  "Google Pixel|Pixel 6a": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/6/6e/Pixel_6a_%282022%29.svg/1280px-Pixel_6a_%282022%29.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 6a"
+  },
+  "Google Pixel|Pixel 5": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/4/47/Pixel_5_%282020%29.svg/1280px-Pixel_5_%282020%29.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 5"
+  },
+  "Google Pixel|Pixel 4 XL": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Pixel_4_schematic.svg/1280px-Pixel_4_schematic.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 4 XL"
+  },
+  "Google Pixel|Pixel 4": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/9/94/Pixel_4_schematic.svg/1280px-Pixel_4_schematic.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 4"
+  },
+  "Google Pixel|Pixel 3 XL": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Pixel_3_schematic.svg/1280px-Pixel_3_schematic.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 3 XL"
+  },
+  "Google Pixel|Pixel 3": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/b/b2/Pixel_3_schematic.svg/1280px-Pixel_3_schematic.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Google Pixel 3"
+  },
+  "Realme|Realme 13 Pro+": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Realme-realme-_logo_box-RGB-01.svg/1280px-Realme-realme-_logo_box-RGB-01.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realme X2 Pro"
+  },
+  "Realme|13": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Realme_6_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme 6"
+  },
+  "Realme|12 Pro+": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Realme-realme-_logo_box-RGB-01.svg/1280px-Realme-realme-_logo_box-RGB-01.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realme X2 Pro"
+  },
+  "Realme|12": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Realme_6_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme 6"
+  },
+  "Realme|11 Pro+": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Realme-realme-_logo_box-RGB-01.svg/1280px-Realme-realme-_logo_box-RGB-01.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realme X2 Pro"
+  },
+  "Realme|11": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Realme_6_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme 6"
+  },
+  "Realme|10 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Realme-realme-_logo_box-RGB-01.svg/1280px-Realme-realme-_logo_box-RGB-01.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realme X2 Pro"
+  },
+  "Realme|10": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Realme_6_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme 6"
+  },
+  "Realme|9 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Realme-realme-_logo_box-RGB-01.svg/1280px-Realme-realme-_logo_box-RGB-01.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realme X2 Pro"
+  },
+  "Realme|9": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Coronation_Standard_of_New_Zealand.svg/1280px-Coronation_Standard_of_New_Zealand.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realm of New Zealand"
+  },
+  "Realme|8 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Realme-realme-_logo_box-RGB-01.svg/1280px-Realme-realme-_logo_box-RGB-01.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realme X2 Pro"
+  },
+  "Realme|8": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/e0/Coronation_Standard_of_New_Zealand.svg/1280px-Coronation_Standard_of_New_Zealand.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realm of New Zealand"
+  },
+  "Realme|7 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Realme-realme-_logo_box-RGB-01.svg/1280px-Realme-realme-_logo_box-RGB-01.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realme X2 Pro"
+  },
+  "Realme|7": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b2/Realme7mistwhite.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme 7"
+  },
+  "Realme|6 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Realme-realme-_logo_box-RGB-01.svg/1280px-Realme-realme-_logo_box-RGB-01.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realme X2 Pro"
+  },
+  "Realme|6": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Realme_6_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme 6"
+  },
+  "Realme|5 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Realme-realme-_logo_box-RGB-01.svg/1280px-Realme-realme-_logo_box-RGB-01.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Realme X2 Pro"
+  },
+  "Realme|5": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/35/Realme_5_phone_image.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme 5"
+  },
+  "Realme|C67": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Realme_6_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme 6"
+  },
+  "Realme|C65": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Realme_6_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme 6"
+  },
+  "Realme|C53": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Realme|C51": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Realme|C35": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ea/Front_of_realme_C35.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme C35"
+  },
+  "Realme|C33": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Realme|C30": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Realme|C25s": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Realme|C21": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Realme|C15": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Realme|C12": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Realme|C11": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/92/Smartphone_Realme_C11_%282021%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme C11"
+  },
+  "Realme|GT 6": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/3d/Realme_6_White.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Realme 6"
+  },
+  "Realme|GT 6T": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b6/Cr1TiKaL_in_2022.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Real to Me (The Gentle Men song)"
+  },
+  "Realme|GT Neo 5": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Realme|GT Master Edition": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Motorola|Edge 50 Ultra": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Motorola|Edge 50 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Motorola_Edge_60_Pro_%28cropped%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Edge 60 Pro"
+  },
+  "Motorola|Edge 50 Fusion": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/11/Motorola_Edge.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Edge 20 Fusion"
+  },
+  "Motorola|Edge 50": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/11/Motorola_Edge.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Edge 50 Neo"
+  },
+  "Motorola|Edge 40 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Motorola_Edge_60_Pro_%28cropped%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Edge 60 Pro"
+  },
+  "Motorola|Edge 40": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Motorola_Edge_60_Pro_%28cropped%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Edge 60 Pro"
+  },
+  "Motorola|Edge 30 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/9/9d/Motorola_Edge_60_Pro_%28cropped%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Edge 60 Pro"
+  },
+  "Motorola|Edge 30 Fusion": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/11/Motorola_Edge.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Edge 20 Fusion"
+  },
+  "Motorola|Edge 30": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/1/11/Motorola_Edge.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Edge 30"
+  },
+  "Motorola|Moto G85": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Motorola_Moto_G2.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Moto G (2nd generation)"
+  },
+  "Motorola|Moto G84": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Motorola_Moto_G2.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Moto G (2nd generation)"
+  },
+  "Motorola|Moto G73": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Motorola_Moto_G2.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Moto G (2nd generation)"
+  },
+  "Motorola|Moto G54": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Motorola_Moto_G2.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Moto G (2nd generation)"
+  },
+  "Motorola|Moto G34": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Motorola_Moto_G2.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Moto G (2nd generation)"
+  },
+  "Motorola|Moto G24": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Motorola_Moto_G2.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Moto G (2nd generation)"
+  },
+  "Motorola|Moto G14": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/f/f4/Motorola_Moto_G2.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Moto G (2nd generation)"
+  },
+  "Motorola|Moto G Play": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/3/33/Moto_Z_Hasselblad_True_Zoom_%2832664949012%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Moto Z Play"
+  },
+  "Motorola|Moto G Power": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/d/d8/Moto_G7_Plus.png",
+    "provider": "wikipedia",
+    "searchTitle": "Moto G7 Power"
+  },
+  "Motorola|Moto G Stylus": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Motorola|Razr 50 Ultra": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Motorola|Razr 40 Ultra": {
+    "sourceUrl": null,
+    "provider": "catalog-svg",
+    "searchTitle": null
+  },
+  "Motorola|Razr 40": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/56/Motorola_Razr_V3_montage_closed_open.png",
+    "provider": "wikipedia",
+    "searchTitle": "Motorola Razr V3"
+  },
+  "Nothing Phone|Nothing Phone (2a)": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/b/b7/Nothing-Design-Event-Tokyo-2024-07-05_018.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Nothing Phone (2a)"
+  },
+  "Nothing Phone|Nothing Phone (2)": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/c/c8/Nothing_phone_%282%29_%28Booredatwork.com%29_013.png",
+    "provider": "wikipedia",
+    "searchTitle": "Nothing Phone (2)"
+  },
+  "Nothing Phone|Nothing Phone (1)": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/thumb/e/eb/Nothing_phone%281%29_White_%28back%29.svg/1280px-Nothing_phone%281%29_White_%28back%29.svg.png",
+    "provider": "wikipedia",
+    "searchTitle": "Nothing Phone (1)"
+  },
+  "Nothing Phone|CMF Phone 1": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/49/CMF_Phone_2_Pro_%28white%29_2025-05-08.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "CMF Phone 2 Pro"
+  },
+  "Honor|Honor 200 Pro": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ed/HONOR_20_PRO.png",
+    "provider": "wikipedia",
+    "searchTitle": "Honor 20 Pro"
+  },
+  "Honor|Honor 200": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/e/ed/HONOR_20_PRO.png",
+    "provider": "wikipedia",
+    "searchTitle": "Honor 20"
+  },
+  "Honor|Honor 90": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/en/7/7d/Honor_of_Kings_logo.png",
+    "provider": "wikipedia",
+    "searchTitle": "Honor of Kings"
+  },
+  "Honor|Honor X9b": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/57/Honor_X9b.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Honor X9b"
+  },
+  "Honor|Honor X8b": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Honor_Blackman_%28cropped%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Honor Blackman"
+  },
+  "Honor|Honor X7b": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/4/4e/Honor_Blackman_%28cropped%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Honor Blackman"
+  },
+  "Honor|Honor 70": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/en/7/7d/Honor_of_Kings_logo.png",
+    "provider": "wikipedia",
+    "searchTitle": "Honor of Kings"
+  },
+  "Itel|S24": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/7/7b/Itel_S23_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Itel S23"
+  },
+  "Itel|P55+": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/e/e2/Itel_P65_in_Cyber_Blaze_%28red%2C_front%29.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Itel P65"
+  },
+  "Itel|P55": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/59/Itel_A50_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Itel A50"
+  },
+  "Itel|A70": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/5/59/Itel_A50_front.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "Itel A50"
+  },
+  "Itel|Vision 3": {
+    "sourceUrl": "https://upload.wikimedia.org/wikipedia/commons/0/03/ITV_Matsuyama_HQ_20090808-001.jpg",
+    "provider": "wikipedia",
+    "searchTitle": "I-Television"
+  }
+}

@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { useTranslation } from '../context/LanguageContext';
 import SearchBrandIcon from './nav/SearchBrandIcon';
 import { getShopBrandIdFromRepairBrand } from '../utils/brandIcon';
+import ModelThumb from './ModelThumb';
 
 export default function RepairModelsPanel() {
   const { t } = useTranslation();
@@ -33,7 +34,8 @@ export default function RepairModelsPanel() {
                         to={generalRepairQuoteContactPath(`${group.brand} ${model}`)}
                         className="repair-model-chip"
                       >
-                        {model}
+                        <ModelThumb brand={group.brand} model={model} />
+                        <span>{model}</span>
                       </Link>
                     ))}
                   </div>

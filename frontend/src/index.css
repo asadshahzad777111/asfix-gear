@@ -1002,7 +1002,10 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 .repair-model-chip {
-  padding: 0.35rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem 0.3rem 0.3rem;
   border-radius: 999px;
   font-size: 0.75rem;
   font-weight: 600;
@@ -1012,6 +1015,32 @@ img { max-width: 100%; height: auto; display: block; }
   -webkit-backdrop-filter: var(--glass-blur);
   color: var(--text-muted);
   transition: all 0.2s ease;
+}
+
+.model-thumb {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+  border-radius: 6px;
+  background: #f1f5f9;
+  flex-shrink: 0;
+}
+
+.model-thumb--fallback {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #64748b;
+}
+
+.home-model-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  margin-bottom: 0.25rem;
+  background: #f8fafc;
 }
 
 .repair-model-chip:hover {
@@ -3691,7 +3720,10 @@ body.modal-open .guest-welcome-banner {
 }
 
 .phone-finder-model-chip {
-  padding: 0.5rem 0.9rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.35rem 0.9rem 0.35rem 0.35rem;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-card);
@@ -3699,6 +3731,11 @@ body.modal-open .guest-welcome-banner {
   font-size: 0.82rem;
   cursor: pointer;
   transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.phone-finder-model-chip .model-thumb {
+  width: 30px;
+  height: 30px;
 }
 
 .phone-finder-model-chip:hover {

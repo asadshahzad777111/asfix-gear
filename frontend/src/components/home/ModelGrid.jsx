@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { REPAIR_DEVICE_BRANDS, generalRepairQuoteContactPath } from '../../config/repairModels';
 import { useTranslation } from '../../context/LanguageContext';
+import ModelThumb from '../ModelThumb';
 
 const POPULAR_MODELS = REPAIR_DEVICE_BRANDS.flatMap((group) => {
   const models = group.series.flatMap((series) => series.models);
@@ -29,6 +30,7 @@ export default function ModelGrid() {
               to={generalRepairQuoteContactPath(`${brand} ${model}`)}
               className="home-model-card"
             >
+              <ModelThumb brand={brand} model={model} className="home-model-thumb" />
               <span className="home-model-brand">{brand}</span>
               <span className="home-model-name">{model}</span>
               <span className="home-model-hint">{t('home.modelQuoteHint')}</span>

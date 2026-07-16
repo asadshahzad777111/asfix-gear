@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="720" height="720" viewBox="0 0 720 720">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f8fafc"/>
+      <stop offset="100%" stop-color="#e2e8f0"/>
+    </linearGradient>
+  </defs>
+  <rect width="720" height="720" fill="url(#bg)"/>
+  <rect x="250" y="90" width="220" height="440" rx="36" fill="#0f172a"/>
+  <rect x="262" y="110" width="196" height="380" rx="16" fill="#f8fafc"/>
+  <circle cx="360" cy="500" r="14" fill="#334155"/>
+  <rect x="320" y="122" width="80" height="10" rx="5" fill="#cbd5e1"/>
+  <rect x="60" y="580" width="600" height="8" rx="4" fill="#111111"/>
+  <text x="360" y="620" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#0f172a">Nothing Phone (2)</text>
+  <text x="360" y="650" text-anchor="middle" font-family="Segoe UI, Helvetica, Arial, sans-serif" font-size="14" fill="#64748b">Nothing Phone</text>
+</svg>

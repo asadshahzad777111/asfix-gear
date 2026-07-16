@@ -261,6 +261,10 @@
   transition: transform 0.2s ease, border-color 0.2s ease;
 }
 
+.home-model-card .home-model-thumb {
+  align-self: flex-start;
+}
+
 .home-model-card:hover {
   transform: translateY(-2px);
   border-color: rgba(124, 58, 237, 0.35);

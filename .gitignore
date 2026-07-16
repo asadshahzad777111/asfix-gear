@@ -5,3 +5,6 @@ dist/
 .env
 *.log
 .DS_Store
+scripts/model-images/node_modules/
+scripts/model-images/_cache/
+scripts/model-images/finalize-log.txt

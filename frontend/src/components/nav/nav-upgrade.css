@@ -675,7 +675,10 @@ body {
 }
 
 .nav-mega-model-chip {
-  padding: 0.35rem 0.65rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.65rem 0.3rem 0.3rem;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: var(--bg-elevated, transparent);
@@ -684,6 +687,11 @@ body {
   text-decoration: none;
   white-space: nowrap;
   transition: border-color 0.15s ease, color 0.15s ease, background 0.15s ease;
+}
+
+.nav-mega-model-chip .model-thumb {
+  width: 26px;
+  height: 26px;
 }
 
 .nav-mega-model-chip:hover {
@@ -773,6 +781,16 @@ body {
 .nav-drawer-accordion-link:hover {
   background: var(--nav-hover);
   color: var(--text);
+}
+
+.nav-drawer-model-link {
+  gap: 0.55rem;
+  padding-left: 1.35rem;
+}
+
+.nav-drawer-model-link .model-thumb {
+  width: 32px;
+  height: 32px;
 }
 
 .nav-drawer-accordion-link--btn {

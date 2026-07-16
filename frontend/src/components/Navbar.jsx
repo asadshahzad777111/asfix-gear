@@ -2,8 +2,9 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { generalContactPath } from '../config/shop';
 import { MODEL_SPECIFIC_CATEGORIES, SHOP_BRANDS, SHOP_CATEGORIES } from '../config/products';
-import { getSeriesForShopBrand } from '../config/repairModels';
+import { getSeriesForShopBrand, SHOP_BRAND_TO_REPAIR_BRAND } from '../config/repairModels';
 import SearchBrandIcon from './nav/SearchBrandIcon';
+import ModelThumb from './ModelThumb';
 import { useAuth } from '../context/AuthContext';
 import useNavDrawerThumb from '../hooks/useNavDrawerThumb';
 import OpenBadge from './OpenBadge';
@@ -249,11 +250,15 @@ export default function Navbar() {
                           series.models.map((model) => (
                             <Link
                               key={`${series.name}-${model}`}
-                              className="nav-drawer-accordion-link"
+                              className="nav-drawer-accordion-link nav-drawer-model-link"
                               to={`/shop?brand=${encodeURIComponent(shopMobileBrand)}&search=${encodeURIComponent(model)}`}
                               onClick={closeMenu}
                             >
-                              {model}
+                              <ModelThumb
+                                brand={SHOP_BRAND_TO_REPAIR_BRAND[shopMobileBrand]}
+                                model={model}
+                              />
+                              <span>{model}</span>
                             </Link>
                           ))
                         )}

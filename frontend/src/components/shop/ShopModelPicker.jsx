@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
-import { getSeriesForShopBrand } from '../../config/repairModels';
+import { getSeriesForShopBrand, SHOP_BRAND_TO_REPAIR_BRAND } from '../../config/repairModels';
 import { useTranslation } from '../../context/LanguageContext';
 import SearchBrandIcon from '../nav/SearchBrandIcon';
+import ModelThumb from '../ModelThumb';
 
 const OPEN_GUARD_MS = 450;
 const PANEL_GAP_PX = 6;
@@ -183,7 +184,8 @@ export default function ShopModelPicker({ brand, selectedModel, onSelectModel, o
                       className={`phone-finder-model-chip ${selectedModel === model ? 'is-selected' : ''}`}
                       onClick={() => pickModel(model)}
                     >
-                      {model}
+                      <ModelThumb brand={SHOP_BRAND_TO_REPAIR_BRAND[brand.id]} model={model} />
+                      <span>{model}</span>
                     </button>
                   ))}
                 </div>

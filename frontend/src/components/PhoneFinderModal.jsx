@@ -2,10 +2,11 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import { SHOP_BRANDS } from '../config/products';
-import { getSeriesForShopBrand } from '../config/repairModels';
+import { getSeriesForShopBrand, SHOP_BRAND_TO_REPAIR_BRAND } from '../config/repairModels';
 import { useTranslation } from '../context/LanguageContext';
 import useModalBehavior from '../hooks/useModalBehavior';
 import SearchBrandIcon from './nav/SearchBrandIcon';
+import ModelThumb from './ModelThumb';
 
 /**
  * Guided "which company? → which model?" picker for model-specific
@@ -180,7 +181,8 @@ function PhoneFinderModelStep({ brand, series, onBack, onSelectModel, onViewAllB
                     className="phone-finder-model-chip"
                     onClick={() => onSelectModel(model)}
                   >
-                    {model}
+                    <ModelThumb brand={SHOP_BRAND_TO_REPAIR_BRAND[brand.id]} model={model} />
+                    <span>{model}</span>
                   </button>
                 ))}
               </div>

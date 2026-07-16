@@ -2,10 +2,11 @@ import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import { SHOP_BRANDS, SHOP_CATEGORIES, MODEL_SPECIFIC_CATEGORIES } from '../../config/products';
-import { getSeriesForShopBrand } from '../../config/repairModels';
+import { getSeriesForShopBrand, SHOP_BRAND_TO_REPAIR_BRAND } from '../../config/repairModels';
 import { useTranslation } from '../../context/LanguageContext';
 import PhoneFinderModal from '../PhoneFinderModal';
 import SearchBrandIcon from './SearchBrandIcon';
+import ModelThumb from '../ModelThumb';
 
 const PANEL_GAP_PX = 12;
 
@@ -219,7 +220,11 @@ export default function ShopMegaMenu() {
                       className="nav-mega-model-chip"
                       onClick={closeMenu}
                     >
-                      {model}
+                      <ModelThumb
+                        brand={SHOP_BRAND_TO_REPAIR_BRAND[activeBrandData.id]}
+                        model={model}
+                      />
+                      <span>{model}</span>
                     </Link>
                   ))}
                 </div>
