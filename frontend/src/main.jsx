@@ -28,21 +28,9 @@ import './loco.css';
 import './shop-ui.css';
 import { registerSW } from 'virtual:pwa-register';
 
-// Auto-apply new SW builds (skipWaiting + clients.claim) and re-check on tab focus
-const updateSW = registerSW({
-  immediate: true,
-  onNeedRefresh() {
-    updateSW(true);
-  },
-  onRegisteredSW(_url, registration) {
-    if (!registration) return;
-    const ping = () => registration.update().catch(() => {});
-    document.addEventListener('visibilitychange', () => {
-      if (document.visibilityState === 'visible') ping();
-    });
-    setInterval(ping, 60 * 60 * 1000);
-  },
-});
+// Register the self-destroying SW so any prior controlling worker is replaced,
+// caches are cleared, and the SW unregisters itself (no sticky offline shell).
+registerSW({ immediate: true });
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

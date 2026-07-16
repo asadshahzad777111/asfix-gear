@@ -17,38 +17,11 @@ export default defineConfig({
   plugins: [
     react(),
     VitePWA({
+      // One-release kill switch: new sw.js unregisters itself and deletes all
+      // caches on activate so stale apex/www shells cannot stick after deploy.
+      selfDestroying: true,
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
-      workbox: {
-        // Force new SW to take over immediately so hard-refresh isn't required forever
-        skipWaiting: true,
-        clientsClaim: true,
-        cleanupOutdatedCaches: true,
-        // Do not precache HTML — stale index.html shells are what trap apex/www
-        // visitors on old builds when a service worker is controlling the tab.
-        globPatterns: ['**/*.{js,css,ico,svg,woff2}'],
-        navigateFallback: '/index.html',
-        navigateFallbackDenylist: [/^\/api\//],
-        runtimeCaching: [
-          {
-            urlPattern: ({ request }) => request.mode === 'navigate',
-            handler: 'NetworkFirst',
-            options: {
-              cacheName: 'asfix-pages',
-              networkTimeoutSeconds: 3,
-              expiration: { maxEntries: 8, maxAgeSeconds: 60 * 60 * 24 },
-            },
-          },
-          {
-            urlPattern: /^https:\/\/fonts\.(googleapis|gstatic)\.com\/.*/i,
-            handler: 'CacheFirst',
-            options: {
-              cacheName: 'google-fonts',
-              expiration: { maxEntries: 10, maxAgeSeconds: 60 * 60 * 24 * 365 },
-            },
-          },
-        ],
-      },
       manifest: {
         name: 'AsFix & Gear',
         short_name: 'AsFix',

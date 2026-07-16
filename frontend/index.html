@@ -53,32 +53,37 @@
       })();
     </script>
     <script>
-      // Apex (asfixgear.com) and www are separate origins. An old apex service
-      // worker can keep serving a stale shell forever if apex only 308s to www
-      // (SW updates cannot follow cross-origin redirects). Kill apex SW + caches,
-      // then send the user to www once this HTML actually loads.
+      // Apex + www share one Vercel production deploy, but a stale apex service
+      // worker can still trap the tab on an old shell. Purge SW + Cache Storage
+      // once per session, then hard-reload so first paint is the live SPA —
+      // stay on asfixgear.com (no www redirect required).
       (function () {
-        if (location.hostname !== 'asfixgear.com') return;
-        var dest = 'https://www.asfixgear.com' + location.pathname + location.search + location.hash;
-        var go = function () {
-          if (sessionStorage.getItem('asfix_apex_migrated') === '1') return;
-          sessionStorage.setItem('asfix_apex_migrated', '1');
-          location.replace(dest);
-        };
-        var clear = Promise.resolve();
+        var host = location.hostname;
+        if (host !== 'asfixgear.com' && host !== 'www.asfixgear.com') return;
+        var KEY = 'asfix_sw_purged_v3';
+        if (sessionStorage.getItem(KEY) === '1') return;
+        var hadController = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+        sessionStorage.setItem(KEY, '1');
+        var tasks = [];
         if ('serviceWorker' in navigator) {
-          clear = navigator.serviceWorker.getRegistrations().then(function (regs) {
-            return Promise.all(regs.map(function (r) { return r.unregister(); }));
-          });
+          tasks.push(
+            navigator.serviceWorker.getRegistrations().then(function (regs) {
+              return Promise.all(regs.map(function (r) { return r.unregister(); }));
+            })
+          );
         }
-        clear
-          .then(function () {
-            if (!window.caches || !caches.keys) return;
-            return caches.keys().then(function (keys) {
+        if (window.caches && caches.keys) {
+          tasks.push(
+            caches.keys().then(function (keys) {
               return Promise.all(keys.map(function (k) { return caches.delete(k); }));
-            });
-          })
-          .then(go, go);
+            })
+          );
+        }
+        Promise.all(tasks).then(function () {
+          if (hadController) location.reload();
+        }, function () {
+          if (hadController) location.reload();
+        });
       })();
     </script>
   </head>
