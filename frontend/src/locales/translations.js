@@ -324,6 +324,7 @@ export const translations = {
     },
     reviews: {
       viewProduct: 'View product',
+      verifiedBuyer: 'Verified Buyer',
     },
     admin: {
       messages: 'Customer Chats',
@@ -940,6 +941,16 @@ export const translations = {
       reviewsTitle: 'Customer reviews',
       reviewsEmpty: 'No published reviews for this product yet.',
       relatedTitle: 'Related products',
+      quickView: 'Quick view',
+      closeQuickView: 'Close',
+      viewDetails: 'View full details',
+      addWishlist: 'Add to wishlist',
+      removeWishlist: 'Remove from wishlist',
+      quantity: 'Quantity',
+      decreaseQty: 'Decrease quantity',
+      increaseQty: 'Increase quantity',
+      expandImage: 'Expand image',
+      swipePhotos: 'Swipe for more photos',
     },
     gaming: {
       badge: 'AsFix & Gear — Gaming Zone',
@@ -1426,6 +1437,7 @@ export const translations = {
     },
     reviews: {
       viewProduct: 'Product dekhein',
+      verifiedBuyer: 'Verified Buyer',
     },
     admin: {
       messages: 'Customer Chats',
@@ -2042,6 +2054,16 @@ export const translations = {
       reviewsTitle: 'Customer reviews',
       reviewsEmpty: 'Is product ki published review abhi nahi.',
       relatedTitle: 'Related products',
+      quickView: 'Quick view',
+      closeQuickView: 'Band karein',
+      viewDetails: 'Poori details dekhein',
+      addWishlist: 'Wishlist mein add karein',
+      removeWishlist: 'Wishlist se hata dein',
+      quantity: 'Quantity',
+      decreaseQty: 'Quantity kam karein',
+      increaseQty: 'Quantity barhayein',
+      expandImage: 'Image bara karein',
+      swipePhotos: 'Swipe karein — aur photos',
     },
     gaming: {
       badge: 'AsFix & Gear — Gaming Zone',

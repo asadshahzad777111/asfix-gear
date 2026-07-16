@@ -1721,6 +1721,7 @@ function feedbackRow(order, data) {
     order_id: order.id,
     order_ref: order.order_id || formatOrderId(order.id),
     customer_name: order.customer_name || 'Customer',
+    city: order.city || '',
     rating: fb.rating,
     comment: fb.comment || '',
     status: fb.status || 'pending',

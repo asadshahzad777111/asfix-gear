@@ -54,11 +54,14 @@ export function CartProvider({ children }) {
     persistCart(items);
   }, [items]);
 
-  const addItem = useCallback((product, fromRect) => {
+  const addItem = useCallback((product, fromRect, qty = 1) => {
     if (!product || !isPublishedProduct(product) || !isInStock(product.stock)) return;
+    const limit = maxCartQty(product);
+    const addQty = Math.max(1, Math.min(Number(qty) || 1, limit || 1));
     setFly({
       product,
       fromRect,
+      qty: addQty,
       id: `${product.id}-${Date.now()}`,
     });
   }, []);
@@ -74,17 +77,18 @@ export function CartProvider({ children }) {
       return;
     }
     setItems((prev) => {
+      const addQty = Math.max(1, Math.min(fly?.qty ?? 1, limit));
       const idx = prev.findIndex((i) => i.id === product.id);
       if (idx >= 0) {
         const next = [...prev];
-        next[idx] = { ...next[idx], qty: Math.min(next[idx].qty + 1, limit), stock: product.stock };
+        next[idx] = { ...next[idx], qty: Math.min(next[idx].qty + addQty, limit), stock: product.stock };
         return next;
       }
-      return [...prev, { ...product, qty: 1 }];
+      return [...prev, { ...product, qty: addQty }];
     });
     setFly(null);
     setOpen(true);
-  }, []);
+  }, [fly]);
 
   const removeItem = useCallback((id) => {
     setItems((prev) => prev.filter((i) => i.id !== id));

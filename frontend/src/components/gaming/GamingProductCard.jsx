@@ -1,6 +1,7 @@
 import { motion } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { getDefaultImage } from '../../config/products';
 import { useCart } from '../../context/CartContext';
 import { playProductJump } from '../../utils/gamingSound';
 import { DiscountRibbon, ProductPrice } from '../DiscountPicker';
@@ -11,6 +12,11 @@ import CustomerLoginModal from '../CustomerLoginModal';
 import { useTranslation } from '../../context/LanguageContext';
 import { getStockStatus, isInStock, isOutOfStock, normalizeStock } from '../../utils/stock';
 import useProductPop from '../../hooks/useProductPop';
+import useProductCardImage from '../../hooks/useProductCardImage';
+import useWishlist from '../../hooks/useWishlist';
+import ProductCardImageStack from '../ProductCardImageStack';
+import ProductCardHoverActions from '../ProductCardHoverActions';
+import ProductQuickView from '../ProductQuickView';
 import { productPath as buildProductPath } from '../../utils/slug';
 
 const TAP_POP = { scale: 1.07, y: -12, rotateX: -4, z: 50 };
@@ -30,13 +36,30 @@ export default function GamingProductCard({ product, index }) {
     loginOpen,
     setLoginOpen,
   } = useShopGate();
-  const { popClass, handleProductLinkClick, linkPopHandlers } = useProductPop();
+  const { popClass, popping, handleProductLinkClick, linkPopHandlers } = useProductPop();
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const { isWishlisted, toggle: toggleWishlist } = useWishlist(product?.id);
   const productPath = buildProductPath(product);
   const [hovered, setHovered] = useState(false);
   const [jumped, setJumped] = useState(false);
   const stockCount = normalizeStock(product.stock);
   const stockStatus = getStockStatus(product.stock);
   const inStock = isInStock(product.stock);
+  const {
+    mainImage,
+    hoverImage,
+    thirdSrc,
+    imageIndex,
+    showAlt,
+    images,
+    onMouseEnter: onCardImageEnter,
+    onMouseLeave: onCardImageLeave,
+    onTouchStart: onCardImageTouchStart,
+    onTouchEnd: onCardImageTouchEnd,
+    onPointerDown: onCardImagePointerDown,
+    onPointerUp: onCardImagePointerUp,
+    onPointerLeave: onCardImagePointerLeave,
+  } = useProductCardImage(product, { popping });
 
   useEffect(() => {
     const el = ref.current;
@@ -72,14 +95,43 @@ export default function GamingProductCard({ product, index }) {
     });
   };
 
+  const handleImgError = (e) => {
+    e.target.onerror = null;
+    e.target.src = getDefaultImage(product.category);
+  };
+
+  const cardImageHandlers = {
+    ...linkPopHandlers,
+    onTouchStart: () => onCardImageTouchStart(),
+    onTouchEnd: () => onCardImageTouchEnd(),
+    onPointerDown: (e) => {
+      linkPopHandlers.onPointerDown(e);
+      onCardImagePointerDown();
+    },
+    onPointerUp: (e) => {
+      linkPopHandlers.onPointerUp(e);
+      onCardImagePointerUp();
+    },
+    onPointerLeave: (e) => {
+      linkPopHandlers.onPointerLeave(e);
+      onCardImagePointerLeave();
+    },
+  };
+
   return (
     <>
     <motion.article
       ref={ref}
       className={`gaming-product-card premium-gaming-card ${jumped ? 'jumped' : ''} ${onSale ? 'on-sale' : ''} ${hovered ? 'is-hovered' : ''} ${popClass}`.trim()}
       style={{ '--jump-delay': `${index * 0.12}s`, '--card-i': index, transformPerspective: 900 }}
-      onMouseEnter={() => setHovered(true)}
-      onMouseLeave={() => setHovered(false)}
+      onMouseEnter={() => {
+        setHovered(true);
+        onCardImageEnter();
+      }}
+      onMouseLeave={() => {
+        setHovered(false);
+        onCardImageLeave();
+      }}
       whileHover={{ y: -6, scale: 1.02 }}
       whileTap={TAP_POP}
       transition={TAP_SPRING}
@@ -88,7 +140,7 @@ export default function GamingProductCard({ product, index }) {
       <Link
         to={productPath}
         className="gaming-product-inner"
-        {...linkPopHandlers}
+        {...cardImageHandlers}
         onClick={(e) => handleProductLinkClick(e, productPath)}
       >
         <div className="gaming-product-img">
@@ -98,7 +150,21 @@ export default function GamingProductCard({ product, index }) {
           <span className="premium-particle premium-particle--1" />
           <span className="premium-particle premium-particle--2" />
           <span className="premium-particle premium-particle--3" />
-          <img src={product.image} alt={product.name} loading="lazy" />
+          <ProductCardImageStack
+            mainSrc={mainImage}
+            altSrc={hoverImage}
+            thirdSrc={thirdSrc}
+            images={images}
+            imageIndex={imageIndex}
+            alt={product.name}
+            showAlt={showAlt}
+            onError={handleImgError}
+          />
+          <ProductCardHoverActions
+            wishlisted={isWishlisted}
+            onToggleWishlist={toggleWishlist}
+            onQuickView={() => setQuickViewOpen(true)}
+          />
           <span className="gaming-product-index">#{String(index + 1).padStart(2, '0')}</span>
         </div>
         <div className="gaming-product-body">
@@ -128,6 +194,7 @@ export default function GamingProductCard({ product, index }) {
         {cartLabel}
       </button>
     </motion.article>
+    <ProductQuickView product={product} open={quickViewOpen} onClose={() => setQuickViewOpen(false)} />
     <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
     <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>

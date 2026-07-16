@@ -1,9 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { getProductCardImages } from '../utils/productImages';
 
-const HOVER_DELAY_MS = 150;
-const TAP_FLASH_MS = 220;
-const CYCLE_MS = 900;
+const HOVER_DELAY_MS = 120;
+const TAP_FLASH_MS = 380;
 
 function deviceHasHover() {
   if (typeof window === 'undefined') return false;
@@ -16,7 +15,7 @@ function prefersReducedMotion() {
 }
 
 /**
- * Shop-card image cycle — main + up to 2 gallery photos on hover (desktop) or tap (mobile).
+ * Shop-card image swap — main + gallery[0] as second image on hover (desktop) or tap flash (mobile).
  */
 export default function useProductCardImage(product, { popping = false } = {}) {
   const { main: mainImage, images } = getProductCardImages(product);
@@ -26,7 +25,6 @@ export default function useProductCardImage(product, { popping = false } = {}) {
   const [imageIndex, setImageIndex] = useState(0);
   const hoverTimer = useRef(null);
   const tapTimer = useRef(null);
-  const cycleTimer = useRef(null);
 
   const clearHoverTimer = useCallback(() => {
     if (hoverTimer.current) {
@@ -42,21 +40,13 @@ export default function useProductCardImage(product, { popping = false } = {}) {
     }
   }, []);
 
-  const clearCycleTimer = useCallback(() => {
-    if (cycleTimer.current) {
-      clearInterval(cycleTimer.current);
-      cycleTimer.current = null;
-    }
-  }, []);
-
   const resetIndex = useCallback(() => setImageIndex(0), []);
 
   useEffect(() => {
     resetIndex();
     clearHoverTimer();
     clearTapTimer();
-    clearCycleTimer();
-  }, [mainImage, images.join('|'), clearHoverTimer, clearTapTimer, clearCycleTimer, resetIndex]);
+  }, [mainImage, images.join('|'), clearHoverTimer, clearTapTimer, resetIndex]);
 
   useEffect(() => {
     if (popping && hasGallery) {
@@ -65,35 +55,43 @@ export default function useProductCardImage(product, { popping = false } = {}) {
     }
   }, [popping, hasGallery, clearTapTimer]);
 
-  const startCycle = useCallback(() => {
-    if (!hasGallery || prefersReducedMotion()) return;
-    clearCycleTimer();
-    cycleTimer.current = window.setInterval(() => {
-      setImageIndex((prev) => (prev + 1) % images.length);
-    }, CYCLE_MS);
-  }, [clearCycleTimer, hasGallery, images.length]);
+  const showAltImage = useCallback(() => {
+    if (!hasGallery) return;
+    setImageIndex(1);
+  }, [hasGallery]);
 
   const onMouseEnter = useCallback(() => {
     if (!hasGallery || !deviceHasHover()) return;
     clearHoverTimer();
-    hoverTimer.current = window.setTimeout(() => {
-      setImageIndex(1);
-      if (images.length > 2) startCycle();
-    }, HOVER_DELAY_MS);
-  }, [hasGallery, images.length, clearHoverTimer, startCycle]);
+    if (prefersReducedMotion()) {
+      showAltImage();
+      return;
+    }
+    hoverTimer.current = window.setTimeout(showAltImage, HOVER_DELAY_MS);
+  }, [hasGallery, clearHoverTimer, showAltImage]);
 
   const onMouseLeave = useCallback(() => {
     if (!deviceHasHover()) return;
     clearHoverTimer();
-    clearCycleTimer();
     if (!popping) resetIndex();
-  }, [popping, clearHoverTimer, clearCycleTimer, resetIndex]);
+  }, [popping, clearHoverTimer, resetIndex]);
+
+  /** Mobile tap flash — brief 2nd image, not sticky */
+  const onTouchStart = useCallback(() => {
+    if (!hasGallery || deviceHasHover()) return;
+    clearTapTimer();
+    showAltImage();
+  }, [hasGallery, clearTapTimer, showAltImage]);
+
+  const onTouchEnd = useCallback(() => {
+    if (!hasGallery || deviceHasHover() || popping) return;
+    clearTapTimer();
+    tapTimer.current = window.setTimeout(resetIndex, TAP_FLASH_MS);
+  }, [hasGallery, popping, clearTapTimer, resetIndex]);
 
   const onPointerDown = useCallback(() => {
-    if (!hasGallery) return;
-    clearHoverTimer();
-    setImageIndex((prev) => (prev + 1) % images.length);
-  }, [hasGallery, images.length, clearHoverTimer]);
+    /* noop — image swap handled by hover / touch; keep for API compat */
+  }, []);
 
   const onPointerUp = useCallback(() => {
     if (popping || !hasGallery || deviceHasHover()) return;
@@ -103,31 +101,29 @@ export default function useProductCardImage(product, { popping = false } = {}) {
 
   const onPointerLeave = useCallback(() => {
     clearHoverTimer();
-    clearCycleTimer();
-    if (!popping) {
+    if (!popping && !deviceHasHover()) {
       clearTapTimer();
       resetIndex();
     }
-  }, [popping, clearHoverTimer, clearCycleTimer, clearTapTimer, resetIndex]);
+  }, [popping, clearHoverTimer, clearTapTimer, resetIndex]);
 
   const showAlt = imageIndex > 0;
-  const displayImage = images[imageIndex] || mainImage;
-  const altSrc = images[1] || null;
-  const thirdSrc = images[2] || null;
 
   return {
-    displayImage,
+    displayImage: images[imageIndex] || mainImage,
     mainImage,
     hoverImage,
     thirdImage,
-    altSrc,
-    thirdSrc,
+    altSrc: hoverImage,
+    thirdSrc: thirdImage,
     imageIndex,
     showAlt,
     images,
     hasHoverImage: hasGallery,
     onMouseEnter,
     onMouseLeave,
+    onTouchStart,
+    onTouchEnd,
     onPointerDown,
     onPointerUp,
     onPointerLeave,

@@ -12,8 +12,11 @@ function prefersReducedMotion() {
   return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
+const ZOOM_SCALE = 2.2;
+const SWIPE_THRESHOLD = 40;
+
 /**
- * Premium 3-photo viewer — main + up to 2 gallery images with crossfade / slide.
+ * Product detail gallery — thumbnails, sale badge, hover zoom lens, fullscreen, mobile swipe.
  */
 export default function ProductDetailGallery({
   product,
@@ -25,121 +28,189 @@ export default function ProductDetailGallery({
 }) {
   const { t } = useTranslation();
   const { main, images } = useMemo(() => getProductCardImages(product), [product]);
-  const [hoverIndex, setHoverIndex] = useState(0);
-  const [tapIndex, setTapIndex] = useState(0);
-  const cycleTimer = useRef(null);
+  const displayImages = images.length ? images : [main];
+  const selectedIndex = Math.max(0, displayImages.indexOf(activeImage || main));
+  const [slideIndex, setSlideIndex] = useState(selectedIndex);
+  const [fullscreen, setFullscreen] = useState(false);
+  const [zooming, setZooming] = useState(false);
+  const [lensPos, setLensPos] = useState({ x: 0, y: 0, bgX: 0, bgY: 0 });
+  const touchStartX = useRef(null);
+  const imageWrapRef = useRef(null);
   const canHover = deviceHasHover();
   const reducedMotion = prefersReducedMotion();
 
-  const displayImages = images.length ? images : [main];
-  const selectedIndex = Math.max(0, displayImages.indexOf(activeImage || main));
-  const previewIndex = canHover ? hoverIndex : tapIndex;
-  const showIndex = activeImage && displayImages.includes(activeImage) ? selectedIndex : previewIndex;
-  const currentSrc = displayImages[showIndex] || main;
+  useEffect(() => {
+    setSlideIndex(selectedIndex);
+  }, [selectedIndex]);
+
+  useEffect(() => {
+    if (!fullscreen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setFullscreen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [fullscreen]);
+
+  const currentSrc = displayImages[slideIndex] || main;
   const hasMultiple = displayImages.length > 1;
-  const onThird = showIndex === 2 && displayImages.length >= 3;
 
-  const clearCycle = useCallback(() => {
-    if (cycleTimer.current) {
-      clearInterval(cycleTimer.current);
-      cycleTimer.current = null;
-    }
-  }, []);
+  const selectSlide = useCallback((index) => {
+    const idx = Math.max(0, Math.min(index, displayImages.length - 1));
+    setSlideIndex(idx);
+    onSelect?.(displayImages[idx]);
+  }, [displayImages, onSelect]);
 
-  const startCycle = useCallback(() => {
-    if (!hasMultiple || reducedMotion) return;
-    clearCycle();
-    cycleTimer.current = window.setInterval(() => {
-      setHoverIndex((prev) => (prev + 1) % displayImages.length);
-    }, 1400);
-  }, [clearCycle, displayImages.length, hasMultiple, reducedMotion]);
-
-  useEffect(() => () => clearCycle(), [clearCycle]);
-
-  const handleEnter = () => {
-    if (!canHover || !hasMultiple) return;
-    setHoverIndex(selectedIndex);
-    startCycle();
-  };
-
-  const handleLeave = () => {
-    clearCycle();
-    setHoverIndex(selectedIndex);
-  };
-
-  const handleTapCycle = () => {
-    if (canHover || !hasMultiple) return;
-    setTapIndex((prev) => {
-      const next = (prev + 1) % displayImages.length;
-      onSelect?.(displayImages[next]);
-      return next;
+  const handleMouseMove = (e) => {
+    if (!canHover || reducedMotion) return;
+    const wrap = imageWrapRef.current;
+    if (!wrap) return;
+    const rect = wrap.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const lensSize = 140;
+    const bgX = -(x * ZOOM_SCALE - lensSize / 2);
+    const bgY = -(y * ZOOM_SCALE - lensSize / 2);
+    setLensPos({
+      x: Math.max(0, Math.min(x - lensSize / 2, rect.width - lensSize)),
+      y: Math.max(0, Math.min(y - lensSize / 2, rect.height - lensSize)),
+      bgX,
+      bgY,
     });
   };
 
+  const handleTouchStart = (e) => {
+    if (canHover || !hasMultiple) return;
+    touchStartX.current = e.touches[0]?.clientX ?? null;
+  };
+
+  const handleTouchEnd = (e) => {
+    if (canHover || !hasMultiple || touchStartX.current == null) return;
+    const endX = e.changedTouches[0]?.clientX;
+    if (endX == null) return;
+    const delta = endX - touchStartX.current;
+    if (Math.abs(delta) >= SWIPE_THRESHOLD) {
+      selectSlide(slideIndex + (delta < 0 ? 1 : -1));
+    }
+    touchStartX.current = null;
+  };
+
   return (
-    <div className={`product-detail-gallery-view ${hasMultiple ? 'has-gallery' : ''} ${onThird ? 'is-third' : ''}`}>
+    <div className={`product-detail-gallery-view ${hasMultiple ? 'has-gallery' : ''}`}>
       <div
-        className={`product-detail-image premium-product ${animKind}`}
-        onMouseEnter={handleEnter}
-        onMouseLeave={handleLeave}
-        onClick={handleTapCycle}
-        role={hasMultiple && !canHover ? 'button' : undefined}
-        tabIndex={hasMultiple && !canHover ? 0 : undefined}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            handleTapCycle();
-          }
-        }}
-        aria-label={hasMultiple ? t('product.cyclePhotos') : undefined}
+        ref={imageWrapRef}
+        className={`product-detail-image premium-product ${animKind} ${zooming ? 'is-zooming' : ''}`}
+        onMouseEnter={() => canHover && !reducedMotion && setZooming(true)}
+        onMouseLeave={() => setZooming(false)}
+        onMouseMove={handleMouseMove}
+        onTouchStart={handleTouchStart}
+        onTouchEnd={handleTouchEnd}
       >
-        {onSale && DiscountRibbon ? <DiscountRibbon percent={product.discount_percent} /> : null}
+        {onSale && (
+          <>
+            {DiscountRibbon ? <DiscountRibbon percent={product.discount_percent} /> : null}
+            <span className="product-detail-sale-badge">-{product.discount_percent}%</span>
+          </>
+        )}
         {animKind === 'gaming' && <span className="premium-rgb-wave premium-rgb-wave--gaming" />}
         {animKind === 'charger' && <span className="premium-charge-ring premium-charge-ring--lg" />}
 
-        <div className="product-detail-image-stack">
-          {displayImages.map((url, index) => (
+        {canHover && !reducedMotion ? (
+          <div className="product-detail-image-stack">
             <img
-              key={url}
-              src={url}
-              alt={index === showIndex ? product.name : ''}
-              aria-hidden={index !== showIndex}
-              className={`product-detail-stack-img ${index === showIndex ? 'is-active' : ''}`}
+              src={currentSrc}
+              alt={product.name}
+              className="product-detail-stack-img is-active"
             />
-          ))}
-        </div>
-
-        {onThird && (
-          <span className="product-detail-third-badge" aria-hidden="true">
-            ✦ {t('product.premiumFinish')}
-          </span>
+            {zooming && (
+              <div
+                className="product-detail-zoom-lens"
+                style={{
+                  left: lensPos.x,
+                  top: lensPos.y,
+                  backgroundImage: `url(${currentSrc})`,
+                  backgroundSize: `${imageWrapRef.current?.offsetWidth * ZOOM_SCALE}px ${imageWrapRef.current?.offsetHeight * ZOOM_SCALE}px`,
+                  backgroundPosition: `${lensPos.bgX}px ${lensPos.bgY}px`,
+                }}
+              />
+            )}
+          </div>
+        ) : (
+          <div
+            className="product-detail-swipe-track"
+            style={{ transform: `translateX(-${slideIndex * 100}%)` }}
+          >
+            {displayImages.map((url) => (
+              <div key={url} className="product-detail-swipe-slide">
+                <img src={url} alt={product.name} />
+              </div>
+            ))}
+          </div>
         )}
 
+        <button
+          type="button"
+          className="product-detail-expand-btn"
+          aria-label={t('product.expandImage')}
+          onClick={() => setFullscreen(true)}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+          </svg>
+        </button>
+
         {hasMultiple && !canHover && (
-          <span className="product-detail-tap-hint">{t('product.tapForPhotos')}</span>
+          <>
+            <span className="product-detail-tap-hint">{t('product.swipePhotos')}</span>
+            <div className="product-detail-swipe-dots">
+              {displayImages.map((url, i) => (
+                <button
+                  key={url}
+                  type="button"
+                  className={`product-detail-swipe-dot ${i === slideIndex ? 'is-active' : ''}`}
+                  aria-label={`Photo ${i + 1}`}
+                  onClick={() => selectSlide(i)}
+                />
+              ))}
+            </div>
+          </>
         )}
       </div>
 
       {displayImages.length > 1 ? (
         <div className="product-detail-gallery">
-          {displayImages.map((url) => (
+          {displayImages.map((url, i) => (
             <button
               key={url}
               type="button"
-              className={`product-detail-gallery-thumb ${activeImage === url || (!activeImage && url === main) ? 'is-active' : ''}`}
-              onClick={() => {
-                clearCycle();
-                onSelect?.(url);
-                const idx = displayImages.indexOf(url);
-                setHoverIndex(idx);
-                setTapIndex(idx);
-              }}
+              className={`product-detail-gallery-thumb ${slideIndex === i ? 'is-active' : ''}`}
+              onClick={() => selectSlide(i)}
             >
               <img src={url} alt="" />
             </button>
           ))}
         </div>
       ) : null}
+
+      {fullscreen && (
+        <div
+          className="product-detail-fullscreen"
+          role="dialog"
+          aria-modal="true"
+          aria-label={product.name}
+          onClick={() => setFullscreen(false)}
+        >
+          <button
+            type="button"
+            className="product-detail-fullscreen-close"
+            aria-label={t('product.closeQuickView')}
+            onClick={() => setFullscreen(false)}
+          >
+            ✕
+          </button>
+          <img src={currentSrc} alt={product.name} onClick={(e) => e.stopPropagation()} />
+        </div>
+      )}
     </div>
   );
 }

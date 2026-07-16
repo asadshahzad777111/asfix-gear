@@ -1,11 +1,14 @@
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { getDefaultImage } from '../../config/products';
 import { useCart } from '../../context/CartContext';
 import { useShopGate } from '../../hooks/useShopGate';
 import useProductPop from '../../hooks/useProductPop';
 import useProductCardImage from '../../hooks/useProductCardImage';
+import useWishlist from '../../hooks/useWishlist';
 import ProductCardImageStack from '../ProductCardImageStack';
+import ProductCardHoverActions from '../ProductCardHoverActions';
+import ProductQuickView from '../ProductQuickView';
 import { useTranslation } from '../../context/LanguageContext';
 import { DiscountRibbon, ProductPrice } from '../DiscountPicker';
 import { hasDiscount } from '../../utils/pricing';
@@ -25,6 +28,8 @@ export default function HomeProductCard({ product }) {
     setLoginOpen,
   } = useShopGate();
   const { popClass, popping, handleProductLinkClick, linkPopHandlers } = useProductPop();
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const { isWishlisted, toggle: toggleWishlist } = useWishlist(product?.id);
   const {
     mainImage,
     hoverImage,
@@ -34,6 +39,8 @@ export default function HomeProductCard({ product }) {
     images,
     onMouseEnter: onCardImageEnter,
     onMouseLeave: onCardImageLeave,
+    onTouchStart: onCardImageTouchStart,
+    onTouchEnd: onCardImageTouchEnd,
     onPointerDown: onCardImagePointerDown,
     onPointerUp: onCardImagePointerUp,
     onPointerLeave: onCardImagePointerLeave,
@@ -68,6 +75,8 @@ export default function HomeProductCard({ product }) {
 
   const cardImageHandlers = {
     ...linkPopHandlers,
+    onTouchStart: () => onCardImageTouchStart(),
+    onTouchEnd: () => onCardImageTouchEnd(),
     onPointerDown: (e) => {
       linkPopHandlers.onPointerDown(e);
       onCardImagePointerDown();
@@ -107,6 +116,11 @@ export default function HomeProductCard({ product }) {
               showAlt={showAlt}
               onError={handleImgError}
             />
+            <ProductCardHoverActions
+              wishlisted={isWishlisted}
+              onToggleWishlist={toggleWishlist}
+              onQuickView={() => setQuickViewOpen(true)}
+            />
           </div>
           <div className="home-product-body">
             <h3 className="home-product-name">{product.name}</h3>
@@ -128,6 +142,7 @@ export default function HomeProductCard({ product }) {
           </button>
         </div>
       </article>
+      <ProductQuickView product={product} open={quickViewOpen} onClose={() => setQuickViewOpen(false)} />
       <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
       <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>

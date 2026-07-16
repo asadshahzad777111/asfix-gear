@@ -18,6 +18,9 @@ import { isInStock } from '../utils/stock';
 import ShopLoginPrompt from './ShopLoginPrompt';
 import CustomerLoginModal from './CustomerLoginModal';
 import { productPath as buildProductPath } from '../utils/slug';
+import ProductCardHoverActions from './ProductCardHoverActions';
+import ProductQuickView from './ProductQuickView';
+import useWishlist from '../hooks/useWishlist';
 
 const TAP_POP = { scale: 1.06, y: -10, rotateX: -4, z: 40 };
 const TAP_SPRING = { type: 'spring', stiffness: 420, damping: 26 };
@@ -39,6 +42,8 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
   const addRef = useRef(null);
   const [hovered, setHovered] = useState(false);
   const [selected, setSelected] = useState(false);
+  const [quickViewOpen, setQuickViewOpen] = useState(false);
+  const { isWishlisted, toggle: toggleWishlist } = useWishlist(product?.id);
   const { ref: revealRef, revealClass } = useScrollReveal({
     threshold: 0.12,
     delay: revealIndex * 90,
@@ -56,6 +61,8 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     images,
     onMouseEnter: onCardImageEnter,
     onMouseLeave: onCardImageLeave,
+    onTouchStart: onCardImageTouchStart,
+    onTouchEnd: onCardImageTouchEnd,
     onPointerDown: onCardImagePointerDown,
     onPointerUp: onCardImagePointerUp,
     onPointerLeave: onCardImagePointerLeave,
@@ -82,6 +89,12 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
 
   const cardImageHandlers = {
     ...linkPopHandlers,
+    onTouchStart: (e) => {
+      onCardImageTouchStart();
+    },
+    onTouchEnd: () => {
+      onCardImageTouchEnd();
+    },
     onPointerDown: (e) => {
       linkPopHandlers.onPointerDown(e);
       onCardImagePointerDown();
@@ -158,6 +171,13 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
           ) : (
             renderCardImage('product-grid-img')
           )}
+          {inGrid && (
+            <ProductCardHoverActions
+              wishlisted={isWishlisted}
+              onToggleWishlist={toggleWishlist}
+              onQuickView={() => setQuickViewOpen(true)}
+            />
+          )}
           {!inGrid && animKind === 'charger' && hovered && (
             <span className="premium-charge-bolt">⚡</span>
           )}
@@ -216,6 +236,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
         >
           {inner}
         </article>
+        <ProductQuickView product={product} open={quickViewOpen} onClose={() => setQuickViewOpen(false)} />
         <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
         <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
       </>
@@ -241,6 +262,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
       >
         {inner}
       </motion.article>
+      <ProductQuickView product={product} open={quickViewOpen} onClose={() => setQuickViewOpen(false)} />
       <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
       <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>
