@@ -52,6 +52,35 @@
         document.documentElement.setAttribute('data-theme-mode', mode);
       })();
     </script>
+    <script>
+      // Apex (asfixgear.com) and www are separate origins. An old apex service
+      // worker can keep serving a stale shell forever if apex only 308s to www
+      // (SW updates cannot follow cross-origin redirects). Kill apex SW + caches,
+      // then send the user to www once this HTML actually loads.
+      (function () {
+        if (location.hostname !== 'asfixgear.com') return;
+        var dest = 'https://www.asfixgear.com' + location.pathname + location.search + location.hash;
+        var go = function () {
+          if (sessionStorage.getItem('asfix_apex_migrated') === '1') return;
+          sessionStorage.setItem('asfix_apex_migrated', '1');
+          location.replace(dest);
+        };
+        var clear = Promise.resolve();
+        if ('serviceWorker' in navigator) {
+          clear = navigator.serviceWorker.getRegistrations().then(function (regs) {
+            return Promise.all(regs.map(function (r) { return r.unregister(); }));
+          });
+        }
+        clear
+          .then(function () {
+            if (!window.caches || !caches.keys) return;
+            return caches.keys().then(function (keys) {
+              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
+            });
+          })
+          .then(go, go);
+      })();
+    </script>
   </head>
   <body>
     <div id="root">
