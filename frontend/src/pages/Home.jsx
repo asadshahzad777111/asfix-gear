@@ -9,7 +9,7 @@ import HomeAbout from '../components/home/HomeAbout';
 import TrustBadges from '../components/home/TrustBadges';
 import CollectionGrid from '../components/home/CollectionGrid';
 import BrandGrid from '../components/home/BrandGrid';
-import ModelGrid from '../components/home/ModelGrid';
+import TrendingCollections from '../components/home/TrendingCollections';
 import ProductCarousel from '../components/home/ProductCarousel';
 import LocationSection from '../components/LocationSection';
 import Testimonials from '../components/Testimonials';
@@ -90,7 +90,7 @@ export default function Home() {
       <TrustBadges />
       <CollectionGrid />
       <BrandGrid />
-      <ModelGrid />
+      <TrendingCollections />
 
       {loadError && !topSelling.length ? (
         <HomeProductsSkeleton

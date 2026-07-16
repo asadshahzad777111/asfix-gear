@@ -617,23 +617,372 @@
   display: none;
 }
 
+.nav-pc-icons {
+  display: flex;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.nav-pc-icon-btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--pc-text, #111);
+  font-size: 1.15rem;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.nav-pc-icon-btn:hover {
+  background: var(--pc-accent-soft, #fff1e8);
+}
+
+.nav-pc-badge {
+  position: absolute;
+  top: 2px;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: #111;
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 700;
+  line-height: 16px;
+  text-align: center;
+}
+
+/* Repair company → model (names only) */
+.repair-models-panel--pc .repair-pc-search {
+  display: flex;
+  align-items: center;
+  min-height: 48px;
+  margin: 0 0 0.85rem;
+  padding: 0 1rem;
+  border-radius: 999px;
+  border: 1px solid var(--pc-border, #e4e7ec);
+  background: #fff;
+}
+
+.repair-models-panel--pc .repair-pc-search:focus-within {
+  border-color: var(--pc-accent, #ff6600);
+  box-shadow: 0 0 0 4px rgba(255, 102, 0, 0.1);
+}
+
+.repair-models-panel--pc .repair-pc-search input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font: inherit;
+  font-size: 0.95rem;
+}
+
+.repair-pc-brand-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.repair-pc-brand-row {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  width: 100%;
+  padding: 0.75rem 0.85rem;
+  border-radius: 12px;
+  border: 1px solid var(--pc-border, #e4e7ec);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.2s ease;
+}
+
+.repair-pc-brand-row:hover {
+  border-color: rgba(255, 102, 0, 0.35);
+  box-shadow: var(--pc-shadow-hover);
+  transform: translateY(-1px);
+}
+
+.repair-pc-brand-name {
+  flex: 1;
+  font-weight: 600;
+  color: #111827;
+}
+
+.repair-pc-brand-meta {
+  font-size: 0.78rem;
+  color: #6b7280;
+}
+
+.repair-pc-brand-chevron {
+  color: #9ca3af;
+  font-size: 1.2rem;
+}
+
+.repair-pc-selected-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.repair-pc-back {
+  border: none;
+  background: #f3f4f6;
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.repair-pc-model-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-bottom: 1rem;
+}
+
+.repair-pc-model-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.45rem 0.85rem;
+  border-radius: 999px;
+  border: 1px solid var(--pc-border, #e4e7ec);
+  background: #fff;
+  color: #111827;
+  font-size: 0.85rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: border-color 0.2s ease, background 0.2s ease, color 0.2s ease;
+}
+
+.repair-pc-model-chip:hover {
+  border-color: var(--pc-accent, #ff6600);
+  background: var(--pc-accent-soft, #fff1e8);
+  color: #c2410c;
+}
+
+.repair-pc-empty {
+  width: 100%;
+  text-align: center;
+  color: #6b7280;
+  padding: 1rem;
+}
+
+/* Trending collections */
+.pc-trending-title {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: clamp(1.1rem, 3vw, 1.45rem);
+  position: relative;
+  display: inline-block;
+  padding-bottom: 0.45rem;
+}
+
+.pc-trending-title::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  transform: translateX(-50%);
+  width: 72%;
+  height: 2px;
+  background: #111;
+}
+
+.pc-trending .home-section-head {
+  margin-bottom: 1.5rem;
+}
+
+.pc-trending-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.1rem 0.75rem;
+}
+
+@media (min-width: 640px) {
+  .pc-trending-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1024px) {
+  .pc-trending-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.35rem 1rem;
+  }
+}
+
+.pc-trending-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.55rem;
+  text-decoration: none;
+  color: #111827;
+}
+
+.pc-trending-circle {
+  width: min(132px, 38vw);
+  height: min(132px, 38vw);
+  border-radius: 50%;
+  background: #f1f4f8;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.06);
+  transition: transform 0.22s ease, box-shadow 0.22s ease;
+}
+
+.pc-trending-circle img {
+  width: 72%;
+  height: 72%;
+  object-fit: contain;
+}
+
+.pc-trending-label {
+  font-size: 0.82rem;
+  font-weight: 600;
+  text-align: center;
+  line-height: 1.25;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .pc-trending-item:hover .pc-trending-circle {
+    transform: translateY(-4px) scale(1.03);
+    box-shadow: 0 10px 24px rgba(255, 102, 0, 0.15);
+  }
+}
+
+/* Wishlist page */
+.pc-wishlist-banner {
+  background: #4b5563;
+  color: #fff;
+  text-align: center;
+  padding: 1.75rem 1rem;
+}
+
+.pc-wishlist-banner h1 {
+  margin: 0;
+  font-size: clamp(1.2rem, 3vw, 1.6rem);
+  font-weight: 600;
+}
+
+.pc-wishlist-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  max-width: 28rem;
+  margin: 0 auto;
+}
+
+.pc-wishlist-empty-icon {
+  font-size: 3.5rem;
+  line-height: 1;
+  margin-bottom: 0.75rem;
+  color: #111;
+}
+
+.pc-wishlist-empty h2 {
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin: 0 0 0.5rem;
+}
+
+.pc-wishlist-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+}
+
+@media (min-width: 640px) {
+  .pc-wishlist-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 960px) {
+  .pc-wishlist-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+.pc-wishlist-card {
+  border: 1px solid var(--pc-border, #e4e7ec);
+  border-radius: 10px;
+  overflow: hidden;
+  background: #fff;
+  box-shadow: var(--pc-shadow);
+}
+
+.pc-wishlist-card-media {
+  display: block;
+  aspect-ratio: 1;
+  background: #f8fafc;
+}
+
+.pc-wishlist-card-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.pc-wishlist-card-body {
+  padding: 0.85rem;
+}
+
+.pc-wishlist-card-body h3 {
+  margin: 0 0 0.4rem;
+  font-size: 0.95rem;
+  line-height: 1.35;
+  color: #111827;
+}
+
+.pc-wishlist-price {
+  margin: 0 0 0.65rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+  align-items: baseline;
+}
+
+.pc-wishlist-was {
+  text-decoration: line-through;
+  color: #8f98a8;
+  font-size: 0.85rem;
+}
+
+.pc-wishlist-price strong {
+  color: #e11d48;
+  font-size: 1.05rem;
+}
+
 @media (max-width: 720px) {
-  .navbar--pc .nav-auth-buttons--toolbar,
-  .navbar--pc .theme-switch--nav,
-  .navbar--pc .lang-toggle--toolbar,
-  .navbar--pc .open-badge {
+  .navbar--pc .open-badge,
+  .navbar--pc .lang-toggle--toolbar {
     display: none;
+  }
+
+  .navbar--pc .theme-switch--nav {
+    display: inline-flex;
   }
 
   .navbar--pc .nav-repair-cta {
     min-height: 36px;
-    padding: 0.4rem 0.75rem;
-    font-size: 0.72rem;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.7rem;
   }
-}
 
-@media (max-width: 420px) {
-  .navbar--pc .nav-repair-cta span:not(.nav-repair-cta-icon) {
-    /* keep label — user wants repair visible */
+  .navbar--pc .nav-pc-icon-btn {
+    width: 36px;
+    height: 36px;
   }
 }

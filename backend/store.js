@@ -2683,6 +2683,8 @@ const DEFAULT_PAYMENT_SETTINGS = {
     branch: 'BATAPUR BRANCH LHR',
   },
   cod: { enabled: true },
+  /** Premier PayFast — disabled until merchant credentials are configured. */
+  payfast: { enabled: false },
 };
 
 const DEFAULT_DELIVERY_SETTINGS = {
@@ -2741,6 +2743,7 @@ export function getPaymentSettings() {
     easypaisa: { ...DEFAULT_PAYMENT_SETTINGS.easypaisa, ...(saved.easypaisa || {}) },
     bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
     cod: { ...DEFAULT_PAYMENT_SETTINGS.cod, ...(saved.cod || {}) },
+    payfast: { ...DEFAULT_PAYMENT_SETTINGS.payfast, ...(saved.payfast || {}) },
     updated_at: saved.updated_at ?? null,
     updated_by: saved.updated_by ?? null,
   };
@@ -2755,9 +2758,10 @@ export function setPaymentSettings(input, userId) {
       easypaisa: { ...DEFAULT_PAYMENT_SETTINGS.easypaisa, ...(saved.easypaisa || {}) },
       bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
       cod: { ...DEFAULT_PAYMENT_SETTINGS.cod, ...(saved.cod || {}) },
+      payfast: { ...DEFAULT_PAYMENT_SETTINGS.payfast, ...(saved.payfast || {}) },
     };
 
-    for (const key of ['jazzcash', 'easypaisa', 'bank', 'cod']) {
+    for (const key of ['jazzcash', 'easypaisa', 'bank', 'cod', 'payfast']) {
       if (!input[key]) continue;
       const patch = input[key];
       next[key] = {

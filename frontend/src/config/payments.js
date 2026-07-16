@@ -24,10 +24,20 @@ export const DEFAULT_PAYMENTS = {
   cod: {
     enabled: true,
   },
+  /**
+   * Premier PayFast (Pakistan PSO/PSP) — NOT free to go live.
+   * Requires merchant signup at https://getstarted.apps.net.pk/signup,
+   * sandbox test txs, then live MERCHANT_ID + SECURED_KEY.
+   * Hosted checkout: ipg2.apps.net.pk (live) / ipguat.apps.net.pk (UAT).
+   * Keep disabled until credentials exist in env (PAYFAST_MERCHANT_ID / PAYFAST_SECURED_KEY).
+   */
+  payfast: {
+    enabled: false,
+  },
 };
 
-export const PAYMENT_METHOD_IDS = ['jazzcash', 'easypaisa', 'bank', 'cod'];
-export const ADVANCE_PAYMENT_MODES = new Set(['jazzcash', 'easypaisa', 'bank']);
+export const PAYMENT_METHOD_IDS = ['jazzcash', 'easypaisa', 'bank', 'cod', 'payfast'];
+export const ADVANCE_PAYMENT_MODES = new Set(['jazzcash', 'easypaisa', 'bank', 'payfast']);
 
 function normalizeSavedPayments(saved) {
   return saved && typeof saved === 'object' ? saved : {};
@@ -40,6 +50,7 @@ export function mergePaymentSettings(saved) {
     easypaisa: { ...DEFAULT_PAYMENTS.easypaisa, ...(s.easypaisa || {}) },
     bank: { ...DEFAULT_PAYMENTS.bank, ...(s.bank || {}) },
     cod: { ...DEFAULT_PAYMENTS.cod, ...(s.cod || {}) },
+    payfast: { ...DEFAULT_PAYMENTS.payfast, ...(s.payfast || {}) },
   };
 }
 

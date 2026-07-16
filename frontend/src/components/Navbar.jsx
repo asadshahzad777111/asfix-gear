@@ -17,6 +17,8 @@ import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
 import NavSearch from './nav/NavSearch';
 import ShopMegaMenu from './nav/ShopMegaMenu';
+import { useWishlistIds } from '../hooks/useWishlist';
+import { useCart } from '../context/CartContext';
 import {
   NavDrawerAdminLink,
   NavDrawerButton,
@@ -28,6 +30,8 @@ export default function Navbar() {
   const { isStaff, isCustomer, logout } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { count: wishlistCount } = useWishlistIds();
+  const { count: cartCount, setOpen: setCartOpen } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [shopAccordionOpen, setShopAccordionOpen] = useState(false);
   const [shopMobileLevel, setShopMobileLevel] = useState(1);
@@ -350,26 +354,38 @@ export default function Navbar() {
               <span>{t('nav.repair')}</span>
             </Link>
             <OpenBadge compact />
-            {isCustomer ? (
-              <AccountMenu className="account-menu--toolbar" />
-            ) : isStaff ? (
-              <Link to="/admin" className="btn btn-primary btn-sm nav-auth-btn">
-                {t('nav.admin')}
-              </Link>
-            ) : (
-              <div className="nav-auth-buttons nav-auth-buttons--toolbar">
+            <div className="nav-pc-icons">
+              {isCustomer ? (
+                <AccountMenu className="account-menu--toolbar" />
+              ) : isStaff ? (
+                <Link to="/admin" className="btn btn-primary btn-sm nav-auth-btn">
+                  {t('nav.admin')}
+                </Link>
+              ) : (
                 <button
                   type="button"
-                  className="btn btn-ghost btn-sm nav-auth-btn"
+                  className="nav-pc-icon-btn"
                   onClick={() => setLoginOpen(true)}
+                  aria-label={t('nav.signIn')}
+                  title={t('nav.signIn')}
                 >
-                  {t('nav.signIn')}
+                  <span aria-hidden="true">👤</span>
                 </button>
-                <Link to="/account/register" className="btn btn-primary btn-sm nav-auth-btn">
-                  {t('nav.signUp')}
-                </Link>
-              </div>
-            )}
+              )}
+              <Link to="/wishlist" className="nav-pc-icon-btn" aria-label={t('wishlist.nav')} onClick={closeMenu}>
+                <span aria-hidden="true">♡</span>
+                {wishlistCount > 0 && <span className="nav-pc-badge">{wishlistCount > 99 ? '99+' : wishlistCount}</span>}
+              </Link>
+              <button
+                type="button"
+                className="nav-pc-icon-btn"
+                onClick={() => setCartOpen(true)}
+                aria-label={t('cart.openCart', { count: cartCount })}
+              >
+                <span aria-hidden="true">🛍️</span>
+                {cartCount > 0 && <span className="nav-pc-badge">{cartCount > 99 ? '99+' : cartCount}</span>}
+              </button>
+            </div>
             <LanguageToggle className="lang-toggle--toolbar" />
             <ThemeToggle className="theme-switch--nav" />
             <button

@@ -42,6 +42,7 @@ const PAYMENT_METHODS = [
   { id: 'easypaisa', icon: '💳', brandClass: 'checkout-payment-card--easypaisa' },
   { id: 'bank', icon: '🏦', brandClass: '' },
   { id: 'cod', icon: '💵', brandClass: 'checkout-payment-card--cod' },
+  { id: 'payfast', icon: '🔒', brandClass: 'checkout-payment-card--payfast' },
 ];
 
 const PAYMENT_INSTRUCTION_MODES = new Set(['jazzcash', 'easypaisa', 'bank']);
