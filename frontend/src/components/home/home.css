@@ -262,7 +262,7 @@
 }
 
 .home-model-card .home-model-thumb {
-  align-self: flex-start;
+  align-self: center;
 }
 
 .home-model-card:hover {

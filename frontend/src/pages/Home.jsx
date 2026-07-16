@@ -89,6 +89,8 @@ export default function Home() {
       <HomeAbout />
       <TrustBadges />
       <CollectionGrid />
+      <BrandGrid />
+      <ModelGrid />
 
       {loadError && !topSelling.length ? (
         <HomeProductsSkeleton
@@ -113,9 +115,6 @@ export default function Home() {
           />
         </>
       )}
-
-      <BrandGrid />
-      <ModelGrid />
 
       <section className="home-section home-reviews">
         <div className="container">

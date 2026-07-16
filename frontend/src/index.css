@@ -1066,11 +1066,13 @@ img { max-width: 100%; height: auto; display: block; }
 
 .model-thumb.home-model-thumb,
 .home-model-card .model-thumb {
-  width: 72px;
-  height: 72px;
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
   border-radius: 12px;
   margin-bottom: 0.25rem;
   background: #f8fafc;
+  align-self: center;
 }
 
 /* Repair steps */

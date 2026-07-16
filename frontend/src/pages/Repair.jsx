@@ -33,6 +33,16 @@ export default function Repair() {
         </div>
       </section>
 
+      {/* Supported devices (company + photo cards) — keep near top so the change is visible */}
+      <section
+        id="supported-devices"
+        className="section repair-page-block repair-page-block--models"
+      >
+        <div className="container">
+          <RepairModelsPanel />
+        </div>
+      </section>
+
       <section className="section repair-page-block repair-page-block--intake repair-intake-section-wrap">
         <div className="container">
           <RepairIntakeForm />
@@ -46,12 +56,6 @@ export default function Repair() {
             selected={screenQuality}
             onSelect={setScreenQuality}
           />
-        </div>
-      </section>
-
-      <section className="section repair-page-block repair-page-block--models">
-        <div className="container">
-          <RepairModelsPanel />
         </div>
       </section>
 

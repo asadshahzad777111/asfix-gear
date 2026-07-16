@@ -42,6 +42,13 @@
   padding-bottom: 0.5rem;
 }
 
+.footer-build-id {
+  font-size: 0.72em;
+  opacity: 0.55;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
 .footer-legal {
   padding-top: 0.5rem;
   padding-bottom: 0.75rem;

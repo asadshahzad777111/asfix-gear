@@ -2,14 +2,28 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const buildId = (
+  process.env.VERCEL_GIT_COMMIT_SHA
+  || process.env.CF_PAGES_COMMIT_SHA
+  || process.env.GITHUB_SHA
+  || `local-${Date.now().toString(36)}`
+).slice(0, 7);
+
 export default defineConfig({
   base: process.env.VITE_BASE_PATH || '/',
+  define: {
+    __ASFIX_BUILD_ID__: JSON.stringify(buildId),
+  },
   plugins: [
     react(),
     VitePWA({
       registerType: 'autoUpdate',
       includeAssets: ['favicon.svg'],
       workbox: {
+        // Force new SW to take over immediately so hard-refresh isn't required forever
+        skipWaiting: true,
+        clientsClaim: true,
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,ico,svg,woff2}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//],

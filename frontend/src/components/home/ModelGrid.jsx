@@ -38,7 +38,7 @@ export default function ModelGrid() {
           ))}
         </div>
         <div className="text-center mt-2">
-          <Link to="/repair" className="btn btn-ghost">
+          <Link to="/repair#supported-devices" className="btn btn-ghost">
             {t('home.viewAllModels')} →
           </Link>
         </div>

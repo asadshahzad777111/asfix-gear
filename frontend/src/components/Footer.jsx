@@ -74,6 +74,10 @@ export default function Footer() {
       <div className="container footer-bottom">
         <p className="footer-bottom-copy">
           © {new Date().getFullYear()} {SHOP.name} — {SHOP.owner}. {t('footer.crafted')}
+          {' '}
+          <span className="footer-build-id" title="Build id">
+            · {typeof __ASFIX_BUILD_ID__ !== 'undefined' ? __ASFIX_BUILD_ID__ : 'dev'}
+          </span>
         </p>
         {!isStaff && (
           <Link to="/login" className="footer-staff-login">
