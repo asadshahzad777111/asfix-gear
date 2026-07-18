@@ -116,11 +116,6 @@ export default function HomeProductCard({ product }) {
               showAlt={showAlt}
               onError={handleImgError}
             />
-            <ProductCardHoverActions
-              wishlisted={isWishlisted}
-              onToggleWishlist={toggleWishlist}
-              onQuickView={() => setQuickViewOpen(true)}
-            />
           </div>
           <div className="home-product-body">
             <h3 className="home-product-name">{product.name}</h3>
@@ -130,6 +125,11 @@ export default function HomeProductCard({ product }) {
             </div>
           </div>
         </Link>
+        <ProductCardHoverActions
+          wishlisted={isWishlisted}
+          onToggleWishlist={toggleWishlist}
+          onQuickView={() => setQuickViewOpen(true)}
+        />
         <div className="home-product-actions">
           <button
             ref={addRef}

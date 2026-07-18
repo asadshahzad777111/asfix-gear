@@ -19,6 +19,7 @@ export default function useProductPop() {
   const handleProductLinkClick = useCallback(
     (e, path) => {
       if (e.defaultPrevented) return;
+      if (e.target.closest('.product-card-hover-actions, .product-card-action-btn')) return;
       if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
 
       e.preventDefault();

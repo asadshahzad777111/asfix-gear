@@ -22,6 +22,45 @@
   }
 }
 
+.product-card-wrap--grid .product-card.glass-card {
+  position: relative;
+}
+
+.product-card-wrap--grid .product-card-link {
+  display: block;
+  color: inherit;
+  text-decoration: none;
+}
+
+.product-card-wrap--grid .product-card > .product-card-hover-actions {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 20;
+}
+
+.home-product-card {
+  position: relative;
+}
+
+.home-product-card > .product-card-hover-actions {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 20;
+}
+
+.gaming-product-card {
+  position: relative;
+}
+
+.gaming-product-card > .product-card-hover-actions {
+  position: absolute;
+  top: 0.65rem;
+  right: 0.65rem;
+  z-index: 20;
+}
+
 /* Hover overlay — wishlist + quick view */
 .product-image,
 .home-product-img-wrap,

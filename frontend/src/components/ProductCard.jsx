@@ -134,7 +134,61 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     popClass,
   ].filter(Boolean).join(' ');
 
-  const inner = (
+  const inner = inGrid ? (
+    <>
+      <div className="product-card glass-card">
+        <Link
+          to={productPath}
+          className="product-card-link"
+          {...cardImageHandlers}
+          onClick={(e) => handleProductLinkClick(e, productPath)}
+        >
+          <div className="product-image premium-product-image">
+            {onSale && <DiscountRibbon percent={product.discount_percent} compact={inGrid} />}
+            {renderCardImage('product-grid-img')}
+            <span className="product-category-pill">{product.category}</span>
+          </div>
+          <div className="product-body">
+            <h3 className="product-name">{product.name}</h3>
+            {product.compatible_models && (
+              <p className="product-compat-models">📱 {product.compatible_models}</p>
+            )}
+            <div className="product-footer">
+              <div className="product-price-slot">
+                <ProductPrice product={product} size="sm" />
+              </div>
+              <span className={`stock-dot ${inStock ? 'in' : 'out'}`}>
+                {inStock ? t('product.inStockShort') : t('product.soldOut')}
+              </span>
+            </div>
+          </div>
+        </Link>
+        <ProductCardHoverActions
+          wishlisted={isWishlisted}
+          onToggleWishlist={toggleWishlist}
+          onQuickView={() => setQuickViewOpen(true)}
+        />
+      </div>
+
+      <div className="product-card-actions">
+        <PremiumButton
+          ref={addRef}
+          className="btn btn-primary btn-sm premium-add-cart"
+          disabled={!inStock}
+          onClick={handleAdd}
+        >
+          {t('product.addCartShort')}
+        </PremiumButton>
+        <Link
+          to={contactTo}
+          className={`product-wa-btn ${!inStock ? 'product-wa-btn--restock' : ''}`}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {inStock ? t('product.orderShort') : t('product.requestItem')}
+        </Link>
+      </div>
+    </>
+  ) : (
     <>
       <Link
         to={productPath}
@@ -170,13 +224,6 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
             </div>
           ) : (
             renderCardImage('product-grid-img')
-          )}
-          {inGrid && (
-            <ProductCardHoverActions
-              wishlisted={isWishlisted}
-              onToggleWishlist={toggleWishlist}
-              onQuickView={() => setQuickViewOpen(true)}
-            />
           )}
           {!inGrid && animKind === 'charger' && hovered && (
             <span className="premium-charge-bolt">⚡</span>

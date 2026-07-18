@@ -26,6 +26,7 @@ import {
   NavDrawerLink,
 } from './NavDrawerItem';
 import { useTranslation } from '../context/LanguageContext';
+import useHeaderScrollHide from '../hooks/useHeaderScrollHide';
 
 export default function Navbar() {
   const { isStaff, isCustomer, logout } = useAuth();
@@ -35,7 +36,7 @@ export default function Navbar() {
   const drawerScrollRef = useRef(null);
   const prevPathRef = useRef(location.pathname);
   const { count: wishlistCount } = useWishlistIds();
-  const { count: cartCount, setOpen: setCartOpen } = useCart();
+  const { count: cartCount, setOpen: setCartOpen, open: cartOpen } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [shopAccordionOpen, setShopAccordionOpen] = useState(false);
   const [shopMobileLevel, setShopMobileLevel] = useState(1);
@@ -78,6 +79,22 @@ export default function Navbar() {
   useEffect(() => {
     document.body.classList.toggle('nav-open', menuOpen);
     return () => document.body.classList.remove('nav-open');
+  }, [menuOpen]);
+
+  const headerHidden = useHeaderScrollHide(menuOpen || cartOpen);
+
+  useEffect(() => {
+    if (cartOpen && menuOpen) closeMenu();
+  }, [cartOpen, menuOpen]);
+
+  useEffect(() => {
+    if (menuOpen && cartOpen) setCartOpen(false);
+  }, [menuOpen, cartOpen, setCartOpen]);
+
+  useEffect(() => {
+    if (!menuOpen) return;
+    setDrawerTab('menu');
+    resetDrawerScroll();
   }, [menuOpen]);
 
   useEffect(() => {
@@ -155,7 +172,7 @@ export default function Navbar() {
   return (
     <>
       <header
-        className={`navbar navbar--mobile-pro navbar--pc navbar--dx${scrolled ? ' is-scrolled' : ''}${menuOpen ? ' is-menu-open' : ''}`}
+        className={`navbar navbar--mobile-pro navbar--pc navbar--dx${scrolled ? ' is-scrolled' : ''}${menuOpen ? ' is-menu-open' : ''}${headerHidden ? ' is-header-hidden' : ''}`}
       >
         {/* Row 1 — utility */}
         <div className="dx-utility">

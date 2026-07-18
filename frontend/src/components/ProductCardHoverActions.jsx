@@ -13,17 +13,24 @@ export default function ProductCardHoverActions({
     e.stopPropagation();
   };
 
+  const bindStop = (handler) => (e) => {
+    stop(e);
+    handler?.();
+  };
+
   return (
-    <div className={`product-card-hover-actions ${className}`.trim()} aria-hidden="false">
+    <div
+      className={`product-card-hover-actions ${className}`.trim()}
+      aria-hidden="false"
+      onClick={stop}
+      onPointerDown={stop}
+    >
       <button
         type="button"
         className={`product-card-action-btn product-card-action-btn--wish ${wishlisted ? 'is-active' : ''}`}
         aria-label={wishlisted ? t('product.removeWishlist') : t('product.addWishlist')}
         aria-pressed={wishlisted}
-        onClick={(e) => {
-          stop(e);
-          onToggleWishlist?.();
-        }}
+        onClick={bindStop(onToggleWishlist)}
       >
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
           <path
@@ -36,10 +43,7 @@ export default function ProductCardHoverActions({
         type="button"
         className="product-card-action-btn product-card-action-btn--view"
         aria-label={t('product.quickView')}
-        onClick={(e) => {
-          stop(e);
-          onQuickView?.();
-        }}
+        onClick={bindStop(onQuickView)}
       >
         <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />

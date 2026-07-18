@@ -755,7 +755,7 @@ body.custom-cursor-active {
 .floating-cart-backdrop {
   position: fixed;
   inset: 0;
-  z-index: 240;
+  z-index: 500;
   background: var(--overlay);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
@@ -766,7 +766,7 @@ body.custom-cursor-active {
   top: 0;
   right: 0;
   bottom: 0;
-  z-index: 241;
+  z-index: 501;
   width: min(22rem, 92vw);
   background: var(--cart-panel-bg);
   border-left: 1px solid var(--glass-edge);

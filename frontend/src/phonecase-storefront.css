@@ -1185,17 +1185,24 @@
    PhoneCase mobile overrides — beat mobile-nav.css !important
    ═══════════════════════════════════════════════════════════ */
 
-/* Logo contrast (light grey-on-white was nearly invisible) */
-.navbar.navbar--pc .logo .brand-logo-text strong {
+/* Logo contrast — pink accent + theme-aware wordmark */
+.navbar.navbar--pc .logo .brand-logo-accent {
+  color: #e91e8c !important;
+  -webkit-text-fill-color: #e91e8c !important;
+}
+
+.navbar.navbar--pc .logo .brand-logo-name {
   color: #111 !important;
+  -webkit-text-fill-color: #111 !important;
 }
 
 .navbar.navbar--pc .logo .brand-logo-text small {
   color: #6b7280 !important;
 }
 
-[data-theme='dark'] .navbar.navbar--pc .logo .brand-logo-text strong {
+[data-theme='dark'] .navbar.navbar--pc .logo .brand-logo-name {
   color: #fff !important;
+  -webkit-text-fill-color: #fff !important;
 }
 
 [data-theme='dark'] .navbar.navbar--pc .logo .brand-logo-text small {
@@ -1251,13 +1258,18 @@
     overflow: hidden;
   }
 
-  .navbar.navbar--pc .brand-logo-text strong {
+  .navbar.navbar--pc .brand-logo-wordmark {
     font-size: 0.9rem !important;
-    color: #111 !important;
   }
 
-  [data-theme='dark'] .navbar.navbar--pc .brand-logo-text strong {
+  .navbar.navbar--pc .brand-logo-name {
+    color: #111 !important;
+    -webkit-text-fill-color: #111 !important;
+  }
+
+  [data-theme='dark'] .navbar.navbar--pc .brand-logo-name {
     color: #fff !important;
+    -webkit-text-fill-color: #fff !important;
   }
 
   .navbar.navbar--pc .navbar-aside {

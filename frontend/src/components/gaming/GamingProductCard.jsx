@@ -160,11 +160,6 @@ export default function GamingProductCard({ product, index }) {
             showAlt={showAlt}
             onError={handleImgError}
           />
-          <ProductCardHoverActions
-            wishlisted={isWishlisted}
-            onToggleWishlist={toggleWishlist}
-            onQuickView={() => setQuickViewOpen(true)}
-          />
           <span className="gaming-product-index">#{String(index + 1).padStart(2, '0')}</span>
         </div>
         <div className="gaming-product-body">
@@ -183,6 +178,11 @@ export default function GamingProductCard({ product, index }) {
           )}
         </div>
       </Link>
+      <ProductCardHoverActions
+        wishlisted={isWishlisted}
+        onToggleWishlist={toggleWishlist}
+        onQuickView={() => setQuickViewOpen(true)}
+      />
       <button
         ref={addRef}
         type="button"

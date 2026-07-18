@@ -131,6 +131,11 @@ export default function FloatingCart() {
   }, []);
 
   useEffect(() => {
+    document.body.classList.toggle('cart-open', open);
+    return () => document.body.classList.remove('cart-open');
+  }, [open]);
+
+  useEffect(() => {
     const ids = checkoutPaymentMethods.map((m) => m.id);
     if (!ids.includes(form.payment_mode) && ids[0]) {
       setForm((prev) => ({ ...prev, payment_mode: ids[0] }));
