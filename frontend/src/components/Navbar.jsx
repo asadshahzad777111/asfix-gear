@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { generalContactPath, whatsappLink } from '../config/shop';
 import { MODEL_SPECIFIC_CATEGORIES, SHOP_BRANDS, SHOP_CATEGORIES } from '../config/products';
@@ -138,11 +138,28 @@ export default function Navbar() {
   useEffect(() => {
     if (prevPathRef.current === location.pathname) return;
     prevPathRef.current = location.pathname;
+    clearModalBodyLocks();
     setMenuOpen(false);
     setDrawerTab('menu');
     setDrawerBrand(null);
+    setShopAccordionOpen(false);
+    setShopMobileLevel(1);
+    setShopMobileBrand(null);
+    setMenuSession((n) => n + 1);
     resetDrawerScroll();
   }, [location.pathname]);
+
+  // iOS Safari can leave .dx-drawer-scroll at 0 height after SPA nav — force relayout on open.
+  useLayoutEffect(() => {
+    if (!menuOpen) return;
+    clearModalBodyLocks();
+    resetDrawerScroll();
+    const scrollEl = drawerScrollRef.current;
+    if (!scrollEl) return;
+    scrollEl.style.minHeight = '1px';
+    void scrollEl.offsetHeight;
+    scrollEl.style.removeProperty('min-height');
+  }, [menuOpen, location.pathname, menuSession]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -364,9 +381,16 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="dx-drawer-scroll" ref={drawerScrollRef}>
-          {drawerTab === 'model' && (
-            <div className="pc-drawer-model-panel">
+          <div
+            className="dx-drawer-scroll"
+            ref={drawerScrollRef}
+            key={`drawer-scroll-${location.pathname}-${menuSession}`}
+          >
+          <div
+            className={`pc-drawer-model-panel dx-drawer-tab-panel${drawerTab === 'model' ? '' : ' dx-drawer-tab-panel--hidden'}`}
+            hidden={drawerTab !== 'model'}
+            aria-hidden={drawerTab !== 'model'}
+          >
               {!drawerBrand ? (
                 <div className="pc-drawer-brand-list">
                   {SHOP_BRANDS.map((brand) => (
@@ -408,10 +432,12 @@ export default function Navbar() {
                 </>
               )}
             </div>
-          )}
 
-          {drawerTab === 'menu' && (
-            <div className="dx-drawer-menu-panel" key={`menu-${menuSession}`}>
+          <div
+            className={`dx-drawer-menu-panel dx-drawer-tab-panel${drawerTab === 'menu' ? '' : ' dx-drawer-tab-panel--hidden'}`}
+            hidden={drawerTab !== 'menu'}
+            aria-hidden={drawerTab !== 'menu'}
+          >
               <LanguageToggle className="lang-toggle--drawer" />
               <span className="nav-drawer-section-label">{t('nav.explore')}</span>
 
@@ -637,7 +663,6 @@ export default function Navbar() {
                 onClick={closeMenu}
               />
             </div>
-          )}
           </div>
         </nav>
 

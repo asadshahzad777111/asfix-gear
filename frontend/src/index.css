@@ -250,7 +250,9 @@ img { max-width: 100%; height: auto; display: block; }
 @media (max-width: 1024px) {
   .nav-drawer .nav-links-primary,
   .nav-drawer .nav-links-staff,
-  .nav-drawer .nav-links-account {
+  .nav-drawer .nav-links-account,
+  .nav-drawer .dx-drawer-menu-panel,
+  .nav-drawer .pc-drawer-model-panel {
     display: flex !important;
     flex-direction: column !important;
     align-items: stretch !important;
