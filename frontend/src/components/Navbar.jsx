@@ -102,16 +102,17 @@ export default function Navbar() {
 
   const toggleShopAccordion = (e) => {
     e?.currentTarget?.blur();
-    const drawer = document.getElementById('main-nav');
-    const scrollTop = drawer?.scrollTop ?? 0;
+    const scrollEl =
+      document.querySelector('.dx-drawer-scroll') || document.getElementById('main-nav');
+    const scrollTop = scrollEl?.scrollTop ?? 0;
     setShopAccordionOpen((open) => {
       if (open) resetShopMobileNav();
       return !open;
     });
     requestAnimationFrame(() => {
-      if (drawer) drawer.scrollTop = scrollTop;
+      if (scrollEl) scrollEl.scrollTop = scrollTop;
       requestAnimationFrame(() => {
-        if (drawer) drawer.scrollTop = scrollTop;
+        if (scrollEl) scrollEl.scrollTop = scrollTop;
       });
     });
   };
@@ -262,6 +263,10 @@ export default function Navbar() {
         >
           <div className="nav-drawer-head nav-drawer-head--pc dx-drawer-chrome">
             <div className="dx-drawer-topbar">
+              <LogoLink onNavigate={closeMenu} />
+              <Link to="/shop" className="dx-drawer-cta" onClick={closeMenu}>
+                {t('nav.shop')}
+              </Link>
               <button
                 type="button"
                 className="nav-drawer-close nav-drawer-close--pc dx-drawer-close"
@@ -272,10 +277,6 @@ export default function Navbar() {
                   <path d="M6 6l12 12M18 6L6 18" />
                 </svg>
               </button>
-              <LogoLink onNavigate={closeMenu} />
-              <Link to="/shop" className="dx-drawer-cta" onClick={closeMenu}>
-                {t('nav.shop')}
-              </Link>
             </div>
             <div className="pc-drawer-tabs" role="tablist">
               <button
@@ -299,6 +300,7 @@ export default function Navbar() {
             </div>
           </div>
 
+          <div className="dx-drawer-scroll">
           {drawerTab === 'model' && (
             <div className="pc-drawer-model-panel">
               {!drawerBrand ? (
@@ -571,6 +573,7 @@ export default function Navbar() {
               />
             </>
           )}
+          </div>
         </nav>
 
         <div

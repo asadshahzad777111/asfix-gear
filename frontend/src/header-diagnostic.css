@@ -772,7 +772,7 @@
     transition: opacity 280ms ease, visibility 280ms !important;
   }
 
-  /* Wider, airy drawer like Dribbble mobile nav */
+  /* Wider, airy drawer — chrome pinned, body scrolls (fixes stuck mid-drawer X) */
   .navbar.navbar--dx .nav-links.nav-drawer.nav-drawer--pc {
     width: min(92vw, 380px) !important;
     min-width: min(92vw, 380px) !important;
@@ -782,6 +782,10 @@
     border-radius: 0 20px 20px 0 !important;
     box-shadow: 16px 0 48px rgba(0, 0, 0, 0.22) !important;
     transform: translate3d(-108%, 0, 0) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow: hidden !important;
+    overflow-y: hidden !important;
     transition:
       transform 340ms cubic-bezier(0.22, 1, 0.36, 1),
       visibility 340ms !important;
@@ -790,34 +794,49 @@
   .navbar.navbar--dx .nav-links.nav-drawer.nav-drawer--pc.open {
     transform: translate3d(0, 0, 0) !important;
     box-shadow: 20px 0 56px rgba(0, 0, 0, 0.28) !important;
+    overflow: hidden !important;
+    overflow-y: hidden !important;
   }
 
   [data-theme='dark'] .navbar.navbar--dx .nav-links.nav-drawer.nav-drawer--pc {
     background: #121214 !important;
   }
 
-  /* Top chrome: X · logo · Shop CTA */
+  /* Pinned header — never scrolls with menu rows */
   .navbar.navbar--dx .dx-drawer-chrome {
     display: flex !important;
     flex-direction: column !important;
-    position: sticky !important;
-    top: 0 !important;
-    z-index: 6 !important;
+    flex: 0 0 auto !important;
+    position: relative !important;
+    top: auto !important;
+    z-index: 8 !important;
     background: #fafafa !important;
-    border-bottom: none !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
     padding: 0 !important;
+    transform: none !important;
+    animation: none !important;
   }
 
   [data-theme='dark'] .navbar.navbar--dx .dx-drawer-chrome {
     background: #121214 !important;
+    border-bottom-color: rgba(255, 255, 255, 0.08) !important;
+  }
+
+  .navbar.navbar--dx .dx-drawer-scroll {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior: contain !important;
   }
 
   .navbar.navbar--dx .dx-drawer-topbar {
     display: flex !important;
     align-items: center !important;
-    gap: 0.35rem !important;
+    gap: 0.4rem !important;
     min-height: 56px !important;
-    padding: 0.45rem 0.65rem 0.35rem !important;
+    padding: 0.45rem 0.55rem 0.35rem 0.75rem !important;
   }
 
   .navbar.navbar--dx .dx-drawer-topbar .dx-logo {
@@ -833,20 +852,29 @@
     display: none !important;
   }
 
-  .navbar.navbar--dx .dx-drawer-close {
+  /* Close X — top-right of pinned chrome only */
+  .navbar.navbar--dx .dx-drawer-close,
+  .navbar.navbar--dx .nav-drawer-close--pc {
     position: relative !important;
     left: auto !important;
+    right: auto !important;
     top: auto !important;
+    bottom: auto !important;
+    inset: auto !important;
     flex: 0 0 44px !important;
     width: 44px !important;
     height: 44px !important;
     min-width: 44px !important;
     min-height: 44px !important;
+    margin: 0 !important;
     border: none !important;
     border-left: none !important;
     border-radius: 999px !important;
-    background: transparent !important;
+    background: rgba(0, 0, 0, 0.05) !important;
     color: #3f3f46 !important;
+    z-index: 9 !important;
+    transform: none !important;
+    animation: none !important;
   }
 
   .navbar.navbar--dx .dx-drawer-close:hover,
@@ -998,22 +1026,23 @@
     color: var(--hdr-accent) !important;
   }
 
-  /* Staggered reveal when drawer opens */
-  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-chrome,
-  .navbar.navbar--dx .nav-drawer--pc.open .nav-drawer-section-label,
-  .navbar.navbar--dx .nav-drawer--pc.open .nav-links-primary > *,
-  .navbar.navbar--dx .nav-drawer--pc.open .nav-links-account > *,
-  .navbar.navbar--dx .nav-drawer--pc.open .nav-links-staff > *,
-  .navbar.navbar--dx .nav-drawer--pc.open .nav-whatsapp,
-  .navbar.navbar--dx .nav-drawer--pc.open .lang-toggle--drawer {
+  /* Hide page hamburger while drawer is open — only pinned chrome X is the close control */
+  body.nav-open .navbar.navbar--dx .dx-menu-toggle {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  /* Staggered reveal on scroll body only (never animate pinned chrome / close) */
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-drawer-section-label,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-primary > *,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-account > *,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-staff > *,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-whatsapp,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .lang-toggle--drawer {
     animation: dx-drawer-rise 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
-  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-chrome {
-    animation-delay: 40ms;
-  }
-
-  .navbar.navbar--dx .nav-drawer--pc.open .lang-toggle--drawer {
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .lang-toggle--drawer {
     animation-delay: 70ms;
   }
 
