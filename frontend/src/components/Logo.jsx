@@ -1,4 +1,8 @@
+import { useId } from 'react';
+
 export default function Logo({ size = 44, showText = true, className = '' }) {
+  const uid = useId().replace(/:/g, '');
+
   return (
     <div className={`brand-logo ${className}`} style={{ '--logo-size': `${size}px` }}>
       <svg
@@ -9,51 +13,58 @@ export default function Logo({ size = 44, showText = true, className = '' }) {
         aria-hidden="true"
       >
         <defs>
-          <linearGradient id="logoGradMain" x1="10" y1="10" x2="110" y2="110">
-            <stop stopColor="#FF6B2C" />
-            <stop offset="0.5" stopColor="#7C3AED" />
-            <stop offset="1" stopColor="#00F5D4" />
+          <linearGradient id={`${uid}-orange`} x1="0" y1="0" x2="120" y2="120">
+            <stop stopColor="#FF8534" />
+            <stop offset="1" stopColor="#FF6B2C" />
           </linearGradient>
-          <linearGradient id="logoGradInner" x1="30" y1="25" x2="90" y2="95">
-            <stop stopColor="#1a1a2e" />
-            <stop offset="1" stopColor="#0a0a12" />
-          </linearGradient>
-          <filter id="logoShadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#000000" floodOpacity="0.35" />
+          <filter id={`${uid}-glow`} x="-30%" y="-30%" width="160%" height="160%">
+            <feGaussianBlur stdDeviation="3.5" result="blur" />
+            <feMerge>
+              <feMergeNode in="blur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
           </filter>
         </defs>
 
-        <g filter="url(#logoShadow)">
-          <rect x="4" y="4" width="112" height="112" rx="28" fill="url(#logoGradMain)" opacity="0.25" />
-          <rect x="8" y="8" width="104" height="104" rx="24" fill="#050508" stroke="url(#logoGradMain)" strokeWidth="2" />
+        <g filter={`url(#${uid}-glow)`}>
+          <rect x="8" y="8" width="104" height="104" rx="22" fill="#0a0a0f" />
+          <rect
+            x="8"
+            y="8"
+            width="104"
+            height="104"
+            rx="22"
+            fill="none"
+            stroke={`url(#${uid}-orange)`}
+            strokeWidth="4"
+          />
 
-          {/* Phone body */}
-          <rect x="38" y="20" width="44" height="80" rx="10" fill="url(#logoGradInner)" stroke="url(#logoGradMain)" strokeWidth="2" />
-          <rect x="42" y="28" width="36" height="56" rx="4" fill="#0f0f1a" stroke="rgba(255,255,255,0.08)" />
-
-          {/* Screen shine */}
-          <path d="M42 28 L78 28 L72 36 L42 36 Z" fill="rgba(0,245,212,0.12)" />
-
-          {/* Wrench / fix icon */}
+          {/* Controller body */}
           <path
-            d="M58 46 L52 52 C50.5 53.5 50.5 56 52 57.5 L60.5 66 C62 67.5 64.5 67.5 66 66 L68 64 L58 46Z"
+            d="M34 58 C34 44 42 36 60 36 C78 36 86 44 86 58 C86 72 82 78 74 80 L74 88 C74 92 70 96 66 96 L54 96 C50 96 46 92 46 88 L46 80 C38 78 34 72 34 58Z"
+            fill="#12121a"
+            stroke="#FF6B2C"
+            strokeWidth="2"
+          />
+
+          {/* D-pad */}
+          <rect x="44" y="52" width="14" height="4" rx="1.5" fill="#FF6B2C" />
+          <rect x="49" y="47" width="4" height="14" rx="1.5" fill="#FF6B2C" />
+
+          {/* Action buttons */}
+          <circle cx="72" cy="50" r="3.5" fill="#FF8534" />
+          <circle cx="78" cy="56" r="3.5" fill="#FF6B2C" opacity="0.85" />
+
+          {/* Wrench accent — repair mark */}
+          <path
+            d="M58 62 L52 68 C50 70 50 73 52 75 L58 81 C60 83 63 83 65 81 L68 78 L58 62Z"
             fill="#FF6B2C"
           />
-          <circle cx="54" cy="56" r="4" fill="#00F5D4" />
+          <circle cx="54" cy="70" r="2.5" fill="#FFB347" />
 
-          {/* Gear dot */}
-          <circle cx="72" cy="70" r="6" fill="none" stroke="#7C3AED" strokeWidth="2" />
-          <circle cx="72" cy="70" r="2" fill="#7C3AED" />
-
-          {/* Home button */}
-          <circle cx="60" cy="92" r="3" fill="url(#logoGradMain)" />
-
-          {/* Top speaker */}
-          <rect x="54" y="24" width="12" height="2" rx="1" fill="rgba(255,255,255,0.2)" />
-
-          {/* "As" monogram badge — bottom-left corner, clear of the phone icon */}
-          <rect x="14" y="80" width="26" height="18" rx="6" fill="url(#logoGradMain)" />
-          <text x="27" y="93" textAnchor="middle" fill="#050508" fontSize="9.5" fontWeight="800" fontFamily="Plus Jakarta Sans, Inter, sans-serif">As</text>
+          {/* Joy-Con rails */}
+          <rect x="30" y="54" width="8" height="22" rx="4" fill="#15151c" stroke="#FF6B2C" strokeWidth="1.5" opacity="0.9" />
+          <rect x="82" y="54" width="8" height="22" rx="4" fill="#15151c" stroke="#FF6B2C" strokeWidth="1.5" opacity="0.9" />
         </g>
       </svg>
 

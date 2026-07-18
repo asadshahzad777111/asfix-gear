@@ -1,20 +1,28 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" fill="none" role="img" aria-label="AsFix and Gear">
   <defs>
-    <linearGradient id="bg" x1="0" y1="0" x2="512" y2="512">
-      <stop stop-color="#FF6B2C"/>
-      <stop offset="0.5" stop-color="#7C3AED"/>
-      <stop offset="1" stop-color="#00F5D4"/>
+    <linearGradient id="g" x1="0" y1="0" x2="120" y2="120">
+      <stop stop-color="#FF8534"/>
+      <stop offset="1" stop-color="#FF6B2C"/>
     </linearGradient>
+    <filter id="gl" x="-30%" y="-30%" width="160%" height="160%">
+      <feGaussianBlur stdDeviation="3" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
   </defs>
-  <rect width="512" height="512" rx="96" fill="#050508"/>
-  <rect x="32" y="32" width="448" height="448" rx="80" fill="#050508" stroke="url(#bg)" stroke-width="8"/>
-  <rect x="160" y="96" width="192" height="320" rx="40" fill="#12121f" stroke="url(#bg)" stroke-width="6"/>
-  <rect x="176" y="128" width="160" height="224" rx="16" fill="#0a0a14"/>
-  <path d="M240 200 L216 224 C210 230 210 240 216 246 L264 294 C270 300 280 300 286 294 L296 284 L240 200Z" fill="#FF6B2C"/>
-  <circle cx="224" cy="236" r="20" fill="#00F5D4"/>
-  <circle cx="304" cy="304" r="28" fill="none" stroke="#7C3AED" stroke-width="8"/>
-  <circle cx="256" cy="384" r="12" fill="url(#bg)"/>
-  <rect x="80" y="80" width="112" height="72" rx="24" fill="url(#bg)"/>
-  <text x="136" y="128" text-anchor="middle" fill="white" font-size="48" font-weight="800" font-family="Arial Black,Arial,sans-serif">As</text>
-  <text x="256" y="468" text-anchor="middle" fill="url(#bg)" font-size="36" font-weight="700" font-family="Arial,sans-serif">Fix &amp; Gear</text>
+  <g filter="url(#gl)">
+    <rect x="8" y="8" width="104" height="104" rx="22" fill="#0a0a0f"/>
+    <rect x="8" y="8" width="104" height="104" rx="22" fill="none" stroke="url(#g)" stroke-width="4"/>
+    <path d="M34 58 C34 44 42 36 60 36 C78 36 86 44 86 58 C86 72 82 78 74 80 L74 88 C74 92 70 96 66 96 L54 96 C50 96 46 92 46 88 L46 80 C38 78 34 72 34 58Z" fill="#12121a" stroke="#FF6B2C" stroke-width="2"/>
+    <rect x="44" y="52" width="14" height="4" rx="1.5" fill="#FF6B2C"/>
+    <rect x="49" y="47" width="4" height="14" rx="1.5" fill="#FF6B2C"/>
+    <circle cx="72" cy="50" r="3.5" fill="#FF8534"/>
+    <circle cx="78" cy="56" r="3.5" fill="#FF6B2C" opacity="0.85"/>
+    <path d="M58 62 L52 68 C50 70 50 73 52 75 L58 81 C60 83 63 83 65 81 L68 78 L58 62Z" fill="#FF6B2C"/>
+    <circle cx="54" cy="70" r="2.5" fill="#FFB347"/>
+    <rect x="30" y="54" width="8" height="22" rx="4" fill="#15151c" stroke="#FF6B2C" stroke-width="1.5" opacity="0.9"/>
+    <rect x="82" y="54" width="8" height="22" rx="4" fill="#15151c" stroke="#FF6B2C" stroke-width="1.5" opacity="0.9"/>
+  </g>
 </svg>

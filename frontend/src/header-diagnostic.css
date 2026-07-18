@@ -834,9 +834,9 @@
   .navbar.navbar--dx .dx-drawer-topbar {
     display: flex !important;
     align-items: center !important;
-    gap: 0.4rem !important;
+    gap: 0.5rem !important;
     min-height: 56px !important;
-    padding: 0.45rem 0.55rem 0.35rem 0.75rem !important;
+    padding: 0.45rem 0.65rem 0.35rem 0.75rem !important;
     flex: 0 0 auto !important;
     flex-wrap: nowrap !important;
     overflow: hidden !important;
@@ -845,6 +845,7 @@
   .navbar.navbar--dx .dx-drawer-topbar .dx-logo {
     flex: 1 1 auto !important;
     min-width: 0 !important;
+    margin-right: auto !important;
   }
 
   .navbar.navbar--dx .dx-drawer-topbar .dx-logo .brand-logo-text strong {
@@ -1046,14 +1047,60 @@
     pointer-events: none !important;
   }
 
-  /* Staggered reveal on scroll body only (never animate pinned chrome / close) */
+  /* Drawer lists must not use display:contents (index.css) — breaks panel layout */
+  .navbar.navbar--dx .nav-drawer--pc .nav-links-primary,
+  .navbar.navbar--dx .nav-drawer--pc .nav-links-account,
+  .navbar.navbar--dx .nav-drawer--pc .nav-links-staff {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  /* Always visible in light + dark — animation must not leave opacity at 0 */
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-drawer-section-label,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-primary,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-primary > *,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-account,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-account > *,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-staff,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-staff > *,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-whatsapp,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .lang-toggle--drawer,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .pc-drawer-model-panel,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .pc-drawer-brand-row,
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .pc-drawer-model-row {
+    opacity: 1 !important;
+    visibility: visible !important;
+    color: #18181b !important;
+  }
+
+  [data-theme='dark'] .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-drawer-section-label,
+  [data-theme='dark'] .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-primary > *,
+  [data-theme='dark'] .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-account > *,
+  [data-theme='dark'] .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-staff > *,
+  [data-theme='dark'] .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-whatsapp,
+  [data-theme='dark'] .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .pc-drawer-brand-row,
+  [data-theme='dark'] .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .pc-drawer-model-row {
+    color: #f4f4f5 !important;
+  }
+
+  .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-drawer-section-label {
+    color: #71717a !important;
+  }
+
+  [data-theme='dark'] .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-drawer-section-label {
+    color: #a1a1aa !important;
+  }
+
+  /* Staggered reveal — transform only (opacity stays 1) */
   .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-drawer-section-label,
   .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-primary > *,
   .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-account > *,
   .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-staff > *,
   .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-whatsapp,
   .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .lang-toggle--drawer {
-    animation: dx-drawer-rise 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: dx-drawer-rise 340ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
   .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .lang-toggle--drawer {
@@ -1095,13 +1142,27 @@
 
   @keyframes dx-drawer-rise {
     from {
-      opacity: 0;
       transform: translate3d(0, 10px, 0);
     }
     to {
-      opacity: 1;
       transform: translate3d(0, 0, 0);
     }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-drawer-section-label,
+    .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-primary > *,
+    .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-account > *,
+    .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-links-staff > *,
+    .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .nav-whatsapp,
+    .navbar.navbar--dx .nav-drawer--pc.open .dx-drawer-scroll .lang-toggle--drawer {
+      animation: none !important;
+      transform: none !important;
+    }
+  }
+
+  .navbar.navbar--dx .dx-icon-btn--cart.cart-landed {
+    animation: dx-cart-bump 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
   }
 
   /* Soft grey “discovery” band under primary links */

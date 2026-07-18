@@ -147,6 +147,13 @@
   }
 }
 
+/* Header cart is canonical on phone/tablet — hide duplicate bottom-left float */
+@media (max-width: 1024px) {
+  .floating-cart-trigger {
+    display: none !important;
+  }
+}
+
 /* ── Phone (portrait + small phones) ── */
 @media (max-width: 768px) {
   .app-main {
@@ -156,15 +163,6 @@
   .hero-actions,
   .hero-main {
     padding-bottom: 0.25rem;
-  }
-
-  /* Bottom dock — no overlap with hero buttons */
-  .floating-cart-trigger {
-    bottom: var(--float-dock-bottom);
-    left: 0.65rem;
-    width: var(--float-dock-size);
-    height: var(--float-dock-size);
-    z-index: 200;
   }
 
   .chat-fab-trigger {
@@ -226,6 +224,15 @@
     display: none;
   }
 
+  /* Repair hidden on /repair — chat drops to bottom slot */
+  body:not(:has(.floating-repair-btn)) .chat-fab-trigger {
+    bottom: var(--float-stack-0) !important;
+  }
+
+  body:not(:has(.floating-repair-btn)) .staff-access {
+    bottom: var(--float-stack-1) !important;
+  }
+
   .staff-toolbar {
     bottom: calc(var(--float-dock-bottom) + var(--float-dock-size) + 0.5rem);
     right: 0.65rem;
@@ -259,16 +266,19 @@
     padding-bottom: 5.5rem;
   }
 
-  .floating-cart-trigger {
-    bottom: 1.25rem;
-    left: 1rem;
-    width: 3.35rem;
-    height: 3.35rem;
-  }
-
   .floating-repair-btn {
     bottom: 1.25rem;
     right: 1rem;
+  }
+
+  body:not(:has(.floating-repair-btn)) .chat-fab-trigger {
+    bottom: 1.25rem !important;
+    right: 1rem !important;
+  }
+
+  body:not(:has(.floating-repair-btn)) .staff-access {
+    bottom: calc(1.25rem + 3.35rem + 0.75rem) !important;
+    right: 1rem !important;
   }
 
   .chat-fab-trigger {

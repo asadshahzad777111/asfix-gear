@@ -661,26 +661,52 @@ body.custom-cursor-active {
   }
 }
 
-/* ── Fly to cart ── */
+/* ── Fly to cart — arcs up into header cart icon ── */
 .fly-to-cart {
   position: fixed;
   top: 0;
   left: 0;
   z-index: 9997;
-  width: 64px;
-  height: 64px;
-  margin: -32px 0 0 -32px;
+  width: 56px;
+  height: 56px;
+  margin: -28px 0 0 -28px;
   pointer-events: none;
   will-change: transform, opacity;
 }
 
+.fly-to-cart--header img,
 .fly-to-cart img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  border-radius: 12px;
-  box-shadow: 0 12px 32px rgba(255, 107, 44, 0.45);
-  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
+  box-shadow:
+    0 0 0 2px rgba(255, 107, 44, 0.55),
+    0 10px 28px rgba(255, 107, 44, 0.45);
+  border: 2px solid rgba(255, 255, 255, 0.85);
+}
+
+.fly-to-cart-trail {
+  position: absolute;
+  inset: -6px;
+  border-radius: 14px;
+  background: radial-gradient(circle, rgba(255, 107, 44, 0.35) 0%, transparent 70%);
+  filter: blur(4px);
+  opacity: 0.85;
+  animation: flyCartTrail 0.68s ease-out forwards;
+  pointer-events: none;
+}
+
+@keyframes flyCartTrail {
+  0% { opacity: 0.9; transform: scale(1); }
+  100% { opacity: 0; transform: scale(0.4); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fly-to-cart,
+  .fly-to-cart-trail {
+    display: none !important;
+  }
 }
 
 /* ── Floating cart ── */
@@ -1398,8 +1424,9 @@ body.custom-cursor-active {
   border: 1px solid rgba(255, 255, 255, 0.12);
 }
 
-/* Cart landing bounce */
-.floating-cart-trigger.cart-landed {
+/* Cart landing bounce — header + legacy float trigger */
+.floating-cart-trigger.cart-landed,
+.dx-icon-btn--cart.cart-landed {
   animation: cartLandBounce 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 

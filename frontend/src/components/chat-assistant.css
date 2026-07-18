@@ -33,7 +33,9 @@
     right: var(--float-dock-right, 0.65rem);
     width: var(--float-dock-size, 3.15rem);
     height: var(--float-dock-size, 3.15rem);
+    z-index: 201;
     transform: translateZ(0);
+    pointer-events: auto;
   }
 
   .chat-fab-trigger:hover,

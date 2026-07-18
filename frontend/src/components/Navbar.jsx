@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { Link, NavLink, useNavigate } from 'react-router-dom';
+import { Link, NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { generalContactPath, whatsappLink } from '../config/shop';
 import { MODEL_SPECIFIC_CATEGORIES, SHOP_BRANDS, SHOP_CATEGORIES } from '../config/products';
 import { getSeriesForShopBrand, SHOP_BRAND_TO_REPAIR_BRAND } from '../config/repairModels';
@@ -31,6 +31,9 @@ export default function Navbar() {
   const { isStaff, isCustomer, logout } = useAuth();
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
+  const drawerScrollRef = useRef(null);
+  const prevPathRef = useRef(location.pathname);
   const { count: wishlistCount } = useWishlistIds();
   const { count: cartCount, setOpen: setCartOpen } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
@@ -46,10 +49,17 @@ export default function Navbar() {
   const [cartBump, setCartBump] = useState(false);
   const prevCartRef = useRef(cartCount);
 
+  const resetDrawerScroll = () => {
+    if (drawerScrollRef.current) {
+      drawerScrollRef.current.scrollTop = 0;
+    }
+  };
+
   const closeMenu = () => {
     setMenuOpen(false);
     setDrawerTab('menu');
     setDrawerBrand(null);
+    resetDrawerScroll();
   };
 
   const openLoginModal = () => {
@@ -75,8 +85,23 @@ export default function Navbar() {
       setShopAccordionOpen(false);
       setShopMobileLevel(1);
       setShopMobileBrand(null);
+    } else {
+      resetDrawerScroll();
     }
   }, [menuOpen]);
+
+  useEffect(() => {
+    resetDrawerScroll();
+  }, [drawerTab]);
+
+  useEffect(() => {
+    if (prevPathRef.current === location.pathname) return;
+    prevPathRef.current = location.pathname;
+    setMenuOpen(false);
+    setDrawerTab('menu');
+    setDrawerBrand(null);
+    resetDrawerScroll();
+  }, [location.pathname]);
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -201,6 +226,7 @@ export default function Navbar() {
               <button
                 type="button"
                 className={`dx-icon-btn dx-icon-btn--cart${cartBump ? ' is-bump' : ''}`}
+                data-cart-target="header"
                 onClick={() => setCartOpen(true)}
                 aria-label={t('cart.openCart', { count: cartCount })}
               >
@@ -264,9 +290,6 @@ export default function Navbar() {
           <div className="nav-drawer-head nav-drawer-head--pc dx-drawer-chrome">
             <div className="dx-drawer-topbar">
               <LogoLink onNavigate={closeMenu} />
-              <Link to="/shop" className="dx-drawer-cta" onClick={closeMenu}>
-                {t('nav.shop')}
-              </Link>
               <button
                 type="button"
                 className="nav-drawer-close nav-drawer-close--pc dx-drawer-close"
@@ -300,7 +323,7 @@ export default function Navbar() {
             </div>
           </div>
 
-          <div className="dx-drawer-scroll">
+          <div className="dx-drawer-scroll" ref={drawerScrollRef}>
           {drawerTab === 'model' && (
             <div className="pc-drawer-model-panel">
               {!drawerBrand ? (

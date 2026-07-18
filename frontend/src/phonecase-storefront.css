@@ -1645,6 +1645,8 @@
   .navbar.navbar--pc .nav-drawer--pc.open .nav-links-staff > *,
   .navbar.navbar--pc .nav-drawer--pc.open .nav-whatsapp {
     animation: none !important;
+    opacity: 1 !important;
+    visibility: visible !important;
   }
 
   /* Hide focus pill / thumb orb chrome inside PhoneCase drawer */
