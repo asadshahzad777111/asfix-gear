@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="800" height="800">
+  <rect width="800" height="800" fill="#1a1a22"/>
+  <rect x="120" y="160" width="560" height="480" rx="40" fill="#2a2a35" stroke="#ff6a2b" stroke-width="6"/>
+  <text x="400" y="420" text-anchor="middle" fill="#ff6a2b" font-family="Segoe UI,sans-serif" font-size="48" font-weight="700">SAMPLE PRODUCT</text>
+</svg>

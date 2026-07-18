@@ -1,0 +1,2 @@
+# Drop product photos here, then run:
+# npm run generate:ad -- --image ads/inbox/your.jpg --title "Name" --price "Rs 650"

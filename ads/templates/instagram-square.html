@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=1080" />
+  <title>AsFix Ad</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 1080px;
+      height: 1080px;
+      overflow: hidden;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      background: #0a0a0c;
+    }
+    .frame {
+      width: 1080px;
+      height: 1080px;
+      position: relative;
+      background:
+        radial-gradient(ellipse 80% 60% at 70% 30%, rgba(255, 106, 43, 0.22), transparent 55%),
+        radial-gradient(ellipse 50% 40% at 20% 80%, rgba(255, 106, 43, 0.08), transparent 50%),
+        linear-gradient(160deg, #121218 0%, #0a0a0c 45%, #1a0f0a 100%);
+      color: #fff;
+      padding: 56px;
+      display: flex;
+      flex-direction: column;
+    }
+    .top {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .brand {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .brand-name {
+      font-size: 42px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .brand-name span { color: #ff6a2b; }
+    .brand-tag {
+      font-size: 20px;
+      color: rgba(255,255,255,0.55);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+    }
+    .badge {
+      background: #ff6a2b;
+      color: #111;
+      font-weight: 800;
+      font-size: 22px;
+      padding: 14px 22px;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .hero {
+      flex: 1;
+      display: grid;
+      place-items: center;
+      margin: 36px 0;
+      position: relative;
+    }
+    .hero-ring {
+      position: absolute;
+      width: 620px;
+      height: 620px;
+      border-radius: 50%;
+      border: 2px solid rgba(255, 106, 43, 0.35);
+      box-shadow: 0 0 80px rgba(255, 106, 43, 0.15);
+    }
+    .hero img {
+      width: 540px;
+      height: 540px;
+      object-fit: cover;
+      border-radius: 32px;
+      border: 3px solid rgba(255,255,255,0.12);
+      background: #1a1a22;
+      position: relative;
+      z-index: 1;
+    }
+    .bottom { display: flex; flex-direction: column; gap: 18px; }
+    .title {
+      font-size: 52px;
+      font-weight: 800;
+      line-height: 1.15;
+      letter-spacing: -0.02em;
+      max-height: 130px;
+      overflow: hidden;
+    }
+    .meta {
+      display: flex;
+      align-items: flex-end;
+      justify-content: space-between;
+      gap: 24px;
+    }
+    .price {
+      font-size: 64px;
+      font-weight: 900;
+      color: #ff6a2b;
+      letter-spacing: -0.03em;
+    }
+    .cta {
+      text-align: right;
+      font-size: 22px;
+      color: rgba(255,255,255,0.7);
+      font-weight: 600;
+      line-height: 1.4;
+    }
+    .cta strong { color: #fff; display: block; font-size: 26px; }
+    .bar {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      height: 14px;
+      background: #ff6a2b;
+    }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="top">
+      <div class="brand">
+        <div class="brand-name"><span>AS</span> FIX &amp; GEAR</div>
+        <div class="brand-tag">Mobile Repair &amp; Accessories</div>
+      </div>
+      <div class="badge" id="badge">SHOP NOW</div>
+    </div>
+    <div class="hero">
+      <div class="hero-ring"></div>
+      <img id="productImage" src="{{IMAGE}}" alt="" />
+    </div>
+    <div class="bottom">
+      <div class="title" id="title">{{TITLE}}</div>
+      <div class="meta">
+        <div class="price" id="price">{{PRICE}}</div>
+        <div class="cta">
+          <strong>asfixgear.com</strong>
+          WhatsApp 0303-9227000
+        </div>
+      </div>
+    </div>
+    <div class="bar"></div>
+  </div>
+</body>
+</html>

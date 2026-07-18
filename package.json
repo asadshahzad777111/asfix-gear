@@ -24,7 +24,8 @@
     "seed:repair-rates": "node scripts/seed-iphone-repair-rates.mjs",
     "mongo:ping": "node scripts/mongo-ping.mjs",
     "setup:check": "node scripts/setup-check.mjs",
-    "test:seed-images": "node scripts/test-seed-preserve-images.js"
+    "test:seed-images": "node scripts/test-seed-preserve-images.js",
+    "generate:ad": "node scripts/generate-ad.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

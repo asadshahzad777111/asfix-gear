@@ -81,9 +81,13 @@ Localhost webhook Render se **nahi** call hota. Options:
 - **n8n Cloud / Railway** (public URL), ya
 - [ngrok](https://ngrok.com/) → `ngrok http 5678` → us HTTPS URL ko `N8N_WEBHOOK_URL` do (sirf test)
 
-## 6) Social / Canva / TikTok
+## 7) Free social creatives (no Canva / Placid)
 
-Yeh attach **sirf website events** hai. IG/FB/TikTok + Canva cutout alag Meta/Canva APIs chahiye — pehle Gmail/Telegram/Sheet confirm karo.
+```powershell
+npm run generate:ad -- --image ads/inbox/product.jpg --title "Product name" --price "Rs 650"
+```
+
+See **[ads/README.md](ads/README.md)**. Output PNG + caption in `ads/out/`.
 
 ## Security
 

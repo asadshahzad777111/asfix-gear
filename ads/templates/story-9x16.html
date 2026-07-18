@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>AsFix Story</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body { width: 1080px; height: 1920px; overflow: hidden; font-family: "Segoe UI", system-ui, sans-serif; }
+    .frame {
+      width: 1080px; height: 1920px; padding: 72px 56px;
+      background:
+        radial-gradient(ellipse 90% 50% at 50% 20%, rgba(255,106,43,0.25), transparent 55%),
+        linear-gradient(180deg, #0a0a0c 0%, #1a100c 100%);
+      color: #fff; display: flex; flex-direction: column;
+    }
+    .brand-name { font-size: 48px; font-weight: 800; }
+    .brand-name span { color: #ff6a2b; }
+    .tag { margin-top: 10px; color: rgba(255,255,255,0.5); font-size: 22px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 700; }
+    .hero { flex: 1; display: grid; place-items: center; }
+    .hero img {
+      width: 720px; height: 720px; object-fit: cover; border-radius: 40px;
+      border: 3px solid rgba(255,255,255,0.12); background: #1a1a22;
+    }
+    .title { font-size: 56px; font-weight: 800; line-height: 1.15; margin-bottom: 24px; }
+    .price { font-size: 72px; font-weight: 900; color: #ff6a2b; margin-bottom: 40px; }
+    .cta { font-size: 28px; color: rgba(255,255,255,0.75); font-weight: 600; }
+    .cta strong { color: #fff; }
+    .bar { height: 16px; background: #ff6a2b; margin: 0 -56px -72px; }
+  </style>
+</head>
+<body>
+  <div class="frame">
+    <div class="brand-name"><span>AS</span> FIX &amp; GEAR</div>
+    <div class="tag">Lahore · Repair &amp; Accessories</div>
+    <div class="hero"><img id="productImage" src="{{IMAGE}}" alt="" /></div>
+    <div class="title" id="title">{{TITLE}}</div>
+    <div class="price" id="price">{{PRICE}}</div>
+    <div class="cta"><strong>asfixgear.com</strong> · 0303-9227000</div>
+    <div class="bar"></div>
+  </div>
+</body>
+</html>
