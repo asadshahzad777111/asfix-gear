@@ -634,12 +634,19 @@
 }
 
 .nav-drawer-close--pc {
+  flex: 0 0 48px;
   width: 48px !important;
+  min-width: 48px;
+  min-height: 48px;
   height: auto !important;
-  min-height: 100%;
   border-radius: 0 !important;
-  background: #1f2937 !important;
-  color: #fff !important;
+  background: #fff !important;
+  color: #374151 !important;
+  border: none;
+  border-left: 1px solid #e5e7eb;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
 }
 
 .pc-drawer-model-panel {
@@ -805,6 +812,7 @@
 
 [data-theme='dark'] .pc-trending-circle {
   background: #1f2937;
+  border-color: rgba(255, 255, 255, 0.14);
 }
 
 .case-previewer--simple .case-previewer-swatches,
@@ -1027,21 +1035,32 @@
 }
 
 .pc-trending-circle {
-  width: min(132px, 38vw);
-  height: min(132px, 38vw);
+  position: relative;
+  flex-shrink: 0;
+  width: 140px;
+  height: 140px;
   border-radius: 50%;
-  background: #f1f4f8;
-  display: grid;
-  place-items: center;
   overflow: hidden;
-  box-shadow: inset 0 0 0 1px rgba(17, 24, 39, 0.06);
-  transition: transform 0.22s ease, box-shadow 0.22s ease;
+  background: #eef1f5;
+  border: 1px solid rgba(17, 24, 39, 0.12);
+  box-shadow: none;
+  transition: transform 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
 }
 
 .pc-trending-circle img {
-  width: 72%;
-  height: 72%;
-  object-fit: contain;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center center;
+}
+
+@media (max-width: 480px) {
+  .pc-trending-circle {
+    /* 2-col mobile: keep equal circles that fit ~375px without crowding labels */
+    width: min(140px, 40vw);
+    height: min(140px, 40vw);
+  }
 }
 
 .pc-trending-label {
@@ -1053,8 +1072,9 @@
 
 @media (hover: hover) and (pointer: fine) {
   .pc-trending-item:hover .pc-trending-circle {
-    transform: translateY(-4px) scale(1.03);
-    box-shadow: 0 10px 24px rgba(255, 102, 0, 0.15);
+    transform: translateY(-3px);
+    border-color: rgba(255, 106, 43, 0.45);
+    box-shadow: 0 8px 20px rgba(16, 24, 40, 0.12);
   }
 }
 
@@ -1395,34 +1415,72 @@
     color: #fff !important;
   }
 
-  /* Black square X fixed beside the white panel */
-  .navbar.navbar--pc .nav-drawer-close--pc {
-    position: fixed !important;
+  /* Sticky drawer header — tabs + in-panel X always visible */
+  .navbar.navbar--pc .nav-drawer-head--pc {
+    position: sticky !important;
     top: 0 !important;
-    left: min(82vw, 320px) !important;
-    width: 44px !important;
-    height: 44px !important;
-    min-width: 44px !important;
-    min-height: 44px !important;
-    margin: 0 !important;
-    border: none !important;
-    border-radius: 0 !important;
-    background: #111 !important;
-    color: #fff !important;
-    z-index: 431 !important;
-    display: grid !important;
-    place-items: center !important;
-    font-size: 1rem !important;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transition: opacity 0.22s ease, visibility 0.22s;
+    z-index: 5 !important;
   }
 
-  .navbar.navbar--pc .nav-links.nav-drawer.nav-drawer--pc.open .nav-drawer-close--pc {
+  /* Close X inside drawer header (top-right), not outside the panel */
+  .navbar.navbar--pc .nav-drawer-close--pc,
+  .navbar.navbar--pc .dx-drawer-close {
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    flex: 0 0 48px !important;
+    width: 48px !important;
+    height: auto !important;
+    min-width: 48px !important;
+    min-height: 48px !important;
+    margin: 0 !important;
+    border: none !important;
+    border-left: 1px solid #e5e7eb !important;
+    border-radius: 0 !important;
+    background: #fff !important;
+    color: #374151 !important;
+    z-index: 6 !important;
+    display: grid !important;
+    place-items: center !important;
     opacity: 1 !important;
     visibility: visible !important;
     pointer-events: auto !important;
+    cursor: pointer !important;
+    transition: background 0.15s ease, color 0.15s ease !important;
+    clip-path: none !important;
+  }
+
+  .navbar.navbar--pc .nav-drawer-close--pc:hover,
+  .navbar.navbar--pc .nav-drawer-close--pc:focus-visible,
+  .navbar.navbar--pc .dx-drawer-close:hover,
+  .navbar.navbar--pc .dx-drawer-close:focus-visible {
+    background: #f3f4f6 !important;
+    color: #111 !important;
+    outline: none;
+  }
+
+  .navbar.navbar--pc .nav-drawer-close--pc:focus-visible {
+    box-shadow: inset 0 0 0 2px var(--pc-accent, #ff6600);
+  }
+
+  [data-theme='dark'] .navbar.navbar--pc .nav-drawer-close--pc,
+  [data-theme='dark'] .navbar.navbar--pc .dx-drawer-close {
+    background: #1f2937 !important;
+    border-left-color: #374151 !important;
+    color: #f3f4f6 !important;
+  }
+
+  [data-theme='dark'] .navbar.navbar--pc .nav-drawer-close--pc:hover,
+  [data-theme='dark'] .navbar.navbar--pc .dx-drawer-close:hover {
+    background: #374151 !important;
+    color: #fff !important;
+  }
+
+  .navbar.navbar--pc .dx-drawer-close svg {
+    display: block;
+    width: 18px;
+    height: 18px;
   }
 
   /* Flatten drawer rows — list style, not dark rounded cards */

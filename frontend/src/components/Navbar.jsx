@@ -136,15 +136,17 @@ export default function Navbar() {
           <div className="container dx-utility-inner">
             <button
               type="button"
-              className={`menu-toggle menu-toggle--leading dx-menu-toggle ${menuOpen ? 'is-open' : ''}`}
+              className={`menu-toggle menu-toggle--leading dx-menu-toggle dx-icon-btn ${menuOpen ? 'is-open' : ''}`}
               onClick={() => setMenuOpen((open) => !open)}
               aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
               aria-expanded={menuOpen}
               aria-controls="main-nav"
             >
-              <span className="menu-toggle-bar" />
-              <span className="menu-toggle-bar" />
-              <span className="menu-toggle-bar" />
+              <span className="dx-burger" aria-hidden="true">
+                <span className="dx-burger-line" />
+                <span className="dx-burger-line" />
+                <span className="dx-burger-line" />
+              </span>
             </button>
 
             <LogoLink onNavigate={closeMenu} />
@@ -258,7 +260,23 @@ export default function Navbar() {
           className={`nav-links nav-drawer nav-drawer--pc ${menuOpen ? 'open' : ''}`}
           aria-hidden={!menuOpen}
         >
-          <div className="nav-drawer-head nav-drawer-head--pc">
+          <div className="nav-drawer-head nav-drawer-head--pc dx-drawer-chrome">
+            <div className="dx-drawer-topbar">
+              <button
+                type="button"
+                className="nav-drawer-close nav-drawer-close--pc dx-drawer-close"
+                onClick={closeMenu}
+                aria-label={t('nav.closeMenu')}
+              >
+                <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round">
+                  <path d="M6 6l12 12M18 6L6 18" />
+                </svg>
+              </button>
+              <LogoLink onNavigate={closeMenu} />
+              <Link to="/shop" className="dx-drawer-cta" onClick={closeMenu}>
+                {t('nav.shop')}
+              </Link>
+            </div>
             <div className="pc-drawer-tabs" role="tablist">
               <button
                 type="button"
@@ -279,14 +297,6 @@ export default function Navbar() {
                 {t('nav.selectModel')}
               </button>
             </div>
-            <button
-              type="button"
-              className="nav-drawer-close nav-drawer-close--pc"
-              onClick={closeMenu}
-              aria-label={t('nav.closeMenu')}
-            >
-              <span className="nav-drawer-close-icon">✕</span>
-            </button>
           </div>
 
           {drawerTab === 'model' && (

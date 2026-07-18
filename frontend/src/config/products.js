@@ -76,16 +76,17 @@ export const MAX_GALLERY_IMAGES = 8;
  */
 export const MODEL_SPECIFIC_CATEGORIES = ['Cases', 'Back Covers', 'Screen Guards'];
 
+/** Square-friendly defaults (600×600, center crop) for circular trending thumbs */
 export const DEFAULT_IMAGES = {
-  Gaming: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=600&fit=crop&q=80',
-  Cases: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&h=600&fit=crop&q=80',
-  'Back Covers': 'https://images.unsplash.com/photo-1565849904461-04a58ad377e0?w=600&h=600&fit=crop&q=80',
-  Chargers: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&h=600&fit=crop&q=80',
-  Cables: 'https://images.unsplash.com/photo-1622445275463-afa2ab738c34?w=600&h=600&fit=crop&q=80',
-  'Screen Guards': 'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=600&h=600&fit=crop&q=80',
-  Audio: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop&q=80',
-  'Power Banks': 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=600&h=600&fit=crop&q=80',
-  Accessories: 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=600&h=600&fit=crop&q=80',
+  Gaming: 'https://images.unsplash.com/photo-1542751371-adc38448a05e?w=600&h=600&fit=crop&crop=center&q=80',
+  Cases: 'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=600&h=600&fit=crop&crop=center&q=80',
+  'Back Covers': 'https://images.unsplash.com/photo-1556656793-08538906a9f8?w=600&h=600&fit=crop&crop=center&q=80',
+  Chargers: 'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=600&h=600&fit=crop&crop=center&q=80',
+  Cables: 'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=600&h=600&fit=crop&crop=center&q=80',
+  'Screen Guards': 'https://images.unsplash.com/photo-1592899677977-9c10ca588bbd?w=600&h=600&fit=crop&crop=center&q=80',
+  Audio: 'https://images.unsplash.com/photo-1505740420928-5e560c06d30e?w=600&h=600&fit=crop&crop=center&q=80',
+  'Power Banks': 'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=600&h=600&fit=crop&crop=center&q=80',
+  Accessories: 'https://images.unsplash.com/photo-1574944985070-8f3ebc6b79d2?w=600&h=600&fit=crop&crop=center&q=80',
 };
 
 export const EMPTY_PRODUCT = {
@@ -116,5 +117,8 @@ export function getDefaultImage(category) {
 export function getCategoryThumb(category, size = 128) {
   const base = DEFAULT_IMAGES[category];
   if (!base) return null;
-  return base.replace(/w=\d+&h=\d+/, `w=${size}&h=${size}`);
+  let url = base.replace(/w=\d+/, `w=${size}`).replace(/h=\d+/, `h=${size}`);
+  if (!/[?&]fit=/.test(url)) url += (url.includes('?') ? '&' : '?') + 'fit=crop';
+  if (!/[?&]crop=/.test(url)) url += '&crop=center';
+  return url;
 }

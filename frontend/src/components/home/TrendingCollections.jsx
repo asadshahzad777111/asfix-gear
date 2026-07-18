@@ -47,8 +47,15 @@ export default function TrendingCollections() {
               to={`/shop?category=${encodeURIComponent(item.category)}`}
               className="pc-trending-item"
             >
-              <span className="pc-trending-circle">
-                <img src={resolveImage(item.category, overrides)} alt="" loading="lazy" />
+              <span className="pc-trending-circle" aria-hidden="true">
+                <img
+                  src={resolveImage(item.category, overrides)}
+                  alt=""
+                  width={140}
+                  height={140}
+                  loading="lazy"
+                  decoding="async"
+                />
               </span>
               <span className="pc-trending-label">{t(item.labelKey)}</span>
             </Link>
