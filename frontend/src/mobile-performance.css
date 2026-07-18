@@ -188,6 +188,48 @@
   }
 }
 
+/* This file loads after responsive-floats.css, so repeat the phone FAB geometry here. */
+@media (max-width: 768px) {
+  .floating-repair-btn {
+    position: fixed !important;
+    top: auto !important;
+    left: auto !important;
+    right: var(--float-dock-right, 1rem) !important;
+    bottom: var(--float-stack-0, max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))) !important;
+    display: grid !important;
+    place-items: center !important;
+    flex: 0 0 auto !important;
+    width: var(--float-dock-size, 3.15rem) !important;
+    min-width: var(--float-dock-size, 3.15rem) !important;
+    max-width: var(--float-dock-size, 3.15rem) !important;
+    height: var(--float-dock-size, 3.15rem) !important;
+    min-height: var(--float-dock-size, 3.15rem) !important;
+    max-height: var(--float-dock-size, 3.15rem) !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    line-height: 1 !important;
+    overflow: hidden !important;
+    transform: none !important;
+  }
+
+  .floating-repair-btn:hover,
+  .floating-repair-btn:active {
+    transform: none !important;
+  }
+
+  .floating-repair-btn-label {
+    display: none !important;
+  }
+
+  .floating-repair-btn-icon {
+    display: block !important;
+    width: 1.25rem !important;
+    height: 1.25rem !important;
+    margin: 0 !important;
+    flex: 0 0 auto !important;
+  }
+}
+
 /* Touch / no-hover — prevent sticky :hover lifts (Phase 3 floats keep tap pop) */
 @media (hover: none), (pointer: coarse) {
   .repair-step:hover,
