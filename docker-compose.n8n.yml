@@ -1,0 +1,24 @@
+# Local n8n for AsFix automations (does NOT replace Vercel/Render site).
+# Usage:
+#   docker compose -f docker-compose.n8n.yml up -d
+# Open http://localhost:5678 → create Webhook workflow → copy Production URL
+# Put that URL in Render env as N8N_WEBHOOK_URL (or N8N_WEBHOOK_ORDER / _REPAIR / _CONTACT)
+
+services:
+  n8n:
+    image: n8nio/n8n:latest
+    restart: unless-stopped
+    ports:
+      - '5678:5678'
+    environment:
+      - N8N_HOST=localhost
+      - N8N_PORT=5678
+      - N8N_PROTOCOL=http
+      - WEBHOOK_URL=http://localhost:5678/
+      - GENERIC_TIMEZONE=Asia/Karachi
+      - TZ=Asia/Karachi
+    volumes:
+      - n8n_data:/home/node/.n8n
+
+volumes:
+  n8n_data:

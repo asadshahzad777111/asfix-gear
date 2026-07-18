@@ -1,0 +1,266 @@
+{
+  "name": "AsFix — Gmail + Sheet + Review",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "asfix-events",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "wh1",
+      "name": "AsFix Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [0, 300],
+      "webhookId": "asfix-events"
+    },
+    {
+      "parameters": {
+        "jsCode": "const root = items[0].json;\nconst body = root.body || root;\nconst event = body.event || '';\nconst d = body.data || {};\nconst device = [d.device_brand, d.device_model].filter(Boolean).join(' ');\nconst ref = d.order_id || d.booking_ref || d.id || '';\nreturn [{\n  json: {\n    event,\n    at: body.at || new Date().toISOString(),\n    ref: String(ref),\n    customer_name: d.customer_name || d.name || '',\n    phone: d.phone || '',\n    email: d.email || '',\n    device,\n    issue: d.issue || d.message || d.notes || '',\n    status: d.status || '',\n    total: d.total != null ? String(d.total) : '',\n    review_url: d.review_url || 'https://www.google.com/maps?q=AsFix+%26+Gear+Lahore',\n    shop_email: 'asadshahzad777111@gmail.com',\n  }\n}];"
+      },
+      "id": "code1",
+      "name": "Normalize Payload",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [220, 300]
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "mode": "id",
+          "value": "PASTE_GOOGLE_SHEET_ID_HERE"
+        },
+        "sheetName": {
+          "__rl": true,
+          "mode": "name",
+          "value": "Leads"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "timestamp": "={{ $json.at }}",
+            "event": "={{ $json.event }}",
+            "ref": "={{ $json.ref }}",
+            "customer_name": "={{ $json.customer_name }}",
+            "phone": "={{ $json.phone }}",
+            "email": "={{ $json.email }}",
+            "device": "={{ $json.device }}",
+            "issue_or_notes": "={{ $json.issue }}",
+            "status": "={{ $json.status }}",
+            "total": "={{ $json.total }}"
+          }
+        },
+        "options": {}
+      },
+      "id": "sheet1",
+      "name": "Append Google Sheet",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.5,
+      "position": [460, 300],
+      "notesInFlow": true,
+      "notes": "Connect Google account in n8n Credentials. Replace PASTE_GOOGLE_SHEET_ID_HERE. Sheet tab name must be Leads (or change sheetName)."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "c1",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "order_created",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-order",
+      "name": "Order?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 120]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "c2",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "repair_created",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-repair",
+      "name": "Repair booked?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 300]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "c3",
+              "leftValue": "={{ $json.event }}",
+              "rightValue": "repair_completed",
+              "operator": { "type": "string", "operation": "equals" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-done",
+      "name": "Repair done?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [680, 500]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.shop_email }}",
+        "subject": "=AsFix NEW ORDER {{ $json.ref }}",
+        "emailType": "text",
+        "message": "=New order on asfixgear.com\n\nOrder: {{ $json.ref }}\nCustomer: {{ $json.customer_name }}\nPhone: {{ $json.phone }}\nTotal: {{ $json.total }}\n\nOpen staff panel to process.",
+        "options": {}
+      },
+      "id": "gmail-order-shop",
+      "name": "Gmail → Shop (Order)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [920, 80],
+      "notesInFlow": true,
+      "notes": "Connect Gmail OAuth or App Password credential in n8n."
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.shop_email }}",
+        "subject": "=AsFix NEW REPAIR {{ $json.ref }}",
+        "emailType": "text",
+        "message": "=New repair booking\n\nRef: {{ $json.ref }}\nCustomer: {{ $json.customer_name }}\nPhone: {{ $json.phone }}\nDevice: {{ $json.device }}\nIssue: {{ $json.issue }}\n",
+        "options": {}
+      },
+      "id": "gmail-repair-shop",
+      "name": "Gmail → Shop (Repair)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [920, 280]
+    },
+    {
+      "parameters": {
+        "amount": 2,
+        "unit": "days"
+      },
+      "id": "wait-2d",
+      "name": "Wait 2 days",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [920, 500],
+      "webhookId": "wait-review",
+      "notesInFlow": true,
+      "notes": "Needs n8n running for 2 days (Cloud/Railway). Local PC must stay on."
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": { "caseSensitive": true, "leftValue": "", "typeValidation": "strict" },
+          "conditions": [
+            {
+              "id": "c4",
+              "leftValue": "={{ $json.email }}",
+              "rightValue": "",
+              "operator": { "type": "string", "operation": "notEmpty" }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "id": "if-email",
+      "name": "Has customer email?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [1140, 500]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.email }}",
+        "subject": "AsFix & Gear — aap ka experience kaisa raha?",
+        "emailType": "text",
+        "message": "=Assalam o Alaikum {{ $json.customer_name }}!\n\nAap ka {{ $json.device }} repair ({{ $json.ref }}) complete ho chuka tha. Agar service achi lagi ho to Google pe short review dein — bohot madad milti hai:\n\n{{ $json.review_url }}\n\nShukriya,\nAsFix & Gear\n0303-9227000",
+        "options": {}
+      },
+      "id": "gmail-review",
+      "name": "Gmail → Review ask",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1380, 460]
+    },
+    {
+      "parameters": {
+        "sendTo": "={{ $json.shop_email }}",
+        "subject": "=AsFix review skip — no email {{ $json.ref }}",
+        "emailType": "text",
+        "message": "=Repair completed but customer has no email on file.\nRef: {{ $json.ref }}\nPhone: {{ $json.phone }}\nName: {{ $json.customer_name }}\n\nWhatsApp se manually review link bhej sakte ho.",
+        "options": {}
+      },
+      "id": "gmail-review-fallback",
+      "name": "Gmail → Shop (no email)",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [1380, 580]
+    }
+  ],
+  "connections": {
+    "AsFix Webhook": {
+      "main": [[{ "node": "Normalize Payload", "type": "main", "index": 0 }]]
+    },
+    "Normalize Payload": {
+      "main": [[{ "node": "Append Google Sheet", "type": "main", "index": 0 }]]
+    },
+    "Append Google Sheet": {
+      "main": [
+        [
+          { "node": "Order?", "type": "main", "index": 0 },
+          { "node": "Repair booked?", "type": "main", "index": 0 },
+          { "node": "Repair done?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Order?": {
+      "main": [[{ "node": "Gmail → Shop (Order)", "type": "main", "index": 0 }], []]
+    },
+    "Repair booked?": {
+      "main": [[{ "node": "Gmail → Shop (Repair)", "type": "main", "index": 0 }], []]
+    },
+    "Repair done?": {
+      "main": [[{ "node": "Wait 2 days", "type": "main", "index": 0 }], []]
+    },
+    "Wait 2 days": {
+      "main": [[{ "node": "Has customer email?", "type": "main", "index": 0 }]]
+    },
+    "Has customer email?": {
+      "main": [
+        [{ "node": "Gmail → Review ask", "type": "main", "index": 0 }],
+        [{ "node": "Gmail → Shop (no email)", "type": "main", "index": 0 }]
+      ]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "description": "Import → set Sheet ID → connect Gmail + Google Sheets credentials → Activate → copy Production Webhook URL to Render N8N_WEBHOOK_URL"
+  }
+}

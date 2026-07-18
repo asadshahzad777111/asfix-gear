@@ -4,6 +4,7 @@ import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
 import { buildRepairStatusCustomerMessage } from '../services/repairNotifications.js';
 import { publishRepairEvent, publishRepairMessageEvent } from '../services/liveEvents.js';
+import { notifyN8nRepairCreated, notifyN8nRepairUpdated } from '../services/n8n.js';
 import { rateLimit, writeLimiter, clientKey } from '../middleware/rateLimit.js';
 import { MAZDORI_KEYWORDS } from '../rates/iphone-repair-rates.js';
 
@@ -303,6 +304,7 @@ router.post('/book', writeLimiter, optionalAuth, (req, res) => {
   ).catch(() => {});
 
   publishRepairEvent('repair_created', booking);
+  notifyN8nRepairCreated(booking);
 
   res.status(201).json({
     message: 'Repair intake submitted successfully',
@@ -384,6 +386,9 @@ router.patch('/bookings/:id/status', requireAuth, requireRole(...STAFF), (req, r
     return res.status(400).json({ error: 'Invalid status' });
   }
 
+  const previous = store.getRepairBookings().find((b) => b.id === Number(req.params.id));
+  const previousStatus = previous?.status || null;
+
   const booking = store.updateBookingStatus(req.params.id, status, req.auth.user);
   if (!booking) return res.status(404).json({ error: 'Booking not found' });
 
@@ -393,6 +398,7 @@ router.patch('/bookings/:id/status', requireAuth, requireRole(...STAFF), (req, r
   }
 
   publishRepairEvent('repair_updated', booking);
+  notifyN8nRepairUpdated(booking, previousStatus);
   res.json(booking);
 });
 

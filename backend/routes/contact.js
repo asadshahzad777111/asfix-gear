@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
+import { notifyN8nContactCreated } from '../services/n8n.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
@@ -57,6 +58,8 @@ router.post('/', optionalAuth, (req, res) => {
       `Assalam o Alaikum ${saved.name}! We received your message at AsFix & Gear and will reply soon. Thank you for contacting us.`
     ).catch(() => {});
   }
+
+  notifyN8nContactCreated(saved);
 
   res.status(201).json({
     message: 'Message sent successfully. We will contact you soon!',

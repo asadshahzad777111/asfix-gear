@@ -1,0 +1,112 @@
+{
+  "name": "AsFix Gear — Website Events",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "asfix-events",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "id": "webhook-asfix",
+      "name": "Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [240, 300],
+      "webhookId": "asfix-events"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.event || $json.event }}",
+              "operation": "equals",
+              "value2": "order_created"
+            }
+          ]
+        }
+      },
+      "id": "if-order",
+      "name": "Is Order?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [480, 200]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "string": [
+            {
+              "value1": "={{ $json.body.event || $json.event }}",
+              "operation": "equals",
+              "value2": "repair_created"
+            }
+          ]
+        }
+      },
+      "id": "if-repair",
+      "name": "Is Repair?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 1,
+      "position": [480, 400]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "summary",
+              "value": "=AsFix ORDER {{ $json.body.data.order_id || $json.data.order_id }} — {{ $json.body.data.customer_name || $json.data.customer_name }} — {{ $json.body.data.phone || $json.data.phone }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-order",
+      "name": "Order Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [720, 160]
+    },
+    {
+      "parameters": {
+        "values": {
+          "string": [
+            {
+              "name": "summary",
+              "value": "=AsFix REPAIR {{ $json.body.data.booking_ref || $json.data.booking_ref }} — {{ $json.body.data.customer_name || $json.data.customer_name }} — {{ $json.body.data.device_brand || $json.data.device_brand }} {{ $json.body.data.device_model || $json.data.device_model }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "set-repair",
+      "name": "Repair Summary",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 2,
+      "position": [720, 400]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          { "node": "Is Order?", "type": "main", "index": 0 },
+          { "node": "Is Repair?", "type": "main", "index": 0 }
+        ]
+      ]
+    },
+    "Is Order?": {
+      "main": [[{ "node": "Order Summary", "type": "main", "index": 0 }], []]
+    },
+    "Is Repair?": {
+      "main": [[{ "node": "Repair Summary", "type": "main", "index": 0 }], []]
+    }
+  },
+  "settings": { "executionOrder": "v1" },
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "description": "Import in n8n → activate → copy Production Webhook URL → set as N8N_WEBHOOK_URL on Render. Then add Gmail/Telegram/Sheets nodes after the Set nodes."
+  }
+}

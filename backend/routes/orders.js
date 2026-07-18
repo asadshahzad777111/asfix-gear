@@ -14,6 +14,7 @@ import {
   sendOrderStatusEmail,
 } from '../services/orderEmail.js';
 import { publishOrderEvent } from '../services/liveEvents.js';
+import { notifyN8nOrderCreated } from '../services/n8n.js';
 import { isR2Configured, uploadPaymentProof } from '../services/r2.js';
 
 function findOrderById(id) {
@@ -214,6 +215,7 @@ router.post('/', requireAuth, (req, res) => {
       notifyCustomerWhatsApp(order.phone, placedWa).catch(() => {});
     }
     publishOrderEvent('order_created', order);
+    notifyN8nOrderCreated(order);
     res.status(201).json({ message: 'Order placed successfully', order });
   } catch (err) {
     if (err instanceof store.StockError) {

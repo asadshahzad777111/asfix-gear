@@ -17,6 +17,7 @@ import { securityHeaders, getCorsOptions } from './middleware/security.js';
 import { requireStorageReady } from './middleware/storageReady.js';
 import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
 import { isR2Configured } from './services/r2.js';
+import { isN8nConfigured } from './services/n8n.js';
 import { buildSitemapXml } from './services/sitemap.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -82,6 +83,7 @@ app.get('/api/health', (_req, res) => {
     storage: getStorageBackend(),
     ready: ready != null && ready !== false,
     r2: isR2Configured() ? 'configured' : 'off',
+    n8n: isN8nConfigured() ? 'configured' : 'off',
   });
 });
 
