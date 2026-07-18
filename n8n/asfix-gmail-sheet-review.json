@@ -31,12 +31,12 @@
         "documentId": {
           "__rl": true,
           "mode": "id",
-          "value": "PASTE_GOOGLE_SHEET_ID_HERE"
+          "value": "1IlS-jGoBcRucVfq9Lk46d-Ja1xPX9r22QdPx7Fxvck0"
         },
         "sheetName": {
           "__rl": true,
           "mode": "name",
-          "value": "Leads"
+          "value": "Sheet1"
         },
         "columns": {
           "mappingMode": "defineBelow",
