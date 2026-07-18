@@ -834,9 +834,8 @@
 
   .navbar.navbar--dx .dx-drawer-scroll {
     flex: 1 1 auto !important;
-    min-height: 0 !important;
-    display: flex !important;
-    flex-direction: column !important;
+    min-height: min(50vh, calc(100dvh - 8rem)) !important;
+    display: block !important;
     overflow-x: hidden !important;
     overflow-y: auto !important;
     -webkit-overflow-scrolling: touch !important;
@@ -1325,10 +1324,84 @@ body.cart-open .floating-cart-panel {
 }
 
 /* ═══════════════════════════════════════════════════════════
-   SPA nav drawer fix — scroll area must not collapse after route change
+   SPA nav drawer fix — portaled drawer, reliable scroll area
    ═══════════════════════════════════════════════════════════ */
 
 @media (max-width: 1024px) {
+  /* Portal root escapes sticky header contain:layout — no layout containment here */
+  .dx-drawer-portal-root {
+    position: static !important;
+    contain: none !important;
+    pointer-events: none;
+    z-index: auto;
+    padding: 0 !important;
+    margin: 0 !important;
+    border: none !important;
+    background: transparent !important;
+    min-height: 0 !important;
+    transform: none !important;
+  }
+
+  .dx-drawer-portal-root .nav-overlay.visible,
+  .dx-drawer-portal-root .nav-links.nav-drawer.open {
+    pointer-events: auto;
+  }
+
+  .dx-drawer-portal-root .nav-links.nav-drawer.nav-drawer--pc {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    right: auto !important;
+    bottom: 0 !important;
+    height: 100dvh !important;
+    max-height: 100dvh !important;
+    contain: none !important;
+  }
+
+  .dx-drawer-portal-root .dx-drawer-chrome {
+    flex: 0 0 auto !important;
+    flex-shrink: 0 !important;
+  }
+
+  .dx-drawer-portal-root .dx-drawer-scroll {
+    flex: 1 1 auto !important;
+    min-height: min(50vh, calc(100dvh - 8rem)) !important;
+    height: auto !important;
+    max-height: none !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    display: block !important;
+  }
+
+  .dx-drawer-portal-root .dx-drawer-tab-panel,
+  .dx-drawer-portal-root .dx-drawer-menu-panel,
+  .dx-drawer-portal-root .pc-drawer-model-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-height: min-content !important;
+    flex: none !important;
+    color: #111 !important;
+  }
+
+  .dx-drawer-portal-root .nav-drawer-item,
+  .dx-drawer-portal-root .nav-drawer-item-label,
+  .dx-drawer-portal-root .nav-drawer-section-label,
+  .dx-drawer-portal-root .nav-drawer-accordion-link {
+    color: #111 !important;
+    -webkit-text-fill-color: #111 !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+  }
+
+  [data-theme='dark'] .dx-drawer-portal-root .dx-drawer-tab-panel,
+  [data-theme='dark'] .dx-drawer-portal-root .nav-drawer-item,
+  [data-theme='dark'] .dx-drawer-portal-root .nav-drawer-item-label,
+  [data-theme='dark'] .dx-drawer-portal-root .nav-drawer-section-label {
+    color: #f4f4f5 !important;
+    -webkit-text-fill-color: #f4f4f5 !important;
+  }
+
   .dx-drawer-tab-panel--hidden {
     display: none !important;
   }
