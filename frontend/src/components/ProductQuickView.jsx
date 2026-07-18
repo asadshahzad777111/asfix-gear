@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
 import useModalBehavior from '../hooks/useModalBehavior';
 import { useCart } from '../context/CartContext';
@@ -36,7 +37,7 @@ export default function ProductQuickView({ product, open, onClose }) {
     setImageIndex(0);
   }, [open, product?.id]);
 
-  if (!open || !product) return null;
+  if (!open || !product || typeof document === 'undefined') return null;
 
   const inStock = isInStock(product.stock);
   const { main, images } = getProductCardImages(product);
@@ -53,7 +54,7 @@ export default function ProductQuickView({ product, open, onClose }) {
     });
   };
 
-  return (
+  return createPortal(
     <>
       <div className="modal-overlay shop-quickview-overlay" onClick={onClose} role="presentation">
         <div
@@ -152,6 +153,7 @@ export default function ProductQuickView({ product, open, onClose }) {
       </div>
       <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
       <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
-    </>
+    </>,
+    document.body
   );
 }

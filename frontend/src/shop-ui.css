@@ -189,15 +189,64 @@
   color: var(--text);
 }
 
-/* Quick view modal */
+/* Quick view modal — portaled to document.body for true viewport centering */
 .shop-quickview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: max(1rem, env(safe-area-inset-top, 0px)) max(1rem, env(safe-area-inset-right, 0px))
+    max(1rem, env(safe-area-inset-bottom, 0px)) max(1rem, env(safe-area-inset-left, 0px));
   animation: shopQuickviewFade 0.22s ease;
 }
 
 .shop-quickview-panel {
-  width: min(760px, 100%);
+  width: min(760px, calc(100vw - 2rem));
+  max-width: 100%;
+  max-height: min(90dvh, calc(100dvh - 2rem));
+  margin: auto;
+  flex: 0 0 auto;
+  align-self: center;
   padding: 1.5rem;
   animation: shopQuickviewRise 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+[data-theme='dark'] .shop-quickview-panel {
+  background: var(--bg-elevated);
+  border-color: var(--glass-edge);
+  color: var(--text);
+}
+
+[data-theme='dark'] .shop-quickview-info h2 {
+  color: var(--text);
+}
+
+[data-theme='dark'] .shop-quickview-category {
+  color: var(--primary);
+}
+
+[data-theme='dark'] .shop-quickview-image,
+[data-theme='dark'] .shop-quickview-thumb {
+  background: rgba(255, 255, 255, 0.06);
+}
+
+[data-theme='dark'] .shop-quickview-details.btn-outline {
+  border-color: var(--border-strong);
+  color: var(--text);
+}
+
+[data-theme='dark'] .shop-quickview-details.btn-outline:hover {
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+[data-theme='dark'] .shop-quickview-panel .modal-close {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text);
+  border-color: var(--glass-edge);
 }
 
 @keyframes shopQuickviewFade {

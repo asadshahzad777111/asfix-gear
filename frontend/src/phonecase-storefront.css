@@ -1185,10 +1185,10 @@
    PhoneCase mobile overrides — beat mobile-nav.css !important
    ═══════════════════════════════════════════════════════════ */
 
-/* Logo contrast — pink accent + theme-aware wordmark */
+/* Logo contrast — orange accent + theme-aware wordmark */
 .navbar.navbar--pc .logo .brand-logo-accent {
-  color: #e91e8c !important;
-  -webkit-text-fill-color: #e91e8c !important;
+  color: var(--hdr-accent, #ff6a2b) !important;
+  -webkit-text-fill-color: var(--hdr-accent, #ff6a2b) !important;
 }
 
 .navbar.navbar--pc .logo .brand-logo-name {
@@ -1507,10 +1507,32 @@
   .navbar.navbar--pc .nav-drawer--pc .nav-links-primary,
   .navbar.navbar--pc .nav-drawer--pc .nav-links-staff,
   .navbar.navbar--pc .nav-drawer--pc .nav-links-account {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
     gap: 0 !important;
     padding: 0 !important;
     margin: 0 !important;
     border: none !important;
+  }
+
+  .navbar.navbar--pc .nav-drawer--pc .dx-drawer-scroll {
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    overflow-x: hidden !important;
+    overflow-y: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+  }
+
+  .navbar.navbar--pc .nav-drawer--pc .dx-drawer-menu-panel {
+    display: flex !important;
+    flex-direction: column !important;
+    flex: 1 1 auto !important;
+    min-height: 0 !important;
+    width: 100% !important;
   }
 
   .navbar.navbar--pc .nav-drawer--pc .nav-drawer-section-label {

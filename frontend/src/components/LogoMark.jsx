@@ -1,5 +1,5 @@
-/** Shared AsFix & Gear icon mark — pink/white split gear + phone (matches shop card). */
-export const BRAND_PINK = '#e91e8c';
+/** Shared AsFix & Gear icon mark — orange/white split gear + phone (matches shop theme). */
+export const BRAND_ACCENT = '#ff6a2b';
 export const BRAND_WHITE = '#ffffff';
 
 export function LogoMarkPaths({ uid = 'logo' }) {
@@ -18,11 +18,11 @@ export function LogoMarkPaths({ uid = 'logo' }) {
         </clipPath>
       </defs>
 
-      {/* 8-tooth gear — left pink, right white */}
+      {/* 8-tooth gear — left orange, right white */}
       <path
         id={gear}
         d="M60 8 L65.8 19.2 L77.8 16.8 L80.2 28.8 L92.2 31.2 L89.8 43.2 L101.8 49.2 L93.4 58.8 L101.8 68.4 L89.8 74.4 L92.2 86.4 L80.2 88.8 L77.8 100.8 L65.8 98.4 L60 110 L54.2 98.4 L42.2 100.8 L39.8 88.8 L27.8 86.4 L30.2 74.4 L18.2 68.4 L26.6 58.8 L18.2 49.2 L30.2 43.2 L27.8 31.2 L39.8 28.8 L42.2 16.8 L54.2 19.2 Z"
-        fill={BRAND_PINK}
+        fill={BRAND_ACCENT}
         clipPath={`url(#${left})`}
       />
       <path
@@ -33,8 +33,8 @@ export function LogoMarkPaths({ uid = 'logo' }) {
 
       {/* Phone + repair tools (tilted) */}
       <g transform="translate(60 62) rotate(-22)">
-        <rect x="-13" y="-26" width="26" height="46" rx="4.5" fill={BRAND_PINK} />
-        <rect x="-10" y="-21" width="20" height="32" rx="2.5" fill="#c41775" opacity="0.35" />
+        <rect x="-13" y="-26" width="26" height="46" rx="4.5" fill={BRAND_ACCENT} />
+        <rect x="-10" y="-21" width="20" height="32" rx="2.5" fill="#cc5520" opacity="0.35" />
 
         {/* Wrench */}
         <path

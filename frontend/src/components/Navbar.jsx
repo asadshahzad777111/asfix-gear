@@ -46,6 +46,7 @@ export default function Navbar() {
   const [finderCategory, setFinderCategory] = useState(null);
   const [drawerTab, setDrawerTab] = useState('menu');
   const [drawerBrand, setDrawerBrand] = useState(null);
+  const [menuSession, setMenuSession] = useState(0);
   const [scrolled, setScrolled] = useState(false);
   const [cartBump, setCartBump] = useState(false);
   const prevCartRef = useRef(cartCount);
@@ -56,11 +57,34 @@ export default function Navbar() {
     }
   };
 
+  const clearModalBodyLocks = () => {
+    document.body.classList.remove('modal-open');
+    if (document.body.style.overflow === 'hidden') {
+      document.body.style.overflow = '';
+    }
+  };
+
   const closeMenu = () => {
     setMenuOpen(false);
     setDrawerTab('menu');
     setDrawerBrand(null);
     resetDrawerScroll();
+  };
+
+  const toggleMenu = () => {
+    setMenuOpen((open) => {
+      if (open) {
+        setDrawerTab('menu');
+        setDrawerBrand(null);
+        return false;
+      }
+      clearModalBodyLocks();
+      setDrawerTab('menu');
+      setDrawerBrand(null);
+      setMenuSession((n) => n + 1);
+      resetDrawerScroll();
+      return true;
+    });
   };
 
   const openLoginModal = () => {
@@ -180,7 +204,7 @@ export default function Navbar() {
             <button
               type="button"
               className={`menu-toggle menu-toggle--leading dx-menu-toggle dx-icon-btn ${menuOpen ? 'is-open' : ''}`}
-              onClick={() => setMenuOpen((open) => !open)}
+              onClick={toggleMenu}
               aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
               aria-expanded={menuOpen}
               aria-controls="main-nav"
@@ -387,7 +411,7 @@ export default function Navbar() {
           )}
 
           {drawerTab === 'menu' && (
-            <>
+            <div className="dx-drawer-menu-panel" key={`menu-${menuSession}`}>
               <LanguageToggle className="lang-toggle--drawer" />
               <span className="nav-drawer-section-label">{t('nav.explore')}</span>
 
@@ -611,7 +635,7 @@ export default function Navbar() {
                 className="nav-whatsapp"
                 onClick={closeMenu}
               />
-            </>
+            </div>
           )}
           </div>
         </nav>

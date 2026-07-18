@@ -256,7 +256,7 @@ img { max-width: 100%; height: auto; display: block; }
   width: var(--logo-size, 44px);
   height: var(--logo-size, 44px);
   flex-shrink: 0;
-  filter: drop-shadow(0 4px 14px rgba(233, 30, 140, 0.28));
+  filter: drop-shadow(0 4px 14px rgba(255, 106, 43, 0.28));
 }
 
 .brand-logo-text strong,
@@ -271,7 +271,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 .brand-logo-accent {
-  color: #e91e8c;
+  color: var(--primary, #ff5a1f);
 }
 
 .brand-logo-name {
@@ -3420,7 +3420,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 /* ── Logo & Brand ── */
-.brand-logo-accent { color: #e91e8c; }
+.brand-logo-accent { color: var(--primary, #ff5a1f); }
 
 /* ── Add Product ── */
 .page-add-btn { margin-top: 1.25rem; }
