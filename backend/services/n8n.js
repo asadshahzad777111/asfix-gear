@@ -36,6 +36,9 @@ function urlsForEvent(event) {
   } else if (event.startsWith('contact_')) {
     const u = trimUrl(process.env.N8N_WEBHOOK_CONTACT);
     if (u) urls.push(u);
+  } else if (event.startsWith('ad_')) {
+    const u = trimUrl(process.env.N8N_WEBHOOK_AD);
+    if (u) urls.push(u);
   }
 
   return [...new Set(urls)];
@@ -173,4 +176,15 @@ export function notifyN8nRepairUpdated(booking, previousStatus = null) {
         'https://www.google.com/maps?q=AsFix+%26+Gear+Lahore',
     });
   }
+}
+
+export function notifyN8nAdCreated(payload) {
+  if (!payload) return;
+  notifyN8n('ad_created', {
+    title: payload.title || '',
+    price: payload.price || '',
+    format: payload.format || 'square',
+    image_url: payload.image_url || '',
+    caption: payload.caption || '',
+  });
 }

@@ -96,3 +96,32 @@ export async function uploadPaymentProof(buffer, originalName, mimetype) {
 
   return `${publicBase}/${key}`;
 }
+
+export function buildAdImageKey(originalName = 'ad.png') {
+  return `ads/${randomUUID()}${pickExtension('image/png', originalName)}`;
+}
+
+export async function uploadAdPng(buffer) {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw new Error('Empty ad image');
+  }
+  if (!isR2Configured()) {
+    throw new Error('Cloudflare R2 is not configured');
+  }
+
+  const key = buildAdImageKey('ad.png');
+  const bucket = process.env.R2_BUCKET_NAME.trim();
+  const publicBase = process.env.R2_PUBLIC_BASE_URL.trim().replace(/\/$/, '');
+
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: 'image/png',
+      CacheControl: 'public, max-age=31536000, immutable',
+    })
+  );
+
+  return `${publicBase}/${key}`;
+}

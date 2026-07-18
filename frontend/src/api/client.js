@@ -249,6 +249,39 @@ async function uploadOrderPaymentProof(orderId, file, { timeoutMs = 45000 } = {}
   return data;
 }
 
+async function generateAd({ file, title, price, format = 'square', timeoutMs = 60000 } = {}) {
+  const token = getAuthToken();
+  if (!token) throw new Error('Staff login required');
+  if (!file) throw new Error('Image is required');
+
+  const form = new FormData();
+  form.append('image', file);
+  form.append('title', title || '');
+  form.append('price', price || '');
+  form.append('format', format || 'square');
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), timeoutMs);
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/admin/ads/generate`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') throw new Error('Ad generate timed out');
+    throw new Error('Network error — could not generate ad.');
+  } finally {
+    clearTimeout(timer);
+  }
+
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.error || 'Ad generate failed');
+  return data;
+}
+
 async function downloadDataBackup() {
   const token = getAuthToken();
   if (!token) throw new Error('Authentication required');
@@ -366,6 +399,7 @@ export const api = {
     request('/products/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
   uploadProductImage: (file) => uploadProductImage(file),
   uploadOrderPaymentProof: (orderId, file) => uploadOrderPaymentProof(orderId, file),
+  generateAd: (opts) => generateAd(opts),
 
   getRepairServices: () => request('/repairs/services'),
   getRepairRateCatalog: () => request('/repairs/rates/catalog'),

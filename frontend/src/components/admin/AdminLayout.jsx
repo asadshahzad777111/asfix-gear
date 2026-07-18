@@ -143,6 +143,7 @@ export default function AdminLayout({
             {navItem('bookings', 'Repair Intake', repairChatUnread > 0 ? repairChatUnread : (bookings || null))}
             {navItem('messages', t('admin.messages'))}
             {navItem('feedback', 'Reviews')}
+            {navItem('ads', 'Create Ad')}
           </div>
 
           {(showSales || showAdminMgmt || showShopControl) && (

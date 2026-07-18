@@ -2,7 +2,16 @@
 
 HTML templates + Playwright → PNG + caption text.
 
-## Quick start
+## Admin panel (easiest)
+
+1. Staff login → **Admin** → sidebar **Create Ad**
+2. Image choose karo, **name + rate** likho, **Generate ad**
+3. **Download PNG** + **Copy caption** → IG/FB pe post
+4. Agar R2 + `N8N_WEBHOOK_URL` set ho to cloud URL + `ad_created` event n8n ko bhi jati hai
+
+Direct URL: `/admin?tab=ads`
+
+## CLI (optional)
 
 1. Product pic yahan rakho: `ads/inbox/your-product.jpg`
 2. Generate:
