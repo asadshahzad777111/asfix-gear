@@ -14,6 +14,7 @@ import {
   AuthSecondaryButton,
 } from './auth/AuthUI';
 import PasswordField from './auth/PasswordField';
+import { AuthGoogleSection } from './auth/GoogleSignIn';
 import { getPostLoginPath } from '../utils/authRedirect';
 import { isStaff } from '../config/permissions';
 
@@ -128,6 +129,23 @@ export default function CustomerLoginModal({ open, onClose }) {
     }
   };
 
+  const handleGoogleCredential = async (credential) => {
+    setSubmitting(true);
+    setError('');
+    try {
+      const data = await api.googleSignIn({ credential });
+      const loggedIn = await completeSession(data);
+      if (await rejectStaffSession(loggedIn)) return;
+      setLoginValue('');
+      handleClose();
+      navigate(getPostLoginPath(loggedIn, '/account'));
+    } catch (err) {
+      setError(err.message || t('auth.googleSignInFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   if (user && isCustomer) {
     const handleLogout = async () => {
       handleClose();
@@ -203,9 +221,19 @@ export default function CustomerLoginModal({ open, onClose }) {
           />
         )}
 
+        {mode === 'password' && (
+          <>
+            <AuthGoogleSection
+              onCredential={handleGoogleCredential}
+              disabled={submitting}
+              submitting={submitting}
+            />
+            {error && <AuthAlert type="error">{error}</AuthAlert>}
+          </>
+        )}
+
         {mode === 'password' ? (
           <form onSubmit={handlePasswordSubmit}>
-            {error && <AuthAlert type="error">{error}</AuthAlert>}
 
             <div className="auth-2026-field">
               <label htmlFor="modal-login">{t('account.loginField')}</label>

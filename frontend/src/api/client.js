@@ -303,6 +303,10 @@ export const api = {
     await ensureApiReady(90000);
     return request('/auth/login', { method: 'POST', body: JSON.stringify(body) });
   },
+  googleSignIn: async (body) => {
+    await ensureApiReady(90000);
+    return request('/auth/google', { method: 'POST', body: JSON.stringify(body) });
+  },
   register: (body) => request('/auth/register', { method: 'POST', body: JSON.stringify(body) }),
   registerStart: async (body) => {
     await ensureApiReady(90000);

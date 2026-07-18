@@ -1899,6 +1899,78 @@ export function findUserByLogin(login) {
   ) || null;
 }
 
+export function findUserByGoogleId(googleId) {
+  const id = String(googleId || '').trim();
+  if (!id) return null;
+  return readData().users.find((u) => u.google_id === id) || null;
+}
+
+function uniqueCustomerUsername(data, email) {
+  let base = String(email || '').split('@')[0].toLowerCase().replace(/[^a-z0-9_]/g, '_');
+  base = base.replace(/_+/g, '_').replace(/^_|_$/g, '').slice(0, 26);
+  if (base.length < 3) base = `user${Date.now()}`.slice(0, 26);
+  let candidate = base;
+  let n = 0;
+  while (data.users.some((u) => u.username === candidate)) {
+    n += 1;
+    candidate = `${base.slice(0, 22)}_${n}`;
+  }
+  return candidate;
+}
+
+/**
+ * Customer Google Sign-In: find by google_id, link existing customer email, or create.
+ * Staff accounts with the same email are rejected (STAFF_ACCOUNT).
+ */
+export function findOrCreateGoogleCustomer({ googleId, email, name }) {
+  return withData((data) => {
+    const sub = String(googleId || '').trim();
+    const emailKey = String(email || '').trim().toLowerCase();
+    const displayName = String(name || '').trim() || emailKey.split('@')[0] || 'Customer';
+
+    if (!sub || !emailKey) {
+      throw new Error('Invalid Google account');
+    }
+
+    let user = data.users.find((u) => u.google_id === sub);
+    if (user) {
+      if (isUserBlocked(user)) throw new Error('BLOCKED');
+      if (STAFF_ROLES.includes(user.role)) throw new Error('STAFF_ACCOUNT');
+      return { user, created: false };
+    }
+
+    user = data.users.find((u) => u.email === emailKey);
+    if (user) {
+      if (STAFF_ROLES.includes(user.role)) throw new Error('STAFF_ACCOUNT');
+      if (isUserBlocked(user)) throw new Error('BLOCKED');
+      user.google_id = sub;
+      if (!String(user.name || '').trim()) user.name = displayName;
+      return { user, created: false };
+    }
+
+    const username = uniqueCustomerUsername(data, emailKey);
+    const id = data.meta.nextUserId++;
+    user = {
+      id,
+      name: displayName,
+      email: emailKey,
+      phone: '',
+      username,
+      google_id: sub,
+      password_hash: hashPassword(createToken()),
+      role: 'customer',
+      active: true,
+      blocked: false,
+      created_at: now(),
+      last_login: null,
+      created_by: null,
+      addresses: [],
+    };
+    data.users.push(user);
+    return { user, created: true };
+  });
+}
+
 export function authenticateUser(login, password) {
   const user = findUserByLogin(login);
   if (!user) return { ok: false, reason: 'invalid' };

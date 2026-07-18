@@ -15,6 +15,7 @@ import {
   AuthSecondaryButton,
 } from '../components/auth/AuthUI';
 import PasswordField from '../components/auth/PasswordField';
+import { AuthGoogleSection } from '../components/auth/GoogleSignIn';
 
 export default function AccountRegister() {
   const { isCustomer, isStaff, user, loading, completeSession } = useAuth();
@@ -26,7 +27,6 @@ export default function AccountRegister() {
     name: '',
     username: '',
     email: '',
-    phone: '',
     password: '',
     confirmPassword: '',
   });
@@ -34,7 +34,6 @@ export default function AccountRegister() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [otpHint, setOtpHint] = useState('');
-  const [whatsappLink, setWhatsappLink] = useState(null);
   const [devCode, setDevCode] = useState(null);
 
   if (loading) {
@@ -56,7 +55,6 @@ export default function AccountRegister() {
     setSubmitting(true);
     setError('');
     setOtpHint('');
-    setWhatsappLink(null);
     setDevCode(null);
 
     if (!form.username.trim()) {
@@ -65,13 +63,13 @@ export default function AccountRegister() {
       return;
     }
 
-    if (!form.email.trim() && !form.phone.trim()) {
-      setError(t('account.emailOrPhoneRequired'));
+    if (!form.email.trim()) {
+      setError(t('account.gmailRequired'));
       setSubmitting(false);
       return;
     }
 
-    if (form.email.trim() && !/^[a-z0-9._%+.-]+@gmail\.com$/i.test(form.email.trim())) {
+    if (!/^[a-z0-9._%+.-]+@gmail\.com$/i.test(form.email.trim())) {
       setError(t('otp.invalidGmail'));
       setSubmitting(false);
       return;
@@ -82,20 +80,11 @@ export default function AccountRegister() {
         name: form.name.trim(),
         username: form.username.trim(),
         email: form.email.trim(),
-        phone: form.phone.trim(),
         password: form.password,
         confirmPassword: form.confirmPassword,
       });
 
-      if (form.email.trim()) {
-        setOtpHint(t('otp.sentEmail', { email: form.email.trim() }));
-      } else if (data.method === 'whatsapp_manual') {
-        setOtpHint(t('otp.whatsappManualHint'));
-      } else {
-        setOtpHint(t('otp.sentPhoneWhatsApp'));
-      }
-
-      if (data.whatsappLink) setWhatsappLink(data.whatsappLink);
+      setOtpHint(t('otp.sentEmail', { email: form.email.trim() }));
       if (data.devCode) setDevCode(data.devCode);
 
       setStep('verify');
@@ -122,7 +111,6 @@ export default function AccountRegister() {
       const data = await api.registerVerify({
         code: otp,
         email: form.email.trim(),
-        phone: form.phone.trim(),
       });
       await completeSession(data);
       navigate('/account', { replace: true });
@@ -141,22 +129,28 @@ export default function AccountRegister() {
         name: form.name.trim(),
         username: form.username.trim(),
         email: form.email.trim(),
-        phone: form.phone.trim(),
         password: form.password,
         confirmPassword: form.confirmPassword,
       });
       if (data.devCode) setDevCode(data.devCode);
-      if (data.whatsappLink) setWhatsappLink(data.whatsappLink);
       setOtp('');
-      setOtpHint(
-        form.email.trim()
-          ? t('otp.sentEmail', { email: form.email.trim() })
-          : data.method === 'whatsapp_manual'
-            ? t('otp.whatsappManualHint')
-            : t('otp.sentPhoneWhatsApp')
-      );
+      setOtpHint(t('otp.sentEmail', { email: form.email.trim() }));
     } catch (err) {
       setError(err.message || t('otp.sendFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleGoogleCredential = async (credential) => {
+    setSubmitting(true);
+    setError('');
+    try {
+      const data = await api.googleSignIn({ credential });
+      await completeSession(data);
+      navigate('/account', { replace: true });
+    } catch (err) {
+      setError(err.message || t('auth.googleSignInFailed'));
     } finally {
       setSubmitting(false);
     }
@@ -180,9 +174,14 @@ export default function AccountRegister() {
           />
 
           {step === 'form' ? (
-            <form onSubmit={handleStart}>
+            <>
+              <AuthGoogleSection
+                onCredential={handleGoogleCredential}
+                disabled={submitting}
+                submitting={submitting}
+              />
               {error && <AuthAlert type="error">{error}</AuthAlert>}
-
+              <form onSubmit={handleStart}>
               <div className="auth-2026-field">
                 <label htmlFor="name">{t('contact.name')} *</label>
                 <input
@@ -211,7 +210,7 @@ export default function AccountRegister() {
               </div>
 
               <div className="auth-2026-field">
-                <label htmlFor="email">{t('account.gmailOptional')}</label>
+                <label htmlFor="email">{t('account.gmailLabel')} *</label>
                 <input
                   id="email"
                   type="email"
@@ -219,22 +218,9 @@ export default function AccountRegister() {
                   onChange={(e) => setField('email', e.target.value)}
                   placeholder="you@gmail.com"
                   autoComplete="email"
+                  required
                 />
               </div>
-
-              <div className="auth-2026-field">
-                <label htmlFor="phone">{t('account.phoneOptional')}</label>
-                <input
-                  id="phone"
-                  type="tel"
-                  value={form.phone}
-                  onChange={(e) => setField('phone', e.target.value)}
-                  placeholder="03xx-xxxxxxx"
-                  autoComplete="tel"
-                />
-              </div>
-
-              <p className="auth-2026-field-hint">{t('account.emailOrPhoneHint')}</p>
 
               <div className="auth-2026-field">
                 <label htmlFor="password">{t('login.password')} *</label>
@@ -267,6 +253,7 @@ export default function AccountRegister() {
                 <Link to="/account/login">{t('account.signIn')}</Link>
               </p>
             </form>
+            </>
           ) : (
             <form onSubmit={handleVerify}>
               {error && <AuthAlert type="error">{error}</AuthAlert>}
@@ -276,14 +263,6 @@ export default function AccountRegister() {
                   {t('otp.devCode')}: <strong>{devCode}</strong>
                 </AuthAlert>
               )}
-              {whatsappLink && (
-                <p className="auth-2026-whatsapp-hint">
-                  <a href={whatsappLink} target="_blank" rel="noopener noreferrer" className="btn btn-ghost btn-sm">
-                    {t('otp.openWhatsApp')}
-                  </a>
-                </p>
-              )}
-
               <div className="auth-2026-field">
                 <label>{t('otp.enterCode')}</label>
                 <OtpInput value={otp} onChange={setOtp} disabled={submitting} idPrefix="reg-otp" />

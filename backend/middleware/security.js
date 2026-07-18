@@ -6,6 +6,7 @@ const CSP_CONNECT_SRC = [
   "'self'",
   'https://graph.facebook.com',
   'https://translate.googleapis.com',
+  'https://accounts.google.com',
   // Split deploy: Vercel UI may still be served from Render during cutover,
   // or a production-built SPA may call the Render API host directly.
   'https://asfix-gear.onrender.com',
@@ -14,9 +15,9 @@ const CSP_CONNECT_SRC = [
 // injects its own script + a same-page iframe from these Google origins —
 // without them the widget silently does nothing (blocked, no console
 // crash), which looked like a working feature but never actually was one.
-const CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", 'https://translate.google.com', 'https://translate.googleapis.com'];
+const CSP_SCRIPT_SRC = ["'self'", "'unsafe-inline'", 'https://translate.google.com', 'https://translate.googleapis.com', 'https://accounts.google.com'];
 // Contact / location embed uses maps.google.com; translate widget uses translate.google.com.
-const CSP_FRAME_SRC = ["'self'", 'https://translate.google.com', 'https://maps.google.com', 'https://www.google.com'];
+const CSP_FRAME_SRC = ["'self'", 'https://translate.google.com', 'https://maps.google.com', 'https://www.google.com', 'https://accounts.google.com'];
 const CSP_STYLE_SRC = ["'self'", "'unsafe-inline'", 'https://fonts.googleapis.com', 'https://www.gstatic.com'];
 
 function buildCsp() {

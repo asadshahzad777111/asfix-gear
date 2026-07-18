@@ -169,6 +169,7 @@ export function migrateData(data) {
   for (const user of data.users) {
     if (user.name == null) user.name = user.username || String(user.email || '').split('@')[0] || '';
     if (user.phone == null) user.phone = '';
+    if (user.google_id == null) user.google_id = null;
     if (user.blocked == null) user.blocked = user.active === false;
     user.active = !user.blocked;
     if (user.last_login == null) user.last_login = null;

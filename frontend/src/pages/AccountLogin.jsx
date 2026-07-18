@@ -16,6 +16,7 @@ import {
   AuthSecondaryButton,
 } from '../components/auth/AuthUI';
 import PasswordField from '../components/auth/PasswordField';
+import { AuthGoogleSection } from '../components/auth/GoogleSignIn';
 import { getPostLoginPath } from '../utils/authRedirect';
 import { isStaff } from '../config/permissions';
 
@@ -133,6 +134,19 @@ export default function AccountLogin() {
     }
   };
 
+  const handleGoogleCredential = async (credential) => {
+    setSubmitting(true);
+    setError('');
+    try {
+      const data = await api.googleSignIn({ credential });
+      await finishLogin(data);
+    } catch (err) {
+      setError(err.message || t('auth.googleSignInFailed'));
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
   return (
     <AuthShell>
       <div className="container login-wrap">
@@ -162,10 +176,19 @@ export default function AccountLogin() {
             />
           )}
 
+          {mode === 'password' && (
+            <>
+              <AuthGoogleSection
+                onCredential={handleGoogleCredential}
+                disabled={submitting}
+                submitting={submitting}
+              />
+              {error && mode === 'password' && <AuthAlert type="error">{error}</AuthAlert>}
+            </>
+          )}
+
           {mode === 'password' ? (
             <form onSubmit={handlePasswordSubmit}>
-              {error && <AuthAlert type="error">{error}</AuthAlert>}
-
               <div className="auth-2026-field">
                 <label htmlFor="login">{t('account.loginField')}</label>
                 <input

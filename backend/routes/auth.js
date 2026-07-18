@@ -3,6 +3,7 @@ import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { sanitizeUser, generateOtpCode, hashOtp, verifyOtp, otpExpiry, hashPassword } from '../auth/crypto.js';
 import { deliverEmailOtp, deliverPhoneOtp, OtpDeliveryError } from '../services/otpDelivery.js';
+import { verifyGoogleIdToken, isGoogleAuthConfigured } from '../services/googleAuth.js';
 import { rateLimit } from '../middleware/rateLimit.js';
 const router = Router();
 const SUPER_ADMIN = ['super_admin'];
@@ -50,6 +51,11 @@ const resetVerifyLimiter = rateLimit({
   windowMs: 15 * 60_000,
   max: 15,
   message: 'Too many attempts. Wait a few minutes and try again.',
+});
+const googleSignInLimiter = rateLimit({
+  windowMs: 15 * 60_000,
+  max: 20,
+  message: 'Too many Google sign-in attempts. Wait a few minutes.',
 });
 
 function validatePassword(password) {
@@ -148,6 +154,54 @@ function validateStaffPayload(body, requirePassword = true) {
   };
 }
 
+router.post('/google', googleSignInLimiter, async (req, res) => {
+  if (!isGoogleAuthConfigured()) {
+    return res.status(503).json({
+      error: 'Google Sign-In is not configured on the server.',
+      code: 'GOOGLE_NOT_CONFIGURED',
+    });
+  }
+
+  const idToken = String(req.body.credential || req.body.idToken || '').trim();
+  if (!idToken) {
+    return res.status(400).json({ error: 'Google credential is required' });
+  }
+
+  try {
+    const profile = await verifyGoogleIdToken(idToken);
+    let result;
+    try {
+      result = store.findOrCreateGoogleCustomer(profile);
+    } catch (err) {
+      if (err.message === 'STAFF_ACCOUNT') {
+        return res.status(403).json({
+          error: 'Yeh staff/admin account hai. Staff Login page par sign in karein — customer Google login yahan nahi hota.',
+          code: 'STAFF_ACCOUNT',
+        });
+      }
+      if (err.message === 'BLOCKED') {
+        return res.status(403).json({ error: 'Your account is blocked. Contact the shop owner.' });
+      }
+      throw err;
+    }
+
+    store.recordLastLogin(result.user.id);
+    const session = store.createSession(result.user.id);
+    res.json({
+      token: session.token,
+      expires_at: session.expires_at,
+      user: sanitizeUser(result.user),
+      created: result.created,
+    });
+  } catch (err) {
+    if (err.code === 'GOOGLE_TOKEN_INVALID' || err.code === 'GOOGLE_EMAIL_UNVERIFIED') {
+      return res.status(401).json({ error: err.message, code: err.code });
+    }
+    console.error('[auth/google]', err);
+    return res.status(401).json({ error: 'Google sign-in failed. Try again.' });
+  }
+});
+
 router.post('/login', loginLimiter, (req, res) => {
   const { login, password } = req.body;
   if (!login?.trim() || !password) {
@@ -192,20 +246,18 @@ function parseCustomerRegistration(body) {
   if (!name || name.length > 120) {
     return { error: 'Name is required (max 120 characters)' };
   }
-  if (!email && !phone) {
-    return { error: 'Gmail or phone number is required' };
+  if (!email) {
+    return { error: 'Gmail is required' };
   }
-  if (email) {
-    const gmailResult = validateGmail(email);
-    if (gmailResult.error) return { error: gmailResult.error };
-  }
+  const gmailResult = validateGmail(email);
+  if (gmailResult.error) return { error: gmailResult.error };
   const pwErr = validatePassword(password);
   if (pwErr) return { error: pwErr };
   if (password !== confirmPassword) {
     return { error: 'Passwords do not match' };
   }
 
-  return { name, email: email ? validateGmail(email).email : '', phone, username: usernameResult.username, password };
+  return { name, email: gmailResult.email, phone, username: usernameResult.username, password };
 }
 
 router.post('/register', (_req, res) => {
