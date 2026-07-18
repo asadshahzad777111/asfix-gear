@@ -316,10 +316,13 @@
 }
 
 .home-brand-card--pc .home-brand-label {
-  font-size: 0.78rem;
+  font-size: 0.72rem;
   font-weight: 600;
   text-align: center;
-  line-height: 1.2;
+  line-height: 1.15;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  hyphens: auto;
 }
 
 @media (min-width: 768px) {
@@ -554,17 +557,18 @@
   font-weight: 800;
 }
 
-/* Trust strip */
+/* Trust strip — minimal text row (home.css owns layout) */
 .home-trust-badge {
-  border: 1px solid var(--pc-border);
-  background: #fff;
-  border-radius: 12px;
+  border: none;
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 @media (hover: hover) and (pointer: fine) {
   .home-trust-badge:hover {
-    border-color: rgba(255, 102, 0, 0.35);
-    box-shadow: 0 8px 24px rgba(255, 102, 0, 0.1);
+    border-color: transparent;
+    box-shadow: none;
   }
 }
 

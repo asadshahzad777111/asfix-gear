@@ -7,7 +7,7 @@
   --float-dock-right: 0.65rem;
   --float-dock-bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
   --float-dock-size: 3.15rem;
-  --float-dock-gap: 0.75rem;
+  --float-dock-gap: 0.85rem;
   --float-stack-step: calc(var(--float-dock-size) + var(--float-dock-gap));
   /* Bottom-to-top stack slots: Repair → Chat → Staff */
   --float-stack-0: var(--float-dock-bottom);
@@ -191,6 +191,8 @@
     border-radius: 50%;
     z-index: 199;
     transform: translateZ(0);
+    border-color: color-mix(in srgb, var(--hdr-accent, #ff6a2b) 45%, var(--hdr-border, rgba(255, 255, 255, 0.08)));
+    background: color-mix(in srgb, var(--hdr-accent, #ff6a2b) 12%, var(--hdr-bg-elevated, #16161c));
   }
 
   .floating-repair-btn-label {

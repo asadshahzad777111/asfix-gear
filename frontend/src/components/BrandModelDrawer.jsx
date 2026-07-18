@@ -38,26 +38,25 @@ export default function BrandModelDrawer({ brand, open, onClose }) {
     };
   }, [open, onClose]);
 
-  if (typeof document === 'undefined') return null;
+  if (typeof document === 'undefined' || !open || !brand) return null;
 
   return createPortal(
     <>
       <div
-        className={`pc-drawer-scrim${open ? ' is-open' : ''}`}
+        className="pc-drawer-scrim is-open"
         onClick={onClose}
-        aria-hidden={!open}
+        aria-hidden="false"
       />
       <aside
-        className={`pc-model-drawer${open ? ' is-open' : ''}`}
+        className="pc-model-drawer is-open"
         role="dialog"
         aria-modal="true"
-        aria-label={brand ? t('brandDrawer.title', { brand: brand.label }) : t('brandDrawer.titleFallback')}
-        aria-hidden={!open}
+        aria-label={t('brandDrawer.title', { brand: brand.label })}
       >
         <div className="pc-model-drawer-handle" aria-hidden="true" />
         <div className="pc-model-drawer-head">
           <h2 className="pc-model-drawer-title">
-            {brand ? t('brandDrawer.title', { brand: brand.label }) : t('brandDrawer.titleFallback')}
+            {t('brandDrawer.title', { brand: brand.label })}
           </h2>
           <button type="button" className="pc-model-drawer-close" onClick={onClose} aria-label={t('nav.closeMenu')}>
             ✕
@@ -94,25 +93,23 @@ export default function BrandModelDrawer({ brand, open, onClose }) {
             </div>
           )}
         </div>
-        {brand && (
-          <div className="pc-model-drawer-foot">
-            <Link
-              to={`/shop?brand=${encodeURIComponent(brand.id)}`}
-              className="btn btn-primary"
-              onClick={onClose}
-            >
-              {t('nav.viewAllBrand', { brand: brand.label })}
-            </Link>
-            <Link
-              to="/repair#supported-devices"
-              className="btn btn-ghost"
-              style={{ marginTop: '0.5rem' }}
-              onClick={onClose}
-            >
-              {t('brandDrawer.repairCta')}
-            </Link>
-          </div>
-        )}
+        <div className="pc-model-drawer-foot">
+          <Link
+            to={`/shop?brand=${encodeURIComponent(brand.id)}`}
+            className="btn btn-primary"
+            onClick={onClose}
+          >
+            {t('nav.viewAllBrand', { brand: brand.label })}
+          </Link>
+          <Link
+            to="/repair#supported-devices"
+            className="btn btn-ghost"
+            style={{ marginTop: '0.5rem' }}
+            onClick={onClose}
+          >
+            {t('brandDrawer.repairCta')}
+          </Link>
+        </div>
       </aside>
     </>,
     document.body

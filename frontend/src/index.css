@@ -5742,7 +5742,8 @@ body.modal-open .guest-welcome-banner {
   }
 }
 
-/* Floating repair CTA */
+/* Floating repair CTA — desktop pill; mobile circle in responsive-floats.css */
+@media (min-width: 769px) {
 .floating-repair-btn {
   position: fixed;
   right: var(--float-desktop-edge, 1.5rem);
@@ -5772,6 +5773,7 @@ body.modal-open .guest-welcome-banner {
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06),
     0 12px 28px rgba(0, 0, 0, 0.4);
+}
 }
 
 .floating-repair-btn-icon {

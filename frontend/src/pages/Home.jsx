@@ -6,7 +6,6 @@ import HomeHero from '../components/home/HomeHero';
 import TrustBadges from '../components/home/TrustBadges';
 import CollectionGrid from '../components/home/CollectionGrid';
 import BrandGrid from '../components/home/BrandGrid';
-import TrendingCollections from '../components/home/TrendingCollections';
 import ProductCarousel from '../components/home/ProductCarousel';
 import LocationSection from '../components/LocationSection';
 import Testimonials from '../components/Testimonials';
@@ -82,7 +81,6 @@ export default function Home() {
       <TrustBadges />
       <BrandGrid />
       <CollectionGrid />
-      <TrendingCollections />
 
       {loadError && !topSelling.length ? (
         <HomeProductsSkeleton

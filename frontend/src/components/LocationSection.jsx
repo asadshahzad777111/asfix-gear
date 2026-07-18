@@ -27,7 +27,7 @@ export default function LocationSection({ showMap = true }) {
               <span className="location-label">{t('location.address')}</span>
               <p className="location-address">{SHOP.addressLine1}</p>
               <p className="location-address">{SHOP.addressLine2}</p>
-              {SHOP.landmark && <p className="location-landmark">📌 {SHOP.landmark}</p>}
+              <p className="location-landmark">📌 {t('location.landmark')}</p>
               <p className="location-city">{SHOP.city}</p>
               <p className="location-coords">📍 {SHOP.coordinates}</p>
             </div>
@@ -50,23 +50,7 @@ export default function LocationSection({ showMap = true }) {
                 rel="noopener noreferrer"
                 className="btn btn-primary"
               >
-                {t('location.directions')} ↗
-              </a>
-              <a
-                href={SHOP.mapsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-outline"
-              >
-                {t('location.googleMaps')}
-              </a>
-              <a
-                href={SHOP.mapsDirectionsUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="btn btn-whatsapp"
-              >
-                {t('common.getDirections')}
+                {t('common.getDirections')} ↗
               </a>
               <a
                 href={GENERAL_WHATSAPP_HREF}

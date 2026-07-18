@@ -19,7 +19,6 @@ export const SHOP = {
   addressLine1: 'AsFix & Gear — Mobile Repair & Accessories',
   addressLine2: 'Lahore, Pakistan',
   city: 'Lahore',
-  landmark: 'Google Maps pin par shop location',
 
   get coordinates() {
     return `${this.lat}, ${this.lng}`;
