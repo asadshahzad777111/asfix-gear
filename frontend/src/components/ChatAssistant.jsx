@@ -235,7 +235,7 @@ export default function ChatAssistant() {
         {open ? (
           <span className="chat-fab-close" aria-hidden="true">✕</span>
         ) : (
-          <svg viewBox="0 0 24 24" width="26" height="26" fill="currentColor" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
             <path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.62 1.31 4.96 3.39 6.57-.09.86-.37 2.32-1.19 3.63a.5.5 0 0 0 .57.74c1.9-.5 3.36-1.36 4.15-1.92.99.26 2.04.4 3.08.4 5.52 0 10-3.94 10-8.8S17.52 2 12 2Z" />
           </svg>
         )}

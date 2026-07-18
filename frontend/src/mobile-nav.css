@@ -236,7 +236,7 @@
   .nav-drawer.open .nav-links-staff > *:nth-child(2) { animation-delay: 0.2s; }
   .nav-drawer.open .nav-whatsapp { animation-delay: 0.22s; }
 
-  .nav-drawer a:not(.nav-drawer-accordion-link),
+  .nav-drawer a:not(.nav-drawer-accordion-link):not(.dx-drawer-cta),
   .nav-drawer button.nav-add-product,
   .nav-drawer .gaming-mode-btn--nav,
   .nav-drawer .shop-mode-btn--nav {
@@ -249,7 +249,7 @@
     box-shadow: none !important;
   }
 
-  .nav-drawer a:not(.nav-drawer-accordion-link):active,
+  .nav-drawer a:not(.nav-drawer-accordion-link):not(.dx-drawer-cta):active,
   .nav-drawer button.nav-add-product:active,
   .nav-drawer .gaming-mode-btn--nav:active,
   .nav-drawer .shop-mode-btn--nav:active {
@@ -369,7 +369,7 @@
     transition: opacity 0.2s ease, visibility 0.2s ease;
   }
 
-  .nav-drawer a:not(.nav-drawer-accordion-link),
+  .nav-drawer a:not(.nav-drawer-accordion-link):not(.dx-drawer-cta),
   .nav-drawer button.nav-add-product,
   .nav-drawer .gaming-mode-btn--nav,
   .nav-drawer .shop-mode-btn--nav {

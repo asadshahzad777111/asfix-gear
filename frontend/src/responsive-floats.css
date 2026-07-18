@@ -9,19 +9,28 @@
   --float-dock-size: 3.15rem;
   --float-dock-gap: 0.75rem;
   --float-stack-step: calc(var(--float-dock-size) + var(--float-dock-gap));
-  /* Bottom-to-top stack slots: WhatsApp → Chat → Repair → Staff */
+  /* Bottom-to-top stack slots: Repair → Chat → Staff */
   --float-stack-0: var(--float-dock-bottom);
   --float-stack-1: calc(var(--float-dock-bottom) + var(--float-stack-step));
   --float-stack-2: calc(var(--float-dock-bottom) + var(--float-stack-step) * 2);
-  --float-stack-3: calc(var(--float-dock-bottom) + var(--float-stack-step) * 3);
-  /* Reserve room for the full 4-high vertical stack on the phone breakpoint. */
+  /* Reserve room for the 3-high vertical stack on the phone breakpoint. */
   --float-dock-row: calc(
-    var(--float-dock-bottom) + (var(--float-dock-size) * 4) + (var(--float-dock-gap) * 3) + 0.5rem
+    var(--float-dock-bottom) + (var(--float-dock-size) * 3) + (var(--float-dock-gap) * 2) + 0.5rem
   );
   /* Used by order-notification toasts on mobile — top of the float column */
   --float-bottom: var(--float-dock-row);
-  /* Desktop chat panel anchor (tablet/desktop only) */
-  --float-chat-bottom: calc(1.5rem + 58px + 0.75rem);
+  /* Desktop float anchors — repair pill at bottom, chat directly above */
+  --float-desktop-edge: 1.5rem;
+  --float-repair-pill-h: 2.75rem;
+  --float-chat-fab-size: 3.25rem;
+  --float-chat-bottom: calc(
+    var(--float-desktop-edge) + var(--float-repair-pill-h) + var(--float-dock-gap) + env(safe-area-inset-bottom, 0px)
+  );
+}
+
+/* Floating WhatsApp removed from app — hide if ever mounted elsewhere */
+.whatsapp-float {
+  display: none !important;
 }
 
 /* ── Sale animations — desktop/tablet only (mobile perf) ── */
@@ -158,19 +167,6 @@
     z-index: 200;
   }
 
-  .whatsapp-float {
-    position: fixed;
-    top: auto;
-    left: auto;
-    bottom: var(--float-stack-0);
-    right: var(--float-dock-right);
-    width: var(--float-dock-size);
-    height: var(--float-dock-size);
-    z-index: 200;
-    animation: none !important;
-    transform: translateZ(0);
-  }
-
   .chat-fab-trigger {
     position: fixed;
     top: auto;
@@ -183,22 +179,19 @@
     transform: translateZ(0);
   }
 
-  /* Repair, staff-login, and chat all share one clean vertical column at
-     the same right offset — straight top-to-bottom stack, not the old
-     mismatched layout where repair sat in its own row at a different
-     offset than the staff-login + chat pair. */
+  /* Repair (primary), chat, and staff share one clean vertical column. */
   .floating-repair-btn {
     position: fixed;
     top: auto;
     left: auto;
     right: var(--float-dock-right);
-    bottom: var(--float-stack-2);
+    bottom: var(--float-stack-0);
     width: var(--float-dock-size);
     height: var(--float-dock-size);
     padding: 0;
     justify-content: center;
     border-radius: 50%;
-    z-index: 198;
+    z-index: 199;
     transform: translateZ(0);
   }
 
@@ -207,14 +200,15 @@
   }
 
   .floating-repair-btn-icon {
-    font-size: 1.25rem;
+    width: 1.25rem;
+    height: 1.25rem;
   }
 
   .staff-access {
     position: fixed;
     top: auto;
     left: auto;
-    bottom: var(--float-stack-3);
+    bottom: var(--float-stack-2);
     right: var(--float-dock-right);
     z-index: 198;
     transform: translateZ(0);
@@ -272,11 +266,9 @@
     height: 3.35rem;
   }
 
-  .whatsapp-float {
+  .floating-repair-btn {
     bottom: 1.25rem;
     right: 1rem;
-    width: 3.35rem;
-    height: 3.35rem;
   }
 
   .chat-fab-trigger {
@@ -286,13 +278,8 @@
     height: 3.35rem;
   }
 
-  .floating-repair-btn {
-    bottom: calc(1.25rem + (3.35rem + 0.75rem) * 2);
-    right: 1rem;
-  }
-
   .staff-access {
-    bottom: calc(1.25rem + (3.35rem + 0.75rem) * 3);
+    bottom: calc(1.25rem + (3.35rem + 0.75rem) * 2);
     right: 1rem;
   }
 
@@ -314,10 +301,6 @@
     --float-dock-size: 3.5rem;
   }
 
-  .whatsapp-float {
-    width: 3.5rem;
-    height: 3.5rem;
-  }
 }
 
 /* Touch devices — simpler motion (no broken hover transforms) */

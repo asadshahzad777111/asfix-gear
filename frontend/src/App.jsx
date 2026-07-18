@@ -4,7 +4,6 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ChatAssistant from './components/ChatAssistant';
-import FloatingWhatsApp from './components/FloatingWhatsApp';
 import GamingTransition from './components/gaming/GamingTransition';
 import ExitGamingButton from './components/gaming/ExitGamingButton';
 import ButtonEffects from './components/ButtonEffects';
@@ -41,7 +40,6 @@ function AppContent() {
       </main>
 
       {!isAdminRoute && !isGamingPage && <Footer />}
-      {!isAdminRoute && !isGamingPage && <FloatingWhatsApp />}
       {!isAdminRoute && !isGamingPage && <ChatAssistant />}
       {!isAdminRoute && !isGamingPage && <FloatingRepairButton />}
       {showCart && <FloatingCart />}

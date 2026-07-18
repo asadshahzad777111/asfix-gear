@@ -837,6 +837,9 @@
     gap: 0.4rem !important;
     min-height: 56px !important;
     padding: 0.45rem 0.55rem 0.35rem 0.75rem !important;
+    flex: 0 0 auto !important;
+    flex-wrap: nowrap !important;
+    overflow: hidden !important;
   }
 
   .navbar.navbar--dx .dx-drawer-topbar .dx-logo {
@@ -866,7 +869,7 @@
     height: 44px !important;
     min-width: 44px !important;
     min-height: 44px !important;
-    margin: 0 !important;
+    margin: 0 0 0 auto !important;
     border: none !important;
     border-left: none !important;
     border-radius: 999px !important;
@@ -894,13 +897,20 @@
     color: #fff !important;
   }
 
+  .navbar.navbar--dx a.dx-drawer-cta,
   .navbar.navbar--dx .dx-drawer-cta {
+    flex: 0 0 auto !important;
     flex-shrink: 0 !important;
+    width: auto !important;
+    max-width: none !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
     min-height: 36px !important;
     padding: 0.4rem 0.95rem !important;
+    margin: 0 !important;
+    border: none !important;
+    border-bottom: none !important;
     border-radius: 999px !important;
     background: #14141a !important;
     color: #fff !important;
@@ -908,13 +918,16 @@
     font-weight: 600 !important;
     text-decoration: none !important;
     letter-spacing: -0.01em !important;
+    box-shadow: none !important;
     transition: transform 180ms ease, background 180ms ease !important;
   }
 
+  .navbar.navbar--dx a.dx-drawer-cta:active,
   .navbar.navbar--dx .dx-drawer-cta:active {
     transform: scale(0.97);
   }
 
+  [data-theme='dark'] .navbar.navbar--dx a.dx-drawer-cta,
   [data-theme='dark'] .navbar.navbar--dx .dx-drawer-cta {
     background: #f4f4f5 !important;
     color: #111 !important;
@@ -923,6 +936,7 @@
   /* Pill tabs (Dribbble Shots / Designers style) */
   .navbar.navbar--dx .pc-drawer-tabs {
     display: flex !important;
+    flex: 0 0 auto !important;
     gap: 0.35rem !important;
     margin: 0.15rem 0.85rem 0.85rem !important;
     padding: 0.28rem !important;

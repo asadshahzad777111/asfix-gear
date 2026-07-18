@@ -110,14 +110,16 @@
     animation: none !important;
   }
 
-  .whatsapp-float {
-    background: #25d366 !important;
-    color: #fff !important;
+  .chat-fab-trigger {
+    background: var(--hdr-bg-elevated, var(--bg-elevated)) !important;
+    color: var(--hdr-icon, var(--text-muted)) !important;
+    border: 1px solid var(--hdr-border, var(--glass-edge)) !important;
   }
 
-  .chat-fab-trigger {
-    background: linear-gradient(135deg, var(--mint), #22b8a8) !important;
-    color: #06231d !important;
+  .floating-repair-btn {
+    background: var(--hdr-bg-elevated, var(--bg-elevated)) !important;
+    color: var(--hdr-text, var(--text)) !important;
+    border: 1px solid var(--hdr-border, var(--glass-edge)) !important;
   }
 
   .floating-cart-trigger,
@@ -139,19 +141,14 @@
     box-shadow: 0 0 36px rgba(0, 255, 136, 0.45) !important;
   }
 
-  .whatsapp-float,
   .chat-fab-trigger,
   .floating-repair-btn {
     box-shadow: var(--shadow-elevated);
     transform: translateZ(0);
   }
 
-  .whatsapp-float {
-    animation: none !important;
-  }
-
-  .whatsapp-float:hover,
-  .whatsapp-float:active,
+  .chat-fab-trigger:hover,
+  .chat-fab-trigger:active,
   .floating-repair-btn:hover,
   .floating-repair-btn:active {
     transform: translateZ(0) !important;
