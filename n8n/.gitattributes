@@ -1,0 +1,2 @@
+render-start.sh text eol=lf
+Dockerfile text eol=lf

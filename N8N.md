@@ -12,16 +12,20 @@ Render API  ──POST webhook──►  n8n (local / n8n Cloud / Railway)
                                    └─ (baad mein social / WhatsApp API)
 ```
 
-## 1) n8n chalao (local — free)
+## 1) Free host (recommended abhi)
+
+**Render free Docker + Postgres** — step-by-step: **[n8n/RENDER-FREE-SETUP.md](n8n/RENDER-FREE-SETUP.md)**
+
+Local practice (PC pe Docker):
 
 ```powershell
 cd C:\Users\asads\asfix-gear
-docker compose -f docker-compose.n8n.yml up -d
+docker compose up -d
 ```
 
 Browser: [http://localhost:5678](http://localhost:5678)
 
-Ya [n8n Cloud](https://n8n.io/cloud/) trial — public HTTPS webhook milta hai (Render se call asani).
+Simple image-only local (no Postgres): `docker compose -f docker-compose.n8n.yml up -d`
 
 ## 2) Workflow (Gmail + Sheet + Review) — recommended
 

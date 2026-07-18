@@ -1,0 +1,57 @@
+# Optional Blueprint: only the FREE n8n + Postgres stack.
+# Do NOT replace your existing asfix-gear API service with this file alone.
+# Dashboard path (safer): see RENDER-FREE-SETUP.md
+#
+# Apply from repo root if you use Blueprint intentionally:
+#   render.yaml can also live at repo root — this copy is under n8n/ for clarity.
+
+databases:
+  - name: asfix-n8n-db
+    plan: free
+    databaseName: n8n
+    user: n8n
+
+services:
+  - type: web
+    name: asfix-n8n
+    runtime: docker
+    plan: free
+    dockerfilePath: ./n8n/Dockerfile
+    dockerContext: ./n8n
+    healthCheckPath: /healthz
+    envVars:
+      - key: DB_TYPE
+        value: postgresdb
+      - key: DB_POSTGRESDB_HOST
+        fromDatabase:
+          name: asfix-n8n-db
+          property: host
+      - key: DB_POSTGRESDB_PORT
+        fromDatabase:
+          name: asfix-n8n-db
+          property: port
+      - key: DB_POSTGRESDB_DATABASE
+        fromDatabase:
+          name: asfix-n8n-db
+          property: database
+      - key: DB_POSTGRESDB_USER
+        fromDatabase:
+          name: asfix-n8n-db
+          property: user
+      - key: DB_POSTGRESDB_PASSWORD
+        fromDatabase:
+          name: asfix-n8n-db
+          property: password
+      - key: DB_POSTGRESDB_SSL_ENABLED
+        value: 'true'
+      - key: N8N_PROTOCOL
+        value: https
+      - key: N8N_ENCRYPTION_KEY
+        generateValue: true
+      - key: GENERIC_TIMEZONE
+        value: Asia/Karachi
+      - key: TZ
+        value: Asia/Karachi
+      # Set after first deploy (replace with your real hostname):
+      # N8N_HOST=asfix-n8n.onrender.com
+      # WEBHOOK_URL=https://asfix-n8n.onrender.com/
