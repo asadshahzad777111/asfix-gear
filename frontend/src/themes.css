@@ -17,8 +17,8 @@
   --bp-mobile: 768px;
   --bp-phone: 480px;
 
-  --primary: #ff5a1f;
-  --primary-glow: rgba(255, 90, 31, 0.4);
+  --primary: #ff6a2b;
+  --primary-glow: rgba(255, 106, 43, 0.4);
   --violet: #3d3d3d;
   --violet-glow: rgba(255, 90, 31, 0.15);
   --mint: #ff5a1f;
@@ -101,7 +101,7 @@
   --shadow-hover: 0 18px 40px rgba(0, 0, 0, 0.1), 0 0 0 1px rgba(0, 0, 0, 0.04);
   --shadow-modal: 0 28px 56px rgba(0, 0, 0, 0.12);
   --theme-toggle-glow: rgba(255, 90, 31, 0.16);
-  --primary-glow: rgba(255, 90, 31, 0.25);
+  --primary-glow: rgba(255, 106, 43, 0.25);
   --violet-glow: rgba(0, 0, 0, 0.08);
   --mint: #c2410c;
   --mint-glow: rgba(255, 90, 31, 0.15);

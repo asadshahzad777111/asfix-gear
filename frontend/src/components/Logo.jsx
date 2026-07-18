@@ -1,8 +1,9 @@
 import { useId } from 'react';
-import { LogoMarkPaths } from './LogoMark';
+import { LogoMarkPaths, BRAND_ACCENT } from './LogoMark';
 
 export default function Logo({ size = 44, showText = true, className = '' }) {
   const uid = useId().replace(/:/g, '');
+  const accentStyle = { color: BRAND_ACCENT, WebkitTextFillColor: BRAND_ACCENT };
 
   return (
     <div className={`brand-logo ${className}`} style={{ '--logo-size': `${size}px` }}>
@@ -19,9 +20,9 @@ export default function Logo({ size = 44, showText = true, className = '' }) {
       {showText && (
         <div className="brand-logo-text">
           <strong className="brand-logo-wordmark">
-            <span className="brand-logo-accent">AS</span>{' '}
+            <span className="brand-logo-accent" style={accentStyle}>AS</span>{' '}
             <span className="brand-logo-name">FIX</span>{' '}
-            <span className="brand-logo-accent">&</span>{' '}
+            <span className="brand-logo-accent" style={accentStyle}>&</span>{' '}
             <span className="brand-logo-name">GEAR</span>
           </strong>
           <small>Mobile Repair &amp; Accessories</small>

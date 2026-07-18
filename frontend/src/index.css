@@ -246,6 +246,18 @@ img { max-width: 100%; height: auto; display: block; }
   display: contents;
 }
 
+/* Drawer panels must stay flex columns — display:contents breaks mobile menu text/layout */
+@media (max-width: 1024px) {
+  .nav-drawer .nav-links-primary,
+  .nav-drawer .nav-links-staff,
+  .nav-drawer .nav-links-account {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+}
+
 .brand-logo {
   display: flex;
   align-items: center;
@@ -271,7 +283,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 .brand-logo-accent {
-  color: var(--primary, #ff5a1f);
+  color: #ff6a2b;
 }
 
 .brand-logo-name {
@@ -5672,11 +5684,13 @@ body.modal-open .guest-welcome-banner {
   border: 1px solid color-mix(in srgb, var(--mint) 25%, var(--glass-edge));
 }
 
-/* Scroll reveal (home shop grid) */
+/* Scroll reveal (home shop grid) — bidirectional via useScrollReveal */
 .scroll-reveal {
   opacity: 0;
-  transform: translateY(18px);
-  transition: opacity 0.55s ease, transform 0.55s ease;
+  transform: translate3d(0, 16px, 0);
+  transition:
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .scroll-reveal.scroll-revealed {

@@ -4,7 +4,7 @@
    ═══════════════════════════════════════════════════════════ */
 
 :root {
-  --pc-accent: #ff6600;
+  --pc-accent: #ff6a2b;
   --pc-accent-ui: #ff8b01;
   --pc-accent-soft: #fff1e8;
   --pc-sale: #ff5a00;
@@ -21,9 +21,9 @@
 }
 
 [data-theme='light'] {
-  --primary: #ff6600;
+  --primary: #ff6a2b;
   --mint: #ff8b01;
-  --price-color: #ff6600;
+  --price-color: #ff6a2b;
   --bg: #ffffff;
   --bg-gradient: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
   --bg-card: #ffffff;
@@ -631,7 +631,7 @@
 .pc-drawer-tab.is-active {
   background: #fff;
   color: #111;
-  border-bottom-color: var(--pc-accent, #ff6600);
+  border-bottom-color: var(--pc-accent, #ff6a2b);
 }
 
 .nav-drawer-close--pc {
@@ -875,7 +875,7 @@
 }
 
 .repair-models-panel--pc .repair-pc-search:focus-within {
-  border-color: var(--pc-accent, #ff6600);
+  border-color: var(--pc-accent, #ff6a2b);
   box-shadow: 0 0 0 4px rgba(255, 102, 0, 0.1);
 }
 
@@ -970,7 +970,7 @@
 }
 
 .repair-pc-model-chip:hover {
-  border-color: var(--pc-accent, #ff6600);
+  border-color: var(--pc-accent, #ff6a2b);
   background: var(--pc-accent-soft, #fff1e8);
   color: #c2410c;
 }
@@ -1418,7 +1418,7 @@
   .navbar.navbar--pc .pc-drawer-tab.is-active {
     background: #fff !important;
     color: #111 !important;
-    border-bottom-color: var(--pc-accent, #ff6600) !important;
+    border-bottom-color: var(--pc-accent, #ff6a2b) !important;
   }
 
   [data-theme='dark'] .navbar.navbar--pc .pc-drawer-tab {
@@ -1481,7 +1481,7 @@
   }
 
   .navbar.navbar--pc .nav-drawer-close--pc:focus-visible {
-    box-shadow: inset 0 0 0 2px var(--pc-accent, #ff6600);
+    box-shadow: inset 0 0 0 2px var(--pc-accent, #ff6a2b);
   }
 
   [data-theme='dark'] .navbar.navbar--pc .nav-drawer-close--pc,

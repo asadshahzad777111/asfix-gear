@@ -1,5 +1,9 @@
 import { useEffect, useRef, useState } from 'react';
 
+/**
+ * Bidirectional scroll reveal — elements animate in when entering the viewport
+ * and reset when leaving, so reverse scroll feels alive (not one-shot).
+ */
 export default function useScrollReveal({ threshold = 0.15, delay = 0, disabled = false } = {}) {
   const ref = useRef(null);
   const [revealed, setRevealed] = useState(disabled);
@@ -19,29 +23,41 @@ export default function useScrollReveal({ threshold = 0.15, delay = 0, disabled 
     }
 
     let delayTimer = null;
+
+    const clearDelay = () => {
+      if (delayTimer) {
+        window.clearTimeout(delayTimer);
+        delayTimer = null;
+      }
+    };
+
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
           if (delay > 0) {
+            clearDelay();
             delayTimer = window.setTimeout(() => setRevealed(true), delay);
           } else {
             setRevealed(true);
           }
-          observer.unobserve(el);
+        } else {
+          clearDelay();
+          setRevealed(false);
         }
       },
-      { threshold }
+      { threshold, rootMargin: '0px 0px -6% 0px' }
     );
 
     observer.observe(el);
     return () => {
       observer.disconnect();
-      if (delayTimer) window.clearTimeout(delayTimer);
+      clearDelay();
     };
   }, [threshold, delay, disabled]);
 
   return {
     ref,
     revealClass: revealed ? 'scroll-revealed' : '',
+    revealed,
   };
 }

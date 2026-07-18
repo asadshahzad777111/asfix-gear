@@ -11,13 +11,13 @@ export default function Reveal({
   delay = 0,
   as: Tag = 'div',
 }) {
-  const { ref, revealClass } = useScrollReveal({ threshold, delay });
+  const { ref, revealed } = useScrollReveal({ threshold, delay });
   const variantClass = variant ? `loco-reveal--${variant}` : '';
 
   return (
     <Tag
       ref={ref}
-      className={`loco-reveal ${variantClass} ${revealClass ? 'is-in' : ''} ${className}`.trim()}
+      className={`loco-reveal ${variantClass} ${revealed ? 'is-in' : ''} ${className}`.trim()}
     >
       {children}
     </Tag>

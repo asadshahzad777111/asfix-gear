@@ -633,6 +633,7 @@ export default function Navbar() {
                 icon="📱"
                 label={t('nav.whatsapp')}
                 className="nav-whatsapp"
+                accent
                 onClick={closeMenu}
               />
             </div>

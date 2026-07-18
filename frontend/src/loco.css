@@ -6,7 +6,7 @@
 :root {
   --loco-ease: cubic-bezier(0.22, 1, 0.36, 1);
   --loco-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --loco-duration: 0.85s;
+  --loco-duration: 0.65s;
   --hero-pad-top: clamp(5.5rem, 12vh, 7.5rem);
 }
 
@@ -75,7 +75,7 @@
 /* ── Scroll reveal (enhanced) ── */
 .loco-reveal {
   opacity: 0;
-  transform: translate3d(0, 36px, 0);
+  transform: translate3d(0, 24px, 0);
   transition:
     opacity var(--loco-duration) var(--loco-ease),
     transform var(--loco-duration) var(--loco-ease);
