@@ -1,6 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
-import { generalContactPath } from '../config/shop';
+import { generalContactPath, whatsappLink } from '../config/shop';
 import { MODEL_SPECIFIC_CATEGORIES, SHOP_BRANDS, SHOP_CATEGORIES } from '../config/products';
 import { getSeriesForShopBrand, SHOP_BRAND_TO_REPAIR_BRAND } from '../config/repairModels';
 import SearchBrandIcon from './nav/SearchBrandIcon';
@@ -17,6 +17,7 @@ import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
 import NavSearch from './nav/NavSearch';
 import ShopMegaMenu from './nav/ShopMegaMenu';
+import { IconCart, IconHeart, IconUser, IconWhatsApp } from './nav/NavIcons';
 import { useWishlistIds } from '../hooks/useWishlist';
 import { useCart } from '../context/CartContext';
 import {
@@ -41,6 +42,9 @@ export default function Navbar() {
   const [finderCategory, setFinderCategory] = useState(null);
   const [drawerTab, setDrawerTab] = useState('menu');
   const [drawerBrand, setDrawerBrand] = useState(null);
+  const [scrolled, setScrolled] = useState(false);
+  const [cartBump, setCartBump] = useState(false);
+  const prevCartRef = useRef(cartCount);
 
   const closeMenu = () => {
     setMenuOpen(false);
@@ -74,6 +78,23 @@ export default function Navbar() {
     }
   }, [menuOpen]);
 
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 12);
+    onScroll();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  useEffect(() => {
+    if (prevCartRef.current !== cartCount) {
+      prevCartRef.current = cartCount;
+      setCartBump(true);
+      const id = window.setTimeout(() => setCartBump(false), 420);
+      return () => window.clearTimeout(id);
+    }
+    return undefined;
+  }, [cartCount]);
+
   const resetShopMobileNav = () => {
     setShopMobileLevel(1);
     setShopMobileBrand(null);
@@ -87,10 +108,6 @@ export default function Navbar() {
       if (open) resetShopMobileNav();
       return !open;
     });
-    // Double rAF: some mobile browsers (esp. iOS Safari) re-apply their own
-    // focus/layout-driven scroll adjustment one frame after ours, so we
-    // pin scrollTop again after that frame too — prevents the drawer from
-    // jumping back to the top when the accordion expands/collapses.
     requestAnimationFrame(() => {
       if (drawer) drawer.scrollTop = scrollTop;
       requestAnimationFrame(() => {
@@ -107,372 +124,444 @@ export default function Navbar() {
     return () => window.removeEventListener('keydown', onKeyDown);
   }, []);
 
+  const waHref = whatsappLink('Assalam o Alaikum! AsFix & Gear se baat karni hai.');
+
   return (
     <>
-      <header className="navbar navbar--mobile-pro navbar--pc">
-        <div className="container navbar-inner">
-          <button
-            type="button"
-            className={`menu-toggle menu-toggle--leading ${menuOpen ? 'is-open' : ''}`}
-            onClick={() => setMenuOpen((open) => !open)}
-            aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
-            aria-expanded={menuOpen}
-            aria-controls="main-nav"
-          >
-            <span className="menu-toggle-bar" />
-            <span className="menu-toggle-bar" />
-            <span className="menu-toggle-bar" />
-          </button>
-
-          <LogoLink onNavigate={closeMenu} />
-
-          <NavSearch className="navbar-search--desktop" />
-
-          <div className="nav-desktop-bar">
-            <Link to="/" className="nav-desktop-link">{t('nav.home')}</Link>
-            <ShopMegaMenu />
-            <NavLink
-              to="/gaming"
-              className={({ isActive }) =>
-                `nav-desktop-link nav-desktop-link--gaming${isActive ? ' nav-desktop-link--active' : ''}`
-              }
+      <header
+        className={`navbar navbar--mobile-pro navbar--pc navbar--dx${scrolled ? ' is-scrolled' : ''}${menuOpen ? ' is-menu-open' : ''}`}
+      >
+        {/* Row 1 — utility */}
+        <div className="dx-utility">
+          <div className="container dx-utility-inner">
+            <button
+              type="button"
+              className={`menu-toggle menu-toggle--leading dx-menu-toggle ${menuOpen ? 'is-open' : ''}`}
+              onClick={() => setMenuOpen((open) => !open)}
+              aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
+              aria-expanded={menuOpen}
+              aria-controls="main-nav"
             >
-              {t('nav.gamingAccessories')}
-            </NavLink>
-            <Link to="/repair" className="nav-desktop-link">
-              {t('nav.repair')}
-            </Link>
-            <Link to="/contact" className="nav-desktop-link">{t('nav.contact')}</Link>
-            {isCustomer ? (
-              <Link to="/account" className="nav-desktop-link nav-desktop-link--orders">{t('nav.myOrders')}</Link>
-            ) : (
-              <Link to="/track" className="nav-desktop-link nav-desktop-link--track">{t('nav.track')}</Link>
-            )}
-          </div>
+              <span className="menu-toggle-bar" />
+              <span className="menu-toggle-bar" />
+              <span className="menu-toggle-bar" />
+            </button>
 
-          <nav
-            id="main-nav"
-            className={`nav-links nav-drawer nav-drawer--pc ${menuOpen ? 'open' : ''}`}
-            aria-hidden={!menuOpen}
-          >
-            <div className="nav-drawer-head nav-drawer-head--pc">
-              <div className="pc-drawer-tabs" role="tablist">
-                <button
-                  type="button"
-                  role="tab"
-                  className={`pc-drawer-tab${drawerTab === 'menu' ? ' is-active' : ''}`}
-                  aria-selected={drawerTab === 'menu'}
-                  onClick={() => setDrawerTab('menu')}
-                >
-                  {t('nav.menu')}
-                </button>
-                <button
-                  type="button"
-                  role="tab"
-                  className={`pc-drawer-tab${drawerTab === 'model' ? ' is-active' : ''}`}
-                  aria-selected={drawerTab === 'model'}
-                  onClick={() => setDrawerTab('model')}
-                >
-                  {t('nav.selectModel')}
-                </button>
-              </div>
-              <button
-                type="button"
-                className="nav-drawer-close nav-drawer-close--pc"
-                onClick={closeMenu}
-                aria-label={t('nav.closeMenu')}
-              >
-                <span className="nav-drawer-close-icon">✕</span>
-              </button>
-            </div>
+            <LogoLink onNavigate={closeMenu} />
 
-            {drawerTab === 'model' && (
-              <div className="pc-drawer-model-panel">
-                {!drawerBrand ? (
-                  <div className="pc-drawer-brand-list">
-                    {SHOP_BRANDS.map((brand) => (
-                      <button
-                        key={brand.id}
-                        type="button"
-                        className="pc-drawer-brand-row"
-                        onClick={() => setDrawerBrand(brand.id)}
-                      >
-                        <SearchBrandIcon brandId={brand.id} />
-                        <span>{brand.label}</span>
-                        <span aria-hidden="true">›</span>
-                      </button>
-                    ))}
-                  </div>
-                ) : (
-                  <>
-                    <button
-                      type="button"
-                      className="pc-drawer-brand-back"
-                      onClick={() => setDrawerBrand(null)}
-                    >
-                      ← {t('repair.changeCompany')}
-                    </button>
-                    <div className="pc-drawer-model-list">
-                      {getSeriesForShopBrand(drawerBrand).flatMap((series) =>
-                        series.models.map((model) => (
-                          <Link
-                            key={`${series.name}-${model}`}
-                            className="pc-drawer-model-row"
-                            to={`/shop?brand=${encodeURIComponent(drawerBrand)}&search=${encodeURIComponent(model)}`}
-                            onClick={closeMenu}
-                          >
-                            {model}
-                          </Link>
-                        ))
-                      )}
-                    </div>
-                  </>
-                )}
-              </div>
-            )}
+            <NavSearch className="navbar-search--desktop dx-search--desktop" />
 
-            {drawerTab === 'menu' && (
-              <>
-            <LanguageToggle className="lang-toggle--drawer" />
-            <span className="nav-drawer-section-label">{t('nav.explore')}</span>
-
-            <div className="nav-links-primary">
-              <NavDrawerLink to="/" end icon="🏠" label={t('nav.home')} className="nav-drawer-link--home" onClick={closeMenu} />
-              <div className={`nav-drawer-accordion ${shopAccordionOpen ? 'is-open' : ''}`}>
-                <button
-                  type="button"
-                  className="nav-drawer-item nav-drawer-accordion-trigger"
-                  aria-expanded={shopAccordionOpen}
-                  aria-controls="nav-shop-accordion-panel"
-                  onMouseDown={(e) => e.preventDefault()}
-                  onTouchStart={(e) => e.currentTarget.blur()}
-                  onClick={toggleShopAccordion}
-                >
-                  <span className="nav-drawer-item-glow" aria-hidden="true" />
-                  <span className="nav-drawer-item-icon" aria-hidden="true">🛍️</span>
-                  <span className="nav-drawer-item-label">{t('nav.shop')}</span>
-                  <span className="nav-drawer-item-arrow nav-drawer-accordion-chevron" aria-hidden="true">▾</span>
-                </button>
-                <div
-                  id="nav-shop-accordion-panel"
-                  className="nav-drawer-accordion-panel"
-                  aria-hidden={!shopAccordionOpen}
-                >
-                  <div className="nav-drawer-accordion-panel-inner nav-drawer-shop-panel">
-                    {shopMobileLevel > 1 && (
-                      <button
-                        type="button"
-                        className="nav-drawer-accordion-link nav-drawer-accordion-link--btn nav-drawer-shop-back"
-                        onClick={() => setShopMobileLevel((level) => Math.max(1, level - 1))}
-                      >
-                        ← {shopMobileLevel === 2 ? t('nav.categories') : t('nav.topPicks')}
-                      </button>
-                    )}
-
-                    {shopMobileLevel === 1 && (
-                      <>
-                        <Link to="/shop" className="nav-drawer-accordion-link" onClick={closeMenu}>
-                          {t('nav.shopAll')}
-                        </Link>
-                        {SHOP_CATEGORIES.map((cat) =>
-                          MODEL_SPECIFIC_CATEGORIES.includes(cat) ? (
-                            <button
-                              key={cat}
-                              type="button"
-                              className="nav-drawer-accordion-link nav-drawer-accordion-link--btn"
-                              onClick={() => {
-                                closeMenu();
-                                setFinderCategory(cat);
-                              }}
-                            >
-                              {cat}
-                            </button>
-                          ) : (
-                            <Link
-                              key={cat}
-                              className="nav-drawer-accordion-link"
-                              to={`/shop?category=${encodeURIComponent(cat)}`}
-                              onClick={closeMenu}
-                            >
-                              {cat}
-                            </Link>
-                          )
-                        )}
-                        <button
-                          type="button"
-                          className="nav-drawer-accordion-link nav-drawer-accordion-link--btn nav-drawer-shop-next"
-                          onClick={() => setShopMobileLevel(2)}
-                        >
-                          {t('nav.topPicks')} →
-                        </button>
-                      </>
-                    )}
-
-                    {shopMobileLevel === 2 &&
-                      SHOP_BRANDS.map((brand) => (
-                        <button
-                          key={brand.id}
-                          type="button"
-                          className="nav-drawer-accordion-link nav-drawer-accordion-link--btn nav-drawer-accordion-link--brand"
-                          onClick={() => {
-                            setShopMobileBrand(brand.id);
-                            setShopMobileLevel(3);
-                          }}
-                        >
-                          <SearchBrandIcon brandId={brand.id} />
-                          <span className="nav-drawer-brand-label">{brand.label}</span>
-                          <span className="nav-drawer-brand-arrow" aria-hidden="true">›</span>
-                        </button>
-                      ))}
-
-                    {shopMobileLevel === 3 && shopMobileBrand && (
-                      <>
-                        <div className="nav-drawer-shop-brand-head">
-                          <SearchBrandIcon brandId={shopMobileBrand} />
-                          <span className="nav-drawer-brand-label">
-                            {SHOP_BRANDS.find((b) => b.id === shopMobileBrand)?.label || shopMobileBrand}
-                          </span>
-                        </div>
-                        {getSeriesForShopBrand(shopMobileBrand).flatMap((series) =>
-                          series.models.map((model) => (
-                            <Link
-                              key={`${series.name}-${model}`}
-                              className="nav-drawer-accordion-link nav-drawer-model-link"
-                              to={`/shop?brand=${encodeURIComponent(shopMobileBrand)}&search=${encodeURIComponent(model)}`}
-                              onClick={closeMenu}
-                            >
-                              <ModelThumb
-                                brand={SHOP_BRAND_TO_REPAIR_BRAND[shopMobileBrand]}
-                                model={model}
-                              />
-                              <span>{model}</span>
-                            </Link>
-                          ))
-                        )}
-                        <Link
-                          className="nav-drawer-accordion-link"
-                          to={`/shop?brand=${encodeURIComponent(shopMobileBrand)}`}
-                          onClick={closeMenu}
-                        >
-                          {t('nav.viewAllBrand', {
-                            brand: SHOP_BRANDS.find((b) => b.id === shopMobileBrand)?.label || '',
-                          })}
-                        </Link>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <NavDrawerLink to="/gaming" icon="🎮" label={t('nav.gamingAccessories')} className="nav-drawer-link--gaming" onClick={closeMenu} />
-              <NavDrawerLink to="/repair" icon="🔧" label={t('nav.repair')} onClick={closeMenu} />
-              <NavDrawerLink to="/track" icon="📦" label={t('nav.track')} className="nav-drawer-link--track" onClick={closeMenu} />
-              <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />
-            </div>
-
-            <span className="nav-drawer-section-label">{t('nav.accountSection')}</span>
-            <div className="nav-links-account">
-              {isCustomer ? (
-                <>
-                  <NavDrawerLink to="/account" icon="👤" label={t('nav.profile')} onClick={closeMenu} />
-                  <NavDrawerLink to="/account" icon="📦" label={t('nav.myOrders')} onClick={closeMenu} />
-                  <NavDrawerLink to="/account/settings" icon="⚙️" label={t('nav.settings')} onClick={closeMenu} />
-                  <NavDrawerButton
-                    icon="🚪"
-                    label={t('account.logout')}
-                    className="nav-drawer-logout"
-                    onClick={handleLogout}
-                  />
-                </>
-              ) : isStaff ? (
-                <>
-                  <NavDrawerAdminLink to="/admin" icon="⚙️" label={t('nav.admin')} onClick={closeMenu} />
-                  <NavDrawerButton
-                    icon="🚪"
-                    label={t('account.logout')}
-                    className="nav-drawer-logout"
-                    onClick={handleLogout}
-                  />
-                </>
-              ) : (
-                <>
-                  <NavDrawerButton icon="🔑" label={t('nav.signIn')} onClick={openLoginModal} />
-                  <NavDrawerLink to="/account/register" icon="✨" label={t('nav.signUp')} onClick={closeMenu} />
-                </>
-              )}
-            </div>
-
-            {isStaff && (
-              <>
-                <span className="nav-drawer-section-label">{t('staff.staffOnly')}</span>
-                <div className="nav-links-staff">
-                  <NavDrawerButton
-                    icon="➕"
-                    label={t('nav.addProduct')}
-                    className="nav-add-product"
-                    onClick={() => {
-                      setAddOpen(true);
-                      closeMenu();
-                    }}
-                  />
-                </div>
-              </>
-            )}
-
-            <NavDrawerLink
-              to={generalContactPath()}
-              icon="📱"
-              label={t('nav.whatsapp')}
-              className="nav-whatsapp"
-              onClick={closeMenu}
-            />
-              </>
-            )}
-          </nav>
-
-          <div className="navbar-aside">
             <OpenBadge compact />
-            <div className="nav-pc-icons">
+
+            <div className="dx-actions">
+              <a
+                href={waHref}
+                className="dx-icon-btn dx-icon-btn--wa"
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label={t('nav.whatsapp')}
+                title={t('nav.whatsapp')}
+              >
+                <IconWhatsApp />
+              </a>
+
               {isCustomer ? (
                 <AccountMenu className="account-menu--toolbar" />
               ) : isStaff ? (
-                <Link to="/admin" className="btn btn-primary btn-sm nav-auth-btn">
+                <Link to="/admin" className="dx-admin-link" onClick={closeMenu}>
                   {t('nav.admin')}
                 </Link>
               ) : (
                 <button
                   type="button"
-                  className="nav-pc-icon-btn"
+                  className="dx-icon-btn dx-icon-btn--account"
                   onClick={() => setLoginOpen(true)}
                   aria-label={t('nav.signIn')}
                   title={t('nav.signIn')}
                 >
-                  <span aria-hidden="true">👤</span>
+                  <IconUser />
                 </button>
               )}
-              <Link to="/wishlist" className="nav-pc-icon-btn" aria-label={t('wishlist.nav')} onClick={closeMenu}>
-                <span aria-hidden="true">♡</span>
-                {wishlistCount > 0 && <span className="nav-pc-badge">{wishlistCount > 99 ? '99+' : wishlistCount}</span>}
+
+              <Link
+                to="/wishlist"
+                className="dx-icon-btn dx-icon-btn--wishlist"
+                aria-label={t('wishlist.nav')}
+                onClick={closeMenu}
+              >
+                <IconHeart />
+                {wishlistCount > 0 && (
+                  <span className="dx-badge">{wishlistCount > 99 ? '99+' : wishlistCount}</span>
+                )}
               </Link>
+
               <button
                 type="button"
-                className="nav-pc-icon-btn"
+                className={`dx-icon-btn dx-icon-btn--cart${cartBump ? ' is-bump' : ''}`}
                 onClick={() => setCartOpen(true)}
                 aria-label={t('cart.openCart', { count: cartCount })}
               >
-                <span aria-hidden="true">🛍️</span>
-                {cartCount > 0 && <span className="nav-pc-badge">{cartCount > 99 ? '99+' : cartCount}</span>}
+                <IconCart />
+                {cartCount > 0 && (
+                  <span className="dx-badge">{cartCount > 99 ? '99+' : cartCount}</span>
+                )}
               </button>
+
+              <LanguageToggle className="lang-toggle--toolbar dx-lang" />
+              <ThemeToggle className="theme-switch--nav dx-theme" />
             </div>
-            <LanguageToggle className="lang-toggle--toolbar" />
-            <ThemeToggle className="theme-switch--nav" />
           </div>
         </div>
 
-        <div className="navbar-search-row">
-          <div className="container">
-            <NavSearch />
+        {/* Row 2 — primary nav (desktop) */}
+        <div className="dx-nav-row">
+          <div className="container dx-nav-inner">
+            <NavLink to="/" end className={({ isActive }) => `dx-nav-link${isActive ? ' is-active' : ''}`}>
+              {t('nav.home')}
+            </NavLink>
+            <ShopMegaMenu />
+            <NavLink
+              to="/gaming"
+              className={({ isActive }) =>
+                `dx-nav-link dx-nav-link--gaming${isActive ? ' is-active' : ''}`
+              }
+            >
+              {t('nav.gamingAccessories')}
+            </NavLink>
+            <NavLink to="/contact" className={({ isActive }) => `dx-nav-link${isActive ? ' is-active' : ''}`}>
+              {t('nav.contact')}
+            </NavLink>
+            {isCustomer ? (
+              <NavLink
+                to="/account"
+                className={({ isActive }) => `dx-nav-link${isActive ? ' is-active' : ''}`}
+              >
+                {t('nav.myOrders')}
+              </NavLink>
+            ) : (
+              <NavLink to="/track" className={({ isActive }) => `dx-nav-link${isActive ? ' is-active' : ''}`}>
+                {t('nav.track')}
+              </NavLink>
+            )}
           </div>
         </div>
+
+        {/* Mobile search row */}
+        <div className="dx-search-row">
+          <div className="container">
+            <NavSearch className="dx-search--mobile" />
+          </div>
+        </div>
+
+        <nav
+          id="main-nav"
+          className={`nav-links nav-drawer nav-drawer--pc ${menuOpen ? 'open' : ''}`}
+          aria-hidden={!menuOpen}
+        >
+          <div className="nav-drawer-head nav-drawer-head--pc">
+            <div className="pc-drawer-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                className={`pc-drawer-tab${drawerTab === 'menu' ? ' is-active' : ''}`}
+                aria-selected={drawerTab === 'menu'}
+                onClick={() => setDrawerTab('menu')}
+              >
+                {t('nav.menu')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                className={`pc-drawer-tab${drawerTab === 'model' ? ' is-active' : ''}`}
+                aria-selected={drawerTab === 'model'}
+                onClick={() => setDrawerTab('model')}
+              >
+                {t('nav.selectModel')}
+              </button>
+            </div>
+            <button
+              type="button"
+              className="nav-drawer-close nav-drawer-close--pc"
+              onClick={closeMenu}
+              aria-label={t('nav.closeMenu')}
+            >
+              <span className="nav-drawer-close-icon">✕</span>
+            </button>
+          </div>
+
+          {drawerTab === 'model' && (
+            <div className="pc-drawer-model-panel">
+              {!drawerBrand ? (
+                <div className="pc-drawer-brand-list">
+                  {SHOP_BRANDS.map((brand) => (
+                    <button
+                      key={brand.id}
+                      type="button"
+                      className="pc-drawer-brand-row"
+                      onClick={() => setDrawerBrand(brand.id)}
+                    >
+                      <SearchBrandIcon brandId={brand.id} />
+                      <span>{brand.label}</span>
+                      <span aria-hidden="true">›</span>
+                    </button>
+                  ))}
+                </div>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    className="pc-drawer-brand-back"
+                    onClick={() => setDrawerBrand(null)}
+                  >
+                    ← {t('repair.changeCompany')}
+                  </button>
+                  <div className="pc-drawer-model-list">
+                    {getSeriesForShopBrand(drawerBrand).flatMap((series) =>
+                      series.models.map((model) => (
+                        <Link
+                          key={`${series.name}-${model}`}
+                          className="pc-drawer-model-row"
+                          to={`/shop?brand=${encodeURIComponent(drawerBrand)}&search=${encodeURIComponent(model)}`}
+                          onClick={closeMenu}
+                        >
+                          {model}
+                        </Link>
+                      ))
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {drawerTab === 'menu' && (
+            <>
+              <LanguageToggle className="lang-toggle--drawer" />
+              <span className="nav-drawer-section-label">{t('nav.explore')}</span>
+
+              <div className="nav-links-primary">
+                <NavDrawerLink
+                  to="/"
+                  end
+                  icon="🏠"
+                  label={t('nav.home')}
+                  className="nav-drawer-link--home"
+                  onClick={closeMenu}
+                />
+                <div className={`nav-drawer-accordion ${shopAccordionOpen ? 'is-open' : ''}`}>
+                  <button
+                    type="button"
+                    className="nav-drawer-item nav-drawer-accordion-trigger"
+                    aria-expanded={shopAccordionOpen}
+                    aria-controls="nav-shop-accordion-panel"
+                    onMouseDown={(e) => e.preventDefault()}
+                    onTouchStart={(e) => e.currentTarget.blur()}
+                    onClick={toggleShopAccordion}
+                  >
+                    <span className="nav-drawer-item-glow" aria-hidden="true" />
+                    <span className="nav-drawer-item-icon" aria-hidden="true">🛍️</span>
+                    <span className="nav-drawer-item-label">{t('nav.shop')}</span>
+                    <span className="nav-drawer-item-arrow nav-drawer-accordion-chevron" aria-hidden="true">
+                      ▾
+                    </span>
+                  </button>
+                  <div
+                    id="nav-shop-accordion-panel"
+                    className="nav-drawer-accordion-panel"
+                    aria-hidden={!shopAccordionOpen}
+                  >
+                    <div className="nav-drawer-accordion-panel-inner nav-drawer-shop-panel">
+                      {shopMobileLevel > 1 && (
+                        <button
+                          type="button"
+                          className="nav-drawer-accordion-link nav-drawer-accordion-link--btn nav-drawer-shop-back"
+                          onClick={() => setShopMobileLevel((level) => Math.max(1, level - 1))}
+                        >
+                          ← {shopMobileLevel === 2 ? t('nav.categories') : t('nav.topPicks')}
+                        </button>
+                      )}
+
+                      {shopMobileLevel === 1 && (
+                        <>
+                          <Link to="/shop" className="nav-drawer-accordion-link" onClick={closeMenu}>
+                            {t('nav.shopAll')}
+                          </Link>
+                          {SHOP_CATEGORIES.map((cat) =>
+                            MODEL_SPECIFIC_CATEGORIES.includes(cat) ? (
+                              <button
+                                key={cat}
+                                type="button"
+                                className="nav-drawer-accordion-link nav-drawer-accordion-link--btn"
+                                onClick={() => {
+                                  closeMenu();
+                                  setFinderCategory(cat);
+                                }}
+                              >
+                                {cat}
+                              </button>
+                            ) : (
+                              <Link
+                                key={cat}
+                                className="nav-drawer-accordion-link"
+                                to={`/shop?category=${encodeURIComponent(cat)}`}
+                                onClick={closeMenu}
+                              >
+                                {cat}
+                              </Link>
+                            )
+                          )}
+                          <button
+                            type="button"
+                            className="nav-drawer-accordion-link nav-drawer-accordion-link--btn nav-drawer-shop-next"
+                            onClick={() => setShopMobileLevel(2)}
+                          >
+                            {t('nav.topPicks')} →
+                          </button>
+                        </>
+                      )}
+
+                      {shopMobileLevel === 2 &&
+                        SHOP_BRANDS.map((brand) => (
+                          <button
+                            key={brand.id}
+                            type="button"
+                            className="nav-drawer-accordion-link nav-drawer-accordion-link--btn nav-drawer-accordion-link--brand"
+                            onClick={() => {
+                              setShopMobileBrand(brand.id);
+                              setShopMobileLevel(3);
+                            }}
+                          >
+                            <SearchBrandIcon brandId={brand.id} />
+                            <span className="nav-drawer-brand-label">{brand.label}</span>
+                            <span className="nav-drawer-brand-arrow" aria-hidden="true">›</span>
+                          </button>
+                        ))}
+
+                      {shopMobileLevel === 3 && shopMobileBrand && (
+                        <>
+                          <div className="nav-drawer-shop-brand-head">
+                            <SearchBrandIcon brandId={shopMobileBrand} />
+                            <span className="nav-drawer-brand-label">
+                              {SHOP_BRANDS.find((b) => b.id === shopMobileBrand)?.label || shopMobileBrand}
+                            </span>
+                          </div>
+                          {getSeriesForShopBrand(shopMobileBrand).flatMap((series) =>
+                            series.models.map((model) => (
+                              <Link
+                                key={`${series.name}-${model}`}
+                                className="nav-drawer-accordion-link nav-drawer-model-link"
+                                to={`/shop?brand=${encodeURIComponent(shopMobileBrand)}&search=${encodeURIComponent(model)}`}
+                                onClick={closeMenu}
+                              >
+                                <ModelThumb
+                                  brand={SHOP_BRAND_TO_REPAIR_BRAND[shopMobileBrand]}
+                                  model={model}
+                                />
+                                <span>{model}</span>
+                              </Link>
+                            ))
+                          )}
+                          <Link
+                            className="nav-drawer-accordion-link"
+                            to={`/shop?brand=${encodeURIComponent(shopMobileBrand)}`}
+                            onClick={closeMenu}
+                          >
+                            {t('nav.viewAllBrand', {
+                              brand: SHOP_BRANDS.find((b) => b.id === shopMobileBrand)?.label || '',
+                            })}
+                          </Link>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                <NavDrawerLink
+                  to="/gaming"
+                  icon="🎮"
+                  label={t('nav.gamingAccessories')}
+                  className="nav-drawer-link--gaming"
+                  onClick={closeMenu}
+                />
+                <NavDrawerLink to="/repair" icon="🔧" label={t('nav.repair')} onClick={closeMenu} />
+                <NavDrawerLink
+                  to="/track"
+                  icon="📦"
+                  label={t('nav.track')}
+                  className="nav-drawer-link--track"
+                  onClick={closeMenu}
+                />
+                <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />
+              </div>
+
+              <span className="nav-drawer-section-label">{t('nav.accountSection')}</span>
+              <div className="nav-links-account">
+                {isCustomer ? (
+                  <>
+                    <NavDrawerLink to="/account" icon="👤" label={t('nav.profile')} onClick={closeMenu} />
+                    <NavDrawerLink to="/account" icon="📦" label={t('nav.myOrders')} onClick={closeMenu} />
+                    <NavDrawerLink
+                      to="/account/settings"
+                      icon="⚙️"
+                      label={t('nav.settings')}
+                      onClick={closeMenu}
+                    />
+                    <NavDrawerButton
+                      icon="🚪"
+                      label={t('account.logout')}
+                      className="nav-drawer-logout"
+                      onClick={handleLogout}
+                    />
+                  </>
+                ) : isStaff ? (
+                  <>
+                    <NavDrawerAdminLink to="/admin" icon="⚙️" label={t('nav.admin')} onClick={closeMenu} />
+                    <NavDrawerButton
+                      icon="🚪"
+                      label={t('account.logout')}
+                      className="nav-drawer-logout"
+                      onClick={handleLogout}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <NavDrawerButton icon="🔑" label={t('nav.signIn')} onClick={openLoginModal} />
+                    <NavDrawerLink
+                      to="/account/register"
+                      icon="✨"
+                      label={t('nav.signUp')}
+                      onClick={closeMenu}
+                    />
+                  </>
+                )}
+              </div>
+
+              {isStaff && (
+                <>
+                  <span className="nav-drawer-section-label">{t('staff.staffOnly')}</span>
+                  <div className="nav-links-staff">
+                    <NavDrawerButton
+                      icon="➕"
+                      label={t('nav.addProduct')}
+                      className="nav-add-product"
+                      onClick={() => {
+                        setAddOpen(true);
+                        closeMenu();
+                      }}
+                    />
+                  </div>
+                </>
+              )}
+
+              <NavDrawerLink
+                to={generalContactPath()}
+                icon="📱"
+                label={t('nav.whatsapp')}
+                className="nav-whatsapp"
+                onClick={closeMenu}
+              />
+            </>
+          )}
+        </nav>
 
         <div
           className={`nav-overlay ${menuOpen ? 'visible' : ''}`}
@@ -494,8 +583,8 @@ export default function Navbar() {
 
 function LogoLink({ onNavigate }) {
   return (
-    <Link to="/" className="logo" onClick={onNavigate}>
-      <Logo size={38} showText />
+    <Link to="/" className="logo dx-logo" onClick={onNavigate}>
+      <Logo size={36} showText />
     </Link>
   );
 }

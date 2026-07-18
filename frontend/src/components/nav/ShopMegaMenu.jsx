@@ -274,7 +274,7 @@ export default function ShopMegaMenu() {
           aria-haspopup="true"
           onClick={toggleOpen}
         >
-          🛍️ {t('nav.shop')}
+          {t('nav.shop')}
           <span className="nav-mega-chevron" aria-hidden="true">▾</span>
         </button>
       </div>

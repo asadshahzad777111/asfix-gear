@@ -60,12 +60,18 @@ async function loadMeta(db) {
 async function loadSettings(db) {
   const doc = await db.collection('settings').findOne({ _id: 'settings' });
   if (!doc) return structuredClone(DEFAULT_DATA.settings);
+  const { _id, ...saved } = doc;
+  const defaults = structuredClone(DEFAULT_DATA.settings);
   return {
+    ...defaults,
+    ...saved,
     shop: {
-      manual_override: doc.shop?.manual_override ?? null,
-      updated_at: doc.shop?.updated_at ?? null,
-      updated_by: doc.shop?.updated_by ?? null,
+      ...defaults.shop,
+      ...(saved.shop || {}),
     },
+    product_categories: Array.isArray(saved.product_categories)
+      ? saved.product_categories
+      : defaults.product_categories,
   };
 }
 
@@ -137,12 +143,14 @@ async function writeDataAsync(data) {
     { _id: 'meta', ...data.meta },
     { upsert: true }
   );
+  // Persist the full settings blob (shop hours, delivery, payments,
+  // storefront_images, product_categories, …). Previously only `shop`
+  // was written, so admin gallery URLs vanished on every redeploy/restart.
+  const settings = data.settings || DEFAULT_DATA.settings;
+  const { _id: _ignore, ...settingsFields } = settings;
   await db.collection('settings').replaceOne(
     { _id: 'settings' },
-    {
-      _id: 'settings',
-      shop: data.settings?.shop || DEFAULT_DATA.settings.shop,
-    },
+    { _id: 'settings', ...settingsFields },
     { upsert: true }
   );
 }

@@ -37,6 +37,12 @@ export const DEFAULT_DATA = {
       updated_by: null,
     },
     product_categories: [],
+    storefront_images: {
+      category_images: {},
+      hero_slides: [],
+      updated_at: null,
+      updated_by: null,
+    },
   },
 };
 
@@ -78,6 +84,24 @@ export function migrateData(data) {
 
   if (!Array.isArray(data.settings.product_categories)) {
     data.settings.product_categories = [];
+  }
+  if (!data.settings.storefront_images || typeof data.settings.storefront_images !== 'object') {
+    data.settings.storefront_images = {
+      category_images: {},
+      hero_slides: [],
+      updated_at: null,
+      updated_by: null,
+    };
+  } else {
+    if (
+      !data.settings.storefront_images.category_images ||
+      typeof data.settings.storefront_images.category_images !== 'object'
+    ) {
+      data.settings.storefront_images.category_images = {};
+    }
+    if (!Array.isArray(data.settings.storefront_images.hero_slides)) {
+      data.settings.storefront_images.hero_slides = [];
+    }
   }
 
   const nowIso = new Date().toISOString();

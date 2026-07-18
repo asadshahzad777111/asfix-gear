@@ -7,6 +7,7 @@ import useRecentSearches from '../../hooks/useRecentSearches';
 import { filterPublishedProducts } from '../../utils/productStatus';
 import SearchBrandIcon from './SearchBrandIcon';
 import { getBrandMeta } from '../../utils/brandIcon';
+import { IconSearch } from './NavIcons';
 
 const SUGGEST_DEBOUNCE_MS = 250;
 const MAX_SUGGESTIONS = 6;
@@ -100,7 +101,9 @@ export default function NavSearch({ className = '' }) {
   return (
     <div className={`nav-search-wrap ${className}`.trim()} ref={wrapRef}>
       <form className="nav-search" onSubmit={submit} role="search">
-        <span className="nav-search-icon" aria-hidden="true">🔍</span>
+        <span className="nav-search-icon" aria-hidden="true">
+          <IconSearch />
+        </span>
         <input
           type="search"
           className="nav-search-input"
