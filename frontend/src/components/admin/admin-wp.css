@@ -659,6 +659,35 @@
   margin-top: 0.75rem;
 }
 
+.wp-address-settings-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+.wp-address-setting-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.6rem;
+  padding: 0.65rem;
+  border: 1px solid #dcdcde;
+  border-radius: 6px;
+  background: #f6f7f7;
+}
+
+.wp-address-setting-row input {
+  margin-top: 0.2rem;
+}
+
+.wp-address-setting-row span {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.wp-address-setting-row small {
+  color: #50575e;
+  font-size: 0.78rem;
+}
+
 /* ── Mobile / tablet admin (full width, drawer menu) ── */
 @media (max-width: 960px) {
   .app--admin {

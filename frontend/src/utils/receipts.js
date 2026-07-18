@@ -1,6 +1,7 @@
 import { SHOP, whatsappLink } from '../config/shop';
 import { mergePaymentSettings } from '../config/payments';
 import { googleMapsUrl } from './maps';
+import { displayAddressLine } from './address';
 
 function formatAmount(amount) {
   return `Rs. ${Number(amount).toLocaleString('en-PK')}`;
@@ -36,8 +37,9 @@ function formatItemLine(item, showCost) {
 
 function shippingLines(order) {
   const addr = order.shipping_address;
-  if (!addr?.text) return [];
-  const lines = [`Address: ${addr.text}`];
+  const addressLine = displayAddressLine(addr);
+  if (!addressLine) return [];
+  const lines = [`Address: ${addressLine}`];
   const map = googleMapsUrl(addr.lat, addr.lng);
   if (map) lines.push(`Map: ${map}`);
   return lines;

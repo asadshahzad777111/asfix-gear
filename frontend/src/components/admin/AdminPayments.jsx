@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { DEFAULT_PAYMENTS, mergePaymentSettings } from '../../config/payments';
 import { DEFAULT_DELIVERY, mergeDeliverySettings } from '../../config/delivery';
+import { DEFAULT_ADDRESS_SETTINGS, mergeAddressSettings } from '../../config/addressSettings';
 
 const METHODS = [
   { id: 'jazzcash', title: 'JazzCash', fields: ['number', 'accountName'] },
@@ -22,20 +23,25 @@ const FIELD_LABELS = {
 export default function AdminPayments() {
   const [form, setForm] = useState(mergePaymentSettings());
   const [delivery, setDelivery] = useState(mergeDeliverySettings());
+  const [addressSettings, setAddressSettings] = useState(mergeAddressSettings());
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingDelivery, setSavingDelivery] = useState(false);
+  const [savingAddress, setSavingAddress] = useState(false);
   const [msg, setMsg] = useState('');
   const [deliveryMsg, setDeliveryMsg] = useState('');
+  const [addressMsg, setAddressMsg] = useState('');
 
   useEffect(() => {
     Promise.all([
       api.getPaymentSettings().catch(() => null),
       api.getDeliverySettings().catch(() => null),
+      api.getAddressSettings().catch(() => null),
     ])
-      .then(([pay, del]) => {
+      .then(([pay, del, address]) => {
         setForm(mergePaymentSettings(pay));
         setDelivery(mergeDeliverySettings(del));
+        setAddressSettings(mergeAddressSettings(address));
       })
       .finally(() => setLoading(false));
   }, []);
@@ -80,6 +86,24 @@ export default function AdminPayments() {
     } finally {
       setSavingDelivery(false);
     }
+  };
+
+  const saveAddressSettings = async () => {
+    setSavingAddress(true);
+    setAddressMsg('');
+    try {
+      const saved = await api.setAddressSettings(addressSettings);
+      setAddressSettings(mergeAddressSettings(saved));
+      setAddressMsg('Checkout address settings saved.');
+    } catch (err) {
+      setAddressMsg(err.message || 'Save failed');
+    } finally {
+      setSavingAddress(false);
+    }
+  };
+
+  const toggleAddressSetting = (key) => {
+    setAddressSettings((prev) => ({ ...prev, [key]: !prev[key] }));
   };
 
   const resetDefaults = () => {
@@ -168,6 +192,63 @@ export default function AdminPayments() {
             </button>
           </div>
           {deliveryMsg ? <p className="wp-payments-msg">{deliveryMsg}</p> : null}
+        </div>
+      </div>
+
+      <div className="wp-postbox" style={{ marginTop: '1.5rem' }}>
+        <div className="wp-postbox-head">Checkout / Address methods</div>
+        <div className="wp-postbox-body">
+          <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
+            Customer account address book aur checkout address form ke methods yahan control hote hain. Courier safe location ko courier partner setup ke baad enable karein.
+          </p>
+          <div className="wp-address-settings-list">
+            <label className="wp-address-setting-row">
+              <input
+                type="checkbox"
+                checked={addressSettings.addressStructuredFormEnabled}
+                onChange={() => toggleAddressSetting('addressStructuredFormEnabled')}
+              />
+              <span>
+                <strong>Structured address form</strong>
+                <small>Name, country, province, city, postal code, street, house/building fields.</small>
+              </span>
+            </label>
+            <label className="wp-address-setting-row">
+              <input
+                type="checkbox"
+                checked={addressSettings.addressMapPickerEnabled}
+                onChange={() => toggleAddressSetting('addressMapPickerEnabled')}
+              />
+              <span>
+                <strong>Map picker</strong>
+                <small>Keep customer drop-pin coordinates with saved addresses.</small>
+              </span>
+            </label>
+            <label className="wp-address-setting-row">
+              <input
+                type="checkbox"
+                checked={addressSettings.addressCourierSafeLocationEnabled}
+                onChange={() => toggleAddressSetting('addressCourierSafeLocationEnabled')}
+              />
+              <span>
+                <strong>Courier safe location</strong>
+                <small>Off by default. Enable only after courier process is ready; no courier API is connected yet.</small>
+              </span>
+            </label>
+          </div>
+          <div className="wp-payments-actions" style={{ marginTop: '1rem' }}>
+            <button type="button" className="wp-button" onClick={saveAddressSettings} disabled={savingAddress}>
+              {savingAddress ? 'Saving…' : 'Save address settings'}
+            </button>
+            <button
+              type="button"
+              className="wp-button wp-button--secondary"
+              onClick={() => setAddressSettings(mergeAddressSettings(DEFAULT_ADDRESS_SETTINGS))}
+            >
+              Reset address defaults
+            </button>
+          </div>
+          {addressMsg ? <p className="wp-payments-msg">{addressMsg}</p> : null}
         </div>
       </div>
     </div>

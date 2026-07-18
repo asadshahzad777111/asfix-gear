@@ -66,6 +66,19 @@ router.patch('/delivery', requireAuth, requireRole(...SHOP_MANAGERS), (req, res)
   }
 });
 
+router.get('/address-settings', (_req, res) => {
+  res.json(store.getAddressSettings());
+});
+
+router.patch('/address-settings', requireAuth, requireRole(...SHOP_MANAGERS), (req, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    res.json(store.setAddressSettings(body, req.auth.user.id));
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Invalid address settings' });
+  }
+});
+
 router.get('/storefront-images', (_req, res) => {
   res.json(store.getStorefrontImages());
 });

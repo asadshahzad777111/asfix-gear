@@ -101,15 +101,48 @@ export function orderCustomerStatus(order) {
   return order.shipping_status || 'pending';
 }
 
+function textValue(value, max) {
+  return String(value || '').trim().slice(0, max);
+}
+
+function composeStructuredAddress(input) {
+  return [
+    input.houseNumber,
+    input.streetAddress,
+    input.landmark,
+    input.city,
+    input.region,
+    input.postalCode,
+    input.country,
+  ].filter(Boolean).join(', ');
+}
+
 function validateShippingAddress(raw) {
   if (!raw || typeof raw !== 'object') return null;
-  const name = String(raw.name || '').trim().slice(0, 120);
-  const phone = String(raw.phone || '').trim().slice(0, 30);
-  const text = String(raw.text || '').trim().slice(0, 500);
+  const name = textValue(raw.fullName || raw.name, 120);
+  const phone = textValue(raw.phone, 30);
+  const country = textValue(raw.country, 80) || 'Pakistan';
+  const region = textValue(raw.region || raw.province || raw.state, 80);
+  const city = textValue(raw.city, 80);
+  const postalCode = textValue(raw.postalCode || raw.zip || raw.zipCode, 20);
+  const streetAddress = textValue(raw.streetAddress || raw.addressLine1 || raw.text, 220);
+  const houseNumber = textValue(raw.houseNumber || raw.building || raw.unit, 80);
+  const landmark = textValue(raw.landmark, 120);
+  const notes = textValue(raw.notes, 300);
+  const composed = composeStructuredAddress({
+    houseNumber,
+    streetAddress,
+    landmark,
+    city,
+    region,
+    postalCode,
+    country,
+  });
+  const text = textValue(raw.text, 500) || composed;
   const lat = Number(raw.lat);
   const lng = Number(raw.lng);
   if (!name || !phone || !text) {
-    throw new Error('Delivery address requires name, phone, and text address');
+    throw new Error('Delivery address requires name, phone, and address details');
   }
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
     throw new Error('Drop a map pin for delivery location');
@@ -117,7 +150,22 @@ function validateShippingAddress(raw) {
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
     throw new Error('Invalid map coordinates');
   }
-  return { name, phone, text, lat, lng };
+  return {
+    name,
+    fullName: name,
+    phone,
+    country,
+    region,
+    city,
+    postalCode,
+    streetAddress,
+    houseNumber,
+    landmark,
+    notes,
+    text,
+    lat,
+    lng,
+  };
 }
 
 function sortProducts(products) {
@@ -2406,8 +2454,17 @@ export function updateCustomerAddress(userId, addressId, input) {
     const existing = user.addresses[index];
     const patch = validateShippingAddress({
       name: input.name ?? existing.name,
+      fullName: input.fullName ?? existing.fullName ?? existing.name,
       phone: input.phone ?? existing.phone,
       text: input.text ?? existing.text,
+      country: input.country ?? existing.country,
+      region: input.region ?? input.province ?? input.state ?? existing.region,
+      city: input.city ?? existing.city,
+      postalCode: input.postalCode ?? input.zip ?? input.zipCode ?? existing.postalCode,
+      streetAddress: input.streetAddress ?? existing.streetAddress ?? existing.text,
+      houseNumber: input.houseNumber ?? input.building ?? input.unit ?? existing.houseNumber,
+      landmark: input.landmark ?? existing.landmark,
+      notes: input.notes ?? existing.notes,
       lat: input.lat ?? existing.lat,
       lng: input.lng ?? existing.lng,
     });
@@ -2452,8 +2509,38 @@ export function resolveCustomerAddress(userId, addressId) {
   if (!user) return null;
   const addr = user.addresses.find((a) => a.id === Number(addressId));
   if (!addr) return null;
-  const { name, phone, text, lat, lng } = addr;
-  return { name, phone, text, lat, lng };
+  const {
+    name,
+    fullName,
+    phone,
+    country,
+    region,
+    city,
+    postalCode,
+    streetAddress,
+    houseNumber,
+    landmark,
+    notes,
+    text,
+    lat,
+    lng,
+  } = validateShippingAddress(addr);
+  return {
+    name,
+    fullName,
+    phone,
+    country,
+    region,
+    city,
+    postalCode,
+    streetAddress,
+    houseNumber,
+    landmark,
+    notes,
+    text,
+    lat,
+    lng,
+  };
 }
 
 function appendOrderActivity(order, message, updatedBy, at) {
@@ -2765,6 +2852,12 @@ const DEFAULT_DELIVERY_SETTINGS = {
     'Delivery fee for your city will be confirmed by staff on WhatsApp before dispatch.',
 };
 
+const DEFAULT_ADDRESS_SETTINGS = {
+  addressStructuredFormEnabled: true,
+  addressCourierSafeLocationEnabled: false,
+  addressMapPickerEnabled: true,
+};
+
 export function getDeliverySettings() {
   const saved = readData().settings?.delivery || {};
   const fee = Number(saved.lahore_fee);
@@ -2805,6 +2898,43 @@ export function setDeliverySettings(input, userId) {
     };
     data.settings.delivery = payload;
     return payload;
+  });
+}
+
+export function getAddressSettings() {
+  const saved = readData().settings?.address_settings || {};
+  return {
+    addressStructuredFormEnabled: saved.addressStructuredFormEnabled !== false,
+    addressCourierSafeLocationEnabled: Boolean(saved.addressCourierSafeLocationEnabled),
+    addressMapPickerEnabled: saved.addressMapPickerEnabled !== false,
+    updated_at: saved.updated_at ?? null,
+    updated_by: saved.updated_by ?? null,
+  };
+}
+
+export function setAddressSettings(input, userId) {
+  return withData((data) => {
+    if (!data.settings) data.settings = {};
+    const current = getAddressSettings();
+    const next = {
+      ...DEFAULT_ADDRESS_SETTINGS,
+      addressStructuredFormEnabled:
+        input?.addressStructuredFormEnabled != null
+          ? Boolean(input.addressStructuredFormEnabled)
+          : current.addressStructuredFormEnabled,
+      addressCourierSafeLocationEnabled:
+        input?.addressCourierSafeLocationEnabled != null
+          ? Boolean(input.addressCourierSafeLocationEnabled)
+          : current.addressCourierSafeLocationEnabled,
+      addressMapPickerEnabled:
+        input?.addressMapPickerEnabled != null
+          ? Boolean(input.addressMapPickerEnabled)
+          : current.addressMapPickerEnabled,
+      updated_at: now(),
+      updated_by: userId ?? null,
+    };
+    data.settings.address_settings = next;
+    return next;
   });
 }
 

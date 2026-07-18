@@ -4,6 +4,7 @@ import { useTranslation } from '../context/LanguageContext';
 import { buildOrderReceipt } from '../utils/receipts';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
 import { googleMapsUrl, osmStaticPreviewUrl } from '../utils/maps';
+import { displayAddressLine } from '../utils/address';
 
 export const ORDER_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 
@@ -110,7 +111,7 @@ function DeliveryLocationBlock({ addr, t }) {
       <p className="admin-float-sub admin-delivery-location__text">
         {addr.name} · {addr.phone}
         <br />
-        {addr.text}
+        {displayAddressLine(addr)}
       </p>
       {Number.isFinite(Number(addr.lat)) && Number.isFinite(Number(addr.lng)) && (
         <p className="admin-delivery-location__coords">

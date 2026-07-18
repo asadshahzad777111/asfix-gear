@@ -4,8 +4,8 @@
    ═══════════════════════════════════════════════════════════ */
 
 :root {
-  --float-dock-right: 0.65rem;
-  --float-dock-bottom: max(0.65rem, env(safe-area-inset-bottom, 0px));
+  --float-dock-right: 1rem;
+  --float-dock-bottom: max(1rem, calc(env(safe-area-inset-bottom, 0px) + 0.5rem));
   --float-dock-size: 3.15rem;
   --float-dock-gap: 0.85rem;
   --float-stack-step: calc(var(--float-dock-size) + var(--float-dock-gap));
@@ -184,10 +184,13 @@
     left: auto;
     right: var(--float-dock-right);
     bottom: var(--float-stack-0);
+    display: grid;
+    place-items: center;
+    box-sizing: border-box;
+    overflow: hidden;
     width: var(--float-dock-size);
     height: var(--float-dock-size);
     padding: 0;
-    justify-content: center;
     border-radius: 50%;
     z-index: 199;
     transform: translateZ(0);
@@ -200,8 +203,10 @@
   }
 
   .floating-repair-btn-icon {
+    display: block;
     width: 1.25rem;
     height: 1.25rem;
+    margin: 0;
   }
 
   .staff-access {
@@ -268,6 +273,7 @@
     padding-bottom: 5.5rem;
   }
 
+  /* Pill layout from index.css (≥769px); only nudge dock position here */
   .floating-repair-btn {
     bottom: 1.25rem;
     right: 1rem;

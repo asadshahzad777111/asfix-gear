@@ -24,6 +24,8 @@ import MapAddressPicker from '../MapAddressPicker';
 import { enabledPaymentMethods, mergePaymentSettings, isCodPayment } from '../../config/payments';
 import { SHOP } from '../../config/shop';
 import { getEstimatedDeliveryFee, isLahoreCity, mergeDeliverySettings } from '../../config/delivery';
+import { mergeAddressSettings } from '../../config/addressSettings';
+import { displayAddressLine } from '../../utils/address';
 
 import ShopLoginPrompt from '../ShopLoginPrompt';
 
@@ -77,6 +79,7 @@ export default function FloatingCart() {
   const [successPhone, setSuccessPhone] = useState('');
   const [paymentSettings, setPaymentSettings] = useState(() => mergePaymentSettings());
   const [deliverySettings, setDeliverySettings] = useState(() => mergeDeliverySettings());
+  const [addressSettings, setAddressSettings] = useState(() => mergeAddressSettings());
   const [fulfillment, setFulfillment] = useState('delivery');
   const [savedAddresses, setSavedAddresses] = useState([]);
   const [addressMode, setAddressMode] = useState('saved');
@@ -84,6 +87,14 @@ export default function FloatingCart() {
   const [newAddress, setNewAddress] = useState({
     name: '',
     phone: '',
+    country: 'Pakistan',
+    region: '',
+    city: '',
+    postalCode: '',
+    streetAddress: '',
+    houseNumber: '',
+    landmark: '',
+    notes: '',
     text: '',
     lat: SHOP.lat,
     lng: SHOP.lng,
@@ -128,6 +139,9 @@ export default function FloatingCart() {
     api.getDeliverySettings()
       .then((data) => setDeliverySettings(mergeDeliverySettings(data)))
       .catch(() => setDeliverySettings(mergeDeliverySettings()));
+    api.getAddressSettings()
+      .then((data) => setAddressSettings(mergeAddressSettings(data)))
+      .catch(() => setAddressSettings(mergeAddressSettings()));
   }, []);
 
   useEffect(() => {
@@ -261,7 +275,8 @@ export default function FloatingCart() {
       return true;
     }
 
-    if (!newAddress.name.trim() || !newAddress.phone.trim() || !newAddress.text.trim()) {
+    const hasAddressLine = newAddress.streetAddress.trim() || newAddress.text.trim();
+    if (!newAddress.name.trim() || !newAddress.phone.trim() || !hasAddressLine) {
       setOrderMsg(t('cart.addressRequired'));
       return false;
     }
@@ -797,7 +812,7 @@ export default function FloatingCart() {
 
                                     <strong>{addr.name}</strong> · {addr.phone}
 
-                                    <small>{addr.text}</small>
+                                    <small>{displayAddressLine(addr)}</small>
 
                                   </span>
 
@@ -831,25 +846,70 @@ export default function FloatingCart() {
 
                               />
 
-                              <textarea
+                              {addressSettings.addressStructuredFormEnabled ? (
+                                <div className="checkout-address-grid">
+                                  <input
+                                    placeholder={t('address.countryLabel')}
+                                    value={newAddress.country}
+                                    onChange={(e) => setNewAddress((a) => ({ ...a, country: e.target.value }))}
+                                  />
+                                  <input
+                                    placeholder={t('address.regionPh')}
+                                    value={newAddress.region}
+                                    onChange={(e) => setNewAddress((a) => ({ ...a, region: e.target.value }))}
+                                  />
+                                  <input
+                                    placeholder={t('address.cityPh')}
+                                    value={newAddress.city}
+                                    onChange={(e) => setNewAddress((a) => ({ ...a, city: e.target.value }))}
+                                  />
+                                  <input
+                                    placeholder={t('address.postalCodePh')}
+                                    value={newAddress.postalCode}
+                                    onChange={(e) => setNewAddress((a) => ({ ...a, postalCode: e.target.value }))}
+                                  />
+                                  <input
+                                    className="checkout-address-wide"
+                                    placeholder={t('address.streetPh')}
+                                    value={newAddress.streetAddress}
+                                    onChange={(e) => setNewAddress((a) => ({ ...a, streetAddress: e.target.value }))}
+                                  />
+                                  <input
+                                    placeholder={t('address.housePh')}
+                                    value={newAddress.houseNumber}
+                                    onChange={(e) => setNewAddress((a) => ({ ...a, houseNumber: e.target.value }))}
+                                  />
+                                  <input
+                                    placeholder={t('address.landmarkPh')}
+                                    value={newAddress.landmark}
+                                    onChange={(e) => setNewAddress((a) => ({ ...a, landmark: e.target.value }))}
+                                  />
+                                  <textarea
+                                    className="checkout-address-wide"
+                                    placeholder={t('address.notesPh')}
+                                    value={newAddress.notes}
+                                    onChange={(e) => setNewAddress((a) => ({ ...a, notes: e.target.value }))}
+                                    rows={2}
+                                  />
+                                </div>
+                              ) : (
+                                <textarea
+                                  placeholder={t('address.textPh')}
+                                  value={newAddress.text}
+                                  onChange={(e) => setNewAddress((a) => ({ ...a, text: e.target.value }))}
+                                  rows={2}
+                                />
+                              )}
 
-                                placeholder={t('address.textPh')}
 
-                                value={newAddress.text}
-
-                                onChange={(e) => setNewAddress((a) => ({ ...a, text: e.target.value }))}
-
-                                rows={2}
-
-                              />
-
-
-                              <MapAddressPicker
-                                lat={newAddress.lat}
-                                lng={newAddress.lng}
-                                onChange={({ lat, lng }) => setNewAddress((a) => ({ ...a, lat, lng }))}
-                                previewHeight={140}
-                              />
+                              {addressSettings.addressMapPickerEnabled && (
+                                <MapAddressPicker
+                                  lat={newAddress.lat}
+                                  lng={newAddress.lng}
+                                  onChange={({ lat, lng }) => setNewAddress((a) => ({ ...a, lat, lng }))}
+                                  previewHeight={140}
+                                />
+                              )}
 
                             </>
 
