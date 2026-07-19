@@ -6,38 +6,39 @@ const REPAIR_BRAND_TO_SHOP_ID = Object.fromEntries(
 );
 
 /**
- * Map our shop brand ids to Simple Icons slugs (https://simpleicons.org).
- * CDN pattern only — no per-brand full URLs stored.
+ * Self-hosted brand marks in /public/brands/ — avoid CDN 403s (simpleicons.org
+ * blocks many hosts). Keep SVGs in the repo so logos survive redeploys.
  */
-const BRAND_SIMPLE_ICON_SLUG = {
-  iphone: 'apple',
-  pixel: 'google',
-};
-
-/** Brands not on Simple Icons — self-hosted SVG wordmarks in /public/brands/. */
 const BRAND_LOCAL_ICON = {
+  iphone: '/brands/iphone.svg',
+  samsung: '/brands/samsung.svg',
+  oneplus: '/brands/oneplus.svg',
+  xiaomi: '/brands/xiaomi.svg',
+  vivo: '/brands/vivo.svg',
+  oppo: '/brands/oppo.svg',
   infinix: '/brands/infinix.svg',
   tecno: '/brands/tecno.svg',
+  pixel: '/brands/pixel.svg',
   realme: '/brands/realme.svg',
+  motorola: '/brands/motorola.svg',
   nothing: '/brands/nothing.svg',
+  honor: '/brands/honor.svg',
   itel: '/brands/itel.svg',
 };
 
 export function getSimpleIconSlug(brandId) {
   const id = String(brandId || '').trim().toLowerCase();
   if (!id) return '';
-  return BRAND_SIMPLE_ICON_SLUG[id] || id;
+  if (id === 'iphone') return 'apple';
+  if (id === 'pixel') return 'google';
+  return id;
 }
 
-/** Simple Icons CDN, with local SVG fallback for brands missing from the CDN. */
-export function getBrandIconUrl(brandId, color = '374151') {
+/** Prefer local SVG; empty string means use emoji fallback. */
+export function getBrandIconUrl(brandId) {
   const id = String(brandId || '').trim().toLowerCase();
   if (!id) return '';
-  if (BRAND_LOCAL_ICON[id]) return BRAND_LOCAL_ICON[id];
-  const slug = getSimpleIconSlug(id);
-  if (!slug) return '';
-  const hex = String(color).replace('#', '');
-  return `https://cdn.simpleicons.org/${encodeURIComponent(slug)}/${hex}`;
+  return BRAND_LOCAL_ICON[id] || '';
 }
 
 export function getBrandMeta(brandId) {
