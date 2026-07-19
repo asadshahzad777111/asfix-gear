@@ -391,11 +391,11 @@
     z-index: 1200 !important;
   }
 
-  .app:not(.app--admin):not(.app--gaming) .app-main {
+  .app:not(.app--admin):not(.app--gaming):not(.app--auth) .app-main {
     padding-bottom: calc(var(--float-dock-row) + 0.35rem);
   }
 
-  .app:not(.app--admin):not(.app--gaming) .footer {
+  .app:not(.app--admin):not(.app--gaming):not(.app--auth) .footer {
     padding-bottom: calc(var(--bottom-nav-total) + 1.1rem);
   }
 

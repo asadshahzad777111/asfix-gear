@@ -13,42 +13,67 @@ import FlyToCart from './components/premium/FlyToCart';
 import MobileBottomNav from './components/MobileBottomNav';
 import GuestWelcomeBanner from './components/GuestWelcomeBanner';
 import SectionScrollStrap from './components/SectionScrollStrap';
+import AuthTopBar from './components/auth/AuthTopBar';
 import PageTransition from './components/premium/PageTransition';
 import Analytics from './components/seo/Analytics';
 import { useLocation } from 'react-router-dom';
 import { useGaming } from './context/GamingContext';
 import { wakeApiServer } from './api/client';
 
+const AUTH_PATHS = new Set([
+  '/account/login',
+  '/account/register',
+  '/account/forgot-password',
+  '/login',
+]);
+
 function AppContent() {
   const { isGamingPage } = useGaming();
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin');
+  const isAuthRoute = AUTH_PATHS.has(location.pathname);
 
   useEffect(() => {
     wakeApiServer();
   }, []);
-  const showCart = !isAdminRoute;
-  const showBottomNav = !isAdminRoute && !isGamingPage;
+
+  useEffect(() => {
+    document.body.classList.toggle('auth-route', isAuthRoute);
+    return () => document.body.classList.remove('auth-route');
+  }, [isAuthRoute]);
+
+  const showShopChrome = !isAdminRoute && !isAuthRoute;
+  const showCart = showShopChrome;
+  const showBottomNav = showShopChrome && !isGamingPage;
 
   return (
-    <div className={`app ${isGamingPage ? 'app--gaming' : ''} ${isAdminRoute ? 'app--admin' : ''}`}>
+    <div
+      className={[
+        'app',
+        isGamingPage ? 'app--gaming' : '',
+        isAdminRoute ? 'app--admin' : '',
+        isAuthRoute ? 'app--auth' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
+    >
       <Analytics />
       {!isGamingPage && !isAdminRoute && <AmbientBackground />}
-      {!isAdminRoute && <Navbar />}
-      {!isAdminRoute && !isGamingPage && <SectionScrollStrap />}
-      {!isAdminRoute && <GuestWelcomeBanner />}
-      <main className={`app-main ${isAdminRoute ? 'app-main--admin' : ''}`}>
+      {isAuthRoute ? <AuthTopBar /> : !isAdminRoute && <Navbar />}
+      {showShopChrome && !isGamingPage && <SectionScrollStrap />}
+      {showShopChrome && <GuestWelcomeBanner />}
+      <main className={`app-main ${isAdminRoute ? 'app-main--admin' : ''} ${isAuthRoute ? 'app-main--auth' : ''}`.trim()}>
         <ErrorBoundary>
           <PageTransition />
         </ErrorBoundary>
       </main>
 
-      {!isAdminRoute && !isGamingPage && <Footer />}
-      {!isAdminRoute && !isGamingPage && <ChatAssistant />}
-      {!isAdminRoute && !isGamingPage && <FloatingRepairButton />}
+      {showShopChrome && !isGamingPage && <Footer />}
+      {showShopChrome && !isGamingPage && <ChatAssistant />}
+      {showShopChrome && !isGamingPage && <FloatingRepairButton />}
       {showCart && <FloatingCart />}
       {showBottomNav && <MobileBottomNav />}
-      <FlyToCart />
+      {showShopChrome && <FlyToCart />}
       <ExitGamingButton />
       <GamingTransition />
       <ButtonEffects />

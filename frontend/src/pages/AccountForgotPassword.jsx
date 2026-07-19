@@ -248,9 +248,6 @@ export default function AccountForgotPassword() {
             {t('account.haveAccount')}{' '}
             <Link to="/account/login">{t('account.signIn')}</Link>
           </p>
-          <p className="auth-2026-foot">
-            <Link to="/">{t('login.backToStore')}</Link>
-          </p>
         </AuthCard>
       </div>
     </AuthShell>

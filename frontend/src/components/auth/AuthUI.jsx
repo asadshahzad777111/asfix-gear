@@ -13,6 +13,7 @@ export function AuthShell({ children }) {
   return (
     <section className="section auth-section auth-2026-shell">
       <span className="auth-2026-glow" aria-hidden="true" />
+      <span className="auth-2026-mesh" aria-hidden="true" />
       {children}
     </section>
   );
@@ -32,11 +33,11 @@ export function AuthCard({ children, staff = false, className = '' }) {
   );
 }
 
-/** Small brand mark shown at the top of every auth surface. */
-export function AuthBrand({ size = 40 }) {
+/** Brand mark + wordmark — hero signal on auth surfaces. */
+export function AuthBrand({ size = 52, showText = true }) {
   return (
-    <div className="auth-2026-brand">
-      <Logo size={size} showText={false} />
+    <div className={`auth-2026-brand ${showText ? 'auth-2026-brand--wordmark' : ''}`}>
+      <Logo size={size} showText={showText} />
     </div>
   );
 }

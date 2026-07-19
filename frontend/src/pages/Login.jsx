@@ -107,9 +107,6 @@ export default function Login() {
             {t('login.customerPrompt')}{' '}
             <Link to="/account/login">{t('account.signIn')}</Link>
           </p>
-          <p className="auth-2026-foot">
-            <Link to="/">{t('login.backToStore')}</Link>
-          </p>
         </AuthCard>
       </div>
     </AuthShell>

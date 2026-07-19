@@ -279,16 +279,15 @@ export default function AccountLogin() {
             </form>
           )}
 
-          <p className="auth-2026-foot">
-            {t('account.noAccount')}{' '}
-            <Link to="/account/register">{t('account.createAccount')}</Link>
-          </p>
-          <p className="auth-2026-foot">
-            <Link to="/login">{t('otp.staffLoginLink')}</Link>
-          </p>
-          <p className="auth-2026-foot">
-            <Link to="/">{t('login.backToStore')}</Link>
-          </p>
+          <div className="auth-2026-foot-stack">
+            <p className="auth-2026-foot">
+              {t('account.noAccount')}{' '}
+              <Link to="/account/register">{t('account.createAccount')}</Link>
+            </p>
+            <p className="auth-2026-foot auth-2026-foot--muted">
+              <Link to="/login">{t('otp.staffLoginLink')}</Link>
+            </p>
+          </div>
         </AuthCard>
       </div>
     </AuthShell>

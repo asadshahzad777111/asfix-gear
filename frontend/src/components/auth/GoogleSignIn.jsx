@@ -36,10 +36,15 @@ export function isGoogleSignInConfigured() {
 }
 
 /**
- * Google Identity Services "Continue with Google" button.
+ * Google Identity Services button, framed for AsFix auth pages.
  * Hidden gracefully when VITE_GOOGLE_CLIENT_ID is unset.
  */
-export default function GoogleSignInButton({ onCredential, disabled = false, submitting = false }) {
+export default function GoogleSignInButton({
+  onCredential,
+  disabled = false,
+  submitting = false,
+  buttonText = 'continue_with',
+}) {
   const { t } = useTranslation();
   const hostRef = useRef(null);
   const [ready, setReady] = useState(false);
@@ -81,17 +86,18 @@ export default function GoogleSignInButton({ onCredential, disabled = false, sub
     if (!ready || !hostRef.current || !window.google?.accounts?.id) return;
 
     hostRef.current.innerHTML = '';
-    const width = Math.min(Math.max(hostRef.current.offsetWidth || 320, 240), 400);
+    const width = Math.min(Math.max(hostRef.current.offsetWidth || 320, 260), 400);
     window.google.accounts.id.renderButton(hostRef.current, {
       type: 'standard',
       theme: 'outline',
       size: 'large',
-      text: 'continue_with',
-      shape: 'rectangular',
+      text: buttonText,
+      shape: 'pill',
+      logo_alignment: 'left',
       width,
       locale: document.documentElement.lang?.startsWith('ur') ? 'ur' : 'en',
     });
-  }, [ready]);
+  }, [ready, buttonText]);
 
   if (!CLIENT_ID) {
     return (
@@ -114,8 +120,16 @@ export default function GoogleSignInButton({ onCredential, disabled = false, sub
       className={`auth-2026-google ${disabled || submitting ? 'auth-2026-google--disabled' : ''}`}
       aria-busy={submitting}
     >
-      <div ref={hostRef} className="auth-2026-google-btn-host" />
+      <div className="auth-2026-google-frame">
+        <span className="auth-2026-google-frame-glow" aria-hidden="true" />
+        <div ref={hostRef} className="auth-2026-google-btn-host" />
+      </div>
       {(disabled || submitting) && <div className="auth-2026-google-overlay" aria-hidden="true" />}
+      {submitting && (
+        <p className="auth-2026-google-status" role="status">
+          {t('auth.googleSigningIn')}
+        </p>
+      )}
     </div>
   );
 }
@@ -130,15 +144,23 @@ export function AuthDivider({ label }) {
 }
 
 /** Google button + optional divider — shared on login and signup. */
-export function AuthGoogleSection({ onCredential, disabled, submitting, showDivider = true }) {
+export function AuthGoogleSection({
+  onCredential,
+  disabled,
+  submitting,
+  showDivider = true,
+  buttonText = 'continue_with',
+}) {
   const { t } = useTranslation();
 
   return (
     <div className="auth-2026-google-section">
+      <p className="auth-2026-google-kicker">{t('auth.googleKicker')}</p>
       <GoogleSignInButton
         onCredential={onCredential}
         disabled={disabled}
         submitting={submitting}
+        buttonText={buttonText}
       />
       {showDivider && isGoogleSignInConfigured() && (
         <AuthDivider label={t('auth.orContinueWith')} />
