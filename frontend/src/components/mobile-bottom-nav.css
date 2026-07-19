@@ -55,11 +55,12 @@
       visibility 0.22s ease;
   }
 
+  /* Cart or side menu open — dock + Repair slide away (chat hides separately) */
   .mobile-bottom-nav.is-cart-open,
   body.nav-open .mobile-bottom-nav {
-    transform: translate3d(0, 120%, 0);
-    opacity: 0;
-    visibility: hidden;
+    transform: translate3d(0, 120%, 0) !important;
+    opacity: 0 !important;
+    visibility: hidden !important;
     pointer-events: none !important;
   }
 

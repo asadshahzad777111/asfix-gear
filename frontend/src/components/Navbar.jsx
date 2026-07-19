@@ -31,6 +31,7 @@ import {
 import MorphIcon from './nav/MorphIcon';
 import { useWishlistIds } from '../hooks/useWishlist';
 import { useCart } from '../context/CartContext';
+import { useChatAssistant } from '../context/ChatAssistantContext';
 import {
   NavDrawerAdminLink,
   NavDrawerButton,
@@ -48,6 +49,7 @@ export default function Navbar() {
   const drawerScrollRef = useRef(null);
   const prevPathRef = useRef(location.pathname);
   const { count: wishlistCount } = useWishlistIds();
+  const { close: closeChat } = useChatAssistant();
   const { count: cartCount, setOpen: setCartOpen, open: cartOpen } = useCart();
   const [menuOpen, setMenuOpen] = useState(false);
   const [shopAccordionOpen, setShopAccordionOpen] = useState(false);
@@ -116,6 +118,11 @@ export default function Navbar() {
     document.body.classList.toggle('nav-open', menuOpen);
     return () => document.body.classList.remove('nav-open');
   }, [menuOpen]);
+
+  /* Same as before: opening the menu hides chat AI so the drawer can open cleanly */
+  useEffect(() => {
+    if (menuOpen) closeChat();
+  }, [menuOpen, closeChat]);
 
   const headerHidden = useHeaderScrollHide(menuOpen || cartOpen);
 

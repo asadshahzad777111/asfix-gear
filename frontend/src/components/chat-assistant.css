@@ -76,7 +76,8 @@
 
   /* Match FAB specificity so drawer/cart hide actually wins */
   body.cart-open .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger,
-  body.nav-open .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
+  body.nav-open .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger,
+  body.nav-open .chat-fab-trigger {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
@@ -88,7 +89,8 @@
   }
 
   body.nav-open .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel,
-  body.cart-open .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
+  body.cart-open .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel,
+  body.nav-open .chat-assistant-panel {
     opacity: 0 !important;
     visibility: hidden !important;
     pointer-events: none !important;
