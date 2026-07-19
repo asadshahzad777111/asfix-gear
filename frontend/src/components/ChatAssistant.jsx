@@ -15,8 +15,10 @@ import ChatHelperTag from './ChatHelperTag';
 let nextId = 1;
 const newId = () => `m${Date.now()}-${nextId++}`;
 
-const BOARD_TOP_MIN = 18;
-const BOARD_TOP_MAX = 62;
+/* Thumb-zone defaults — lower-right, above the bottom dock */
+const BOARD_TOP_MIN = 42;
+const BOARD_TOP_MAX = 72;
+const BOARD_TOP_DEFAULT = 64;
 
 export default function ChatAssistant() {
   const { t, lang } = useTranslation();
@@ -25,8 +27,8 @@ export default function ChatAssistant() {
   const [input, setInput] = useState('');
   const [pending, setPending] = useState(null); // null | 'track' | 'product'
   const [thinking, setThinking] = useState(false);
-  /** Vertical position of the side board (vh) — draggable for convenience */
-  const [boardTop, setBoardTop] = useState(38);
+  /** Vertical position (vh) — defaults low for right-thumb reach */
+  const [boardTop, setBoardTop] = useState(BOARD_TOP_DEFAULT);
   const bodyRef = useRef(null);
   const inputRef = useRef(null);
   const dragRef = useRef(null);
@@ -281,7 +283,7 @@ export default function ChatAssistant() {
       style={{ '--chat-board-top': `${boardTop}vh` }}
       aria-label={t('chatbot.title')}
     >
-      {/* Side helper: humanoid + tag above — exits completely when open */}
+      {/* Right-side peek: face + one hand + thin rotating help line */}
       <button
         type="button"
         className="chat-helper__trigger"
@@ -291,9 +293,9 @@ export default function ChatAssistant() {
         onPointerDown={onTabPointerDown}
         onClick={onTabClick}
       >
-        <ChatHelperTag text={t('chatbot.helpTab')} />
+        <ChatHelperTag />
         <span className="chat-helper__figure-wrap" aria-hidden="true">
-          <ChatHelperMascot className="chat-helper__figure" variant="bust" />
+          <ChatHelperMascot className="chat-helper__figure" variant="peek" />
         </span>
       </button>
 

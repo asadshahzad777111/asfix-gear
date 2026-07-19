@@ -1,10 +1,10 @@
 import { useId } from 'react';
 
 /**
- * Peeking helper — face + both hands (wave).
- * Bust is biased toward the right of the viewBox so a half-peek still shows both hands.
+ * Right-edge peek helper — face + one waving hand toward the page.
+ * Compact variant for the open-panel header.
  */
-export default function ChatHelperMascot({ className = '', variant = 'bust' }) {
+export default function ChatHelperMascot({ className = '', variant = 'peek' }) {
   const uid = useId().replace(/:/g, '');
   const headId = `chatHelperHead-${uid}`;
   const sleeveId = `chatHelperSleeve-${uid}`;
@@ -50,75 +50,71 @@ export default function ChatHelperMascot({ className = '', variant = 'bust' }) {
     );
   }
 
+  /* Peek from the RIGHT: face + one hand into the screen; rest stays off-edge */
   return (
     <svg
       className={className}
-      viewBox="0 0 110 100"
-      width="110"
-      height="100"
+      viewBox="0 0 72 86"
+      width="72"
+      height="86"
       aria-hidden="true"
       focusable="false"
     >
-      {/* Content sits in x≈20–108 so left peek still keeps both hands on-screen */}
-      <ellipse cx="68" cy="94" rx="22" ry="4" fill="rgba(0,0,0,0.14)" />
-
-      <g className="chat-helper-hand chat-helper-hand--left">
-        <path
-          d="M30 58c-6-8-4-18 4-22 3-1.5 6 0 7 3l6 14c1.2 2.8-.4 6-3.4 7.2-3 1.2-6.4-.2-7.6-3.2L30 58z"
-          fill={`url(#${sleeveId})`}
-        />
-        <circle cx="26" cy="40" r="7.5" fill={`url(#${headId})`} />
-        <path d="M22 36.5c1.2-2 4-2.4 5.2-.4" fill="none" stroke="#e08a55" strokeWidth="1.4" strokeLinecap="round" />
-      </g>
-
-      <g className="chat-helper-hand chat-helper-hand--right">
-        <path
-          d="M90 52c7-7 8-17 2-23-2.5-2.5-6-2-8 0L74 42c-2.4 2.2-2.2 5.8.4 7.8 2.6 2 6.2 1.4 8.2-1.2L90 52z"
-          fill={`url(#${sleeveId})`}
-        />
-        <circle cx="96" cy="32" r="7.5" fill={`url(#${headId})`} />
-        <path d="M92 28.5c1.2-2 4-2.4 5.2-.4" fill="none" stroke="#e08a55" strokeWidth="1.4" strokeLinecap="round" />
-      </g>
-
+      {/* Shoulder stub (mostly clipped off-screen on the right) */}
       <path
-        d="M40 72c2-10 10-16 20-16s18 6 20 16v10c0 4-4 8-10 8H50c-6 0-10-4-10-8V72z"
+        d="M40 68c4-12 14-18 28-16v28c-10 2-20 0-28-4V68z"
         fill={`url(#${sleeveId})`}
       />
-      <ellipse cx="60" cy="62" rx="11" ry="5" fill="#fff6f0" opacity="0.35" />
 
-      <circle cx="60" cy="38" r="20" fill={`url(#${headId})`} />
+      {/* One hand waving into the page (left of face) */}
+      <g className="chat-helper-hand chat-helper-hand--wave">
+        <path
+          d="M22 54c-8-6-10-16-4-22 2.5-2.5 6.5-2 8.5 0.5L38 46c2.2 2.4 1.8 6.2-.8 8.2-2.6 2-6.4 1.4-8.4-1L22 54z"
+          fill={`url(#${sleeveId})`}
+        />
+        <circle cx="16" cy="34" r="8" fill={`url(#${headId})`} />
+        <path
+          d="M12 30.5c1.4-2.2 4.4-2.6 5.6-.4"
+          fill="none"
+          stroke="#e08a55"
+          strokeWidth="1.5"
+          strokeLinecap="round"
+        />
+      </g>
 
+      {/* Face — sits near left of this SVG so it stays on-screen when peeking from right */}
+      <circle cx="44" cy="36" r="19" fill={`url(#${headId})`} />
       <path
-        d="M40 38c0-12 9-20 20-20s20 8 20 20"
+        d="M25 36c0-12 8.5-19 19-19s19 7 19 19"
         fill="none"
         stroke="#1a120e"
-        strokeWidth="3.4"
+        strokeWidth="3.2"
         strokeLinecap="round"
       />
-      <rect x="35" y="34" width="8" height="12" rx="4" fill="#ff6a2b" />
-      <rect x="77" y="34" width="8" height="12" rx="4" fill="#ff6a2b" />
+      <rect x="21" y="32" width="7.5" height="11" rx="3.8" fill="#ff6a2b" />
+      <rect x="60" y="32" width="7.5" height="11" rx="3.8" fill="#ff6a2b" />
 
-      <circle cx="52" cy="38" r="2.6" fill="#1a120e" />
-      <circle cx="68" cy="38" r="2.6" fill="#1a120e" />
-      <circle cx="53.2" cy="36.8" r="0.7" fill="#fff" />
-      <circle cx="69.2" cy="36.8" r="0.7" fill="#fff" />
+      <circle cx="37" cy="36" r="2.5" fill="#1a120e" />
+      <circle cx="51" cy="36" r="2.5" fill="#1a120e" />
+      <circle cx="38.1" cy="34.9" r="0.65" fill="#fff" />
+      <circle cx="52.1" cy="34.9" r="0.65" fill="#fff" />
       <path
-        d="M52 46c3 3.2 13 3.2 16 0"
+        d="M37 44c2.8 2.8 12.2 2.8 15 0"
         fill="none"
         stroke="#1a120e"
-        strokeWidth="2.2"
+        strokeWidth="2.1"
         strokeLinecap="round"
       />
 
-      <line x1="60" y1="18" x2="60" y2="10" stroke="#1a120e" strokeWidth="2.4" strokeLinecap="round" />
-      <circle cx="60" cy="8" r="3" fill="#ff6a2b" />
+      <line x1="44" y1="17" x2="44" y2="9" stroke="#1a120e" strokeWidth="2.3" strokeLinecap="round" />
+      <circle cx="44" cy="7" r="2.8" fill="#ff6a2b" />
 
       <defs>
-        <linearGradient id={headId} x1="40" y1="16" x2="80" y2="58" gradientUnits="userSpaceOnUse">
+        <linearGradient id={headId} x1="25" y1="14" x2="63" y2="56" gradientUnits="userSpaceOnUse">
           <stop stopColor="#ffe4d2" />
           <stop offset="1" stopColor="#ffc49a" />
         </linearGradient>
-        <linearGradient id={sleeveId} x1="40" y1="48" x2="84" y2="92" gradientUnits="userSpaceOnUse">
+        <linearGradient id={sleeveId} x1="16" y1="40" x2="68" y2="90" gradientUnits="userSpaceOnUse">
           <stop stopColor="#ff8a4c" />
           <stop offset="1" stopColor="#e04e00" />
         </linearGradient>
