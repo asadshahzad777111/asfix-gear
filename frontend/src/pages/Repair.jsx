@@ -8,6 +8,7 @@ import RepairModelsPanel from '../components/RepairModelsPanel';
 import ScreenQualityPicker from '../components/ScreenQualityPicker';
 import { SHOP } from '../config/shop';
 import { useTranslation } from '../context/LanguageContext';
+import ConnectReveal from '../components/motion/ConnectReveal';
 
 export default function Repair() {
   const { t } = useTranslation();
@@ -78,11 +79,11 @@ export default function Repair() {
         id="repair-services"
       >
         <div className="container">
-          <div className="section-head">
+          <ConnectReveal className="section-head" from="line">
             <span className="eyebrow">{t('repair.servicesEyebrow')}</span>
             <h2 className="section-title">{t('repair.servicesTitle')}</h2>
             <p className="section-subtitle">{t('repair.servicesSub')}</p>
-          </div>
+          </ConnectReveal>
 
           {loading ? (
             <div className="loading">{t('common.loading')}</div>

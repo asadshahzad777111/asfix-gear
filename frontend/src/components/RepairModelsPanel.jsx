@@ -4,6 +4,7 @@ import { REPAIR_DEVICE_BRANDS, generalRepairQuoteContactPath } from '../config/r
 import { useTranslation } from '../context/LanguageContext';
 import SearchBrandIcon from './nav/SearchBrandIcon';
 import { getShopBrandIdFromRepairBrand } from '../utils/brandIcon';
+import ConnectReveal from './motion/ConnectReveal';
 
 /**
  * PhoneCase-style repair picker:
@@ -37,11 +38,11 @@ export default function RepairModelsPanel() {
 
   return (
     <div className="repair-models-panel repair-models-panel--pc">
-      <div className="repair-models-head">
+      <ConnectReveal className="repair-models-head" from="line">
         <span className="eyebrow">{t('repair.modelsEyebrow')}</span>
         <h3>{t('repair.modelsHead')}</h3>
         <p>{t('repair.modelsDesc')}</p>
-      </div>
+      </ConnectReveal>
 
       {!selectedBrand ? (
         <>
@@ -56,10 +57,13 @@ export default function RepairModelsPanel() {
             />
           </label>
           <div className="repair-pc-brand-list">
-            {brands.map((group) => (
-              <button
+            {brands.map((group, i) => (
+              <ConnectReveal
                 key={group.brand}
+                as="button"
                 type="button"
+                from={i % 2 === 0 ? 'left' : 'right'}
+                delay={Math.min(i, 10) * 45}
                 className="repair-pc-brand-row"
                 onClick={() => {
                   setSelectedBrand(group);
@@ -74,7 +78,7 @@ export default function RepairModelsPanel() {
                 <span className="repair-pc-brand-chevron" aria-hidden="true">
                   ›
                 </span>
-              </button>
+              </ConnectReveal>
             ))}
             {brands.length === 0 && (
               <p className="repair-pc-empty">{t('repair.noCompanyMatch')}</p>
@@ -100,14 +104,17 @@ export default function RepairModelsPanel() {
             />
           </label>
           <div className="repair-pc-model-chips">
-            {models.map((model) => (
-              <Link
+            {models.map((model, i) => (
+              <ConnectReveal
                 key={model}
+                as={Link}
                 to={generalRepairQuoteContactPath(`${selectedBrand.brand} ${model}`)}
+                from={i % 2 === 0 ? 'left' : 'right'}
+                delay={Math.min(i, 12) * 40}
                 className="repair-pc-model-chip"
               >
                 {model}
-              </Link>
+              </ConnectReveal>
             ))}
             {models.length === 0 && (
               <p className="repair-pc-empty">{t('repair.noModelMatch')}</p>

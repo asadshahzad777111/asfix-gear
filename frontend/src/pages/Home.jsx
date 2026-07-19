@@ -9,7 +9,7 @@ import BrandGrid from '../components/home/BrandGrid';
 import ProductCarousel from '../components/home/ProductCarousel';
 import LocationSection from '../components/LocationSection';
 import Testimonials from '../components/Testimonials';
-import Reveal from '../components/motion/Reveal';
+import ConnectReveal from '../components/motion/ConnectReveal';
 import { HomeProductsSkeleton } from '../components/skeleton/ContentSkeletons';
 import { useTranslation } from '../context/LanguageContext';
 import { SHOP } from '../config/shop';
@@ -112,13 +112,13 @@ export default function Home() {
         id="home-reviews"
       >
         <div className="container">
-          <Reveal className="home-section-head">
+          <ConnectReveal className="home-section-head" from="line">
             <span className="eyebrow">{t('home.reviewsEyebrow')}</span>
             <h2 className="section-title">{t('home.reviewsTitle')}</h2>
-          </Reveal>
-          <Reveal delay={80}>
+          </ConnectReveal>
+          <ConnectReveal delay={80} from="up">
             <Testimonials />
-          </Reveal>
+          </ConnectReveal>
         </div>
       </section>
 

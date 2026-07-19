@@ -1,0 +1,63 @@
+/* Connect-together scroll motion — continuous, GPU-friendly, no layout thrash */
+
+.connect-reveal {
+  opacity: 0;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+  transition: none;
+}
+
+.connect-reveal--up {
+  transform: translate3d(0, 28px, 0);
+}
+
+.connect-reveal--left {
+  transform: translate3d(-36px, 16px, 0);
+}
+
+.connect-reveal--right {
+  transform: translate3d(36px, 16px, 0);
+}
+
+.connect-reveal--line {
+  transform: translate3d(0, 22px, 0) scale(0.985);
+  filter: blur(0.4px);
+}
+
+.connect-reveal.is-in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0) scale(1);
+  filter: none;
+  transition:
+    opacity 0.62s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.68s cubic-bezier(0.16, 1, 0.3, 1),
+    filter 0.5s ease;
+}
+
+/* Grid / list items that are the reveal node itself */
+.home-brand-grid > .connect-reveal,
+.home-collection-grid > .connect-reveal,
+.repair-pc-brand-list > .connect-reveal {
+  width: 100%;
+  min-width: 0;
+}
+
+/* Stagger helpers for grids / lists */
+.connect-reveal-stagger > .connect-reveal:nth-child(1) { transition-delay: 0ms; }
+.connect-reveal-stagger > .connect-reveal.is-in:nth-child(2) { transition-delay: 55ms; }
+.connect-reveal-stagger > .connect-reveal.is-in:nth-child(3) { transition-delay: 110ms; }
+.connect-reveal-stagger > .connect-reveal.is-in:nth-child(4) { transition-delay: 165ms; }
+.connect-reveal-stagger > .connect-reveal.is-in:nth-child(5) { transition-delay: 220ms; }
+.connect-reveal-stagger > .connect-reveal.is-in:nth-child(6) { transition-delay: 275ms; }
+.connect-reveal-stagger > .connect-reveal.is-in:nth-child(7) { transition-delay: 330ms; }
+.connect-reveal-stagger > .connect-reveal.is-in:nth-child(8) { transition-delay: 385ms; }
+
+@media (prefers-reduced-motion: reduce) {
+  .connect-reveal,
+  .connect-reveal.is-in {
+    opacity: 1 !important;
+    transform: none !important;
+    filter: none !important;
+    transition: none !important;
+  }
+}
