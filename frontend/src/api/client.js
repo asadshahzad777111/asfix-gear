@@ -389,7 +389,7 @@ async function downloadDataBackup() {
 }
 
 async function downloadProductsCsv() {
-  return downloadAuthenticatedFile('/products/export.csv', 'asfix-products.csv');
+  return downloadAuthenticatedFile('/products/export-csv', 'asfix-products.csv');
 }
 
 export const api = {

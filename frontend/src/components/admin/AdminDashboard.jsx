@@ -50,6 +50,7 @@ export default function AdminDashboard({ onNavigate, showShopControl = false }) 
         <div className="wp-postbox-head">Quick actions</div>
         <div className="wp-postbox-body wp-dashboard-actions">
           <button type="button" className="wp-button" onClick={() => onNavigate('add')}>Add new product</button>
+          <button type="button" className="wp-button" onClick={() => onNavigate('sheet')}>Products Sheet</button>
           {showShopControl ? (
             <button type="button" className="wp-button wp-button--secondary" onClick={() => onNavigate('hero')}>
               Home Ads (hero photos)

@@ -1,0 +1,24 @@
+AsFix Products Sheet — COMPLETE (laptop)
+========================================
+
+A) Website (primary — phone + laptop)
+-------------------------------------
+1. Hard refresh Admin: Ctrl+Shift+R
+2. Open: https://asfixgear.com/admin?tab=sheet
+   OR Dashboard → Quick action "Products Sheet"
+   OR Products → Products Sheet
+3. Search name → edit price/discount/stock → Save
+4. Export → Google Sheets (CSV download)
+5. Import CSV to pull Sheet edits back
+
+B) Google Sheets (optional copy)
+--------------------------------
+1. Sheets tab → Sign in with Gmail
+2. Blank spreadsheet → File → Import → Upload
+3. File: AsFix_Products_Master_LIVE.csv
+   (18 live products already exported)
+4. Replace spreadsheet → tab name: Products
+
+If Admin menu still old (no Products Sheet):
+  Render dashboard → asfix-gear → Manual Deploy → Deploy latest commit
+  Then hard refresh Admin.

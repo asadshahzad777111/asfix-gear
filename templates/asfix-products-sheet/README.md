@@ -2,12 +2,15 @@
 
 ## Live on website (recommended)
 
-Staff login → **Admin → Products → Products Sheet**
+Staff login → **Admin → Products → Products Sheet**  
+(or Dashboard → **Products Sheet**, or `/admin?tab=sheet`)
 
 - Type product name → matching rows (price, discount, sale, stock)
 - Edit inline → **Save** → website updates immediately
 - **Export → Google Sheets** downloads CSV and opens Google Sheets
 - **Import CSV** pulls Sheet edits back into the website
+
+Live catalog snapshot: `AsFix_Products_Master_LIVE.csv` (re-export anytime from Admin).
 
 Mobile + laptop: same Admin URL after staff login.
 
