@@ -1,32 +1,35 @@
-/* Floating capsule dock — inset from phone edges; slideshow mark slides between tabs */
+/* Floating pill dock — Repair floats free above (never joined to top).
+   Morph icons + pop-from-outside on every tap. */
 
 :root {
-  --bottom-nav-h: 3.55rem;
+  --bottom-nav-h: 3.5rem;
   --bottom-nav-safe: env(safe-area-inset-bottom, 0px);
-  --bottom-nav-float-y: 0.65rem;
+  --bottom-nav-float-y: 0.55rem;
   --bottom-nav-inset-x: max(0.75rem, env(safe-area-inset-left, 0px));
   --bottom-nav-inset-r: max(0.75rem, env(safe-area-inset-right, 0px));
+  /* Gap so Repair sits fully above the dock, not fused to its top */
+  --bnav-fab-gap: 0.55rem;
+  --bnav-fab-size: 3.15rem;
+  --bnav-fab-stack: calc(var(--bnav-fab-size) + 1.05rem + var(--bnav-fab-gap));
   --bottom-nav-total: calc(
-    var(--bottom-nav-h) + var(--bottom-nav-safe) + var(--bottom-nav-float-y)
+    var(--bnav-fab-stack) + var(--bottom-nav-h) + var(--bottom-nav-safe) + var(--bottom-nav-float-y)
   );
   --bnav-fg: #1a1a1a;
   --bnav-muted: rgba(26, 26, 26, 0.55);
-  --bnav-surface: rgba(255, 255, 255, 0.84);
+  --bnav-surface: rgba(255, 255, 255, 0.86);
   --bnav-surface-solid: #ffffff;
   --bnav-glass-blur: blur(22px) saturate(1.5);
   --bnav-accent: #ff6a2b;
-  --bnav-shadow: 0 12px 32px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
-  --bnav-cut: 8px 16px 8px 16px;
-  /* Rounder capsule ends + soft center notch for Repair */
-  --bnav-cutout-mask: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 390 72' preserveAspectRatio='none'%3E%3Cpath fill='%23fff' d='M0 28C0 12.5 12.5 0 28 0H146C155 0 161 7 165 16C172 32 183 42 195 42C207 42 218 32 225 16C229 7 235 0 244 0H362C377.5 0 390 12.5 390 28V72H0Z'/%3E%3C/svg%3E");
+  --bnav-shadow: 0 14px 34px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
+  --bnav-radius: 1.65rem;
 }
 
 [data-theme='dark'] {
   --bnav-fg: #f4f4f5;
   --bnav-muted: rgba(244, 244, 245, 0.55);
-  --bnav-surface: rgba(18, 18, 24, 0.8);
+  --bnav-surface: rgba(18, 18, 24, 0.82);
   --bnav-surface-solid: #14141a;
-  --bnav-shadow: 0 14px 36px rgba(0, 0, 0, 0.5), 0 2px 10px rgba(0, 0, 0, 0.25);
+  --bnav-shadow: 0 16px 38px rgba(0, 0, 0, 0.52), 0 2px 10px rgba(0, 0, 0, 0.28);
 }
 
 .mobile-bottom-nav {
@@ -61,7 +64,7 @@
     pointer-events: none !important;
   }
 
-  /* Floating capsule — never flush to phone left/right/bottom */
+  /* Solid floating pill — no top notch / cutout joining the FAB */
   .mobile-bottom-nav__dock {
     position: absolute;
     left: var(--bottom-nav-inset-x);
@@ -77,24 +80,17 @@
     position: absolute;
     inset: 0;
     z-index: 0;
+    border-radius: var(--bnav-radius);
     background:
       linear-gradient(
         165deg,
         color-mix(in srgb, var(--bnav-surface) 90%, var(--bnav-accent)) 0%,
-        var(--bnav-surface) 52%
+        var(--bnav-surface) 55%
       );
     backdrop-filter: var(--bnav-glass-blur);
     -webkit-backdrop-filter: var(--bnav-glass-blur);
-    border: 1px solid color-mix(in srgb, #fff 32%, transparent);
+    border: 1px solid color-mix(in srgb, #fff 34%, transparent);
     box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent);
-    -webkit-mask-image: var(--bnav-cutout-mask);
-    mask-image: var(--bnav-cutout-mask);
-    -webkit-mask-size: 100% 100%;
-    mask-size: 100% 100%;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-mode: luminance;
-    mask-mode: luminance;
   }
 
   [data-theme='dark'] .mobile-bottom-nav__glass {
@@ -102,33 +98,10 @@
     box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
   }
 
-  .mobile-bottom-nav__cutout {
-    position: absolute;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    display: block;
-    z-index: 0;
-    pointer-events: none;
-    opacity: 0;
-  }
-
   @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
     .mobile-bottom-nav__glass {
-      display: none;
+      background: var(--bnav-surface-solid);
     }
-
-    .mobile-bottom-nav__cutout {
-      opacity: 1;
-    }
-
-    .mobile-bottom-nav__cutout-fill {
-      fill: var(--bnav-surface-solid);
-    }
-  }
-
-  .mobile-bottom-nav__cutout-fill {
-    fill: var(--bnav-surface-solid);
   }
 
   .mobile-bottom-nav__items {
@@ -136,50 +109,49 @@
     inset: 0;
     z-index: 1;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
-    /* Keep tabs + mark clear of capsule corners */
-    padding: 0 0.7rem 0.32rem;
+    padding: 0 0.65rem;
     pointer-events: auto;
-    overflow: hidden;
-    border-radius: 1.65rem;
+    overflow: visible;
+    border-radius: var(--bnav-radius);
   }
 
-  /*
-   * Slideshow mark — slides between tabs like a film frame.
-   * Inset padding above keeps it off dock corners.
-   */
+  /* Active orb — pops up from outside; no connecting ring into the dock rim */
   .mobile-bottom-nav__mark {
     position: absolute;
-    bottom: 1.12rem;
+    bottom: 0.42rem;
     left: 0;
-    width: 2.45rem;
-    height: 2.45rem;
+    width: 2.55rem;
+    height: 2.55rem;
     margin: 0;
     border-radius: 1.05rem;
     background: linear-gradient(145deg, #ff8a4c 0%, var(--bnav-accent) 55%, #e85a1a 100%);
     z-index: 0;
     pointer-events: none;
     box-shadow:
-      0 8px 18px rgba(255, 106, 43, 0.38),
-      0 0 0 3px color-mix(in srgb, var(--bnav-surface-solid) 88%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    will-change: left, transform;
+      0 10px 22px rgba(255, 106, 43, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.32);
+    will-change: transform, opacity;
   }
 
   .mobile-bottom-nav.has-side-mark .mobile-bottom-nav__mark {
-    border-radius: var(--bnav-cut);
+    border-radius: 0.85rem 1.2rem 0.85rem 1.2rem;
   }
 
-  .mobile-bottom-nav__ripple {
+  /* Burst that emerges from below / outside on tap */
+  .mobile-bottom-nav__pop {
     position: absolute;
-    width: 2.45rem;
-    height: 2.45rem;
-    margin: -1.22rem 0 0 -1.22rem;
-    border-radius: var(--bnav-cut);
-    background: radial-gradient(circle, rgba(255, 106, 43, 0.32) 0%, transparent 70%);
+    width: 2.6rem;
+    height: 2.6rem;
+    margin: -1.3rem 0 0 -1.3rem;
+    border-radius: 999px;
     z-index: 0;
     pointer-events: none;
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55) 0%, transparent 42%),
+      radial-gradient(circle, rgba(255, 106, 43, 0.55) 0%, rgba(255, 106, 43, 0.12) 55%, transparent 72%);
+    box-shadow: 0 0 0 1px rgba(255, 106, 43, 0.25);
   }
 
   .mobile-bottom-nav__item {
@@ -190,10 +162,10 @@
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: flex-end;
-    gap: 0.08rem;
-    min-height: 2.5rem;
-    padding: 0.2rem 0.2rem 0.06rem;
+    justify-content: center;
+    gap: 0.1rem;
+    min-height: 2.65rem;
+    padding: 0.2rem 0.15rem;
     margin: 0;
     border: 0;
     background: transparent;
@@ -215,16 +187,13 @@
   }
 
   .mobile-bottom-nav__item.is-marked .mobile-bottom-nav__icon,
-  .mobile-bottom-nav__item.is-marked .mobile-bottom-nav__icon-wrap,
-  .mobile-bottom-nav__item.is-active.is-marked .mobile-bottom-nav__icon,
-  .mobile-bottom-nav__item.is-active.is-marked .mobile-bottom-nav__icon-wrap {
+  .mobile-bottom-nav__item.is-marked .mobile-bottom-nav__icon-wrap {
     color: #fff;
-    transform: translateY(-0.38rem);
+    transform: translateY(-0.15rem);
   }
 
   .mobile-bottom-nav__item.is-marked .mobile-bottom-nav__label {
     color: var(--bnav-accent);
-    transform: translateY(-1px);
   }
 
   .mobile-bottom-nav__label {
@@ -243,9 +212,40 @@
     transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
   }
 
+  /* Morph faces — same language as header WA / cart / wishlist */
+  .mobile-bottom-nav__morph.dx-morph {
+    width: 1.4rem;
+    height: 1.4rem;
+  }
+
+  .mobile-bottom-nav__item--morph:hover .dx-morph__face--idle,
+  .mobile-bottom-nav__item--morph:focus-visible .dx-morph__face--idle,
+  .mobile-bottom-nav__item--morph:active .dx-morph__face--idle,
+  .mobile-bottom-nav__item--morph.is-marked .dx-morph__face--idle,
+  .mobile-bottom-nav__item--morph.is-active .dx-morph__face--idle {
+    opacity: 0;
+    transform: scale(0.4) rotate(26deg);
+    filter: blur(1px);
+  }
+
+  .mobile-bottom-nav__item--morph:hover .dx-morph__face--hover,
+  .mobile-bottom-nav__item--morph:focus-visible .dx-morph__face--hover,
+  .mobile-bottom-nav__item--morph:active .dx-morph__face--hover,
+  .mobile-bottom-nav__item--morph.is-marked .dx-morph__face--hover,
+  .mobile-bottom-nav__item--morph.is-active .dx-morph__face--hover {
+    opacity: 1;
+    transform: scale(1.08) rotate(0deg);
+    filter: blur(0);
+  }
+
+  .mobile-bottom-nav__item--morph:hover .mobile-bottom-nav__icon,
+  .mobile-bottom-nav__item--morph:hover .mobile-bottom-nav__icon-wrap {
+    transform: translateY(-2px);
+  }
+
   .mobile-bottom-nav__fab-slot {
-    flex: 0 0 4.35rem;
-    width: 4.35rem;
+    flex: 0 0 3.4rem;
+    width: 3.4rem;
     pointer-events: none;
   }
 
@@ -270,17 +270,20 @@
     background: var(--bnav-accent);
   }
 
+  /* Repair — completely above the pill, with a clear air gap (not docked into top) */
   .mobile-bottom-nav__fab {
     pointer-events: auto;
     position: absolute;
     left: 50%;
-    bottom: calc(var(--bottom-nav-safe) + var(--bottom-nav-float-y) + 0.42rem);
+    bottom: calc(
+      var(--bottom-nav-safe) + var(--bottom-nav-float-y) + var(--bottom-nav-h) + var(--bnav-fab-gap)
+    );
     transform: translateX(-50%);
-    z-index: 2;
+    z-index: 3;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.1rem;
+    gap: 0.12rem;
     text-decoration: none;
     color: var(--bnav-muted);
     font-size: 0.56rem;
@@ -293,26 +296,26 @@
   .mobile-bottom-nav__fab-orb {
     display: grid;
     place-items: center;
-    width: 3.1rem;
-    height: 3.1rem;
-    border-radius: 999px;
+    width: var(--bnav-fab-size);
+    height: var(--bnav-fab-size);
+    border-radius: 1.15rem;
     background: linear-gradient(145deg, #ff8a4c 0%, var(--bnav-accent) 55%, #e85a1a 100%);
     color: #fff;
     box-shadow:
-      0 10px 24px rgba(255, 106, 43, 0.42),
-      0 0 0 4px var(--bnav-surface-solid),
-      inset 0 1px 0 rgba(255, 255, 255, 0.28);
-    transition: border-radius 0.22s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.2s ease;
+      0 12px 28px rgba(255, 106, 43, 0.45),
+      0 0 0 3px color-mix(in srgb, var(--bnav-surface-solid) 70%, transparent),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    transition: border-radius 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease;
   }
 
   .mobile-bottom-nav__fab.is-active .mobile-bottom-nav__fab-orb,
-  .mobile-bottom-nav.is-repair-active:not(.has-side-mark) .mobile-bottom-nav__fab-orb {
-    border-radius: var(--bnav-cut);
+  .mobile-bottom-nav.is-repair-active .mobile-bottom-nav__fab-orb {
+    border-radius: 0.85rem 1.25rem 0.85rem 1.25rem;
     box-shadow:
-      0 12px 28px rgba(255, 106, 43, 0.5),
-      0 0 0 4px var(--bnav-surface-solid),
-      0 0 0 6px rgba(255, 106, 43, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+      0 14px 32px rgba(255, 106, 43, 0.55),
+      0 0 0 3px color-mix(in srgb, var(--bnav-surface-solid) 75%, transparent),
+      0 0 0 7px rgba(255, 106, 43, 0.22),
+      inset 0 1px 0 rgba(255, 255, 255, 0.32);
   }
 
   .mobile-bottom-nav__fab.is-active,
@@ -322,6 +325,28 @@
 
   .mobile-bottom-nav__fab-label {
     line-height: 1;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
+  }
+
+  .mobile-bottom-nav__fab-pop {
+    position: absolute;
+    left: 50%;
+    top: 0.35rem;
+    width: 3.2rem;
+    height: 3.2rem;
+    margin: 0 0 0 -1.6rem;
+    border-radius: 999px;
+    pointer-events: none;
+    z-index: 0;
+    background:
+      radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55) 0%, transparent 42%),
+      radial-gradient(circle, rgba(255, 106, 43, 0.5) 0%, rgba(255, 106, 43, 0.1) 55%, transparent 72%);
+  }
+
+  .mobile-bottom-nav__fab .mobile-bottom-nav__morph.dx-morph {
+    width: 1.45rem;
+    height: 1.45rem;
+    color: #fff;
   }
 
   .app:not(.app--admin):not(.app--gaming) {
@@ -379,19 +404,16 @@
 
 @media (min-width: 769px) and (max-width: 1024px) {
   :root {
-    --bottom-nav-h: 3.75rem;
+    --bottom-nav-h: 3.7rem;
     --bottom-nav-inset-x: max(1.1rem, env(safe-area-inset-left, 0px));
     --bottom-nav-inset-r: max(1.1rem, env(safe-area-inset-right, 0px));
-    --bottom-nav-float-y: 0.75rem;
+    --bottom-nav-float-y: 0.7rem;
+    --bnav-fab-gap: 0.65rem;
   }
 
   .mobile-bottom-nav__item,
   .mobile-bottom-nav__fab {
     font-size: 0.6rem;
-  }
-
-  .mobile-bottom-nav__items {
-    padding: 0 0.9rem 0.36rem;
   }
 }
 
@@ -399,10 +421,7 @@
   :root {
     --bottom-nav-inset-x: max(0.55rem, env(safe-area-inset-left, 0px));
     --bottom-nav-inset-r: max(0.55rem, env(safe-area-inset-right, 0px));
-  }
-
-  .mobile-bottom-nav__items {
-    padding: 0 0.55rem 0.3rem;
+    --bnav-fab-gap: 0.45rem;
   }
 }
 
@@ -414,10 +433,18 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mobile-bottom-nav__mark,
-  .mobile-bottom-nav__ripple,
+  .mobile-bottom-nav__pop,
   .mobile-bottom-nav__fab-orb,
   .mobile-bottom-nav__icon,
-  .mobile-bottom-nav__icon-wrap {
+  .mobile-bottom-nav__icon-wrap,
+  .mobile-bottom-nav__morph .dx-morph__face {
     transition: none !important;
+  }
+
+  .mobile-bottom-nav__item--morph:hover .dx-morph__face--idle,
+  .mobile-bottom-nav__item--morph:hover .dx-morph__face--hover,
+  .mobile-bottom-nav__item--morph.is-marked .dx-morph__face--idle,
+  .mobile-bottom-nav__item--morph.is-marked .dx-morph__face--hover {
+    filter: none !important;
   }
 }
