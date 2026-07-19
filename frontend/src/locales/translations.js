@@ -951,6 +951,7 @@ export const translations = {
     },
     chatbot: {
       fabAria: 'Chat with AsFix Assistant',
+      helpTab: 'May I help you?',
       title: 'AsFix Assistant',
       subtitle: 'Orders, repairs, pricing — ask away',
       inputPlaceholder: 'Type a message...',
@@ -2159,6 +2160,7 @@ export const translations = {
     },
     chatbot: {
       fabAria: 'AsFix Assistant se chat karein',
+      helpTab: 'Madad chahiye?',
       title: 'AsFix Assistant',
       subtitle: 'Orders, repair, pricing — kuch bhi poochein',
       inputPlaceholder: 'Message type karein...',

@@ -1,199 +1,211 @@
-/* ── AsFix Assistant chat widget ── */
+/* ── Side help board — peeks half-in / half-out, slides open as a board ── */
 
-.chat-fab-trigger {
+.chat-sideboard {
+  --chat-board-top: 38vh;
+  --chat-tab-w: 2.55rem;
+  --chat-panel-w: min(22rem, calc(100vw - 1.25rem));
   position: fixed;
-  z-index: 200;
-  border-radius: 50%;
-  border: 1px solid var(--hdr-border, rgba(255, 255, 255, 0.08));
-  cursor: pointer;
-  font: inherit;
-  display: grid;
-  place-items: center;
+  left: 0;
+  top: var(--chat-board-top);
+  z-index: 1200;
+  display: flex;
+  align-items: stretch;
+  pointer-events: none;
+  transform: translate3d(0, -50%, 0);
+  transition: top 0.2s ease;
+}
+
+.chat-sideboard.is-open {
+  top: max(12vh, env(safe-area-inset-top, 0px) + 4.5rem);
+  transform: translate3d(0, 0, 0);
+}
+
+/* Unique ticket-tab — half on screen when closed */
+.chat-sideboard__tab {
+  pointer-events: auto;
+  position: relative;
+  z-index: 2;
+  width: var(--chat-tab-w);
+  min-height: 8.8rem;
+  margin: 0;
+  padding: 0.85rem 0.2rem;
+  border: none;
+  cursor: grab;
+  touch-action: none;
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
+  background: linear-gradient(165deg, #ff8a4c 0%, #ff6a2b 48%, #e04e00 100%);
+  /* Unique board edge — notched ticket shape */
+  border-radius: 0 1.15rem 1.15rem 0;
+  clip-path: polygon(
+    0 0,
+    calc(100% - 10px) 0,
+    100% 12px,
+    100% calc(100% - 12px),
+    calc(100% - 10px) 100%,
+    0 100%,
+    0 calc(100% - 18px),
+    7px calc(100% - 22px),
+    7px 22px,
+    0 18px
+  );
+  box-shadow:
+    6px 8px 22px rgba(255, 106, 43, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  transition:
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease,
+    opacity 0.22s ease,
+    visibility 0.22s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.chat-sideboard__tab:active {
+  cursor: grabbing;
+}
+
+.chat-sideboard__tab-label {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-family: var(--hdr-font-display, 'Space Grotesk', sans-serif);
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  line-height: 1.05;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.chat-sideboard__tab-ember {
+  position: absolute;
+  left: 0;
+  top: 18%;
+  bottom: 18%;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(
+    180deg,
+    transparent,
+    rgba(255, 255, 255, 0.75),
+    transparent
+  );
+  pointer-events: none;
+}
+
+.chat-sideboard__tab-grip {
+  width: 14px;
+  height: 3px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.45);
+  box-shadow: 0 5px 0 rgba(255, 255, 255, 0.28);
+  pointer-events: none;
+}
+
+/* Closed: tab peeks — only part of width on screen feels “half out” */
+.chat-sideboard:not(.is-open) .chat-sideboard__tab {
+  transform: translate3d(calc(var(--chat-tab-w) * -0.38), 0, 0);
+}
+
+.chat-sideboard:not(.is-open) .chat-sideboard__tab:hover,
+.chat-sideboard:not(.is-open) .chat-sideboard__tab:focus-visible {
+  transform: translate3d(calc(var(--chat-tab-w) * -0.12), 0, 0);
+}
+
+.chat-sideboard.is-open .chat-sideboard__tab {
+  transform: translate3d(0, 0, 0);
+  border-radius: 0;
+  clip-path: none;
+  min-height: auto;
+  height: 100%;
+  align-self: stretch;
+  box-shadow: none;
+  background: linear-gradient(180deg, #ff7a3a 0%, #ff6a2b 100%);
+}
+
+/* Board panel — parked off-screen; slides in from the left when open */
+.chat-sideboard__panel {
+  pointer-events: none;
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 1;
+  width: var(--chat-panel-w);
+  max-height: min(72vh, 560px);
+  display: flex;
+  flex-direction: column;
+  padding: 0;
   overflow: hidden;
-  color: var(--hdr-icon, #b4b4be);
-  background: var(--hdr-bg-elevated, #16161c);
-  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.28);
-  transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
+  border-radius: 0 18px 18px 0;
+  background: var(--bg-elevated, #14141c);
+  border: 1px solid color-mix(in srgb, var(--hdr-accent, #ff6a2b) 28%, transparent);
+  border-left: none;
+  box-shadow: 12px 16px 40px rgba(0, 0, 0, 0.32);
+  transform: translate3d(calc(-100% - 0.5rem), 0, 0);
+  opacity: 0;
+  visibility: hidden;
+  transition:
+    transform 0.4s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease,
+    visibility 0.28s;
 }
 
-@media (min-width: 1025px) {
-  .chat-fab-trigger {
-    bottom: var(--float-chat-bottom);
-    right: var(--float-desktop-edge, 1.5rem);
-    width: var(--float-chat-fab-size, 3.25rem);
-    height: var(--float-chat-fab-size, 3.25rem);
-  }
-
-  .chat-fab-trigger:hover {
-    transform: translateY(-1px);
-    border-color: color-mix(in srgb, var(--hdr-accent, #ff6a2b) 25%, var(--hdr-border, rgba(255, 255, 255, 0.08)));
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
-  }
-
-  .chat-fab-trigger:active {
-    transform: translateY(0);
-  }
+.chat-sideboard.is-open .chat-sideboard__panel {
+  pointer-events: auto;
+  position: relative;
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  visibility: visible;
 }
 
-/*
-  Mobile/tablet: pin chat FAB ABOVE the bottom nav (left).
-  Must stay outside the nav (nav uses transform) so fixed coords are viewport-relative.
-*/
-@media (max-width: 1024px) {
-  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
-    display: grid !important;
-    position: fixed !important;
-    top: auto !important;
-    /* LEFT above dock — never under Account on the right */
-    right: auto !important;
-    left: max(0.9rem, env(safe-area-inset-left, 0px) + 0.7rem) !important;
-    /* Full button clears bottom nav (dock ~4.1rem + safe area) */
-    bottom: calc(var(--bottom-nav-total, 4.1rem) + 1.5rem) !important;
-    width: 3.35rem !important;
-    height: 3.35rem !important;
-    z-index: 1200 !important;
-    border: none !important;
-    border-radius: 5px 14px 5px 14px !important;
-    color: #fff !important;
-    background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 52%, #e04e00 100%) !important;
-    box-shadow:
-      0 8px 22px rgba(255, 106, 43, 0.42),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
-    opacity: 1;
-    visibility: visible;
-    pointer-events: auto;
-    transform: translate3d(0, 0, 0) scale(1);
-    transition:
-      opacity 0.28s ease,
-      transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-      visibility 0.28s ease;
-  }
-
-  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger.is-open {
-    background: linear-gradient(145deg, #1f1612 0%, #2c1c14 100%) !important;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35) !important;
-  }
-
-  /* Match FAB specificity so drawer/cart hide actually wins */
-  body.cart-open .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger,
-  body.nav-open .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger,
-  body.nav-open .chat-fab-trigger {
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    transform: translate3d(0, 14px, 0) scale(0.9) !important;
-    transition:
-      opacity 0.22s ease,
-      transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
-      visibility 0.22s ease !important;
-  }
-
-  body.nav-open .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel,
-  body.cart-open .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel,
-  body.nav-open .chat-assistant-panel {
-    opacity: 0 !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-  }
-
-  .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
-    position: fixed;
-    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.45rem);
-    right: 0.65rem;
-    left: 0.65rem;
-    /* Clear bottom nav + chat FAB so the popup never sits under the bar */
-    bottom: calc(var(--bottom-nav-total, 4.1rem) + 5.25rem);
-    width: auto;
-    max-height: none;
-    height: auto;
-    z-index: 1210;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    overflow: hidden;
-    border-radius: 16px;
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-    animation: chatPanelIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .chat-assistant-head {
-    background: linear-gradient(135deg, #ff6a2b 0%, #ff8a4c 55%, #e85a1a 100%);
-    color: #fffaf6;
-  }
-
-  .chat-assistant-head span {
-    opacity: 0.9;
-  }
-
-  .chat-assistant-close {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-  }
+/* Menu / cart open — tuck the board away */
+body.nav-open .chat-sideboard,
+body.cart-open .chat-sideboard {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  transform: translate3d(-24px, -50%, 0) !important;
 }
 
-.chat-fab-trigger.is-open {
-  background: var(--hdr-bg-nav, #111114);
-  color: var(--hdr-text, #f4f4f5);
-  border-color: var(--hdr-border, rgba(255, 255, 255, 0.12));
-  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.35);
+body.nav-open .chat-sideboard.is-open,
+body.cart-open .chat-sideboard.is-open {
+  transform: translate3d(-24px, 0, 0) !important;
 }
 
-.chat-fab-close {
-  font-size: 1.1rem;
-  line-height: 1;
-}
-
-@media (min-width: 1025px) {
-  .chat-assistant-panel {
-    position: fixed;
-    right: var(--float-desktop-edge, 1.5rem);
-    bottom: calc(var(--float-chat-bottom) + var(--float-chat-fab-size, 3.25rem) + var(--float-dock-gap, 0.75rem));
-    z-index: 201;
-    width: min(360px, calc(100vw - 2rem));
-    max-height: min(560px, calc(100vh - 8rem));
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    overflow: hidden;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-    animation: chatPanelIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-}
-
-@keyframes chatPanelIn {
-  from { opacity: 0; transform: translateY(16px) scale(0.97); }
-  to { opacity: 1; transform: translateY(0) scale(1); }
-}
+/* ── Inner panel chrome (shared) ── */
 
 .chat-assistant-head {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 0.75rem;
-  padding: 1rem 1.1rem;
-  background: linear-gradient(135deg, var(--mint, #2fd6a3), #22b8a8);
-  color: #06231d;
+  padding: 0.95rem 1rem;
+  background: linear-gradient(135deg, #ff6a2b 0%, #ff8a4c 55%, #e85a1a 100%);
+  color: #fffaf6;
   flex-shrink: 0;
 }
 
 .chat-assistant-head strong {
   display: block;
-  font-size: 1rem;
+  font-size: 0.98rem;
   font-weight: 800;
 }
 
 .chat-assistant-head span {
   display: block;
-  font-size: 0.78rem;
-  opacity: 0.85;
+  font-size: 0.76rem;
+  opacity: 0.9;
   margin-top: 0.15rem;
 }
 
 .chat-assistant-close {
-  background: rgba(0, 0, 0, 0.12);
+  background: rgba(255, 255, 255, 0.2);
   border: none;
-  color: inherit;
+  color: #fff;
   width: 1.75rem;
   height: 1.75rem;
   border-radius: 50%;
@@ -211,6 +223,8 @@
   flex-direction: column;
   gap: 0.65rem;
   background: var(--bg-elevated, #14141c);
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
 .chat-bubble {
@@ -232,8 +246,8 @@
 
 .chat-bubble--user {
   align-self: flex-end;
-  background: var(--mint, #2fd6a3);
-  color: #06231d;
+  background: color-mix(in srgb, var(--hdr-accent, #ff6a2b) 88%, #fff);
+  color: #1a0f0a;
   border-bottom-right-radius: 4px;
   font-weight: 500;
 }
@@ -287,14 +301,14 @@
 }
 
 .chat-action-btn:hover {
-  background: var(--mint, #2fd6a3);
-  color: #06231d;
+  background: var(--hdr-accent, #ff6a2b);
+  color: #fff;
   transform: translateY(-1px);
 }
 
 .chat-quick-replies .chat-action-btn {
-  background: rgba(47, 214, 163, 0.1);
-  border-color: rgba(47, 214, 163, 0.35);
+  background: color-mix(in srgb, var(--hdr-accent, #ff6a2b) 14%, transparent);
+  border-color: color-mix(in srgb, var(--hdr-accent, #ff6a2b) 38%, transparent);
 }
 
 .chat-product-list {
@@ -338,7 +352,7 @@
 .chat-product-card span {
   display: block;
   font-size: 0.76rem;
-  color: var(--mint, #2fd6a3);
+  color: var(--hdr-accent, #ff6a2b);
   font-weight: 700;
   margin-top: 0.1rem;
 }
@@ -371,7 +385,7 @@
 
 .chat-assistant-input input:focus {
   outline: none;
-  border-color: var(--mint, #2fd6a3);
+  border-color: var(--hdr-accent, #ff6a2b);
 }
 
 .chat-assistant-input button {
@@ -379,8 +393,8 @@
   height: 2.4rem;
   border-radius: 50%;
   border: none;
-  background: var(--mint, #2fd6a3);
-  color: #06231d;
+  background: var(--hdr-accent, #ff6a2b);
+  color: #fff;
   font-size: 1rem;
   cursor: pointer;
   flex-shrink: 0;
@@ -394,8 +408,34 @@
   cursor: default;
 }
 
+@media (max-width: 1024px) {
+  .chat-sideboard {
+    /* Clear bottom dock when open */
+  }
+
+  .chat-sideboard.is-open .chat-sideboard__panel {
+    max-height: min(68vh, calc(100dvh - var(--bottom-nav-total, 4.5rem) - 5.5rem));
+  }
+
+  .app:not(.app--admin):not(.app--gaming) .chat-sideboard {
+    z-index: 1200 !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .chat-sideboard {
+    --chat-panel-w: min(24rem, 38vw);
+  }
+
+  .chat-sideboard.is-open .chat-sideboard__panel {
+    max-height: min(70vh, 580px);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .chat-assistant-panel {
-    animation: none !important;
+  .chat-sideboard,
+  .chat-sideboard__tab,
+  .chat-sideboard__panel {
+    transition: none !important;
   }
 }

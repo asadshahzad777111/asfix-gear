@@ -13,6 +13,9 @@ import { useChatAssistant } from '../context/ChatAssistantContext';
 let nextId = 1;
 const newId = () => `m${Date.now()}-${nextId++}`;
 
+const BOARD_TOP_MIN = 18;
+const BOARD_TOP_MAX = 62;
+
 export default function ChatAssistant() {
   const { t, lang } = useTranslation();
   const { open, setOpen, toggle } = useChatAssistant();
@@ -20,8 +23,11 @@ export default function ChatAssistant() {
   const [input, setInput] = useState('');
   const [pending, setPending] = useState(null); // null | 'track' | 'product'
   const [thinking, setThinking] = useState(false);
+  /** Vertical position of the side board (vh) — draggable for convenience */
+  const [boardTop, setBoardTop] = useState(38);
   const bodyRef = useRef(null);
   const inputRef = useRef(null);
+  const dragRef = useRef(null);
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -224,71 +230,113 @@ export default function ChatAssistant() {
     handleUserText(input);
   };
 
+  const onTabPointerDown = (e) => {
+    if (open) return;
+    const pointerId = e.pointerId;
+    const startY = e.clientY;
+    const startTop = boardTop;
+    dragRef.current = { pointerId, startY, startTop, dragged: false };
+
+    const onMove = (ev) => {
+      if (!dragRef.current || ev.pointerId !== pointerId) return;
+      const dy = ev.clientY - startY;
+      if (Math.abs(dy) > 6) dragRef.current.dragged = true;
+      if (!dragRef.current.dragged) return;
+      const deltaVh = (dy / window.innerHeight) * 100;
+      const next = Math.min(BOARD_TOP_MAX, Math.max(BOARD_TOP_MIN, startTop + deltaVh));
+      setBoardTop(next);
+    };
+
+    const onUp = (ev) => {
+      if (!dragRef.current || ev.pointerId !== pointerId) return;
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', onUp);
+      window.removeEventListener('pointercancel', onUp);
+      /* Keep dragged flag until click so we can ignore accidental click-after-drag */
+      window.setTimeout(() => {
+        dragRef.current = null;
+      }, 0);
+    };
+
+    window.addEventListener('pointermove', onMove, { passive: true });
+    window.addEventListener('pointerup', onUp);
+    window.addEventListener('pointercancel', onUp);
+  };
+
+  const onTabClick = () => {
+    if (dragRef.current?.dragged) return;
+    toggle();
+  };
+
   return (
-    <>
-      {/* Fixed FAB — CSS lifts it above the mobile bottom nav */}
+    <aside
+      className={`chat-sideboard${open ? ' is-open' : ''}`}
+      style={{ '--chat-board-top': `${boardTop}vh` }}
+      aria-label={t('chatbot.title')}
+    >
+      {/* Peeking side tab — half on screen; drag vertically when closed */}
       <button
         type="button"
-        className={`chat-fab-trigger ${open ? 'is-open' : ''}`}
+        className="chat-sideboard__tab"
         aria-label={t('chatbot.fabAria')}
         aria-expanded={open}
-        onClick={toggle}
+        onPointerDown={onTabPointerDown}
+        onClick={onTabClick}
       >
-        {open ? (
-          <span className="chat-fab-close" aria-hidden="true">✕</span>
-        ) : (
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
-            <path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.62 1.31 4.96 3.39 6.57-.09.86-.37 2.32-1.19 3.63a.5.5 0 0 0 .57.74c1.9-.5 3.36-1.36 4.15-1.92.99.26 2.04.4 3.08.4 5.52 0 10-3.94 10-8.8S17.52 2 12 2Z" />
-          </svg>
-        )}
+        <span className="chat-sideboard__tab-ember" aria-hidden="true" />
+        <span className="chat-sideboard__tab-label">{t('chatbot.helpTab')}</span>
+        <span className="chat-sideboard__tab-grip" aria-hidden="true" />
       </button>
 
-      {open && (
-        <div className="chat-assistant-panel glass-card" role="dialog" aria-label={t('chatbot.title')}>
-          <div className="chat-assistant-head">
-            <div>
-              <strong>{t('chatbot.title')}</strong>
-              <span>{t('chatbot.subtitle')}</span>
-            </div>
-            <button
-              type="button"
-              className="chat-assistant-close"
-              onClick={() => setOpen(false)}
-              aria-label={t('chatbot.close')}
-            >
-              ✕
-            </button>
+      <div
+        className="chat-sideboard__panel glass-card"
+        role="dialog"
+        aria-label={t('chatbot.title')}
+        aria-hidden={!open}
+      >
+        <div className="chat-assistant-head">
+          <div>
+            <strong>{t('chatbot.title')}</strong>
+            <span>{t('chatbot.subtitle')}</span>
           </div>
-
-          <div className="chat-assistant-body" ref={bodyRef}>
-            {messages.map((m) => (
-              <ChatBubble key={m.id} message={m} onQuickAction={handleQuickAction} t={t} />
-            ))}
-            {thinking && (
-              <div className="chat-bubble chat-bubble--bot chat-bubble--typing">
-                <span className="chat-typing-dot" />
-                <span className="chat-typing-dot" />
-                <span className="chat-typing-dot" />
-              </div>
-            )}
-          </div>
-
-          <form className="chat-assistant-input" onSubmit={handleSubmit}>
-            <input
-              ref={inputRef}
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              placeholder={t('chatbot.inputPlaceholder')}
-              maxLength={300}
-            />
-            <button type="submit" aria-label={t('chatbot.send')} disabled={!input.trim()}>
-              ➤
-            </button>
-          </form>
+          <button
+            type="button"
+            className="chat-assistant-close"
+            onClick={() => setOpen(false)}
+            aria-label={t('chatbot.close')}
+          >
+            ✕
+          </button>
         </div>
-      )}
-    </>
+
+        <div className="chat-assistant-body" ref={bodyRef}>
+          {messages.map((m) => (
+            <ChatBubble key={m.id} message={m} onQuickAction={handleQuickAction} t={t} />
+          ))}
+          {thinking && (
+            <div className="chat-bubble chat-bubble--bot chat-bubble--typing">
+              <span className="chat-typing-dot" />
+              <span className="chat-typing-dot" />
+              <span className="chat-typing-dot" />
+            </div>
+          )}
+        </div>
+
+        <form className="chat-assistant-input" onSubmit={handleSubmit}>
+          <input
+            ref={inputRef}
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder={t('chatbot.inputPlaceholder')}
+            maxLength={300}
+          />
+          <button type="submit" aria-label={t('chatbot.send')} disabled={!input.trim()}>
+            ➤
+          </button>
+        </form>
+      </div>
+    </aside>
   );
 }
 
