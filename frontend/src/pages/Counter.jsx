@@ -84,7 +84,7 @@ export default function Counter() {
         <section className="counter-sales glass-card">
           <div className="counter-sales__head">
             <h3>{t('counter.mySalesToday')}</h3>
-            <button type="button" className="wp-button wp-button--secondary" onClick={() => loadCounterData()}>
+            <button type="button" className="wp-button wp-button--secondary" onClick={() => loadCounterData({ showLoading: false })}>
               {t('sales.refresh')}
             </button>
           </div>

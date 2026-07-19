@@ -1,8 +1,43 @@
-import { useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../../api/client';
 import { SHOP } from '../../config/shop';
 import { useTranslation } from '../../context/LanguageContext';
 import './admin-counter-bill.css';
+
+const COUNTER_BILL_DRAFT_KEY = 'asfix_counter_bill_draft_v1';
+
+function readCounterBillDraft() {
+  if (typeof window === 'undefined') return null;
+  try {
+    const raw = window.sessionStorage.getItem(COUNTER_BILL_DRAFT_KEY);
+    if (!raw) return null;
+    const draft = JSON.parse(raw);
+    return {
+      ...draft,
+      lines: Array.isArray(draft.lines) ? draft.lines : [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+function writeCounterBillDraft(draft) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(COUNTER_BILL_DRAFT_KEY, JSON.stringify(draft));
+  } catch {
+    // Storage can be unavailable in private mode; React state still protects this session.
+  }
+}
+
+function clearCounterBillDraft() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem(COUNTER_BILL_DRAFT_KEY);
+  } catch {
+    // Ignore storage cleanup failures.
+  }
+}
 
 function salePrice(product) {
   const price = Number(product.price);
@@ -104,12 +139,13 @@ export function CounterBillReceipt({ order, printable = false }) {
 export default function AdminCounterBill({ products, onBillCreated, onPrintOrder }) {
   const { t } = useTranslation();
   const searchRef = useRef(null);
+  const [draftSeed] = useState(() => readCounterBillDraft());
   const [query, setQuery] = useState('');
-  const [lines, setLines] = useState([]);
-  const [customerName, setCustomerName] = useState('');
-  const [customerPhone, setCustomerPhone] = useState('');
-  const [paymentMode, setPaymentMode] = useState('cash');
-  const [paymentNote, setPaymentNote] = useState('');
+  const [lines, setLines] = useState(() => draftSeed?.lines || []);
+  const [customerName, setCustomerName] = useState(() => draftSeed?.customerName || '');
+  const [customerPhone, setCustomerPhone] = useState(() => draftSeed?.customerPhone || '');
+  const [paymentMode, setPaymentMode] = useState(() => draftSeed?.paymentMode || 'cash');
+  const [paymentNote, setPaymentNote] = useState(() => draftSeed?.paymentNote || '');
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [receiptOrder, setReceiptOrder] = useState(null);
@@ -126,6 +162,42 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
   }, [availableProducts, query]);
 
   const total = lines.reduce((sum, line) => sum + salePrice(line.product) * line.qty, 0);
+
+  useEffect(() => {
+    if (!lines.length) return;
+    setLines((prev) =>
+      prev.map((line) => {
+        const latest = products.find((product) => product.id === line.product.id);
+        if (!latest) return line;
+        const max = Math.max(1, Number(latest.stock) || 1);
+        return {
+          ...line,
+          product: latest,
+          qty: Math.min(max, Math.max(1, Number(line.qty) || 1)),
+        };
+      })
+    );
+  }, [products]);
+
+  useEffect(() => {
+    const hasDraft = lines.length || customerName || customerPhone || paymentMode !== 'cash' || paymentNote;
+    if (!hasDraft) {
+      clearCounterBillDraft();
+      return;
+    }
+
+    writeCounterBillDraft({
+      lines: lines.map((line) => ({
+        product: line.product,
+        qty: line.qty,
+      })),
+      customerName,
+      customerPhone,
+      paymentMode,
+      paymentNote,
+      updatedAt: new Date().toISOString(),
+    });
+  }, [lines, customerName, customerPhone, paymentMode, paymentNote]);
 
   const addProduct = (product) => {
     setReceiptOrder(null);
@@ -170,6 +242,7 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
   };
 
   const resetBill = () => {
+    clearCounterBillDraft();
     setLines([]);
     setCustomerName('');
     setCustomerPhone('');
@@ -199,6 +272,12 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
       });
       setReceiptOrder(result.order);
       setFeedback({ type: 'success', text: t('admin.counterBillCreated') });
+      clearCounterBillDraft();
+      setLines([]);
+      setCustomerName('');
+      setCustomerPhone('');
+      setPaymentMode('cash');
+      setPaymentNote('');
       onBillCreated?.(result.order);
       window.setTimeout(() => printReceipt(result.order), 150);
     } catch (err) {

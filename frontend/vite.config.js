@@ -20,7 +20,7 @@ export default defineConfig({
       // One-release kill switch: new sw.js unregisters itself and deletes all
       // caches on activate so stale apex/www shells cannot stick after deploy.
       selfDestroying: true,
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'logo.png', 'apple-touch-icon.png', 'logo-192.png', 'logo-512.png'],
       manifest: {
         name: 'AsFix & Gear',

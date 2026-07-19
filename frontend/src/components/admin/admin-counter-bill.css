@@ -4,6 +4,21 @@
   border-radius: 4px;
   padding: 1rem;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.counter-bill *,
+.counter-bill *::before,
+.counter-bill *::after {
+  box-sizing: border-box;
+}
+
+.counter-shell {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: clip;
 }
 
 .counter-shell .wp-admin-bar {
@@ -11,8 +26,13 @@
 }
 
 .counter-content {
-  max-width: 1280px;
+  width: min(100%, 1280px);
+  max-width: 100%;
   margin: 0 auto;
+  padding-left: max(1rem, env(safe-area-inset-left));
+  padding-right: max(1rem, env(safe-area-inset-right));
+  overflow-x: clip;
+  box-sizing: border-box;
 }
 
 .counter-head {
@@ -137,8 +157,9 @@
 
 .counter-bill__grid {
   display: grid;
-  grid-template-columns: minmax(280px, 0.75fr) minmax(520px, 1.25fr);
+  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
   gap: 0.85rem;
+  min-width: 0;
 }
 
 .counter-bill__panel {
@@ -146,6 +167,7 @@
   border-radius: 4px;
   padding: 0.75rem;
   background: #f6f7f7;
+  min-width: 0;
 }
 
 .counter-bill__panel h4 {
@@ -199,6 +221,7 @@
 
 .counter-bill__result {
   width: 100%;
+  max-width: 100%;
   text-align: left;
   cursor: pointer;
 }
@@ -219,8 +242,10 @@
 
 .counter-bill__sheet {
   overflow-x: auto;
+  max-width: 100%;
   border: 1px solid #c3c4c7;
   background: #fff;
+  -webkit-overflow-scrolling: touch;
 }
 
 .counter-bill__sheet table {
@@ -299,10 +324,11 @@
 
 .counter-bill__footer {
   position: sticky;
-  bottom: 0;
+  bottom: env(safe-area-inset-bottom);
   z-index: 3;
   margin: 1rem -0.75rem -0.75rem;
   padding: 0.75rem;
+  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
   border-top: 1px solid #c3c4c7;
   background: #fff;
   box-shadow: 0 -8px 18px rgba(0, 0, 0, 0.08);
@@ -439,6 +465,58 @@
 
   .counter-bill__footer {
     position: static;
+  }
+}
+
+@media (max-width: 640px) {
+  .counter-content {
+    padding: 0.85rem max(0.65rem, env(safe-area-inset-right)) 1.25rem max(0.65rem, env(safe-area-inset-left));
+  }
+
+  .counter-bill {
+    padding: 0.65rem;
+  }
+
+  .counter-bill__head,
+  .counter-sales__head {
+    align-items: stretch;
+  }
+
+  .counter-bill__result {
+    grid-template-columns: 1fr;
+  }
+
+  .counter-bill__sheet table {
+    min-width: 560px;
+  }
+
+  .counter-bill__search input,
+  .counter-bill__customer input,
+  .counter-bill__customer select,
+  .counter-bill__sheet input,
+  .counter-bill__actions .wp-button,
+  .counter-bill__print-cta {
+    min-height: 44px;
+  }
+
+  .counter-bill__sheet button {
+    min-height: 44px;
+    padding: 0.25rem 0.35rem;
+  }
+
+  .counter-bill__actions,
+  .counter-sales__head {
+    justify-content: stretch;
+  }
+
+  .counter-bill__actions .wp-button,
+  .counter-sales__head .wp-button {
+    width: 100%;
+  }
+
+  .counter-today-card {
+    width: 100%;
+    text-align: left;
   }
 }
 
