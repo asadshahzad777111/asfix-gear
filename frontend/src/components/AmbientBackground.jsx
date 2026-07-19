@@ -1,3 +1,5 @@
+import { useEffect, useRef } from 'react';
+
 /** Classic AsFix atmosphere: orange / violet / mint blooms + drifting dots. */
 
 const DOT_COUNT = 56;
@@ -20,12 +22,42 @@ function buildDots(count) {
 const DOTS = buildDots(DOT_COUNT);
 
 export default function AmbientBackground() {
+  const rootRef = useRef(null);
+
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root) return undefined;
+
+    let raf = 0;
+    const syncParallax = () => {
+      raf = 0;
+      const y = window.scrollY || document.documentElement.scrollTop || 0;
+      /* Blooms drift a little with scroll so motion is felt while browsing */
+      root.style.setProperty('--ambient-parallax-y', `${Math.min(y, 1400) * 0.055}px`);
+      root.style.setProperty('--ambient-parallax-x', `${Math.sin(y / 280) * 18}px`);
+    };
+
+    const onScroll = () => {
+      if (raf) return;
+      raf = requestAnimationFrame(syncParallax);
+    };
+
+    syncParallax();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      if (raf) cancelAnimationFrame(raf);
+    };
+  }, []);
+
   return (
-    <div className="ambient-bg" aria-hidden="true">
+    <div className="ambient-bg" ref={rootRef} aria-hidden="true">
       <div className="ambient-veil" />
-      <div className="orb orb-1" />
-      <div className="orb orb-2" />
-      <div className="orb orb-3" />
+      <div className="ambient-orbs">
+        <div className="orb orb-1" />
+        <div className="orb orb-2" />
+        <div className="orb orb-3" />
+      </div>
       <div className="ambient-dots">
         {DOTS.map((dot, i) => (
           <span
