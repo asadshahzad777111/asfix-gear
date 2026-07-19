@@ -13,6 +13,7 @@ import { useShopGate } from '../hooks/useShopGate';
 import DocumentHead from '../components/seo/DocumentHead';
 import ShopLoginPrompt from '../components/ShopLoginPrompt';
 import CustomerLoginModal from '../components/CustomerLoginModal';
+import WishlistUnsaveDialog from '../components/WishlistUnsaveDialog';
 
 function HeartIcon({ filled = false, size = 20 }) {
   return (
@@ -42,6 +43,7 @@ export default function Wishlist() {
   } = useShopGate();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pendingRemove, setPendingRemove] = useState(null);
   const addRefs = useRef({});
 
   useEffect(() => {
@@ -76,6 +78,17 @@ export default function Wishlist() {
       const rect = el?.getBoundingClientRect();
       if (rect) addItem(product, rect);
     });
+  };
+
+  const askRemove = (product, image) => {
+    setPendingRemove({ product, image });
+  };
+
+  const confirmRemove = () => {
+    if (pendingRemove?.product?.id != null) {
+      remove(pendingRemove.product.id);
+    }
+    setPendingRemove(null);
   };
 
   const showList = !loading && products.length > 0;
@@ -147,7 +160,7 @@ export default function Wishlist() {
                         <button
                           type="button"
                           className="wl-remove"
-                          onClick={() => remove(p.id)}
+                          onClick={() => askRemove(p, img)}
                           aria-label={t('wishlist.remove')}
                           title={t('wishlist.remove')}
                         >
@@ -213,6 +226,14 @@ export default function Wishlist() {
           )}
         </div>
       </section>
+
+      <WishlistUnsaveDialog
+        open={Boolean(pendingRemove)}
+        product={pendingRemove?.product}
+        image={pendingRemove?.image}
+        onConfirm={confirmRemove}
+        onCancel={() => setPendingRemove(null)}
+      />
 
       <ShopLoginPrompt
         open={promptOpen}
