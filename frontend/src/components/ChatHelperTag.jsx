@@ -4,7 +4,8 @@ import { useTranslation } from '../context/LanguageContext';
 const LINE_KEYS = ['a', 'b', 'c', 'd', 'e'];
 
 /**
- * Thin straight ticker — cycles unique help lines with a soft fade/slide.
+ * Thin vertical ticker (reads bottom → top) beside the helper face.
+ * Cycles unique help lines with a soft fade.
  */
 export default function ChatHelperTag({ className = '' }) {
   const { t } = useTranslation();
