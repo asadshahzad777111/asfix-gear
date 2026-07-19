@@ -266,18 +266,24 @@
     display: none !important;
   }
 
-  /* Chat FAB removed on mobile — opens from header .dx-icon-btn--chat */
+  /* Chat FAB sits LEFT above dock — never under Account (right) */
   .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
-    display: none !important;
+    display: grid !important;
+    left: max(0.75rem, env(safe-area-inset-left, 0px) + 0.75rem) !important;
+    right: auto !important;
+    bottom: calc(var(--bottom-nav-total) + 0.85rem) !important;
+    z-index: 1165 !important;
   }
 
   .app:not(.app--admin):not(.app--gaming) .staff-access {
-    bottom: var(--float-stack-0) !important;
+    bottom: calc(var(--bottom-nav-total) + 0.85rem + 3.4rem) !important;
+    right: var(--float-dock-right, 0.65rem) !important;
+    left: auto !important;
     z-index: 1164 !important;
   }
 
   .app:not(.app--admin):not(.app--gaming) .fab-add {
-    bottom: calc(var(--float-stack-1) + 0.15rem) !important;
+    bottom: calc(var(--bottom-nav-total) + 0.85rem + 3.4rem) !important;
     right: var(--float-dock-right, 0.65rem) !important;
     z-index: 1163 !important;
   }

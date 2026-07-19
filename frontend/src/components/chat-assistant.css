@@ -16,23 +16,14 @@
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1025px) {
   .chat-fab-trigger {
     bottom: var(--float-chat-bottom);
     right: var(--float-desktop-edge, 1.5rem);
     width: var(--float-chat-fab-size, 3.25rem);
     height: var(--float-chat-fab-size, 3.25rem);
   }
-}
 
-/* Mobile / tablet with bottom nav: chat lives in the top header — hide float FAB */
-@media (max-width: 1024px) {
-  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
-    display: none !important;
-  }
-}
-
-@media (min-width: 769px) {
   .chat-fab-trigger:hover {
     transform: translateY(-1px);
     border-color: color-mix(in srgb, var(--hdr-accent, #ff6a2b) 25%, var(--hdr-border, rgba(255, 255, 255, 0.08)));
@@ -41,6 +32,76 @@
 
   .chat-fab-trigger:active {
     transform: translateY(0);
+  }
+}
+
+/*
+  Mobile / tablet: pin assistant on the LEFT above the bottom dock.
+  Never sit under Account on the right.
+*/
+@media (max-width: 1024px) {
+  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
+    display: grid !important;
+    top: auto !important;
+    right: auto !important;
+    left: max(0.75rem, env(safe-area-inset-left, 0px) + 0.75rem) !important;
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 0.85rem) !important;
+    width: 3.2rem !important;
+    height: 3.2rem !important;
+    z-index: 1165 !important;
+    border: none !important;
+    border-radius: 5px 14px 5px 14px !important;
+    color: #fff !important;
+    background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 52%, #e04e00 100%) !important;
+    box-shadow:
+      0 8px 22px rgba(255, 106, 43, 0.42),
+      0 0 0 1px rgba(255, 255, 255, 0.12) inset !important;
+    transform: translateZ(0);
+    pointer-events: auto !important;
+  }
+
+  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger.is-open {
+    background: linear-gradient(145deg, #1a1410 0%, #2a1c14 100%) !important;
+    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  body.cart-open .chat-fab-trigger,
+  body.nav-open .chat-fab-trigger {
+    opacity: 0;
+    pointer-events: none !important;
+  }
+
+  .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
+    position: fixed;
+    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.45rem);
+    right: 0.65rem;
+    left: 0.65rem;
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 0.75rem);
+    width: auto;
+    max-height: none;
+    height: auto;
+    z-index: 1170;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+    animation: chatPanelIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .chat-assistant-head {
+    background: linear-gradient(135deg, #ff6a2b 0%, #ff8a4c 55%, #e85a1a 100%);
+    color: #fffaf6;
+  }
+
+  .chat-assistant-head span {
+    opacity: 0.9;
+  }
+
+  .chat-assistant-close {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
   }
 }
 
@@ -56,7 +117,7 @@
   line-height: 1;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1025px) {
   .chat-assistant-panel {
     position: fixed;
     right: var(--float-desktop-edge, 1.5rem);
@@ -307,46 +368,8 @@
   cursor: default;
 }
 
-@media (max-width: 1024px) {
-  .chat-assistant-panel {
-    position: fixed;
-    /* Drop from under the header chat control — clear of bottom nav */
-    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.45rem);
-    right: 0.65rem;
-    left: 0.65rem;
-    bottom: calc(var(--bottom-nav-total, 4.1rem) + 0.75rem);
-    width: auto;
-    max-height: none;
-    height: auto;
-    z-index: 1170;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    overflow: hidden;
-    border-radius: 16px;
-    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
-    animation: chatPanelIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
-  }
-
-  .chat-assistant-head {
-    background: linear-gradient(135deg, #ff6a2b 0%, #ff8a4c 55%, #e85a1a 100%);
-    color: #fffaf6;
-  }
-
-  .chat-assistant-head span {
-    opacity: 0.9;
-  }
-
-  .chat-assistant-close {
-    background: rgba(255, 255, 255, 0.2);
-    color: #fff;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  @media (min-width: 769px) {
-    .chat-fab-trigger:hover {
-      transform: none;
-    }
+  .chat-assistant-panel {
+    animation: none !important;
   }
 }

@@ -226,7 +226,7 @@ export default function ChatAssistant() {
 
   return (
     <>
-      {/* Desktop / no-bottom-nav: floating FAB. Mobile uses header chat control. */}
+      {/* Desktop: bottom-right FAB. Mobile: left above bottom dock (never under Account). */}
       <button
         type="button"
         className={`chat-fab-trigger ${open ? 'is-open' : ''}`}

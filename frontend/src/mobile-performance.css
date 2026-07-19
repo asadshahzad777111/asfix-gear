@@ -133,9 +133,7 @@
     animation: none !important;
   }
 
-  .chat-fab-trigger {
-    display: none !important;
-  }
+  /* Keep mobile chat FAB visible — positioned in chat-assistant.css */
 
   .floating-repair-btn {
     background: var(--hdr-bg-elevated, var(--bg-elevated)) !important;

@@ -165,10 +165,7 @@
     padding-bottom: 0.25rem;
   }
 
-  /* Floating chat FAB unused on phone — header control owns chat */
-  .chat-fab-trigger {
-    display: none;
-  }
+  /* Mobile chat FAB: left dock — rules in chat-assistant.css / mobile-bottom-nav.css */
 
   /* Repair (primary), chat, and staff share one clean vertical column. */
   .floating-repair-btn {
@@ -224,11 +221,6 @@
     display: none;
   }
 
-  /* Repair hidden on /repair — chat drops to bottom slot */
-  body:not(:has(.floating-repair-btn)) .chat-fab-trigger {
-    bottom: var(--float-stack-0) !important;
-  }
-
   body:not(:has(.floating-repair-btn)) .staff-access {
     bottom: var(--float-stack-1) !important;
   }
@@ -274,21 +266,18 @@
     z-index: 1162;
   }
 
-  body:not(:has(.floating-repair-btn)) .chat-fab-trigger {
-    bottom: var(--float-stack-0) !important;
-    right: var(--float-dock-right, 1rem) !important;
-  }
-
   body:not(:has(.floating-repair-btn)) .staff-access {
     bottom: var(--float-stack-1) !important;
     right: var(--float-dock-right, 1rem) !important;
   }
 
+  /* Chat stays LEFT above bottom dock on tablet too */
   .chat-fab-trigger {
-    bottom: var(--float-stack-1);
-    right: var(--float-dock-right, 1rem);
-    width: var(--float-dock-size, 3.15rem);
-    height: var(--float-dock-size, 3.15rem);
+    left: max(0.75rem, env(safe-area-inset-left, 0px) + 0.75rem) !important;
+    right: auto !important;
+    bottom: calc(var(--bottom-nav-total, 4.25rem) + 0.85rem) !important;
+    width: 3.2rem;
+    height: 3.2rem;
     z-index: 1165;
   }
 
