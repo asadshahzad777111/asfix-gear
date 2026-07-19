@@ -12,12 +12,11 @@
 
 /* ── Ambient: quieter, more atmospheric ── */
 .ambient-bg .orb {
-  opacity: calc(var(--orb-strength) * 0.55);
-  filter: blur(110px);
+  filter: blur(100px);
 }
 
 .ambient-bg .grid-overlay {
-  opacity: 0.55;
+  opacity: 0.35;
   background-size: 64px 64px;
 }
 

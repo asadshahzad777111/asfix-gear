@@ -95,16 +95,34 @@
     background: var(--drawer-bg) !important;
   }
 
+  /* Light ambient on mobile — softer blur, still drifting colors */
   .ambient-bg {
-    display: none !important;
+    display: block !important;
+  }
+
+  .ambient-bg .ambient-veil {
+    opacity: 0.92;
+  }
+
+  .ambient-bg .orb {
+    filter: blur(48px) !important;
+    opacity: calc(var(--orb-strength) * 0.85);
+  }
+
+  .ambient-bg .orb-4 {
+    display: none;
+  }
+
+  .ambient-bg .grid-overlay {
+    display: none;
   }
 
   body {
-    background-image: var(--bg-gradient) !important;
+    background-color: var(--bg) !important;
+    background-image: none !important;
   }
 
-  /* Heavy ambient loops — desktop only (sale/nav pulses live in responsive-floats.css) */
-  .orb,
+  /* Keep ambient drift; pause heavier loops */
   .marquee-track,
   .phone-mockup {
     animation: none !important;
