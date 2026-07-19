@@ -1,11 +1,12 @@
-/* ── Chat helper — side humanoid + tag; opens as front dialog ── */
+/* ── Chat helper — right-thumb peek + front dialog ── */
 
 .chat-sideboard,
 .chat-helper {
-  --chat-board-top: 38vh;
+  --chat-board-top: 64vh;
   --chat-panel-w: min(22.5rem, calc(100vw - 1.75rem));
   position: fixed;
-  left: 0;
+  right: 0;
+  left: auto;
   top: var(--chat-board-top);
   z-index: 1200;
   pointer-events: none;
@@ -33,7 +34,7 @@
   box-sizing: border-box;
 }
 
-/* ── Closed trigger: ~half+ on screen — face + both hands + arched tag ── */
+/* ── Closed trigger: right edge, face + one hand inside, thin rotating line ── */
 
 .chat-helper__trigger {
   pointer-events: auto;
@@ -41,17 +42,17 @@
   z-index: 2;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.1rem;
+  align-items: flex-end;
+  gap: 0.2rem;
   margin: 0;
-  padding: 0.2rem 0.15rem 0.1rem;
+  padding: 0.15rem 0 0.1rem 0.15rem;
   border: none;
   background: transparent;
   cursor: grab;
   touch-action: none;
   -webkit-tap-highlight-color: transparent;
-  /* ~60% on-screen: more than half, both hands readable, not a full-body cover */
-  transform: translate3d(-32%, 0, 0);
+  /* Slight tip toward thumb + mostly off-edge (only face + one hand in) */
+  transform: translate3d(42%, 0, 0) rotate(8deg);
   transition:
     transform 0.42s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.32s ease,
@@ -64,72 +65,89 @@
 
 .chat-helper:not(.is-open) .chat-helper__trigger:hover,
 .chat-helper:not(.is-open) .chat-helper__trigger:focus-visible {
-  transform: translate3d(-18%, 0, 0);
+  transform: translate3d(28%, 0, 0) rotate(6deg);
 }
 
-/* When open: character + tag leave the side completely */
+/* When open: character + tag leave to the right completely */
 .chat-helper.is-open .chat-helper__trigger {
   position: absolute;
-  left: 0;
+  right: 0;
+  left: auto;
   top: 50%;
-  transform: translate3d(-120%, -50%, 0) scale(0.72);
+  transform: translate3d(120%, -50%, 0) scale(0.72) rotate(8deg);
   opacity: 0;
   visibility: hidden;
   pointer-events: none;
 }
 
+/* Thin straight ticker — no curved bubble */
 .chat-helper__tag {
   position: relative;
-  display: block;
-  width: 9.25rem;
-  height: 2.9rem;
-  margin-bottom: -0.15rem;
-  filter: drop-shadow(0 8px 14px rgba(255, 106, 43, 0.3));
-  /* Slight tip — not a straight label bar */
-  transform: rotate(-7deg);
-  animation: chatHelperTagBob 3.2s ease-in-out infinite;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: min(9.5rem, 42vw);
+  height: 1.35rem;
+  margin: 0 0.55rem 0.05rem 0;
   pointer-events: none;
+  transform: rotate(-8deg);
 }
 
-.chat-helper__tag-svg {
+.chat-helper__tag-rail {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--hdr-accent, #ff6a2b) 55%, transparent);
+  background: color-mix(in srgb, var(--bg-elevated, #14141c) 82%, #ff6a2b);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.22);
+}
+
+.chat-helper__tag-line {
+  position: relative;
+  z-index: 1;
   display: block;
   width: 100%;
-  height: 100%;
-  overflow: visible;
+  padding: 0 0.65rem;
+  font-family: var(--hdr-font-display, 'Space Grotesk', sans-serif);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.35rem;
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: #fffaf6;
+  user-select: none;
 }
 
-.chat-helper__tag-curve-text {
-  fill: #fffaf6;
-  font-family: var(--hdr-font-display, 'Space Grotesk', sans-serif);
-  font-size: 11.5px;
-  font-weight: 750;
-  letter-spacing: 0.04em;
+.chat-helper__tag-line.is-in {
+  animation: chatHelperLineIn 0.38s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.chat-helper__tag-line.is-out {
+  animation: chatHelperLineOut 0.3s ease both;
 }
 
 .chat-helper__figure-wrap {
   display: grid;
   place-items: center;
-  width: 6.1rem;
-  height: 6.35rem;
-  filter: drop-shadow(5px 10px 14px rgba(0, 0, 0, 0.24));
+  width: 4.6rem;
+  height: 5.35rem;
+  margin-right: -0.15rem;
+  filter: drop-shadow(-4px 8px 12px rgba(0, 0, 0, 0.26));
   animation: chatHelperBob 2.8s ease-in-out infinite;
 }
 
 .chat-helper__figure {
-  width: 6rem;
+  width: 4.5rem;
   height: auto;
   display: block;
 }
 
-/* Subtle hand wave on the peeking bust */
-.chat-helper__figure .chat-helper-hand--right {
-  transform-origin: 82px 48px;
+.chat-helper__figure .chat-helper-hand--wave {
+  transform-origin: 28px 46px;
   animation: chatHelperWave 2.4s ease-in-out infinite;
-}
-
-.chat-helper__figure .chat-helper-hand--left {
-  transform-origin: 38px 52px;
-  animation: chatHelperWaveLeft 2.8s ease-in-out infinite;
 }
 
 @keyframes chatHelperBob {
@@ -142,33 +160,39 @@
   }
 }
 
-@keyframes chatHelperTagBob {
-  0%,
-  100% {
-    transform: rotate(-7deg) translateY(0);
-  }
-  50% {
-    transform: rotate(-5deg) translateY(-3px);
-  }
-}
-
 @keyframes chatHelperWave {
   0%,
   100% {
     transform: rotate(0deg);
   }
   50% {
-    transform: rotate(10deg);
+    transform: rotate(-12deg);
   }
 }
 
-@keyframes chatHelperWaveLeft {
-  0%,
-  100% {
-    transform: rotate(0deg);
+@keyframes chatHelperLineIn {
+  0% {
+    opacity: 0;
+    transform: translateY(6px);
+    filter: blur(2px);
   }
-  50% {
-    transform: rotate(-8deg);
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+}
+
+@keyframes chatHelperLineOut {
+  0% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-6px);
+    filter: blur(2px);
   }
 }
 
@@ -205,7 +229,8 @@
 .chat-helper__panel {
   pointer-events: none;
   position: absolute;
-  left: 0.65rem;
+  right: 0.65rem;
+  left: auto;
   top: 50%;
   z-index: 2;
   width: var(--chat-panel-w);
@@ -218,14 +243,14 @@
   background: var(--bg-elevated, #14141c);
   border: 1px solid color-mix(in srgb, var(--hdr-accent, #ff6a2b) 28%, transparent);
   box-shadow: 0 22px 48px rgba(0, 0, 0, 0.38);
-  transform: translate3d(-118%, -50%, 0) scale(0.92);
+  transform: translate3d(118%, -50%, 0) scale(0.92);
   opacity: 0;
   visibility: hidden;
   transition:
     transform 0.48s cubic-bezier(0.22, 1, 0.36, 1),
     opacity 0.32s ease,
     visibility 0.32s,
-    left 0.48s cubic-bezier(0.22, 1, 0.36, 1),
+    right 0.48s cubic-bezier(0.22, 1, 0.36, 1),
     top 0.48s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -233,6 +258,7 @@
   pointer-events: auto;
   position: relative;
   left: auto;
+  right: auto;
   top: auto;
   transform: translate3d(0, 0, 0) scale(1);
   opacity: 1;
@@ -244,7 +270,7 @@
 @keyframes chatHelperPanelIn {
   0% {
     opacity: 0;
-    transform: translate3d(-28px, 12px, 0) scale(0.94);
+    transform: translate3d(28px, 12px, 0) scale(0.94);
   }
   100% {
     opacity: 1;
@@ -264,7 +290,7 @@ body.cart-open .chat-helper {
 
 body.nav-open .chat-helper:not(.is-open),
 body.cart-open .chat-helper:not(.is-open) {
-  transform: translate3d(-24px, -50%, 0) !important;
+  transform: translate3d(24px, -50%, 0) !important;
 }
 
 /* ── Inner panel chrome ── */
@@ -555,31 +581,35 @@ body.cart-open .chat-helper:not(.is-open) {
   .chat-helper__panel,
   .chat-helper__backdrop,
   .chat-helper__figure-wrap,
-  .chat-helper__tag,
-  .chat-helper__figure .chat-helper-hand--right,
-  .chat-helper__figure .chat-helper-hand--left {
+  .chat-helper__tag-line,
+  .chat-helper__figure .chat-helper-hand--wave {
     animation: none !important;
     transition: none !important;
   }
 }
 
-/* Narrow phones: keep the half-peek balance so both hands still read */
+/* Clear bottom dock + keep thumb reach on small phones */
+@media (max-width: 1024px) {
+  .chat-helper:not(.is-open) {
+    top: min(var(--chat-board-top), calc(100dvh - var(--bottom-nav-total, 4.5rem) - 5.5rem));
+  }
+}
+
 @media (max-width: 380px) {
   .chat-helper__tag {
-    width: 8.1rem;
-    height: 2.55rem;
+    width: min(8.4rem, 48vw);
+  }
+
+  .chat-helper__tag-line {
+    font-size: 0.64rem;
   }
 
   .chat-helper__figure-wrap {
-    width: 5.35rem;
-    height: 5.55rem;
+    width: 4.15rem;
+    height: 4.85rem;
   }
 
   .chat-helper__figure {
-    width: 5.25rem;
-  }
-
-  .chat-helper__tag-curve-text {
-    font-size: 10.5px;
+    width: 4.05rem;
   }
 }
