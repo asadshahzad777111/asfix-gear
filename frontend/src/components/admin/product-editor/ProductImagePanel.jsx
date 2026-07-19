@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import { getDefaultImage } from '../../../config/products';
+import { isDefaultProductImage } from '../../../config/products';
 import { uploadProductImageFile } from '../../../utils/productImageUpload';
 
 export default function ProductImagePanel({
@@ -11,8 +11,8 @@ export default function ProductImagePanel({
   onMessage,
 }) {
   const fileRef = useRef(null);
-  const preview = image || getDefaultImage(category);
-  const hasCustom = Boolean(image && image !== getDefaultImage(category));
+  const customImage = !isDefaultProductImage(image) ? String(image || '').trim() : '';
+  const hasCustom = Boolean(customImage);
 
   const pickFile = () => fileRef.current?.click();
 
@@ -37,8 +37,12 @@ export default function ProductImagePanel({
     <div className="wp-postbox wp-product-image">
       <div className="wp-postbox-head">Product image</div>
       <div className="wp-postbox-body">
-        <div className="wp-product-image-preview">
-          <img src={preview} alt="" onError={(e) => { e.target.src = getDefaultImage(category); }} />
+        <div className={`wp-product-image-preview${hasCustom ? '' : ' is-empty'}`}>
+          {hasCustom ? (
+            <img src={customImage} alt="" />
+          ) : (
+            <span className="wp-product-image-empty">No image yet — gallery se photo choose karein</span>
+          )}
         </div>
         <div className="wp-product-image-actions">
           <button type="button" className="wp-button wp-button--link" onClick={pickFile} disabled={uploading}>
@@ -48,7 +52,7 @@ export default function ProductImagePanel({
             <button
               type="button"
               className="wp-button wp-button--link wp-product-link-danger"
-              onClick={() => onImageChange(getDefaultImage(category))}
+              onClick={() => onImageChange('')}
             >
               Remove product image
             </button>
@@ -57,12 +61,14 @@ export default function ProductImagePanel({
         <input
           type="url"
           className="wp-product-image-url"
-          placeholder="Image URL paste karein"
-          value={String(image || '').startsWith('blob:') ? '' : (image || '')}
+          placeholder="Image URL paste karein (optional)"
+          value={String(customImage).startsWith('blob:') ? '' : customImage}
           onChange={(e) => onImageChange(e.target.value)}
         />
         <input ref={fileRef} type="file" accept="image/*" hidden onChange={handleFile} />
-        <p className="wp-product-hint">Featured photo — gallery mein 2 aur add karein (3 total).</p>
+        <p className="wp-product-hint">
+          Featured photo — gallery se add karo; pehli gallery photo auto featured ban jati hai.
+        </p>
         {uploading ? <p className="wp-product-hint">Uploading…</p> : null}
       </div>
     </div>

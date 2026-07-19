@@ -99,7 +99,7 @@ export const EMPTY_PRODUCT = {
   description: '',
   slug: '',
   tags: [],
-  image: DEFAULT_IMAGES.Cases,
+  image: '',
   gallery: [],
   stock: '10',
   featured: false,
@@ -111,6 +111,13 @@ export const EMPTY_PRODUCT = {
 
 export function getDefaultImage(category) {
   return DEFAULT_IMAGES[category] || DEFAULT_IMAGES.Accessories;
+}
+
+/** True when URL is a stock category placeholder (not a real product photo). */
+export function isDefaultProductImage(url) {
+  const value = String(url || '').trim();
+  if (!value) return true;
+  return Object.values(DEFAULT_IMAGES).includes(value);
 }
 
 /** Smaller crop for home category chips (trending row, nav, etc.). */

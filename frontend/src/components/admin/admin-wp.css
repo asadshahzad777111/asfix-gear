@@ -1125,19 +1125,36 @@
 
 .wp-product-image-preview {
   width: 100%;
-  aspect-ratio: 1;
   border: 1px solid #dcdcde;
   background: #f6f7f7;
   display: flex;
   align-items: center;
   justify-content: center;
   margin-bottom: 0.5rem;
+  overflow: hidden;
+  min-height: 7rem;
+}
+
+.wp-product-image-preview.is-empty {
+  min-height: 7.5rem;
+  padding: 1rem;
 }
 
 .wp-product-image-preview img {
-  max-width: 100%;
-  max-height: 180px;
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: 280px;
   object-fit: contain;
+  object-position: center;
+  background: #fff;
+}
+
+.wp-product-image-empty {
+  font-size: 0.82rem;
+  color: #646970;
+  text-align: center;
+  line-height: 1.4;
 }
 
 .wp-product-image-actions {

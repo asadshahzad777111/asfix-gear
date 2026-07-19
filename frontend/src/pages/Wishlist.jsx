@@ -4,6 +4,7 @@ import { api, formatPrice } from '../api/client';
 import { getDefaultImage } from '../config/products';
 import { getSalePrice, getSavings, hasDiscount } from '../utils/pricing';
 import { isInStock, getStockStatus, normalizeStock } from '../utils/stock';
+import { getProductCardImages } from '../utils/productImages';
 import { productPath as buildProductPath } from '../utils/slug';
 import { useWishlistIds } from '../hooks/useWishlist';
 import { useCart } from '../context/CartContext';
