@@ -9,6 +9,7 @@ import { detectIntent, parseOrderTrackInfo } from '../utils/chatEngine';
 import { filterPublishedProducts } from '../utils/productStatus';
 import { useTranslation } from '../context/LanguageContext';
 import { useChatAssistant } from '../context/ChatAssistantContext';
+import ChatHelperMascot from './ChatHelperMascot';
 
 let nextId = 1;
 const newId = () => `m${Date.now()}-${nextId++}`;
@@ -43,15 +44,20 @@ export default function ChatAssistant() {
   }, [messages, thinking]);
 
   useEffect(() => {
-    if (open) {
-      const onKey = (e) => {
-        if (e.key === 'Escape') setOpen(false);
-      };
-      window.addEventListener('keydown', onKey);
-      return () => window.removeEventListener('keydown', onKey);
-    }
-    return undefined;
-  }, [open]);
+    if (!open) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
+    window.addEventListener('keydown', onKey);
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const focusTimer = window.setTimeout(() => inputRef.current?.focus(), 280);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prevOverflow;
+      window.clearTimeout(focusTimer);
+    };
+  }, [open, setOpen]);
 
   function quickReplyActions() {
     return [
@@ -270,34 +276,52 @@ export default function ChatAssistant() {
 
   return (
     <aside
-      className={`chat-sideboard${open ? ' is-open' : ''}`}
+      className={`chat-sideboard chat-helper${open ? ' is-open' : ''}`}
       style={{ '--chat-board-top': `${boardTop}vh` }}
       aria-label={t('chatbot.title')}
     >
-      {/* Peeking side tab — half on screen; drag vertically when closed */}
+      {/* Side helper: humanoid + tag above — exits completely when open */}
       <button
         type="button"
-        className="chat-sideboard__tab"
+        className="chat-helper__trigger"
         aria-label={t('chatbot.fabAria')}
         aria-expanded={open}
+        tabIndex={open ? -1 : 0}
         onPointerDown={onTabPointerDown}
         onClick={onTabClick}
       >
-        <span className="chat-sideboard__tab-ember" aria-hidden="true" />
-        <span className="chat-sideboard__tab-label">{t('chatbot.helpTab')}</span>
-        <span className="chat-sideboard__tab-grip" aria-hidden="true" />
+        <span className="chat-helper__tag">
+          <span className="chat-helper__tag-text">{t('chatbot.helpTab')}</span>
+        </span>
+        <span className="chat-helper__figure-wrap" aria-hidden="true">
+          <ChatHelperMascot className="chat-helper__figure" />
+        </span>
       </button>
 
+      <button
+        type="button"
+        className="chat-helper__backdrop"
+        aria-label={t('chatbot.close')}
+        tabIndex={open ? 0 : -1}
+        onClick={() => setOpen(false)}
+      />
+
       <div
-        className="chat-sideboard__panel glass-card"
+        className="chat-sideboard__panel chat-helper__panel glass-card"
         role="dialog"
+        aria-modal={open}
         aria-label={t('chatbot.title')}
         aria-hidden={!open}
       >
         <div className="chat-assistant-head">
-          <div>
-            <strong>{t('chatbot.title')}</strong>
-            <span>{t('chatbot.subtitle')}</span>
+          <div className="chat-assistant-head-main">
+            <span className="chat-assistant-head-avatar" aria-hidden="true">
+              <ChatHelperMascot className="chat-assistant-head-avatar-svg" />
+            </span>
+            <div>
+              <strong>{t('chatbot.title')}</strong>
+              <span>{t('chatbot.subtitle')}</span>
+            </div>
           </div>
           <button
             type="button"
