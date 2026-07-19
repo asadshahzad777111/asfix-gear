@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { startTransition, useLayoutEffect, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useCart } from '../context/CartContext';
@@ -6,6 +6,14 @@ import { useAuth } from '../context/AuthContext';
 import { useWishlistIds } from '../hooks/useWishlist';
 import { IconCart, IconHeart, IconShop, IconUser } from './nav/NavIcons';
 import './mobile-bottom-nav.css';
+
+/** Warm route chunks on press so navigation feels instant. */
+function prefetchRoute(path) {
+  if (path.startsWith('/shop')) import('../pages/Shop');
+  else if (path.startsWith('/wishlist')) import('../pages/Wishlist');
+  else if (path.startsWith('/repair')) import('../pages/Repair');
+  else if (path.startsWith('/account')) import('../pages/Account');
+}
 
 function IconRepair({ size = 22 }) {
   return (
@@ -50,8 +58,10 @@ export default function MobileBottomNav() {
   const [flashKey, setFlashKey] = useState(null);
 
   const openAccount = () => {
-    if (isCustomer) navigate('/account');
-    else navigate('/account/login');
+    startTransition(() => {
+      if (isCustomer) navigate('/account');
+      else navigate('/account/login');
+    });
   };
 
   const markedKey = flashKey || active;
@@ -152,7 +162,7 @@ export default function MobileBottomNav() {
               transition={
                 reduceMotion
                   ? { duration: 0 }
-                  : { type: 'spring', stiffness: 380, damping: 28, mass: 0.65 }
+                  : { type: 'tween', duration: 0.22, ease: [0.22, 1, 0.36, 1] }
               }
             />
           )}
@@ -177,6 +187,7 @@ export default function MobileBottomNav() {
             ref={(el) => {
               tabRefs.current.shop = el;
             }}
+            onPointerDown={() => prefetchRoute('/shop')}
             onClick={(e) => burst('shop', e.currentTarget)}
           >
             <span className="mobile-bottom-nav__icon">
@@ -192,6 +203,7 @@ export default function MobileBottomNav() {
             ref={(el) => {
               tabRefs.current.wishlist = el;
             }}
+            onPointerDown={() => prefetchRoute('/wishlist')}
             onClick={(e) => burst('wishlist', e.currentTarget)}
           >
             <span className="mobile-bottom-nav__icon-wrap mobile-bottom-nav__icon">
@@ -255,19 +267,20 @@ export default function MobileBottomNav() {
         }
         tabIndex={cartOpen ? -1 : undefined}
         aria-label="Repair"
+        onPointerDown={() => prefetchRoute('/repair')}
         onClick={(e) => burst('repair', e.currentTarget)}
       >
         <motion.span
           className="mobile-bottom-nav__fab-orb"
-          whileTap={reduceMotion ? undefined : { scale: 0.92 }}
+          whileTap={reduceMotion ? undefined : { scale: 0.94 }}
           animate={
             reduceMotion
               ? undefined
               : active === 'repair'
-                ? { scale: 1.05, y: -2 }
+                ? { scale: 1.04, y: -1 }
                 : { scale: 1, y: 0 }
           }
-          transition={{ type: 'spring', stiffness: 380, damping: 22 }}
+          transition={{ type: 'tween', duration: 0.18, ease: [0.22, 1, 0.36, 1] }}
         >
           <IconRepair size={22} />
         </motion.span>

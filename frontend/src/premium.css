@@ -22,24 +22,26 @@ html {
 
 @media (prefers-reduced-motion: no-preference) {
   .page-transition-page--enter {
-    animation: pageEnter 0.34s cubic-bezier(0.22, 1, 0.36, 1) both;
+    animation: pageEnter 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 }
 
 @keyframes pageEnter {
   from {
     opacity: 0;
-    transform: translateY(12px);
+    transform: translate3d(0, 8px, 0);
   }
   to {
     opacity: 1;
-    transform: none;
+    transform: translate3d(0, 0, 0);
   }
 }
 
-@media (prefers-reduced-motion: no-preference) and (hover: none), (prefers-reduced-motion: no-preference) and (pointer: coarse) {
+/* Touch: opacity-only — no layout/transform fight with route mount */
+@media (prefers-reduced-motion: no-preference) and (hover: none),
+  (prefers-reduced-motion: no-preference) and (pointer: coarse) {
   .page-transition-page--enter {
-    animation: pageEnterMobile 0.26s ease both;
+    animation: pageEnterMobile 0.18s ease-out both;
   }
 
   @keyframes pageEnterMobile {
@@ -756,9 +758,10 @@ body.custom-cursor-active {
   position: fixed;
   inset: 0;
   z-index: 500;
-  background: var(--overlay);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  /* Solid dim — no live blur (blur during open felt laggy) */
+  background: color-mix(in srgb, var(--overlay) 92%, #000 8%);
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .floating-cart-panel {
@@ -770,13 +773,15 @@ body.custom-cursor-active {
   width: min(22rem, 92vw);
   background: var(--cart-panel-bg);
   border-left: 1px solid var(--glass-edge);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  /* Solid panel paint — skip glass blur while sliding */
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
   box-shadow: var(--shadow-hover);
   display: flex;
   flex-direction: column;
   padding: 1.25rem;
   will-change: transform;
+  transform: translateZ(0);
 }
 
 .floating-cart-head {

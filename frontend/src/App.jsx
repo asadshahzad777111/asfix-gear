@@ -36,7 +36,7 @@ function AppContent() {
       {!isAdminRoute && <Navbar />}
       {!isAdminRoute && <GuestWelcomeBanner />}
       <main className={`app-main ${isAdminRoute ? 'app-main--admin' : ''}`}>
-        <ErrorBoundary key={location.pathname}>
+        <ErrorBoundary>
           <PageTransition />
         </ErrorBoundary>
       </main>

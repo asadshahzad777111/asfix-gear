@@ -103,10 +103,10 @@ img { max-width: 100%; height: auto; display: block; }
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(96px);
+  filter: blur(80px);
   animation: ambientDrift 14s ease-in-out infinite;
   opacity: var(--orb-strength);
-  will-change: transform, opacity;
+  will-change: transform;
   transform: translate3d(0, 0, 0);
   animation-play-state: running;
 }
@@ -262,7 +262,31 @@ img { max-width: 100%; height: auto; display: block; }
 html.theme-transitioning .ambient-bg,
 html.theme-transitioning .ambient-bg * {
   transition: none !important;
-  animation-play-state: running !important;
+}
+
+/*
+  Pause ambient compositor work while cart/nav/page UI is moving —
+  stops the “laggy” feel without removing the atmosphere when idle.
+*/
+body.cart-open .ambient-bg .orb,
+body.cart-open .ambient-bg .ambient-mesh,
+body.cart-open .ambient-bg .ambient-flare,
+body.cart-open .ambient-bg .ambient-veil,
+body.nav-open .ambient-bg .orb,
+body.nav-open .ambient-bg .ambient-mesh,
+body.nav-open .ambient-bg .ambient-flare,
+body.nav-open .ambient-bg .ambient-veil,
+body.is-page-transitioning .ambient-bg .orb,
+body.is-page-transitioning .ambient-bg .ambient-mesh,
+body.is-page-transitioning .ambient-bg .ambient-flare,
+body.is-page-transitioning .ambient-bg .ambient-veil {
+  animation-play-state: paused !important;
+}
+
+body.cart-open .ambient-bg .orb,
+body.nav-open .ambient-bg .orb,
+body.is-page-transitioning .ambient-bg .orb {
+  will-change: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
