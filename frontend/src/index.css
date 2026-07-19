@@ -2502,6 +2502,7 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 .product-detail-image {
+  position: relative;
   border-radius: var(--radius-lg);
   overflow: hidden;
   border: 1px solid var(--glass-edge);
@@ -2509,9 +2510,10 @@ img { max-width: 100%; height: auto; display: block; }
   box-shadow: var(--shadow-hover);
   backdrop-filter: var(--glass-blur);
   -webkit-backdrop-filter: var(--glass-blur);
+  background: rgba(255, 255, 255, 0.03);
 }
 
-.product-detail-image img { width: 100%; height: 100%; object-fit: cover; }
+.product-detail-image img { width: 100%; height: 100%; object-fit: contain; }
 
 .product-detail-gallery {
   display: flex;
@@ -2557,7 +2559,7 @@ img { max-width: 100%; height: auto; display: block; }
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   opacity: 0;
   transition: opacity 0.4s ease, transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
 }

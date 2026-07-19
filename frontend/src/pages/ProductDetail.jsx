@@ -16,11 +16,9 @@ import ProductCard from '../components/ProductCard';
 import ProductReviewCard from '../components/ProductReviewCard';
 import { getProductAnimKind } from '../utils/productAnimation';
 import { PremiumLink } from '../components/premium/PremiumButton';
-import CasePreviewer from '../components/premium/CasePreviewer';
 import { DiscountRibbon, ProductPrice } from '../components/DiscountPicker';
 import { getSavings, hasDiscount } from '../utils/pricing';
 import { getStockStatus, isInStock, maxCartQty, normalizeStock } from '../utils/stock';
-import { getProductCardImages } from '../utils/productImages';
 import DocumentHead from '../components/seo/DocumentHead';
 import { ProductJsonLd } from '../components/seo/JsonLd';
 import { productPath } from '../utils/slug';
@@ -138,7 +136,6 @@ export default function ProductDetail() {
       : stockStatus === 'low'
         ? t('product.onlyLeft', { count: stockCount })
         : t('product.inStock', { count: stockCount });
-  const { images: galleryImages } = getProductCardImages(product);
   const maxQty = maxCartQty(product);
 
   const handleAdd = () => {
@@ -166,34 +163,14 @@ export default function ProductDetail() {
           <BackButton to="/shop" label={t('product.backToShop')} className="back-nav-btn--spaced" />
 
           <div className={`product-detail-grid ${onSale ? 'on-sale' : ''}`}>
-            {animKind === 'case' ? (
-              <>
-                <CasePreviewer product={{ ...product, image: activeImage || product.image }} />
-                {galleryImages.length > 1 ? (
-                  <div className="product-detail-gallery">
-                    {galleryImages.map((url) => (
-                      <button
-                        key={url}
-                        type="button"
-                        className={`product-detail-gallery-thumb ${activeImage === url ? 'is-active' : ''}`}
-                        onClick={() => setActiveImage(url)}
-                      >
-                        <img src={url} alt="" />
-                      </button>
-                    ))}
-                  </div>
-                ) : null}
-              </>
-            ) : (
-              <ProductDetailGallery
-                product={product}
-                activeImage={activeImage}
-                onSelect={setActiveImage}
-                onSale={onSale}
-                animKind={animKind}
-                DiscountRibbon={DiscountRibbon}
-              />
-            )}
+            <ProductDetailGallery
+              product={product}
+              activeImage={activeImage}
+              onSelect={setActiveImage}
+              onSale={onSale}
+              animKind={animKind}
+              DiscountRibbon={DiscountRibbon}
+            />
 
             <div className="product-detail-info">
               <span className="eyebrow">{product.category}</span>
