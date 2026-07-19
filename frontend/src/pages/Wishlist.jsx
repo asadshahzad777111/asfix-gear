@@ -121,7 +121,8 @@ export default function Wishlist() {
               <div className="pc-wishlist-grid">
                 {products.map((p) => {
                   const sale = getSalePrice(p);
-                  const img = p.image || getDefaultImage(p.category);
+                  const { main } = getProductCardImages(p);
+                  const img = main || getDefaultImage(p.category);
                   const onSale = hasDiscount(p);
                   const stockStatus = getStockStatus(p.stock);
                   const stockQty = normalizeStock(p.stock);
