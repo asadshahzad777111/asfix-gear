@@ -162,16 +162,18 @@ router.post('/upload-image', requireAuth, requireRole(...STAFF), (req, res, next
 
 /**
  * Staff Products Sheet — download Google-Sheets-ready CSV of the catalog.
- * Registered before /:id so "export.csv" is not treated as an id.
+ * Registered before /:id so path segments are not treated as an id.
  */
-router.get('/export.csv', requireAuth, requireRole(...STAFF), (req, res) => {
+function sendProductsCsv(_req, res) {
   const products = store.getProducts({ status: 'all' });
   const csv = productsToCsv(products);
   const stamp = new Date().toISOString().slice(0, 10);
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', `attachment; filename="asfix-products-${stamp}.csv"`);
   res.send(csv);
-});
+}
+router.get('/export-csv', requireAuth, requireRole(...STAFF), sendProductsCsv);
+router.get('/export.csv', requireAuth, requireRole(...STAFF), sendProductsCsv);
 
 /**
  * Import CSV (from Google Sheets export or the Admin Sheet download).
