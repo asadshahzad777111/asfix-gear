@@ -2,6 +2,74 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
+import ProfileMark from './nav/ProfileMark';
+
+function IconOrders() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path
+        d="M4.5 7.5h15v11a1.5 1.5 0 0 1-1.5 1.5h-12A1.5 1.5 0 0 1 4.5 18.5v-11Z"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      />
+      <path
+        d="M8 7.5V6a4 4 0 0 1 8 0v1.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconProfile() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <circle cx="12" cy="9" r="3.2" stroke="currentColor" strokeWidth="1.7" />
+      <path
+        d="M5.5 19c1.2-3.2 3.4-4.8 6.5-4.8s5.3 1.6 6.5 4.8"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconPrefs() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <circle cx="12" cy="12" r="3" stroke="currentColor" strokeWidth="1.7" />
+      <path
+        d="M12 3.5v2.2M12 18.3v2.2M3.5 12h2.2M18.3 12h2.2M6.2 6.2l1.6 1.6M16.2 16.2l1.6 1.6M17.8 6.2l-1.6 1.6M7.8 16.2l-1.6 1.6"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function IconLogout() {
+  return (
+    <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true" fill="none">
+      <path
+        d="M10 5.5H7.5A2.5 2.5 0 0 0 5 8v8a2.5 2.5 0 0 0 2.5 2.5H10"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      />
+      <path
+        d="M13.5 12H20M17 8.5 20.5 12 17 15.5"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
+    </svg>
+  );
+}
 
 export default function AccountMenu({ className = '' }) {
   const { isCustomer, user, logout } = useAuth();
@@ -29,7 +97,7 @@ export default function AccountMenu({ className = '' }) {
 
   if (!isCustomer || !user) return null;
 
-  const initial = (user.name || user.username || '?')[0].toUpperCase();
+  const initial = (user.name || user.username || 'A')[0].toUpperCase();
 
   const handleLogout = async () => {
     setOpen(false);
@@ -38,22 +106,22 @@ export default function AccountMenu({ className = '' }) {
   };
 
   const menuItems = [
-    { to: '/account', icon: '👤', label: t('nav.profile') },
-    { to: '/account', icon: '📦', label: t('nav.myOrders') },
-    { to: '/account/settings', icon: '⚙️', label: t('nav.settings') },
+    { to: '/account', icon: <IconProfile />, label: t('nav.profile') },
+    { to: '/account', icon: <IconOrders />, label: t('nav.myOrders') },
+    { to: '/account/settings', icon: <IconPrefs />, label: t('nav.settings') },
   ];
 
   return (
     <div className={`account-menu ${className}`} ref={menuRef}>
       <button
         type="button"
-        className="account-menu-trigger"
+        className="account-menu-trigger dx-icon-btn dx-icon-btn--account"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="true"
         aria-label={t('nav.accountMenu')}
       >
-        <span className="account-menu-avatar" aria-hidden="true">{initial || 'A'}</span>
+        <ProfileMark size={22} initial={initial} />
       </button>
 
       {open && (
@@ -70,12 +138,21 @@ export default function AccountMenu({ className = '' }) {
               role="menuitem"
               onClick={() => setOpen(false)}
             >
-              <span className="account-menu-item-icon" aria-hidden="true">{icon}</span>
+              <span className="account-menu-item-icon" aria-hidden="true">
+                {icon}
+              </span>
               <span className="account-menu-item-label">{label}</span>
             </Link>
           ))}
-          <button type="button" className="account-menu-item account-menu-logout" role="menuitem" onClick={handleLogout}>
-            <span className="account-menu-item-icon" aria-hidden="true">🚪</span>
+          <button
+            type="button"
+            className="account-menu-item account-menu-logout"
+            role="menuitem"
+            onClick={handleLogout}
+          >
+            <span className="account-menu-item-icon" aria-hidden="true">
+              <IconLogout />
+            </span>
             <span className="account-menu-item-label">{t('account.logout')}</span>
           </button>
         </div>
