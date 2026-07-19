@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import DiscountPicker, { DiscountRibbon, ProductPrice } from './DiscountPicker';
-import { CATEGORIES, EMPTY_PRODUCT, DEFAULT_IMAGES, SHOP_BRANDS, getDefaultImage } from '../config/products';
+import { CATEGORIES, EMPTY_PRODUCT, SHOP_BRANDS, getDefaultImage, isDefaultProductImage } from '../config/products';
 import ModelMultiPicker from './ModelMultiPicker';
 import { useTranslation } from '../context/LanguageContext';
 import ProductImagePanel from './admin/product-editor/ProductImagePanel';
@@ -13,16 +13,23 @@ import ProductPermalinkPanel from './admin/product-editor/ProductPermalinkPanel'
 import ProductBrandPanel from './admin/product-editor/ProductBrandPanel';
 import RichTextEditor from './admin/product-editor/RichTextEditor';
 import { uploadProductImageFile } from '../utils/productImageUpload';
+import { resolveProductImagesForSave } from '../utils/productImages';
 import { slugify } from '../utils/slug';
-
-const isDefaultImage = (url) => Object.values(DEFAULT_IMAGES).includes(url);
 
 function isTransientImageUrl(url) {
   return String(url || '').startsWith('blob:') || String(url || '').startsWith('data:');
 }
 
 function productToForm(editProduct) {
-  if (!editProduct) return { ...EMPTY_PRODUCT, image: getDefaultImage('Cases'), gallery: [] };
+  if (!editProduct) return { ...EMPTY_PRODUCT, gallery: [] };
+  const rawImage = editProduct.image || '';
+  let image = isDefaultProductImage(rawImage) ? '' : rawImage;
+  let gallery = Array.isArray(editProduct.gallery) ? [...editProduct.gallery] : [];
+  // Promote first real gallery photo when featured was only a stock placeholder
+  if (!image && gallery.length) {
+    image = gallery[0];
+    gallery = gallery.slice(1);
+  }
   return {
     name: editProduct.name || '',
     category: editProduct.category || 'Cases',
@@ -33,8 +40,8 @@ function productToForm(editProduct) {
     description: editProduct.description || '',
     slug: editProduct.slug || '',
     tags: Array.isArray(editProduct.tags) ? editProduct.tags : [],
-    image: editProduct.image || getDefaultImage(editProduct.category),
-    gallery: Array.isArray(editProduct.gallery) ? editProduct.gallery : [],
+    image,
+    gallery,
     stock: String(editProduct.stock ?? 0),
     featured: Boolean(editProduct.featured),
     discount_enabled: Number(editProduct.discount_percent) > 0,
@@ -70,9 +77,6 @@ export default function AddProductForm({
   const setField = (field, value) => {
     setProduct((prev) => {
       const next = { ...prev, [field]: value };
-      if (field === 'category' && isDefaultImage(prev.image)) {
-        next.image = getDefaultImage(value);
-      }
       if (field === 'name' && !slugTouchedRef.current) {
         next.slug = slugify(value);
       }
@@ -84,8 +88,19 @@ export default function AddProductForm({
     setProduct((prev) => ({
       ...prev,
       category: cat,
-      image: prev.image && prev.image !== getDefaultImage(prev.category) ? prev.image : getDefaultImage(cat),
     }));
+  };
+
+  const handleGalleryChange = (gallery) => {
+    setProduct((prev) => {
+      const next = { ...prev, gallery };
+      // If staff only uploaded gallery photos, first one becomes the featured image
+      if (isDefaultProductImage(prev.image) && gallery.length) {
+        next.image = gallery[0];
+        next.gallery = gallery.slice(1);
+      }
+      return next;
+    });
   };
 
   const handleImageFile = async (e) => {
@@ -110,32 +125,45 @@ export default function AddProductForm({
     }
   };
 
-  const buildPayload = (statusOverride) => ({
-    name: product.name.trim(),
-    category: product.category,
-    brand: product.brand,
-    compatible_models: product.compatible_models.trim(),
-    price: Number(product.price),
-    cost_price: Number(product.cost_price) || 0,
-    description: product.description.trim(),
-    slug: product.slug.trim() || slugify(product.name),
-    tags: Array.isArray(product.tags) ? product.tags : [],
-    image: product.image.trim() || getDefaultImage(product.category),
-    gallery: (product.gallery || []).filter((url) => url && !String(url).startsWith('blob:')),
-    stock: Number(product.stock) || 0,
-    featured: product.featured,
-    discount_percent: product.discount_enabled ? Number(product.discount_percent) || 0 : 0,
-    warranty: product.warranty.trim(),
-    status: statusOverride || product.status || 'published',
-  });
+  const buildPayload = (statusOverride) => {
+    const { image, gallery } = resolveProductImagesForSave(product.image, product.gallery);
+    return {
+      name: product.name.trim(),
+      category: product.category,
+      brand: product.brand,
+      compatible_models: product.compatible_models.trim(),
+      price: Number(product.price),
+      cost_price: Number(product.cost_price) || 0,
+      description: product.description.trim(),
+      slug: product.slug.trim() || slugify(product.name),
+      tags: Array.isArray(product.tags) ? product.tags : [],
+      image,
+      gallery,
+      stock: Number(product.stock) || 0,
+      featured: product.featured,
+      discount_percent: product.discount_enabled ? Number(product.discount_percent) || 0 : 0,
+      warranty: product.warranty.trim(),
+      status: statusOverride || product.status || 'published',
+    };
+  };
 
   const saveProduct = async (statusOverride) => {
-    if (uploadingImage || product.image.startsWith('blob:')) {
+    if (uploadingImage || String(product.image || '').startsWith('blob:')) {
       setMessage({ type: 'error', text: 'Photo upload complete hone ka wait karein.' });
       return null;
     }
     if (!product.name.trim() || !product.category || !Number(product.price)) {
       setMessage({ type: 'error', text: 'Name, category, and price are required.' });
+      return null;
+    }
+
+    const resolved = resolveProductImagesForSave(product.image, product.gallery);
+    const publishStatus = statusOverride || product.status || 'published';
+    if (publishStatus !== 'draft' && !resolved.image) {
+      setMessage({
+        type: 'error',
+        text: 'Product image zaroori hai — Set product image ya gallery se photo add karein.',
+      });
       return null;
     }
 
@@ -155,6 +183,12 @@ export default function AddProductForm({
         slugTouchedRef.current = true;
         setField('slug', saved.slug);
       }
+      // Keep form in sync with what was saved (promoted gallery → main)
+      setProduct((prev) => ({
+        ...prev,
+        image: saved.image || payload.image || '',
+        gallery: Array.isArray(saved.gallery) ? saved.gallery : payload.gallery,
+      }));
 
       const statusLabel = payload.status === 'draft' ? 'draft saved' : 'published';
       setMessage({
@@ -165,7 +199,7 @@ export default function AddProductForm({
       });
 
       if (!isEdit) {
-        setProduct({ ...EMPTY_PRODUCT, image: getDefaultImage('Cases'), gallery: [] });
+        setProduct({ ...EMPTY_PRODUCT, gallery: [] });
         slugTouchedRef.current = false;
       }
 
@@ -194,7 +228,9 @@ export default function AddProductForm({
     await saveProduct('published');
   };
 
-  const previewImage = product.image || getDefaultImage(product.category);
+  const previewImage = (!isDefaultProductImage(product.image) && product.image)
+    || product.gallery?.[0]
+    || getDefaultImage(product.category);
   const sidebarHint = (text) => {
     if (!text) return;
     setMessage({ type: text.includes('✓') ? 'success' : 'error', text });
@@ -408,7 +444,7 @@ export default function AddProductForm({
               gallery={product.gallery}
               uploading={uploadingImage}
               onUploadingChange={setUploadingImage}
-              onGalleryChange={(gallery) => setField('gallery', gallery)}
+              onGalleryChange={handleGalleryChange}
               onMessage={sidebarHint}
             />
             <ProductCategoriesPanel
