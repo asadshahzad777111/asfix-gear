@@ -2972,13 +2972,19 @@ export function setStorefrontImages(input, userId) {
     if (Array.isArray(input?.hero_slides)) {
       nextHero = input.hero_slides
         .slice(0, 8)
-        .map((s, i) => ({
-          id: String(s?.id || `slide-${i}`).slice(0, 40),
-          image: String(s?.image || '').trim().slice(0, 800),
-          title: String(s?.title || '').trim().slice(0, 120),
-          subtitle: String(s?.subtitle || '').trim().slice(0, 200),
-          href: String(s?.href || '/shop').trim().slice(0, 200),
-        }))
+        .map((s, i) => {
+          const productId = s?.product_id != null && s?.product_id !== ''
+            ? String(s.product_id).slice(0, 40)
+            : null;
+          return {
+            id: String(s?.id || (productId ? `product-${productId}` : `slide-${i}`)).slice(0, 40),
+            image: String(s?.image || '').trim().slice(0, 800),
+            title: String(s?.title || '').trim().slice(0, 120),
+            subtitle: String(s?.subtitle || '').trim().slice(0, 200),
+            href: String(s?.href || '/shop').trim().slice(0, 200),
+            product_id: productId,
+          };
+        })
         .filter((s) => s.image && (/^https?:\/\//i.test(s.image) || s.image.startsWith('/')));
     }
     const payload = {
