@@ -2976,9 +2976,14 @@ export function setStorefrontImages(input, userId) {
           const productId = s?.product_id != null && s?.product_id !== ''
             ? String(s.product_id).slice(0, 40)
             : null;
+          const image = String(s?.image || '').trim().slice(0, 800);
+          const mediaTypeRaw = String(s?.media_type || '').toLowerCase();
+          const looksVideo = mediaTypeRaw === 'video'
+            || /\.(mp4|webm|mov)(\?|#|$)/i.test(image);
           return {
             id: String(s?.id || (productId ? `product-${productId}` : `slide-${i}`)).slice(0, 40),
-            image: String(s?.image || '').trim().slice(0, 800),
+            image,
+            media_type: looksVideo ? 'video' : 'image',
             title: String(s?.title || '').trim().slice(0, 120),
             subtitle: String(s?.subtitle || '').trim().slice(0, 200),
             href: String(s?.href || '/shop').trim().slice(0, 200),
