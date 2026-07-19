@@ -1,10 +1,40 @@
-/** Supported UI languages — keep exactly 2 to avoid bundle bloat / syntax drift */
-export const LANGS = ['en', 'roman'];
+import { URDU_OVERRIDES } from './urduOverrides.js';
+
+/** Supported UI languages — English, Urdu (script), Roman Urdu */
+export const LANGS = ['en', 'ur', 'roman'];
 
 export const LANG_LABELS = {
   en: 'English',
-  roman: 'Roman Urdu',
+  ur: 'اردو',
+  roman: 'Roman',
 };
+
+/** Compact header symbols — EN · اردو · RO */
+export const LANG_SHORT = {
+  en: 'EN',
+  ur: 'اردو',
+  roman: 'RO',
+};
+
+function deepMerge(base, overlay) {
+  if (!overlay || typeof overlay !== 'object') return base;
+  const out = Array.isArray(base) ? [...base] : { ...base };
+  for (const [key, value] of Object.entries(overlay)) {
+    if (
+      value
+      && typeof value === 'object'
+      && !Array.isArray(value)
+      && out[key]
+      && typeof out[key] === 'object'
+      && !Array.isArray(out[key])
+    ) {
+      out[key] = deepMerge(out[key], value);
+    } else {
+      out[key] = value;
+    }
+  }
+  return out;
+}
 
 export const translations = {
   en: {
@@ -1210,6 +1240,7 @@ export const translations = {
     lang: {
       label: 'Language',
       en: 'EN',
+      ur: 'Urdu',
       roman: 'Roman',
     },
   },
@@ -2417,10 +2448,17 @@ export const translations = {
     lang: {
       label: 'Zaban',
       en: 'EN',
+      ur: 'Urdu',
       roman: 'Roman',
     },
   },
 };
+
+// Build Urdu locale: Roman Urdu base + Nastaliq overlays (key parity for i18n check)
+translations.ur = deepMerge(
+  JSON.parse(JSON.stringify(translations.roman)),
+  URDU_OVERRIDES,
+);
 
 function getNested(obj, path) {
   return path.split('.').reduce((acc, key) => (acc && acc[key] != null ? acc[key] : null), obj);
@@ -2434,7 +2472,16 @@ export function interpolate(str, vars = {}) {
 
 export function translate(lang, key, fallback = '', vars = {}) {
   const safeLang = LANGS.includes(lang) ? lang : 'en';
-  const raw = getNested(translations[safeLang], key) ?? getNested(translations.en, key);
+  const chain = safeLang === 'ur'
+    ? ['ur', 'roman', 'en']
+    : safeLang === 'roman'
+      ? ['roman', 'en']
+      : ['en'];
+  let raw = null;
+  for (const code of chain) {
+    raw = getNested(translations[code], key);
+    if (raw != null) break;
+  }
   const value = raw ?? fallback ?? key;
   if (typeof value === 'string') return interpolate(value, vars);
   if (value == null) return typeof fallback === 'string' ? fallback : key;

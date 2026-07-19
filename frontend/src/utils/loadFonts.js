@@ -18,3 +18,15 @@ export function loadDisplayFonts() {
     setTimeout(run, 1200);
   }
 }
+
+/** Noto Nastaliq for Urdu UI — loaded on demand when lang=ur */
+export function loadUrduFont() {
+  if (typeof window === 'undefined') return;
+  if (document.getElementById('asfix-urdu-font')) return;
+  const link = document.createElement('link');
+  link.id = 'asfix-urdu-font';
+  link.rel = 'stylesheet';
+  link.href =
+    'https://fonts.googleapis.com/css2?family=Noto+Nastaliq+Urdu:wght@400;500;600;700&display=swap';
+  document.head.appendChild(link);
+}

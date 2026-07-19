@@ -58,7 +58,7 @@ export default function ChatAssistant() {
   }
 
   function replyHours() {
-    const hours = lang === 'roman' ? SHOP.hours : SHOP.hoursEn;
+    const hours = lang === 'en' ? SHOP.hoursEn : SHOP.hours;
     pushBot(
       isShopOpen()
         ? t('chatbot.replies.hoursOpen', { hours })

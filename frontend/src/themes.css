@@ -335,46 +335,99 @@ html.theme-transitioning *::after {
     box-shadow 0.45s ease !important;
 }
 
-/* ── Language toggle ── */
-.lang-toggle {
+/* ── World language control — EN · اردو · RO with swipe ── */
+.lang-world {
   display: inline-flex;
   align-items: center;
-  gap: 0.12rem;
-  padding: 0.18rem 0.22rem 0.18rem 0.35rem;
-  border-radius: 999px;
-  border: 1px solid var(--glass-edge);
-  background: var(--glass);
-  backdrop-filter: var(--glass-blur);
-  -webkit-backdrop-filter: var(--glass-blur);
+  gap: 0.35rem;
   flex-shrink: 0;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  padding: 0.2rem 0.28rem 0.2rem 0.35rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--glass-edge));
+  background:
+    linear-gradient(
+      135deg,
+      color-mix(in srgb, var(--primary) 10%, transparent),
+      color-mix(in srgb, var(--bg-elevated, #16161c) 88%, transparent)
+    );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
-.lang-toggle-globe {
-  font-size: 0.72rem;
-  line-height: 1;
-  opacity: 0.85;
-  margin-right: 0.05rem;
+.lang-world-globe {
+  display: grid;
+  place-items: center;
+  width: 1.45rem;
+  height: 1.45rem;
+  border-radius: 50%;
+  color: var(--primary);
+  background: color-mix(in srgb, var(--primary) 14%, transparent);
+  flex-shrink: 0;
 }
 
-.lang-toggle-btn {
-  min-width: 2.35rem;
-  padding: 0.35rem 0.45rem;
+.lang-world-track {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.08rem;
+  padding: 0.12rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg, #0a0a0a) 55%, transparent);
+  touch-action: pan-y;
+  cursor: grab;
+  user-select: none;
+}
+
+.lang-world-track:active {
+  cursor: grabbing;
+}
+
+.lang-world-pill {
+  position: absolute;
+  top: 0.12rem;
+  bottom: 0.12rem;
+  left: 0;
+  border-radius: 999px;
+  background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%);
+  box-shadow: 0 4px 12px rgba(255, 106, 43, 0.35);
+  transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), width 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.lang-world-btn {
+  position: relative;
+  z-index: 1;
+  min-width: 2.15rem;
+  padding: 0.32rem 0.48rem;
   border: none;
   border-radius: 999px;
   background: transparent;
   color: var(--text-muted);
   font: inherit;
   font-size: 0.68rem;
-  font-weight: 700;
+  font-weight: 750;
+  letter-spacing: 0.02em;
   cursor: pointer;
-  transition: background 0.22s ease, color 0.22s ease, transform 0.2s ease;
+  transition: color 0.2s ease;
 }
 
-.lang-toggle-btn.active {
-  background: var(--primary);
+.lang-world-btn.is-active {
   color: #fff;
-  transform: translateY(-1px);
+}
+
+.lang-world-btn[data-lang='ur'] .lang-world-short {
+  font-family: 'Noto Nastaliq Urdu', 'Noto Sans Arabic', serif;
+  font-size: 0.72rem;
+  font-weight: 600;
+}
+
+/* Urdu RTL document polish */
+html[dir='rtl'] body {
+  font-family: 'Noto Nastaliq Urdu', 'Noto Sans Arabic', var(--font);
+}
+
+html[dir='rtl'] .dx-nav-link::after {
+  transform-origin: right center;
 }
 
 .lang-toggle--nav,
@@ -391,14 +444,17 @@ html.theme-transitioning *::after {
 }
 
 @media (min-width: 769px) {
-  .lang-toggle--toolbar {
+  .lang-toggle--toolbar,
+  .lang-world.lang-toggle--toolbar {
     display: inline-flex;
   }
 }
 
 @media (max-width: 768px) {
   .nav-drawer.open .lang-toggle--drawer,
-  .nav-links.open .lang-toggle--drawer {
+  .nav-links.open .lang-toggle--drawer,
+  .nav-drawer.open .lang-world.lang-toggle--drawer,
+  .nav-links.open .lang-world.lang-toggle--drawer {
     display: inline-flex;
     width: auto;
     max-width: 100%;
@@ -409,7 +465,9 @@ html.theme-transitioning *::after {
 
 @media (max-width: 1024px) {
   .nav-drawer.open .lang-toggle--drawer,
-  .nav-links.open .lang-toggle--drawer {
+  .nav-links.open .lang-toggle--drawer,
+  .nav-drawer.open .lang-world.lang-toggle--drawer,
+  .nav-links.open .lang-world.lang-toggle--drawer {
     display: inline-flex;
     width: auto;
     max-width: 100%;
