@@ -10,6 +10,7 @@ import AdminCustomers from '../components/admin/AdminCustomers';
 import AdminFeedback from '../components/admin/AdminFeedback';
 import AdminSettings from '../components/admin/AdminSettings';
 import AdminAds from '../components/admin/AdminAds';
+import AdminHeroAds from '../components/admin/AdminHeroAds';
 import '../components/admin/admin-wp.css';
 import AddProductForm from '../components/AddProductForm';
 import AdminManagement from '../components/AdminManagement';
@@ -29,7 +30,7 @@ import useLiveUpdates from '../hooks/useLiveUpdates';
 
 const VALID_TABS = new Set([
   'dashboard', 'products', 'add', 'categories', 'stock', 'orders', 'customers',
-  'bookings', 'messages', 'feedback', 'sales', 'admins', 'settings', 'payments', 'ads',
+  'bookings', 'messages', 'feedback', 'sales', 'admins', 'settings', 'payments', 'ads', 'hero',
 ]);
 
 const STOCK_FILTERS = new Set(['all', 'low_stock', 'out_of_stock']);
@@ -438,6 +439,7 @@ export default function Admin() {
     if (tab === 'settings') return 'Settings';
     if (tab === 'payments') return 'Payments';
     if (tab === 'ads') return 'Create Ad';
+    if (tab === 'hero') return 'Home Ads';
     return 'Dashboard';
   })();
 
@@ -467,10 +469,12 @@ export default function Admin() {
         onViewStock={goToStockAlerts}
         onEditProduct={handleEditProduct}
       />
-      {loading && !['add', 'admins', 'messages', 'feedback', 'sales', 'dashboard', 'settings', 'payments', 'customers', 'ads'].includes(tab) ? (
+      {loading && !['add', 'admins', 'messages', 'feedback', 'sales', 'dashboard', 'settings', 'payments', 'customers', 'ads', 'hero'].includes(tab) ? (
         <div className="wp-loading">{t('common.loading')}</div>
       ) : tab === 'dashboard' ? (
         <AdminDashboard onNavigate={navigateAdmin} />
+      ) : tab === 'hero' && showShopControl ? (
+        <AdminHeroAds />
       ) : tab === 'ads' ? (
         <AdminAds />
       ) : tab === 'settings' && showShopControl ? (

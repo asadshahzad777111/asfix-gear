@@ -144,6 +144,7 @@ export default function AdminLayout({
             {navItem('messages', t('admin.messages'))}
             {navItem('feedback', 'Reviews')}
             {navItem('ads', 'Create Ad')}
+            {showShopControl && navItem('hero', 'Home Ads')}
           </div>
 
           {(showSales || showAdminMgmt || showShopControl) && (
