@@ -5448,44 +5448,12 @@ body.modal-open .guest-welcome-banner {
   color: #f87171;
 }
 
-.account-menu-trigger {
-  display: inline-grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  min-width: 42px;
-  padding: 0;
-  border-radius: 12px;
-  border: 1px solid color-mix(in srgb, var(--primary, #ff6a2b) 35%, var(--glass-edge));
-  background: color-mix(in srgb, var(--primary, #ff6a2b) 14%, var(--bg-elevated, #fff));
-  color: var(--text);
-  cursor: pointer;
-}
-
-.account-menu-avatar {
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%);
-  color: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.92rem;
-  font-weight: 800;
-  letter-spacing: 0;
-  line-height: 1;
-  box-shadow: 0 2px 8px rgba(255, 106, 43, 0.35);
+.account-menu {
+  position: relative;
 }
 
 .account-menu-icon {
   display: none;
-}
-
-[data-theme='light'] .account-menu-trigger {
-  border-color: color-mix(in srgb, var(--primary, #ff6a2b) 40%, rgba(20, 20, 26, 0.12));
-  background: #fff;
-  box-shadow: 0 1px 0 rgba(20, 20, 26, 0.04);
 }
 
 .account-menu-dropdown {
@@ -5540,11 +5508,16 @@ body.modal-open .guest-welcome-banner {
 }
 
 .account-menu-item-icon {
+  display: inline-grid;
+  place-items: center;
   flex-shrink: 0;
   width: 1.35rem;
-  text-align: center;
-  font-size: 1rem;
-  line-height: 1;
+  height: 1.35rem;
+  color: var(--text-muted);
+}
+
+.account-menu-item-icon svg {
+  display: block;
 }
 
 .account-menu-item-label {
@@ -5558,6 +5531,11 @@ body.modal-open .guest-welcome-banner {
 .account-menu-item:focus-visible {
   background: var(--nav-hover);
   color: var(--text);
+}
+
+.account-menu-item:hover .account-menu-item-icon,
+.account-menu-item:focus-visible .account-menu-item-icon {
+  color: var(--primary, #ff6a2b);
 }
 
 .account-menu-logout {

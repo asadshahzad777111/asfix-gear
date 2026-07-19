@@ -433,7 +433,7 @@
   background: rgba(37, 211, 102, 0.12);
 }
 
-/* Account = clear letter “A” (not a faint person icon) */
+/* Unique profile mark — cut-corner ring (not gear / emoji person) */
 .dx-icon-btn--account {
   color: #fff;
   background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%);
@@ -448,12 +448,25 @@
   box-shadow: 0 6px 16px rgba(255, 106, 43, 0.4);
 }
 
-.dx-account-letter {
+.profile-mark {
+  display: block;
+  flex-shrink: 0;
+}
+
+.profile-mark--initial {
+  display: grid;
+  place-items: center;
+  border-radius: 5px 10px 5px 10px;
+  background: rgba(255, 255, 255, 0.18);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.profile-mark-letter {
   font-family: var(--hdr-font-display);
-  font-size: 1.05rem;
+  font-size: 0.82rem;
   font-weight: 800;
   line-height: 1;
-  letter-spacing: 0.02em;
+  color: #fff;
 }
 
 [data-theme='light'] .dx-icon-btn {
@@ -473,6 +486,105 @@
   background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%) !important;
   border-color: transparent !important;
   box-shadow: 0 4px 14px rgba(255, 106, 43, 0.28);
+}
+
+/* ── Slim brand rail (visible while full header is tucked) ── */
+.dx-slimline {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 399;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 2.35rem;
+  padding: 0 max(0.75rem, env(safe-area-inset-left)) 0 max(0.75rem, env(safe-area-inset-right));
+  padding-top: env(safe-area-inset-top, 0px);
+  height: calc(2.35rem + env(safe-area-inset-top, 0px));
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--hdr-bg, #0a0a0a) 96%, var(--hdr-accent, #ff6a2b)) 0%,
+      var(--hdr-bg, #0a0a0a) 100%
+    );
+  border-bottom: 1px solid color-mix(in srgb, var(--hdr-accent, #ff6a2b) 28%, transparent);
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
+  transform: translate3d(0, -110%, 0);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 0.28s ease;
+}
+
+.dx-slimline.is-visible {
+  transform: translate3d(0, 0, 0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.dx-slimline-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  text-decoration: none;
+  color: var(--hdr-text, #f4f4f5);
+  min-width: 0;
+}
+
+.dx-slimline-brand img {
+  width: 22px;
+  height: 22px;
+  object-fit: contain;
+  flex-shrink: 0;
+  border-radius: 6px;
+}
+
+.dx-slimline-wordmark {
+  font-family: var(--hdr-font-display);
+  font-size: 0.78rem;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.dx-slimline-wordmark em {
+  font-style: normal;
+  font-weight: 800;
+}
+
+.dx-slimline-ember {
+  position: absolute;
+  left: 12%;
+  right: 12%;
+  bottom: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--hdr-accent, #ff6a2b) 55%, transparent) 22%,
+    var(--hdr-accent, #ff6a2b) 50%,
+    color-mix(in srgb, var(--hdr-accent, #ff6a2b) 55%, transparent) 78%,
+    transparent 100%
+  );
+  animation: dx-slimline-shimmer 2.8s ease-in-out infinite;
+}
+
+@keyframes dx-slimline-shimmer {
+  0%, 100% { opacity: 0.55; transform: scaleX(0.92); }
+  50% { opacity: 1; transform: scaleX(1); }
+}
+
+[data-theme='light'] .dx-slimline {
+  background: linear-gradient(180deg, #fffaf6 0%, #fff 100%);
+  box-shadow: 0 6px 18px rgba(40, 20, 10, 0.08);
+  color: #14141a;
+}
+
+[data-theme='light'] .dx-slimline-brand {
+  color: #14141a;
 }
 
 /* Header chat removed — use floating FAB / bottom dock only */
@@ -1358,11 +1470,30 @@
 .navbar.navbar--dx.is-header-hidden:not(.is-menu-open) {
   transform: translate3d(0, -100%, 0);
   pointer-events: none;
+  transition:
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow var(--hdr-ease),
+    background var(--hdr-ease) !important;
 }
 
 body.cart-open .navbar.navbar--dx:not(.is-menu-open) {
   transform: translate3d(0, -100%, 0);
   pointer-events: none;
+}
+
+body.cart-open .dx-slimline,
+body.nav-open .dx-slimline {
+  transform: translate3d(0, -110%, 0) !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dx-slimline,
+  .dx-slimline-ember {
+    animation: none !important;
+    transition: none !important;
+  }
 }
 
 body.cart-open .floating-cart-backdrop,

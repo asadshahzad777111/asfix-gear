@@ -19,6 +19,7 @@ import LanguageToggle from './LanguageToggle';
 import NavSearch from './nav/NavSearch';
 import ShopMegaMenu from './nav/ShopMegaMenu';
 import { IconCart, IconHeart, IconWhatsApp } from './nav/NavIcons';
+import ProfileMark from './nav/ProfileMark';
 import { useWishlistIds } from '../hooks/useWishlist';
 import { useCart } from '../context/CartContext';
 import {
@@ -28,6 +29,7 @@ import {
 } from './NavDrawerItem';
 import { useTranslation } from '../context/LanguageContext';
 import useHeaderScrollHide from '../hooks/useHeaderScrollHide';
+import { BRAND_ACCENT } from './LogoMark';
 
 export default function Navbar() {
   const { isStaff, isCustomer, logout } = useAuth();
@@ -199,8 +201,27 @@ export default function Navbar() {
 
   const waHref = whatsappLink('Assalam o Alaikum! AsFix & Gear se baat karni hai.');
 
+  const showSlimline = headerHidden && !menuOpen && !cartOpen;
+
   return (
     <>
+      {/* Slim brand rail — stays when full header tucks away on scroll down */}
+      <div
+        className={`dx-slimline${showSlimline ? ' is-visible' : ''}`}
+        aria-hidden={!showSlimline}
+      >
+        <Link to="/" className="dx-slimline-brand" tabIndex={showSlimline ? 0 : -1}>
+          <img src="/logo.png" alt="" width="22" height="22" decoding="async" />
+          <span className="dx-slimline-wordmark">
+            <em style={{ color: BRAND_ACCENT }}>AS</em>
+            {' '}FIX{' '}
+            <em style={{ color: BRAND_ACCENT }}>&</em>
+            {' '}GEAR
+          </span>
+        </Link>
+        <span className="dx-slimline-ember" aria-hidden="true" />
+      </div>
+
       <header
         className={`navbar navbar--mobile-pro navbar--pc navbar--dx${scrolled ? ' is-scrolled' : ''}${menuOpen ? ' is-menu-open' : ''}${headerHidden ? ' is-header-hidden' : ''}`}
       >
@@ -254,7 +275,7 @@ export default function Navbar() {
                   aria-label={t('nav.signIn')}
                   title={t('nav.signIn')}
                 >
-                  <span className="dx-account-letter" aria-hidden="true">A</span>
+                  <ProfileMark size={20} />
                 </button>
               )}
 
