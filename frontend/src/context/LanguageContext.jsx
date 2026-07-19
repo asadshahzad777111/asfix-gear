@@ -1,26 +1,30 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { LANGS, translate } from '../locales/translations';
-import { loadDisplayFonts, loadUrduFont } from '../utils/loadFonts';
+import { loadDisplayFonts } from '../utils/loadFonts';
 
 const STORAGE_KEY = 'asfix-lang';
 
 const LanguageContext = createContext(null);
 
+function resolveLang(lang) {
+  if (LANGS.includes(lang)) return lang;
+  /* Legacy script-Urdu preference → Roman Urdu */
+  if (lang === 'ur') return 'roman';
+  return 'en';
+}
+
 function applyLanguage(lang) {
-  const resolved = LANGS.includes(lang) ? lang : 'en';
-  const isUrdu = resolved === 'ur';
+  const resolved = resolveLang(lang);
 
   document.documentElement.setAttribute(
     'lang',
-    resolved === 'en' ? 'en' : resolved === 'ur' ? 'ur' : 'en-PK',
+    resolved === 'en' ? 'en' : 'en-PK',
   );
-  document.documentElement.setAttribute('dir', isUrdu ? 'rtl' : 'ltr');
+  document.documentElement.setAttribute('dir', 'ltr');
 
   document.body.classList.toggle('lang-en', resolved === 'en');
-  document.body.classList.toggle('lang-ur', isUrdu);
+  document.body.classList.remove('lang-ur');
   document.body.classList.toggle('lang-roman', resolved === 'roman');
-
-  if (isUrdu) loadUrduFont();
 
   return resolved;
 }
@@ -29,11 +33,9 @@ export function LanguageProvider({ children }) {
   const [lang, setLangState] = useState(() => {
     if (typeof window === 'undefined') return 'en';
     const saved = localStorage.getItem(STORAGE_KEY);
-    if (!saved || !LANGS.includes(saved)) {
-      if (saved) localStorage.setItem(STORAGE_KEY, 'en');
-      return 'en';
-    }
-    return saved;
+    const resolved = resolveLang(saved);
+    if (saved !== resolved) localStorage.setItem(STORAGE_KEY, resolved);
+    return resolved;
   });
 
   const setLang = useCallback((next) => {

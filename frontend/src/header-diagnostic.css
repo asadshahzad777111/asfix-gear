@@ -433,34 +433,9 @@
   background: rgba(37, 211, 102, 0.12);
 }
 
-/* AsFix Assistant — unique header control (mobile + desktop) */
-.dx-icon-btn--chat {
-  color: var(--hdr-accent);
-  background: color-mix(in srgb, var(--hdr-accent) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--hdr-accent) 28%, transparent);
-}
-
-.dx-icon-btn--chat:hover,
-.dx-icon-btn--chat.is-active {
-  color: #fff;
-  background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%);
-  border-color: transparent;
-  box-shadow: 0 4px 14px rgba(255, 106, 43, 0.35);
-}
-
-@media (max-width: 859px) {
-  /* Always keep header chat visible in the top bar */
-  .navbar.navbar--dx .dx-icon-btn--chat {
-    display: inline-grid !important;
-    width: 38px;
-    height: 38px;
-    min-width: 38px;
-    border-radius: 10px;
-    color: #fff;
-    background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%);
-    border-color: transparent;
-    box-shadow: 0 4px 12px rgba(255, 106, 43, 0.35);
-  }
+/* Header chat removed — use floating FAB / bottom dock only */
+.navbar.navbar--dx .dx-icon-btn--chat {
+  display: none !important;
 }
 
 .dx-badge {

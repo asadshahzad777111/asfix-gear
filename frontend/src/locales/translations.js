@@ -1,18 +1,16 @@
 import { URDU_OVERRIDES } from './urduOverrides.js';
 
-/** Supported UI languages — English, Urdu (script), Roman Urdu */
-export const LANGS = ['en', 'ur', 'roman'];
+/** Supported UI languages — English + Roman Urdu (script Urdu hidden until ready) */
+export const LANGS = ['en', 'roman'];
 
 export const LANG_LABELS = {
   en: 'English',
-  ur: 'اردو',
   roman: 'Roman',
 };
 
-/** Compact header symbols — EN · اردو · RO */
+/** Compact header symbols — EN · RO */
 export const LANG_SHORT = {
   en: 'EN',
-  ur: 'اردو',
   roman: 'RO',
 };
 
