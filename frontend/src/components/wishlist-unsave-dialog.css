@@ -1,0 +1,208 @@
+/* Wishlist unsave confirm — branded sheet, not a blunt browser alert */
+
+.wl-unsave-overlay {
+  z-index: 1400;
+  align-items: flex-end;
+  padding: 0;
+  background: rgba(8, 8, 12, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+}
+
+@media (min-width: 560px) {
+  .wl-unsave-overlay {
+    align-items: center;
+    padding: 1.25rem;
+  }
+}
+
+.wl-unsave-panel {
+  position: relative;
+  width: min(100%, 26rem);
+  margin: 0 auto;
+  padding: 1.35rem 1.25rem 1.4rem;
+  border-radius: 22px 22px 0 0;
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255, 106, 43, 0.16), transparent 55%),
+    var(--bnav-surface, #16161c);
+  color: var(--text, #f4f4f5);
+  border: 1px solid rgba(255, 106, 43, 0.22);
+  border-bottom: none;
+  box-shadow: 0 -12px 40px rgba(0, 0, 0, 0.35);
+  overflow: hidden;
+  animation: wlUnsaveIn 0.32s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (min-width: 560px) {
+  .wl-unsave-panel {
+    border-radius: 18px;
+    border-bottom: 1px solid rgba(255, 106, 43, 0.22);
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.35);
+  }
+}
+
+[data-theme='light'] .wl-unsave-panel {
+  background:
+    radial-gradient(120% 80% at 50% 0%, rgba(255, 106, 43, 0.12), transparent 55%),
+    #fff;
+  color: #1a1410;
+  box-shadow: 0 -12px 36px rgba(15, 23, 42, 0.14);
+}
+
+.wl-unsave-glow {
+  position: absolute;
+  inset: auto 15% -30% 15%;
+  height: 50%;
+  background: radial-gradient(circle, rgba(255, 106, 43, 0.2), transparent 70%);
+  pointer-events: none;
+}
+
+.wl-unsave-media {
+  position: relative;
+  width: 4.75rem;
+  height: 4.75rem;
+  margin: 0 auto 0.95rem;
+  border-radius: 5px 16px 5px 16px;
+  overflow: hidden;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 106, 43, 0.25);
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2);
+}
+
+[data-theme='light'] .wl-unsave-media {
+  background: #f4f4f5;
+}
+
+.wl-unsave-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  display: block;
+}
+
+.wl-unsave-media-fallback {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  font-size: 1.6rem;
+  color: #ff6a2b;
+}
+
+.wl-unsave-heart {
+  position: absolute;
+  right: 0.25rem;
+  bottom: 0.25rem;
+  display: grid;
+  place-items: center;
+  width: 1.65rem;
+  height: 1.65rem;
+  border-radius: 999px;
+  color: #fff;
+  background: #ff6a2b;
+  box-shadow: 0 4px 10px rgba(255, 106, 43, 0.45);
+}
+
+.wl-unsave-eyebrow {
+  margin: 0 0 0.35rem;
+  text-align: center;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 160, 100, 0.95);
+}
+
+[data-theme='light'] .wl-unsave-eyebrow {
+  color: #c24e12;
+}
+
+.wl-unsave-panel h2 {
+  margin: 0 0 0.45rem;
+  text-align: center;
+  font-size: 1.2rem;
+  font-weight: 750;
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+.wl-unsave-desc {
+  margin: 0 auto 1.25rem;
+  max-width: 22rem;
+  text-align: center;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--muted, #a1a1aa);
+}
+
+[data-theme='light'] .wl-unsave-desc {
+  color: rgba(26, 20, 16, 0.68);
+}
+
+.wl-unsave-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.65rem;
+}
+
+.wl-unsave-btn {
+  min-height: 2.85rem;
+  padding: 0.65rem 0.85rem;
+  border: none;
+  border-radius: 5px 14px 5px 14px;
+  font: inherit;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.14s ease, box-shadow 0.14s ease, background 0.14s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.wl-unsave-btn:active {
+  transform: scale(0.97);
+}
+
+.wl-unsave-btn--keep {
+  color: var(--text, #f4f4f5);
+  background: rgba(255, 255, 255, 0.08);
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.12);
+}
+
+[data-theme='light'] .wl-unsave-btn--keep {
+  color: #1a1410;
+  background: #f3f0eb;
+  box-shadow: inset 0 0 0 1px rgba(26, 20, 16, 0.08);
+}
+
+.wl-unsave-btn--keep:focus-visible {
+  outline: 2px solid #ff6a2b;
+  outline-offset: 2px;
+}
+
+.wl-unsave-btn--remove {
+  color: #fff;
+  background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%);
+  box-shadow: 0 8px 18px rgba(255, 106, 43, 0.35);
+}
+
+.wl-unsave-btn--remove:focus-visible {
+  outline: 2px solid #ff6a2b;
+  outline-offset: 2px;
+}
+
+@keyframes wlUnsaveIn {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wl-unsave-panel {
+    animation: none;
+  }
+}
