@@ -39,24 +39,37 @@ export default function HomeHero() {
 
   useEffect(() => {
     let cancelled = false;
-    api
-      .getStorefrontImages()
-      .then((data) => {
-        if (cancelled || !data?.hero_slides?.length) return;
-        const mapped = data.hero_slides
-          .filter((s) => s?.image)
-          .map((s, i) => ({
-            id: s.id || `slide-${i}`,
-            image: s.image,
-            title: s.title || '',
-            sub: s.subtitle || '',
-            ctaTo: s.href || '/shop',
-          }));
-        if (mapped.length) setSlides(mapped);
-      })
-      .catch(() => {});
+
+    const applySlides = (data) => {
+      if (cancelled || !data?.hero_slides?.length) return;
+      const mapped = data.hero_slides
+        .filter((s) => s?.image)
+        .map((s, i) => ({
+          id: s.id || `slide-${i}`,
+          image: s.image,
+          title: s.title || '',
+          sub: s.subtitle || '',
+          ctaTo: s.href || '/shop',
+        }));
+      if (mapped.length) {
+        setSlides(mapped);
+        setIndex(0);
+      }
+    };
+
+    api.getStorefrontImages().then(applySlides).catch(() => {});
+
+    // Refresh when staff returns to the tab after editing Home Ads
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') {
+        api.getStorefrontImages().then(applySlides).catch(() => {});
+      }
+    };
+    document.addEventListener('visibilitychange', onVisible);
+
     return () => {
       cancelled = true;
+      document.removeEventListener('visibilitychange', onVisible);
     };
   }, []);
 

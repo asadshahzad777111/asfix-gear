@@ -196,6 +196,27 @@ export default function AdminHeroAds() {
       .catch(() => setStatus('Could not reload live ads.'));
   };
 
+  const resetToDefault = async () => {
+    if (!window.confirm('Remove all custom home ads? Website will show default slides again.')) return;
+    setSaving(true);
+    setStatus('');
+    try {
+      const current = await api.getStorefrontImages();
+      await api.updateStorefrontImages({
+        category_images: current?.category_images || {},
+        hero_slides: [],
+      });
+      setHeroSlides([]);
+      clearDraft();
+      setDraftRestored(false);
+      setStatus('Cleared — home page will use default slides.');
+    } catch (err) {
+      setStatus(err.message || 'Reset failed');
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <div className="wp-settings admin-hero-ads">
       <div className="wp-postbox">
@@ -380,6 +401,14 @@ export default function AdminHeroAds() {
                 Discard local draft
               </button>
             )}
+            <button
+              type="button"
+              className="wp-button wp-button--secondary"
+              onClick={resetToDefault}
+              disabled={saving || !loaded}
+            >
+              Reset to default slides
+            </button>
           </div>
           {status && (
             <p style={{ marginTop: 10, fontSize: '0.86rem', color: status.includes('fail') || status.includes('Could not') ? '#b32d2e' : '#1d2327' }}>

@@ -472,7 +472,7 @@ export default function Admin() {
       {loading && !['add', 'admins', 'messages', 'feedback', 'sales', 'dashboard', 'settings', 'payments', 'customers', 'ads', 'hero'].includes(tab) ? (
         <div className="wp-loading">{t('common.loading')}</div>
       ) : tab === 'dashboard' ? (
-        <AdminDashboard onNavigate={navigateAdmin} />
+        <AdminDashboard onNavigate={navigateAdmin} showShopControl={showShopControl} />
       ) : tab === 'hero' && showShopControl ? (
         <AdminHeroAds />
       ) : tab === 'ads' ? (
