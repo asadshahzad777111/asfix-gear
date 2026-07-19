@@ -106,7 +106,11 @@ export default function Home() {
         </>
       )}
 
-      <section className="home-section home-reviews">
+      <section
+        className="home-section home-reviews"
+        data-section-strap={t('home.reviewsTitle')}
+        id="home-reviews"
+      >
         <div className="container">
           <Reveal className="home-section-head">
             <span className="eyebrow">{t('home.reviewsEyebrow')}</span>

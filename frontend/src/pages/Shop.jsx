@@ -184,6 +184,13 @@ export default function Shop() {
       .catch(console.error);
   };
 
+  const shopStrap =
+    activeCategory !== 'all'
+      ? activeCategory
+      : activeBrandData
+        ? activeBrandData.label
+        : t('shop.title');
+
   return (
     <>
       <PageHeader
@@ -198,7 +205,12 @@ export default function Shop() {
         )}
       </PageHeader>
 
-      <section className="section" style={{ paddingTop: 0 }}>
+      <section
+        className="section"
+        style={{ paddingTop: 0 }}
+        data-section-strap={shopStrap}
+        id="shop-catalog"
+      >
         <div className="container">
           {activeBrandData && (
             <div className="active-brand-chip">

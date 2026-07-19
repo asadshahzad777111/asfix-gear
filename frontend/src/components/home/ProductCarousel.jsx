@@ -44,12 +44,18 @@ export default function ProductCarousel({ titleKey, subtitleKey, products = [], 
 
   if (products.length === 0) return null;
 
+  const strapLabel = t(titleKey);
+
   return (
-    <section className="home-section">
+    <section
+      className="home-section"
+      data-section-strap={strapLabel}
+      id={titleKey.replace(/\./g, '-')}
+    >
       <div className="container">
         <div className="home-section-head home-carousel-head">
           <div>
-            <h2 className="section-title">{t(titleKey)}</h2>
+            <h2 className="section-title">{strapLabel}</h2>
             {subtitleKey && <p className="section-subtitle">{t(subtitleKey)}</p>}
           </div>
           {products.length > 1 && (

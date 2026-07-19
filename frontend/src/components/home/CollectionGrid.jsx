@@ -37,7 +37,7 @@ export default function CollectionGrid() {
   };
 
   return (
-    <section className="home-section">
+    <section className="home-section" data-section-strap={t('home.shopCollection')} id="home-collections">
       <div className="container">
         <Reveal className="home-section-head">
           <span className="eyebrow">{t('home.collectionsEyebrow')}</span>
