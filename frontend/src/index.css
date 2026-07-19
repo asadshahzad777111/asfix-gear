@@ -1428,18 +1428,24 @@ body.is-page-transitioning .ambient-bg .ambient-dot {
     opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Top → bottom cascade: allow Y travel until revealed (overrides hover lock) */
+/* Top → bottom cascade — instant reset on leave so every re-enter can replay */
 .product-card-wrap--grid.scroll-reveal:not(.scroll-revealed) {
   opacity: 0;
   transform: translate3d(0, 48px, 0) scale(0.96) !important;
   pointer-events: none;
   will-change: transform, opacity;
+  transition: none;
 }
 
 .product-card-wrap--grid.scroll-reveal.scroll-revealed {
   opacity: 1;
   transform: none;
   will-change: auto;
+  transition:
+    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.28s ease,
+    border-color 0.25s ease;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -5863,26 +5869,19 @@ body.modal-open .guest-welcome-banner {
   border: 1px solid color-mix(in srgb, var(--mint) 25%, var(--glass-edge));
 }
 
-/* Scroll reveal — top → bottom cascade via useScrollReveal */
+/* Scroll reveal — continuous: hide instantly on leave, animate on every enter */
 .scroll-reveal {
   opacity: 0;
   transform: translate3d(0, 36px, 0);
-  transition:
-    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
-    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
+  transition: none;
 }
 
 .scroll-reveal.scroll-revealed {
   opacity: 1;
   transform: none;
-}
-
-.products-grid--reveal > .product-card-wrap.scroll-reveal {
   transition:
-    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.28s ease,
-    border-color 0.25s ease;
+    opacity 0.65s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.7s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
