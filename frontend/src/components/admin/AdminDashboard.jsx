@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 
-export default function AdminDashboard({ onNavigate }) {
+export default function AdminDashboard({ onNavigate, showShopControl = false }) {
   const [stats, setStats] = useState(null);
   const [error, setError] = useState('');
 
@@ -50,6 +50,11 @@ export default function AdminDashboard({ onNavigate }) {
         <div className="wp-postbox-head">Quick actions</div>
         <div className="wp-postbox-body wp-dashboard-actions">
           <button type="button" className="wp-button" onClick={() => onNavigate('add')}>Add new product</button>
+          {showShopControl ? (
+            <button type="button" className="wp-button wp-button--secondary" onClick={() => onNavigate('hero')}>
+              Home Ads (hero photos)
+            </button>
+          ) : null}
           <button type="button" className="wp-button wp-button--secondary" onClick={() => onNavigate('orders')}>View orders</button>
           <button type="button" className="wp-button wp-button--secondary" onClick={() => onNavigate('categories')}>Categories</button>
         </div>
