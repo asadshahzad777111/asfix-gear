@@ -18,21 +18,22 @@ export default function BrandGrid() {
             as="span"
             className="eyebrow type-line--block"
             text={t('home.brandsEyebrow')}
-            staggerMs={22}
+            staggerMs={18}
           />
           <TypeLine
             as="h2"
             className="section-title type-line--block"
             text={t('home.selectBrand')}
-            staggerMs={30}
-            delay={80}
+            staggerMs={24}
+            delay={60}
           />
           <TypeLine
             as="p"
             className="section-subtitle type-line--block"
             text={t('home.selectBrandSub')}
-            staggerMs={14}
-            delay={220}
+            mode="words"
+            staggerMs={36}
+            delay={160}
           />
         </div>
         <div className="home-brand-grid home-brand-grid--pc">
@@ -41,8 +42,8 @@ export default function BrandGrid() {
               key={brand.id}
               as="button"
               type="button"
-              from="type"
-              delay={120 + Math.min(i, 12) * 75}
+              from={i % 2 === 0 ? 'left' : 'right'}
+              delay={Math.min(i, 8) * 55}
               className="home-brand-card home-brand-card--pc"
               onClick={() => setActiveBrand(brand)}
             >

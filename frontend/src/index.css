@@ -1428,22 +1428,20 @@ body.is-page-transitioning .ambient-bg .ambient-dot {
     opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
-/* Top → bottom cascade — instant reset on leave so every re-enter can replay */
+/* Product grid reveal — smooth rise, no scale (avoids jitter) */
 .product-card-wrap--grid.scroll-reveal:not(.scroll-revealed) {
   opacity: 0;
-  transform: translate3d(0, 48px, 0) scale(0.96) !important;
+  transform: translate3d(0, 28px, 0) !important;
   pointer-events: none;
-  will-change: transform, opacity;
   transition: none;
 }
 
 .product-card-wrap--grid.scroll-reveal.scroll-revealed {
   opacity: 1;
   transform: none;
-  will-change: auto;
   transition:
-    opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
-    transform 0.75s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.55s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.58s cubic-bezier(0.22, 1, 0.36, 1),
     box-shadow 0.28s ease,
     border-color 0.25s ease;
 }
