@@ -1,7 +1,7 @@
 /* Professional cutout dock — Shop · Wishlist · [Repair FAB] · Cart · Account */
 
 :root {
-  --bottom-nav-h: 4.1rem;
+  --bottom-nav-h: 3.85rem;
   --bottom-nav-safe: env(safe-area-inset-bottom, 0px);
   --bottom-nav-total: calc(var(--bottom-nav-h) + var(--bottom-nav-safe));
   --bnav-fg: #1a1a1a;
@@ -10,6 +10,8 @@
   --bnav-accent: #ff6a2b;
   --bnav-pill: rgba(255, 106, 43, 0.14);
   --bnav-shadow: 0 -8px 28px rgba(0, 0, 0, 0.1);
+  --bnav-cut: 5px 14px 5px 14px;
+  --bnav-cut-soft: 8px 11px 8px 11px;
 }
 
 [data-theme='dark'] {
@@ -71,16 +73,16 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    padding: 0 0.2rem 0.45rem;
+    padding: 0 0.15rem 0.35rem;
     pointer-events: auto;
   }
 
   .mobile-bottom-nav__pill {
     position: absolute;
-    bottom: 0.35rem;
+    bottom: 0.28rem;
     left: 0;
-    height: 2.55rem;
-    border-radius: 999px;
+    height: 2.35rem;
+    border-radius: var(--bnav-cut);
     background: var(--bnav-pill);
     z-index: 0;
     pointer-events: none;
@@ -88,10 +90,10 @@
 
   .mobile-bottom-nav__ripple {
     position: absolute;
-    width: 2.5rem;
-    height: 2.5rem;
-    margin: -1.25rem 0 0 -1.25rem;
-    border-radius: 999px;
+    width: 2.2rem;
+    height: 2.2rem;
+    margin: -1.1rem 0 0 -1.1rem;
+    border-radius: var(--bnav-cut);
     background: radial-gradient(circle, rgba(255, 106, 43, 0.35) 0%, transparent 70%);
     z-index: 0;
     pointer-events: none;
@@ -106,25 +108,54 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.12rem;
-    min-height: 2.85rem;
-    padding: 0.25rem 0.1rem 0.1rem;
+    gap: 0.1rem;
+    min-height: 2.65rem;
+    padding: 0.2rem 0.08rem 0.05rem;
     margin: 0;
     border: 0;
     background: transparent;
     color: var(--bnav-muted);
     text-decoration: none;
     font-family: inherit;
-    font-size: 0.58rem;
+    font-size: 0.56rem;
     font-weight: 700;
     letter-spacing: 0.02em;
     line-height: 1.1;
     cursor: pointer;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
   .mobile-bottom-nav__item.is-active {
     color: var(--bnav-accent);
+  }
+
+  /* Cut mark well — sides cut on press / active (same language as Repair) */
+  .mobile-bottom-nav__cut {
+    display: grid;
+    place-items: center;
+    width: 2.35rem;
+    height: 2.05rem;
+    border-radius: var(--bnav-cut-soft);
+    background: transparent;
+    transition:
+      border-radius 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+      background 0.16s ease,
+      transform 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.16s ease;
+  }
+
+  .mobile-bottom-nav__item.is-active .mobile-bottom-nav__cut {
+    border-radius: var(--bnav-cut);
+    background: var(--bnav-pill);
+  }
+
+  .mobile-bottom-nav__item.is-cut .mobile-bottom-nav__cut,
+  .mobile-bottom-nav__item:active .mobile-bottom-nav__cut {
+    border-radius: var(--bnav-cut);
+    background: rgba(255, 106, 43, 0.2);
+    transform: scale(0.9);
+    box-shadow: inset 0 0 0 1px rgba(255, 106, 43, 0.28);
   }
 
   .mobile-bottom-nav__label {
@@ -135,7 +166,8 @@
     transition: color 0.2s ease, transform 0.2s ease;
   }
 
-  .mobile-bottom-nav__item.is-active .mobile-bottom-nav__label {
+  .mobile-bottom-nav__item.is-active .mobile-bottom-nav__label,
+  .mobile-bottom-nav__item.is-cut .mobile-bottom-nav__label {
     transform: translateY(-1px);
   }
 
@@ -147,24 +179,24 @@
   }
 
   .mobile-bottom-nav__fab-slot {
-    flex: 0 0 4.6rem;
-    width: 4.6rem;
+    flex: 0 0 3.6rem;
+    width: 3.6rem;
     pointer-events: none;
   }
 
   .mobile-bottom-nav__badge {
     position: absolute;
-    top: -0.35rem;
-    right: -0.55rem;
-    min-width: 1rem;
-    height: 1rem;
-    padding: 0 0.28rem;
+    top: -0.3rem;
+    right: -0.5rem;
+    min-width: 0.95rem;
+    height: 0.95rem;
+    padding: 0 0.24rem;
     border-radius: 999px;
     background: #121212;
     color: #fff;
-    font-size: 0.58rem;
+    font-size: 0.55rem;
     font-weight: 700;
-    line-height: 1rem;
+    line-height: 0.95rem;
     text-align: center;
     box-shadow: 0 0 0 2px var(--bnav-surface);
   }
@@ -173,51 +205,69 @@
     background: var(--bnav-accent);
   }
 
-  /* Elevated Repair FAB sitting in the cutout */
+  /* Smaller elevated Repair FAB in the dock cutout */
   .mobile-bottom-nav__fab {
     pointer-events: auto;
     position: absolute;
     left: 50%;
-    bottom: calc(var(--bottom-nav-safe) + 0.55rem);
+    bottom: calc(var(--bottom-nav-safe) + 0.4rem);
     transform: translateX(-50%);
     z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.15rem;
+    gap: 0.1rem;
     text-decoration: none;
     color: var(--bnav-muted);
-    font-size: 0.58rem;
+    font-size: 0.56rem;
     font-weight: 700;
     letter-spacing: 0.02em;
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 
   .mobile-bottom-nav__fab-orb {
     display: grid;
     place-items: center;
-    width: 3.35rem;
-    height: 3.35rem;
+    width: 2.65rem;
+    height: 2.65rem;
     border-radius: 999px;
     background: linear-gradient(145deg, #ff8a4c 0%, var(--bnav-accent) 55%, #e85a1a 100%);
     color: #fff;
     box-shadow:
-      0 10px 24px rgba(255, 106, 43, 0.42),
-      0 0 0 4px var(--bnav-surface),
+      0 8px 18px rgba(255, 106, 43, 0.4),
+      0 0 0 3px var(--bnav-surface),
       inset 0 1px 0 rgba(255, 255, 255, 0.28);
+    transition:
+      border-radius 0.16s cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 0.16s ease,
+      transform 0.16s ease;
+  }
+
+  /* Active / press: cut the sides (same cut mark language) */
+  .mobile-bottom-nav__fab.is-active .mobile-bottom-nav__fab-orb,
+  .mobile-bottom-nav.is-repair-active .mobile-bottom-nav__fab-orb {
+    border-radius: var(--bnav-cut);
+    box-shadow:
+      0 8px 20px rgba(255, 106, 43, 0.48),
+      0 0 0 3px var(--bnav-surface),
+      0 0 0 5px rgba(255, 106, 43, 0.28),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  }
+
+  .mobile-bottom-nav__fab.is-cut .mobile-bottom-nav__fab-orb,
+  .mobile-bottom-nav__fab:active .mobile-bottom-nav__fab-orb {
+    border-radius: var(--bnav-cut);
+    transform: scale(0.92);
+    box-shadow:
+      0 4px 12px rgba(255, 106, 43, 0.35),
+      0 0 0 3px var(--bnav-surface),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22);
   }
 
   .mobile-bottom-nav__fab.is-active,
   .mobile-bottom-nav.is-repair-active .mobile-bottom-nav__fab {
     color: var(--bnav-accent);
-  }
-
-  .mobile-bottom-nav__fab.is-active .mobile-bottom-nav__fab-orb {
-    box-shadow:
-      0 12px 28px rgba(255, 106, 43, 0.5),
-      0 0 0 4px var(--bnav-surface),
-      0 0 0 6px rgba(255, 106, 43, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
 
   .mobile-bottom-nav__fab-label {
@@ -262,12 +312,17 @@
 
 @media (min-width: 769px) and (max-width: 1024px) {
   :root {
-    --bottom-nav-h: 4.25rem;
+    --bottom-nav-h: 4rem;
   }
 
   .mobile-bottom-nav__item,
   .mobile-bottom-nav__fab {
-    font-size: 0.64rem;
+    font-size: 0.62rem;
+  }
+
+  .mobile-bottom-nav__fab-orb {
+    width: 2.8rem;
+    height: 2.8rem;
   }
 }
 
@@ -279,7 +334,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .mobile-bottom-nav__pill,
-  .mobile-bottom-nav__ripple {
+  .mobile-bottom-nav__ripple,
+  .mobile-bottom-nav__cut,
+  .mobile-bottom-nav__fab-orb {
     transition: none !important;
   }
 }
