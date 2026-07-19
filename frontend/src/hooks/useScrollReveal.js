@@ -4,7 +4,12 @@ import { useEffect, useRef, useState } from 'react';
  * Bidirectional scroll reveal — elements animate in when entering the viewport
  * and reset when leaving, so reverse scroll feels alive (not one-shot).
  */
-export default function useScrollReveal({ threshold = 0.15, delay = 0, disabled = false } = {}) {
+export default function useScrollReveal({
+  threshold = 0.15,
+  delay = 0,
+  disabled = false,
+  rootMargin = '0px 0px -6% 0px',
+} = {}) {
   const ref = useRef(null);
   const [revealed, setRevealed] = useState(disabled);
 
@@ -45,7 +50,7 @@ export default function useScrollReveal({ threshold = 0.15, delay = 0, disabled 
           setRevealed(false);
         }
       },
-      { threshold, rootMargin: '0px 0px -6% 0px' }
+      { threshold, rootMargin }
     );
 
     observer.observe(el);
@@ -53,7 +58,7 @@ export default function useScrollReveal({ threshold = 0.15, delay = 0, disabled 
       observer.disconnect();
       clearDelay();
     };
-  }, [threshold, delay, disabled]);
+  }, [threshold, delay, disabled, rootMargin]);
 
   return {
     ref,

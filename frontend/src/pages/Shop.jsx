@@ -270,9 +270,9 @@ export default function Shop() {
               )}
             </div>
           ) : (
-            <div className="products-grid">
-              {products.map((product) => (
-                <ProductCard key={product.id} product={product} inGrid />
+            <div className="products-grid products-grid--reveal">
+              {products.map((product, i) => (
+                <ProductCard key={product.id} product={product} inGrid revealIndex={i} />
               ))}
             </div>
           )}

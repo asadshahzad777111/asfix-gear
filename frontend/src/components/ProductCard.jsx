@@ -21,6 +21,7 @@ import { productPath as buildProductPath } from '../utils/slug';
 import ProductCardHoverActions from './ProductCardHoverActions';
 import ProductQuickView from './ProductQuickView';
 import useWishlist from '../hooks/useWishlist';
+import { getProductRevealDelay } from '../utils/productReveal';
 
 const TAP_POP = { scale: 1.06, y: -10, rotateX: -4, z: 40 };
 const TAP_SPRING = { type: 'spring', stiffness: 420, damping: 26 };
@@ -44,9 +45,11 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
   const [selected, setSelected] = useState(false);
   const [quickViewOpen, setQuickViewOpen] = useState(false);
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(product?.id);
+  const revealDelay = inGrid && revealIndex >= 0 ? getProductRevealDelay(revealIndex) : 0;
   const { ref: revealRef, revealClass } = useScrollReveal({
-    threshold: 0.12,
-    delay: revealIndex * 90,
+    threshold: 0.08,
+    rootMargin: '0px 0px -8% 0px',
+    delay: revealDelay,
     disabled: !inGrid || revealIndex < 0,
   });
   const { popClass, popping, handleProductLinkClick, linkPopHandlers } = useProductPop();

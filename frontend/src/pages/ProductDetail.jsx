@@ -285,7 +285,7 @@ export default function ProductDetail() {
           {related.length > 0 ? (
             <section className="product-detail-related" aria-labelledby="related-products-heading">
               <h2 id="related-products-heading">{t('product.relatedTitle')}</h2>
-              <div className="products-grid">
+              <div className="products-grid products-grid--reveal">
                 {related.map((p, idx) => (
                   <ProductCard key={p.id} product={p} inGrid revealIndex={idx} />
                 ))}
