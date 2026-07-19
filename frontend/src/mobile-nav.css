@@ -378,6 +378,7 @@
   body.nav-open .gaming-mode-btn--trigger,
   body.nav-open .whatsapp-float,
   body.nav-open .chat-fab-trigger,
+  body.nav-open .chat-sideboard,
   body.nav-open .chat-assistant-panel,
   body.nav-open .floating-repair-btn,
   body.nav-open .staff-access,
@@ -392,8 +393,9 @@
     transform: translate3d(0, 110%, 0) !important;
   }
 
-  body.nav-open .chat-fab-trigger {
-    transform: translate3d(0, 14px, 0) scale(0.9) !important;
+  body.nav-open .chat-fab-trigger,
+  body.nav-open .chat-sideboard {
+    transform: translate3d(-18px, -50%, 0) !important;
   }
 
   .nav-drawer a:not(.nav-drawer-accordion-link):not(.dx-drawer-cta),
