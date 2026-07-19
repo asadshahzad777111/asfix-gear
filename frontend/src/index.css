@@ -5600,12 +5600,16 @@ body.modal-open .guest-welcome-banner {
   padding-top: 0.75rem;
 }
 
-/* Guest welcome banner — stick below navbar, not over it */
+/* Guest welcome banner — stick just under the real mobile header height */
 .guest-welcome-banner {
   position: sticky;
-  top: var(--guest-banner-top, 0);
-  z-index: 85;
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), rgba(34, 197, 94, 0.1));
+  top: var(--guest-banner-top, var(--nav-mobile-bar-h, 0px));
+  z-index: 390;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 16%, transparent),
+    color-mix(in srgb, var(--primary) 6%, transparent)
+  );
   border-bottom: 1px solid var(--glass-edge);
   backdrop-filter: blur(8px);
 }

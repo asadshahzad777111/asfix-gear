@@ -268,10 +268,26 @@
 
   .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
     bottom: var(--float-stack-0) !important;
+    z-index: 1165 !important;
   }
 
   .app:not(.app--admin):not(.app--gaming) .staff-access {
     bottom: var(--float-stack-1) !important;
+    z-index: 1164 !important;
+  }
+
+  .app:not(.app--admin):not(.app--gaming) .fab-add {
+    bottom: calc(var(--float-stack-1) + 0.15rem) !important;
+    right: var(--float-dock-right, 0.65rem) !important;
+    z-index: 1163 !important;
+  }
+
+  .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
+    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.55rem) !important;
+    bottom: calc(
+      var(--float-dock-bottom) + var(--float-dock-size, 3.15rem) + 0.75rem
+    ) !important;
+    z-index: 1170 !important;
   }
 
   .app:not(.app--admin):not(.app--gaming) .app-main {

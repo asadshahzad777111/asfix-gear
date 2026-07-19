@@ -25,15 +25,16 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .chat-fab-trigger {
     top: auto;
     left: auto;
-    bottom: var(--float-stack-1);
+    bottom: var(--float-stack-0, var(--float-dock-bottom));
     right: var(--float-dock-right, 0.65rem);
     width: var(--float-dock-size, 3.15rem);
     height: var(--float-dock-size, 3.15rem);
-    z-index: 201;
+    /* Above mobile bottom nav (1150) so the shadow FAB stays visible/tappable */
+    z-index: 1165;
     transform: translateZ(0);
     pointer-events: auto;
   }
@@ -319,22 +320,27 @@
   cursor: default;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 1024px) {
   .chat-assistant-panel {
     position: fixed;
+    /* Pin between real header and float FAB — never tuck under either nav */
+    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.55rem);
     right: var(--float-dock-right, 0.65rem);
     left: var(--float-dock-right, 0.65rem);
+    bottom: calc(
+      var(--float-dock-bottom, 1.25rem) + var(--float-dock-size, 3.15rem) + 0.75rem
+    );
     width: auto;
-    bottom: calc(var(--float-stack-1) + var(--float-dock-size, 3.15rem) + var(--float-dock-gap, 0.75rem));
-    max-height: min(70vh, calc(100dvh - var(--float-dock-row, 16rem) - var(--nav-height, 64px) - 1rem));
-    z-index: 201;
+    max-height: none;
+    height: auto;
+    z-index: 1170;
     display: flex;
     flex-direction: column;
     padding: 0;
     overflow: hidden;
-    border-radius: 20px;
+    border-radius: 18px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-    animation: chatPanelIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: chatPanelIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
   }
 }
 

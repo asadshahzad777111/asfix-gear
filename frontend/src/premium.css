@@ -293,8 +293,8 @@ body.custom-cursor-active {
 
 @media (min-width: 769px) {
   .staff-access {
-    bottom: 10rem;
-    z-index: 210;
+    bottom: var(--float-stack-1, 10rem);
+    z-index: 1164;
   }
 
   .staff-access.is-open {
@@ -306,6 +306,8 @@ body.custom-cursor-active {
     background: var(--nav-menu-solid, var(--bg-card)) !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+    max-height: min(70dvh, calc(100dvh - var(--nav-mobile-bar-h, 7rem) - 6rem));
+    overflow: auto;
   }
 }
 

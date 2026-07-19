@@ -664,6 +664,15 @@
 
 /* ── Mobile / tablet (<860px) ── */
 @media (max-width: 859px) {
+  :root {
+    --hdr-mobile-utility-h: 3.5rem;
+    --hdr-mobile-search-h: 3.35rem;
+    --nav-mobile-bar-h: calc(
+      var(--hdr-mobile-utility-h) + var(--hdr-mobile-search-h) + env(safe-area-inset-top, 0px)
+    );
+    --guest-banner-top: var(--nav-mobile-bar-h);
+  }
+
   .dx-utility-inner {
     grid-template-columns: 40px minmax(0, 1fr) auto;
     gap: 0.45rem;
