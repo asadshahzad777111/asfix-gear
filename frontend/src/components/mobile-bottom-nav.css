@@ -38,48 +38,6 @@
     transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
   }
 
-  /* AI chat — fully above the dock on the LEFT (never under Account on the right) */
-  .mobile-bottom-nav__chat {
-    position: absolute;
-    left: max(0.85rem, env(safe-area-inset-left, 0px) + 0.65rem);
-    bottom: calc(var(--bottom-nav-h) + 0.85rem);
-    z-index: 5;
-    pointer-events: auto;
-    display: grid;
-    place-items: center;
-    width: 3.15rem;
-    height: 3.15rem;
-    margin: 0;
-    padding: 0;
-    border: none;
-    border-radius: 5px 14px 5px 14px;
-    color: #fff;
-    background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 52%, #e04e00 100%);
-    box-shadow:
-      0 8px 20px rgba(255, 106, 43, 0.4),
-      inset 0 1px 0 rgba(255, 255, 255, 0.22);
-    cursor: pointer;
-    -webkit-tap-highlight-color: transparent;
-    touch-action: manipulation;
-  }
-
-  .mobile-bottom-nav__chat.is-open {
-    background: linear-gradient(145deg, #1f1612 0%, #2c1c14 100%);
-    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35);
-  }
-
-  .mobile-bottom-nav__chat:active {
-    transform: scale(0.96);
-  }
-
-  /* Belt-and-suspenders: floating FAB must never peek under Account */
-  .chat-fab-trigger {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    opacity: 0 !important;
-  }
-
   .mobile-bottom-nav.is-cart-open {
     transform: translateY(110%);
     opacity: 0;
@@ -324,7 +282,7 @@
 
   .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
     top: calc(var(--nav-mobile-bar-h, 7rem) + 0.45rem) !important;
-    bottom: calc(var(--bottom-nav-total, 4.1rem) + 4.2rem) !important;
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 4.75rem) !important;
     z-index: 1170 !important;
   }
 

@@ -271,9 +271,7 @@
     right: var(--float-dock-right, 1rem) !important;
   }
 
-  .chat-fab-trigger {
-    display: none !important;
-  }
+  /* Chat FAB geometry lives in chat-assistant.css (fixed above bottom nav) */
 
   .staff-access {
     bottom: var(--float-stack-2);

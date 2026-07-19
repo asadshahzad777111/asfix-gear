@@ -35,16 +35,44 @@
   }
 }
 
-/* Mobile/tablet: no floating FAB (DOM also omitted) — use bottom-nav left chat + header */
+/*
+  Mobile/tablet: pin chat FAB ABOVE the bottom nav (left).
+  Must stay outside the nav (nav uses transform) so fixed coords are viewport-relative.
+*/
 @media (max-width: 1024px) {
-  .chat-fab-trigger {
-    display: none !important;
-    visibility: hidden !important;
-    pointer-events: none !important;
-    width: 0 !important;
-    height: 0 !important;
+  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
+    display: grid !important;
+    position: fixed !important;
+    top: auto !important;
+    right: auto !important;
+    left: max(0.85rem, env(safe-area-inset-left, 0px) + 0.65rem) !important;
+    /* Clear full dock height + gap so the whole button sits above the bar */
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 1.15rem) !important;
+    width: 3.25rem !important;
+    height: 3.25rem !important;
+    z-index: 1165 !important;
+    border: none !important;
+    border-radius: 5px 14px 5px 14px !important;
+    color: #fff !important;
+    background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 52%, #e04e00 100%) !important;
+    box-shadow:
+      0 8px 22px rgba(255, 106, 43, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translateZ(0);
+  }
+
+  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger.is-open {
+    background: linear-gradient(145deg, #1f1612 0%, #2c1c14 100%) !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  body.cart-open .chat-fab-trigger,
+  body.nav-open .chat-fab-trigger {
     opacity: 0 !important;
-    overflow: hidden !important;
+    pointer-events: none !important;
   }
 
   .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
@@ -52,7 +80,8 @@
     top: calc(var(--nav-mobile-bar-h, 7rem) + 0.45rem);
     right: 0.65rem;
     left: 0.65rem;
-    bottom: calc(var(--bottom-nav-total, 4.1rem) + 0.75rem);
+    /* Clear bottom nav + chat FAB so the popup never sits under the bar */
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 4.75rem);
     width: auto;
     max-height: none;
     height: auto;

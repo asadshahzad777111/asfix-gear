@@ -133,7 +133,7 @@
     animation: none !important;
   }
 
-  /* Mobile chat FAB is omitted — control lives in bottom nav (left) + header */
+  /* Mobile chat FAB: fixed above bottom nav — see chat-assistant.css */
 
   .floating-repair-btn {
     background: var(--hdr-bg-elevated, var(--bg-elevated)) !important;
