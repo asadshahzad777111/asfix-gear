@@ -5,6 +5,7 @@ import { api } from '../../api/client';
 import { useTranslation } from '../../context/LanguageContext';
 import PhoneFinderModal from '../PhoneFinderModal';
 import ConnectReveal from '../motion/ConnectReveal';
+import TypeLine from '../motion/TypeLine';
 
 const COLLECTION_HINTS = {
   Cases: 'home.collectionCases',
@@ -39,19 +40,36 @@ export default function CollectionGrid() {
   return (
     <section className="home-section" data-section-strap={t('home.shopCollection')} id="home-collections">
       <div className="container">
-        <ConnectReveal className="home-section-head" from="line">
-          <span className="eyebrow">{t('home.collectionsEyebrow')}</span>
-          <h2 className="section-title">{t('home.shopCollection')}</h2>
-          <p className="section-subtitle">{t('home.shopCollectionSub')}</p>
-        </ConnectReveal>
+        <div className="home-section-head home-type-head">
+          <TypeLine
+            as="span"
+            className="eyebrow type-line--block"
+            text={t('home.collectionsEyebrow')}
+            staggerMs={22}
+          />
+          <TypeLine
+            as="h2"
+            className="section-title type-line--block"
+            text={t('home.shopCollection')}
+            staggerMs={30}
+            delay={80}
+          />
+          <TypeLine
+            as="p"
+            className="section-subtitle type-line--block"
+            text={t('home.shopCollectionSub')}
+            staggerMs={14}
+            delay={220}
+          />
+        </div>
         <div className="home-collection-grid">
           {HOME_COLLECTIONS.map((category, i) => (
             <ConnectReveal
               key={category}
               as="button"
               type="button"
-              from={i % 2 === 0 ? 'left' : 'right'}
-              delay={Math.min(i, 6) * 60}
+              from="type"
+              delay={140 + Math.min(i, 8) * 85}
               onClick={() => handleClick(category)}
               className="home-collection-card"
             >

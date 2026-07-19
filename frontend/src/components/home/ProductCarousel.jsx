@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import HomeProductCard from './HomeProductCard';
 import { useTranslation } from '../../context/LanguageContext';
-import ConnectReveal from '../motion/ConnectReveal';
+import TypeLine from '../motion/TypeLine';
 
 const AUTO_SCROLL_MS = 3500;
 
