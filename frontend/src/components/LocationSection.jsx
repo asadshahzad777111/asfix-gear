@@ -2,6 +2,7 @@ import { SHOP, whatsappLink } from '../config/shop';
 import { buildContactPrefill } from '../utils/contactPrefill';
 import OpenBadge from './OpenBadge';
 import { useTranslation } from '../context/LanguageContext';
+import ConnectReveal from './motion/ConnectReveal';
 
 const GENERAL_WHATSAPP_HREF = whatsappLink(buildContactPrefill({ type: 'general' }).message);
 
@@ -11,13 +12,13 @@ export default function LocationSection({ showMap = true }) {
   return (
     <section className="location-section" data-section-strap={t('location.title')} id="home-location">
       <div className="container">
-        <div className="section-head">
+        <ConnectReveal className="section-head" from="line">
           <span className="eyebrow">📍 {t('location.eyebrow')}</span>
           <h2 className="section-title">{t('location.title')}</h2>
           <p className="section-subtitle">
             {t('location.subtitle', { shop: SHOP.name })}
           </p>
-        </div>
+        </ConnectReveal>
 
         <div className="location-grid">
           <div className="location-info glass-card">
