@@ -608,7 +608,7 @@ export default function AdminHeroAds() {
         <div className="wp-postbox-head">Products → Home Ad</div>
         <div className="wp-postbox-body">
           <p style={{ fontSize: '0.84rem', color: '#50575e', marginTop: 0 }}>
-            Niche se product choose karo — uski image + name slider pe aa jayegi. Phir upar Save Home Ads dabao.
+            Product tap karo — image + name add hogi aur auto-save ho jayegi. Title edit ke baad sticky Save changes use karo.
           </p>
           <label style={{ display: 'block', marginBottom: '0.75rem' }}>
             <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>Search products</span>
