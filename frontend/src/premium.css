@@ -1229,44 +1229,50 @@ body.custom-cursor-active {
   overflow: hidden;
   margin-bottom: 1rem;
   border: 1px solid var(--border);
+  background: var(--surface, #111118);
 }
 
+.case-previewer-stage--full {
+  background: #0c0c10;
+}
+
+[data-theme='light'] .case-previewer-stage--full {
+  background: #f4f4f5;
+}
+
+.case-previewer-full-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Legacy phone-frame styles kept inert — no notch / colored wash */
 .case-previewer-bg {
-  position: absolute;
-  inset: 0;
-  will-change: opacity;
+  display: none !important;
 }
 
 .case-previewer-phone {
   position: absolute;
-  inset: 12%;
-  border-radius: 28px;
-  border: 3px solid;
+  inset: 0;
+  border: none;
+  border-radius: 0;
   overflow: hidden;
-  background: #0a0a12;
+  background: transparent;
   display: flex;
   align-items: center;
   justify-content: center;
-  transform-style: preserve-3d;
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.45);
+  box-shadow: none;
 }
 
 .case-previewer-notch {
-  position: absolute;
-  top: 8px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 28%;
-  height: 5%;
-  background: #000;
-  border-radius: 999px;
-  z-index: 2;
+  display: none !important;
 }
 
 .case-previewer-phone img {
   width: 100%;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   max-width: 100%;
 }
 
@@ -1417,11 +1423,7 @@ body.custom-cursor-active {
 }
 
 .premium-case-back-plate {
-  position: absolute;
-  inset: 12%;
-  border-radius: 16px;
-  background: linear-gradient(135deg, rgba(255, 107, 44, 0.25), rgba(0, 245, 212, 0.15));
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  display: none;
 }
 
 /* Cart landing bounce — header + legacy float trigger */
@@ -2100,7 +2102,7 @@ body.custom-cursor-active {
   }
 
   .case-previewer-phone {
-    inset: 10%;
+    inset: 0;
   }
 }
 

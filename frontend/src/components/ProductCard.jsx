@@ -212,19 +212,7 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
               {animKind === 'pouch' && <span className="premium-pouch-flap" />}
             </div>
           )}
-          {animKind === 'case' && !inGrid ? (
-            <div className={`premium-case-flip ${hovered || selected ? 'is-flipped' : ''}`}>
-              <div className="premium-case-face premium-case-face--front">
-                {renderCardImage()}
-              </div>
-              <div className="premium-case-face premium-case-face--back">
-                <span className="premium-case-back-plate" />
-                <small>{t('product.premiumFinish')}</small>
-              </div>
-            </div>
-          ) : (
-            renderCardImage('product-grid-img')
-          )}
+          {renderCardImage(inGrid ? 'product-grid-img' : undefined)}
           {!inGrid && animKind === 'charger' && hovered && (
             <span className="premium-charge-bolt">⚡</span>
           )}
