@@ -82,7 +82,7 @@ export default function MobileBottomNav() {
       aria-label="Quick navigation"
       aria-hidden={cartOpen ? 'true' : undefined}
     >
-      {/* Repair floats above the dock — glow clipped to orb size, no pop animation */}
+      {/* Repair nestled in the saddle cutout — part of the navbar composition */}
       <NavLink
         to="/repair"
         className={() =>
@@ -104,6 +104,26 @@ export default function MobileBottomNav() {
 
       <div className="mobile-bottom-nav__dock">
         <div className="mobile-bottom-nav__glass" aria-hidden="true" />
+        <svg
+          className="mobile-bottom-nav__cutout"
+          viewBox="0 0 390 76"
+          preserveAspectRatio="none"
+          aria-hidden="true"
+        >
+          <path
+            className="mobile-bottom-nav__cutout-fill"
+            d="M0 24
+               C0 10.7 10.7 0 24 0
+               H132
+               C143 0 151 7 155 16
+               C163 36 176 50 195 50
+               C214 50 227 36 235 16
+               C239 7 247 0 258 0
+               H366
+               C379.3 0 390 10.7 390 24
+               V76 H0 Z"
+          />
+        </svg>
 
         <div className="mobile-bottom-nav__items">
           <NavLink
