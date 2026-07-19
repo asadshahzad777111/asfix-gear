@@ -17,11 +17,11 @@
   --hdr-font-display: 'Space Grotesk', 'Plus Jakarta Sans', system-ui, sans-serif;
   --hdr-font: 'Inter', system-ui, -apple-system, sans-serif;
   --hdr-ease: 180ms ease;
-  /* Roomier, near-full-bleed desktop header */
+  /* Near full-bleed laptop header */
   --hdr-utility-h: 82px;
   --hdr-nav-h: 54px;
-  --hdr-shell-max: 1680px;
-  --hdr-shell-pad: clamp(1.1rem, 2.4vw, 2.75rem);
+  --hdr-shell-max: 1920px;
+  --hdr-shell-pad: clamp(0.65rem, 1.2vw, 1.35rem);
 }
 
 [data-theme='light'] {
@@ -433,7 +433,7 @@
   background: rgba(37, 211, 102, 0.12);
 }
 
-/* Unique profile mark — cut-corner ring (not gear / emoji person) */
+/* Settings / account — orange chip, settings mark (not name letter) */
 .dx-icon-btn--account {
   color: #fff;
   background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%);
@@ -448,25 +448,77 @@
   box-shadow: 0 6px 16px rgba(255, 106, 43, 0.4);
 }
 
-.profile-mark {
-  display: block;
-  flex-shrink: 0;
-}
-
-.profile-mark--initial {
+/* Dual-face hover morph — live swap between idle / hover icons */
+.dx-morph {
+  position: relative;
   display: grid;
   place-items: center;
-  border-radius: 5px 10px 5px 10px;
-  background: rgba(255, 255, 255, 0.18);
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  width: 1.3rem;
+  height: 1.3rem;
 }
 
-.profile-mark-letter {
-  font-family: var(--hdr-font-display);
-  font-size: 0.82rem;
-  font-weight: 800;
-  line-height: 1;
-  color: #fff;
+.dx-morph__face {
+  grid-area: 1 / 1;
+  display: grid;
+  place-items: center;
+  transition:
+    opacity 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    filter 0.28s ease;
+}
+
+.dx-morph__face--idle {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+.dx-morph__face--hover {
+  opacity: 0;
+  transform: scale(0.45) rotate(-28deg);
+  filter: blur(1px);
+}
+
+.dx-icon-btn--morph:hover .dx-morph__face--idle,
+.dx-icon-btn--morph:focus-visible .dx-morph__face--idle,
+.account-menu-trigger[aria-expanded='true'] .dx-morph__face--idle {
+  opacity: 0;
+  transform: scale(0.45) rotate(28deg);
+  filter: blur(1px);
+}
+
+.dx-icon-btn--morph:hover .dx-morph__face--hover,
+.dx-icon-btn--morph:focus-visible .dx-morph__face--hover,
+.account-menu-trigger[aria-expanded='true'] .dx-morph__face--hover {
+  opacity: 1;
+  transform: scale(1.08) rotate(0deg);
+  filter: blur(0);
+}
+
+.dx-icon-btn--morph:hover {
+  transform: translateY(-1px);
+}
+
+.dx-icon-btn--wishlist:hover {
+  color: #ff4d6d;
+  background: rgba(255, 77, 109, 0.12);
+  border-color: rgba(255, 77, 109, 0.28);
+}
+
+.dx-icon-btn--cart:hover {
+  color: var(--hdr-accent);
+  background: var(--hdr-accent-soft);
+  border-color: color-mix(in srgb, var(--hdr-accent) 30%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dx-morph__face {
+    transition: opacity 0.15s ease !important;
+    filter: none !important;
+  }
+
+  .dx-icon-btn--morph:hover {
+    transform: none;
+  }
 }
 
 [data-theme='light'] .dx-icon-btn {
@@ -872,14 +924,26 @@
   }
 }
 
-@media (min-width: 1440px) {
+@media (min-width: 1280px) {
   .navbar.navbar--dx .container.dx-utility-inner,
-  .navbar.navbar--dx .container.dx-nav-inner {
-    width: min(1760px, calc(100% - 3rem));
+  .navbar.navbar--dx .container.dx-nav-inner,
+  .navbar.navbar--dx .dx-search-row .container {
+    width: min(1920px, calc(100% - 1.5rem));
   }
 
   .navbar.navbar--dx .dx-search--desktop {
-    max-width: min(820px, 100%);
+    max-width: min(860px, 100%);
+  }
+}
+
+@media (min-width: 1600px) {
+  .navbar.navbar--dx .container.dx-utility-inner,
+  .navbar.navbar--dx .container.dx-nav-inner {
+    width: min(2200px, calc(100% - 1.25rem));
+  }
+
+  .navbar.navbar--dx .dx-search--desktop {
+    max-width: min(980px, 100%);
   }
 }
 

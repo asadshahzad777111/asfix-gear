@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
-import ProfileMark from './nav/ProfileMark';
+import MorphIcon from './nav/MorphIcon';
+import { IconSettings, IconSettingsSpin } from './nav/NavIcons';
 
 function IconOrders() {
   return (
@@ -97,8 +98,6 @@ export default function AccountMenu({ className = '' }) {
 
   if (!isCustomer || !user) return null;
 
-  const initial = (user.name || user.username || 'A')[0].toUpperCase();
-
   const handleLogout = async () => {
     setOpen(false);
     await logout();
@@ -115,13 +114,17 @@ export default function AccountMenu({ className = '' }) {
     <div className={`account-menu ${className}`} ref={menuRef}>
       <button
         type="button"
-        className="account-menu-trigger dx-icon-btn dx-icon-btn--account"
+        className="account-menu-trigger dx-icon-btn dx-icon-btn--account dx-icon-btn--morph"
         onClick={() => setOpen((v) => !v)}
         aria-expanded={open}
         aria-haspopup="true"
         aria-label={t('nav.accountMenu')}
+        title={t('nav.accountMenu')}
       >
-        <ProfileMark size={22} initial={initial} />
+        <MorphIcon
+          idle={<IconSettings size={20} />}
+          hover={<IconSettingsSpin size={20} />}
+        />
       </button>
 
       {open && (
