@@ -54,10 +54,23 @@ export default function ProductCarousel({ titleKey, subtitleKey, products = [], 
       id={titleKey.replace(/\./g, '-')}
     >
       <div className="container">
-        <ConnectReveal className="home-section-head home-carousel-head" from="line">
+        <div className="home-section-head home-carousel-head home-type-head">
           <div>
-            <h2 className="section-title">{strapLabel}</h2>
-            {subtitleKey && <p className="section-subtitle">{t(subtitleKey)}</p>}
+            <TypeLine
+              as="h2"
+              className="section-title type-line--block"
+              text={strapLabel}
+              staggerMs={28}
+            />
+            {subtitleKey && (
+              <TypeLine
+                as="p"
+                className="section-subtitle type-line--block"
+                text={t(subtitleKey)}
+                staggerMs={14}
+                delay={160}
+              />
+            )}
           </div>
           {products.length > 1 && (
             <div className="home-carousel-nav" role="group" aria-label="Carousel controls">
@@ -79,7 +92,7 @@ export default function ProductCarousel({ titleKey, subtitleKey, products = [], 
               </button>
             </div>
           )}
-        </ConnectReveal>
+        </div>
         <div
           className="home-carousel-wrap"
           onMouseEnter={() => setPaused(true)}
