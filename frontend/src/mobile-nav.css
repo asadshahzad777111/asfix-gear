@@ -44,7 +44,8 @@
     min-width: 0;
   }
 
-  .brand-logo-svg {
+  .brand-logo-svg,
+  .brand-logo-img {
     width: 38px !important;
     height: 38px !important;
   }
