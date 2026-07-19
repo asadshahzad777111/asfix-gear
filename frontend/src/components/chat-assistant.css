@@ -35,40 +35,16 @@
   }
 }
 
-/*
-  Mobile / tablet: pin assistant on the LEFT above the bottom dock.
-  Never sit under Account on the right.
-*/
+/* Mobile/tablet: no floating FAB (DOM also omitted) — use bottom-nav left chat + header */
 @media (max-width: 1024px) {
-  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
-    display: grid !important;
-    top: auto !important;
-    right: auto !important;
-    left: max(0.75rem, env(safe-area-inset-left, 0px) + 0.75rem) !important;
-    bottom: calc(var(--bottom-nav-total, 4.1rem) + 0.85rem) !important;
-    width: 3.2rem !important;
-    height: 3.2rem !important;
-    z-index: 1165 !important;
-    border: none !important;
-    border-radius: 5px 14px 5px 14px !important;
-    color: #fff !important;
-    background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 52%, #e04e00 100%) !important;
-    box-shadow:
-      0 8px 22px rgba(255, 106, 43, 0.42),
-      0 0 0 1px rgba(255, 255, 255, 0.12) inset !important;
-    transform: translateZ(0);
-    pointer-events: auto !important;
-  }
-
-  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger.is-open {
-    background: linear-gradient(145deg, #1a1410 0%, #2a1c14 100%) !important;
-    box-shadow: 0 8px 22px rgba(0, 0, 0, 0.35) !important;
-  }
-
-  body.cart-open .chat-fab-trigger,
-  body.nav-open .chat-fab-trigger {
-    opacity: 0;
+  .chat-fab-trigger {
+    display: none !important;
+    visibility: hidden !important;
     pointer-events: none !important;
+    width: 0 !important;
+    height: 0 !important;
+    opacity: 0 !important;
+    overflow: hidden !important;
   }
 
   .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {

@@ -271,14 +271,8 @@
     right: var(--float-dock-right, 1rem) !important;
   }
 
-  /* Chat stays LEFT above bottom dock on tablet too */
   .chat-fab-trigger {
-    left: max(0.75rem, env(safe-area-inset-left, 0px) + 0.75rem) !important;
-    right: auto !important;
-    bottom: calc(var(--bottom-nav-total, 4.25rem) + 0.85rem) !important;
-    width: 3.2rem;
-    height: 3.2rem;
-    z-index: 1165;
+    display: none !important;
   }
 
   .staff-access {

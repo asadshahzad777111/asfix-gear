@@ -20,8 +20,20 @@ export default function ChatAssistant() {
   const [input, setInput] = useState('');
   const [pending, setPending] = useState(null); // null | 'track' | 'product'
   const [thinking, setThinking] = useState(false);
+  /** Desktop only — mobile uses .mobile-bottom-nav__chat + header icon */
+  const [showDesktopFab, setShowDesktopFab] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(min-width: 1025px)').matches : false
+  );
   const bodyRef = useRef(null);
   const inputRef = useRef(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1025px)');
+    const sync = () => setShowDesktopFab(mq.matches);
+    sync();
+    mq.addEventListener('change', sync);
+    return () => mq.removeEventListener('change', sync);
+  }, []);
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -226,22 +238,24 @@ export default function ChatAssistant() {
 
   return (
     <>
-      {/* Desktop: bottom-right FAB. Mobile: left above bottom dock (never under Account). */}
-      <button
-        type="button"
-        className={`chat-fab-trigger ${open ? 'is-open' : ''}`}
-        aria-label={t('chatbot.fabAria')}
-        aria-expanded={open}
-        onClick={toggle}
-      >
-        {open ? (
-          <span className="chat-fab-close" aria-hidden="true">✕</span>
-        ) : (
-          <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
-            <path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.62 1.31 4.96 3.39 6.57-.09.86-.37 2.32-1.19 3.63a.5.5 0 0 0 .57.74c1.9-.5 3.36-1.36 4.15-1.92.99.26 2.04.4 3.08.4 5.52 0 10-3.94 10-8.8S17.52 2 12 2Z" />
-          </svg>
-        )}
-      </button>
+      {/* Desktop FAB only — on phone/tablet the float sat under Account in the bottom nav */}
+      {showDesktopFab && (
+        <button
+          type="button"
+          className={`chat-fab-trigger ${open ? 'is-open' : ''}`}
+          aria-label={t('chatbot.fabAria')}
+          aria-expanded={open}
+          onClick={toggle}
+        >
+          {open ? (
+            <span className="chat-fab-close" aria-hidden="true">✕</span>
+          ) : (
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="currentColor" aria-hidden="true">
+              <path d="M12 2C6.48 2 2 5.94 2 10.8c0 2.62 1.31 4.96 3.39 6.57-.09.86-.37 2.32-1.19 3.63a.5.5 0 0 0 .57.74c1.9-.5 3.36-1.36 4.15-1.92.99.26 2.04.4 3.08.4 5.52 0 10-3.94 10-8.8S17.52 2 12 2Z" />
+            </svg>
+          )}
+        </button>
+      )}
 
       {open && (
         <div className="chat-assistant-panel glass-card" role="dialog" aria-label={t('chatbot.title')}>

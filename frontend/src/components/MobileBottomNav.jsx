@@ -3,8 +3,10 @@ import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { motion, useReducedMotion } from 'framer-motion';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useChatAssistant } from '../context/ChatAssistantContext';
 import { useWishlistIds } from '../hooks/useWishlist';
-import { IconCart, IconHeart, IconShop, IconUser } from './nav/NavIcons';
+import { useTranslation } from '../context/LanguageContext';
+import { IconCart, IconChat, IconHeart, IconShop, IconUser } from './nav/NavIcons';
 import './mobile-bottom-nav.css';
 
 /** Warm route chunks on press so navigation feels instant. */
@@ -48,6 +50,8 @@ export default function MobileBottomNav() {
   const { count: cartCount, setOpen: setCartOpen, open: cartOpen } = useCart();
   const { count: wishlistCount } = useWishlistIds();
   const { isCustomer } = useAuth();
+  const { open: chatOpen, toggle: toggleChat } = useChatAssistant();
+  const { t } = useTranslation();
 
   const active = activeKey(location.pathname);
   const itemsRef = useRef(null);
@@ -128,6 +132,22 @@ export default function MobileBottomNav() {
       aria-label="Quick navigation"
       aria-hidden={cartOpen ? 'true' : undefined}
     >
+      {/* Assistant — sits ON the dock (left), never under Account */}
+      <button
+        type="button"
+        className={`mobile-bottom-nav__chat${chatOpen ? ' is-open' : ''}`}
+        onClick={toggleChat}
+        aria-label={t('chatbot.fabAria')}
+        aria-expanded={chatOpen}
+        tabIndex={cartOpen ? -1 : undefined}
+      >
+        {chatOpen ? (
+          <span aria-hidden="true">✕</span>
+        ) : (
+          <IconChat size={20} />
+        )}
+      </button>
+
       <div className="mobile-bottom-nav__dock">
         {/* Center dock cutout — Repair FAB (original size) */}
         <svg
