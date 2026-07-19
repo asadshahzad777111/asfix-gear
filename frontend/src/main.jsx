@@ -23,6 +23,7 @@ import './mobile-performance.css';
 import './components/home/home.css';
 import './components/nav/nav-upgrade.css';
 import './components/chat-assistant.css';
+import './components/motion/connect-reveal.css';
 import './auth-2026.css';
 import './components/admin/admin-wp.css';
 import './loco.css';

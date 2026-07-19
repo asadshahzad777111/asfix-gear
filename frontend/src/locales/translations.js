@@ -953,6 +953,8 @@ export const translations = {
     chatbot: {
       fabAria: 'Chat with AsFix Assistant',
       helpTab: 'May I help you?',
+      teaser: 'Hey! Need help with orders, repairs, or finding a product? Tap here — happy to help.',
+      teaserCta: 'Chat with us',
       helpLines: {
         a: 'May I help you?',
         b: 'Need a repair tip?',
@@ -2170,6 +2172,8 @@ export const translations = {
     chatbot: {
       fabAria: 'AsFix Assistant se chat karein',
       helpTab: 'Madad chahiye?',
+      teaser: 'Salam! Order, repair, ya product mein madad chahiye? Yahan tap karein — hum ready hain.',
+      teaserCta: 'Chat shuru karein',
       helpLines: {
         a: 'Madad chahiye?',
         b: 'Repair tip chahiye?',

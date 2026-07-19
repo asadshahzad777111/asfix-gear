@@ -4,7 +4,7 @@ import { DEFAULT_IMAGES, HOME_COLLECTIONS, MODEL_SPECIFIC_CATEGORIES } from '../
 import { api } from '../../api/client';
 import { useTranslation } from '../../context/LanguageContext';
 import PhoneFinderModal from '../PhoneFinderModal';
-import Reveal from '../motion/Reveal';
+import ConnectReveal from '../motion/ConnectReveal';
 
 const COLLECTION_HINTS = {
   Cases: 'home.collectionCases',
@@ -39,16 +39,19 @@ export default function CollectionGrid() {
   return (
     <section className="home-section" data-section-strap={t('home.shopCollection')} id="home-collections">
       <div className="container">
-        <Reveal className="home-section-head">
+        <ConnectReveal className="home-section-head" from="line">
           <span className="eyebrow">{t('home.collectionsEyebrow')}</span>
           <h2 className="section-title">{t('home.shopCollection')}</h2>
           <p className="section-subtitle">{t('home.shopCollectionSub')}</p>
-        </Reveal>
+        </ConnectReveal>
         <div className="home-collection-grid">
-          {HOME_COLLECTIONS.map((category) => (
-            <button
+          {HOME_COLLECTIONS.map((category, i) => (
+            <ConnectReveal
               key={category}
+              as="button"
               type="button"
+              from={i % 2 === 0 ? 'left' : 'right'}
+              delay={Math.min(i, 6) * 60}
               onClick={() => handleClick(category)}
               className="home-collection-card"
             >
@@ -61,7 +64,7 @@ export default function CollectionGrid() {
                 <strong>{category}</strong>
                 <span>{t(COLLECTION_HINTS[category] || 'home.collectionDefault')}</span>
               </div>
-            </button>
+            </ConnectReveal>
           ))}
         </div>
       </div>

@@ -10,28 +10,27 @@ import { filterPublishedProducts } from '../utils/productStatus';
 import { useTranslation } from '../context/LanguageContext';
 import { useChatAssistant } from '../context/ChatAssistantContext';
 import ChatHelperMascot from './ChatHelperMascot';
-import ChatHelperTag from './ChatHelperTag';
 
 let nextId = 1;
 const newId = () => `m${Date.now()}-${nextId++}`;
-
-/* Thumb-zone defaults — lower-right, above the bottom dock */
-const BOARD_TOP_MIN = 42;
-const BOARD_TOP_MAX = 72;
-const BOARD_TOP_DEFAULT = 64;
+const TEASER_KEY = 'asfix_chat_teaser_dismissed';
 
 export default function ChatAssistant() {
   const { t, lang } = useTranslation();
-  const { open, setOpen, toggle } = useChatAssistant();
+  const { open, setOpen } = useChatAssistant();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
-  const [pending, setPending] = useState(null); // null | 'track' | 'product'
+  const [pending, setPending] = useState(null);
   const [thinking, setThinking] = useState(false);
-  /** Vertical position (vh) — defaults low for right-thumb reach */
-  const [boardTop, setBoardTop] = useState(BOARD_TOP_DEFAULT);
+  const [teaserOpen, setTeaserOpen] = useState(() => {
+    try {
+      return localStorage.getItem(TEASER_KEY) !== '1';
+    } catch {
+      return true;
+    }
+  });
   const bodyRef = useRef(null);
   const inputRef = useRef(null);
-  const dragRef = useRef(null);
 
   useEffect(() => {
     if (open && messages.length === 0) {
@@ -172,11 +171,8 @@ export default function ChatAssistant() {
 
     if (pending === 'track') {
       const info = parseOrderTrackInfo(text);
-      if (info) {
-        resolveTrack(info.orderId, info.phone);
-      } else {
-        pushBot(t('chatbot.replies.trackAsk'));
-      }
+      if (info) resolveTrack(info.orderId, info.phone);
+      else pushBot(t('chatbot.replies.trackAsk'));
       return;
     }
 
@@ -186,51 +182,41 @@ export default function ChatAssistant() {
     }
 
     const intent = detectIntent(text);
-
     switch (intent) {
       case 'track': {
         const info = parseOrderTrackInfo(text);
-        if (info) {
-          resolveTrack(info.orderId, info.phone);
-        } else {
+        if (info) resolveTrack(info.orderId, info.phone);
+        else {
           setPending('track');
           pushBot(t('chatbot.replies.trackAsk'));
         }
         break;
       }
-      case 'product': {
+      case 'product':
         resolveProductSearch(text);
         break;
-      }
-      case 'repair': {
+      case 'repair':
         replyRepair(text);
         break;
-      }
-      case 'hours': {
+      case 'hours':
         replyHours();
         break;
-      }
-      case 'location': {
+      case 'location':
         pushBot(t('chatbot.replies.location', { address: SHOP.fullAddress }), null, [
           { label: SHOP.city, href: SHOP.mapsUrl },
         ]);
         break;
-      }
-      case 'human': {
+      case 'human':
         replyHuman();
         break;
-      }
-      case 'greeting': {
+      case 'greeting':
         pushBot(t('chatbot.replies.greeting'), quickReplyActions());
         break;
-      }
-      case 'thanks': {
+      case 'thanks':
         pushBot(t('chatbot.replies.thanks'));
         break;
-      }
-      default: {
+      default:
         pushBot(t('chatbot.replies.fallback'), quickReplyActions());
-      }
     }
   }
 
@@ -239,64 +225,70 @@ export default function ChatAssistant() {
     handleUserText(input);
   };
 
-  const onTabPointerDown = (e) => {
-    if (open) return;
-    const pointerId = e.pointerId;
-    const startY = e.clientY;
-    const startTop = boardTop;
-    dragRef.current = { pointerId, startY, startTop, dragged: false };
-
-    const onMove = (ev) => {
-      if (!dragRef.current || ev.pointerId !== pointerId) return;
-      const dy = ev.clientY - startY;
-      if (Math.abs(dy) > 6) dragRef.current.dragged = true;
-      if (!dragRef.current.dragged) return;
-      const deltaVh = (dy / window.innerHeight) * 100;
-      const next = Math.min(BOARD_TOP_MAX, Math.max(BOARD_TOP_MIN, startTop + deltaVh));
-      setBoardTop(next);
-    };
-
-    const onUp = (ev) => {
-      if (!dragRef.current || ev.pointerId !== pointerId) return;
-      window.removeEventListener('pointermove', onMove);
-      window.removeEventListener('pointerup', onUp);
-      window.removeEventListener('pointercancel', onUp);
-      /* Keep dragged flag until click so we can ignore accidental click-after-drag */
-      window.setTimeout(() => {
-        dragRef.current = null;
-      }, 0);
-    };
-
-    window.addEventListener('pointermove', onMove, { passive: true });
-    window.addEventListener('pointerup', onUp);
-    window.addEventListener('pointercancel', onUp);
+  const dismissTeaser = () => {
+    setTeaserOpen(false);
+    try {
+      localStorage.setItem(TEASER_KEY, '1');
+    } catch {
+      /* ignore */
+    }
   };
 
-  const onTabClick = () => {
-    if (dragRef.current?.dragged) return;
-    toggle();
+  const openChat = () => {
+    dismissTeaser();
+    setOpen(true);
   };
 
   return (
     <aside
-      className={`chat-sideboard chat-helper${open ? ' is-open' : ''}`}
-      style={{ '--chat-board-top': `${boardTop}vh` }}
+      className={`chat-sideboard chat-helper chat-helper--fab${open ? ' is-open' : ''}`}
       aria-label={t('chatbot.title')}
     >
-      {/* Right-side peek: face + one hand + thin rotating help line */}
+      {!open && teaserOpen && (
+        <div className="chat-helper__teaser" role="status">
+          <div className="chat-helper__teaser-head">
+            <span className="chat-helper__teaser-mark" aria-hidden="true">
+              <ChatHelperMascot className="chat-helper__teaser-avatar" variant="compact" />
+            </span>
+            <strong>{t('chatbot.title')}</strong>
+            <button
+              type="button"
+              className="chat-helper__teaser-close"
+              onClick={dismissTeaser}
+              aria-label={t('chatbot.close')}
+            >
+              ✕
+            </button>
+          </div>
+          <p>{t('chatbot.teaser')}</p>
+          <button type="button" className="chat-helper__teaser-cta" onClick={openChat}>
+            {t('chatbot.teaserCta')}
+          </button>
+        </div>
+      )}
+
       <button
         type="button"
-        className="chat-helper__trigger"
+        className="chat-helper__fab"
         aria-label={t('chatbot.fabAria')}
         aria-expanded={open}
         tabIndex={open ? -1 : 0}
-        onPointerDown={onTabPointerDown}
-        onClick={onTabClick}
+        onClick={openChat}
       >
-        <ChatHelperTag />
-        <span className="chat-helper__figure-wrap" aria-hidden="true">
-          <ChatHelperMascot className="chat-helper__figure" variant="peek" />
+        <span className="chat-helper__fab-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="22" height="22" fill="none">
+            <path
+              d="M5 6.5A2.5 2.5 0 0 1 7.5 4h9A2.5 2.5 0 0 1 19 6.5v7A2.5 2.5 0 0 1 16.5 16H11l-3.2 2.6c-.7.55-1.8.05-1.8-.85V16A2.5 2.5 0 0 1 5 13.5v-7Z"
+              stroke="currentColor"
+              strokeWidth="1.7"
+              strokeLinejoin="round"
+            />
+            <circle cx="9" cy="10" r="1" fill="currentColor" />
+            <circle cx="12" cy="10" r="1" fill="currentColor" />
+            <circle cx="15" cy="10" r="1" fill="currentColor" />
+          </svg>
         </span>
+        {teaserOpen && !open && <span className="chat-helper__fab-dot" aria-hidden="true" />}
       </button>
 
       <button

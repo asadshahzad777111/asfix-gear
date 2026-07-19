@@ -1,4 +1,5 @@
 import { useTranslation } from '../context/LanguageContext';
+import ConnectReveal from './motion/ConnectReveal';
 
 const STEP_KEYS = [
   { num: '01', icon: '📲', title: 'repair.step1Title', desc: 'repair.step1Desc' },
@@ -13,7 +14,12 @@ export default function RepairSteps() {
   return (
     <div className="repair-steps">
       {STEP_KEYS.map((step, i) => (
-        <div key={step.num} className="repair-step">
+        <ConnectReveal
+          key={step.num}
+          className="repair-step"
+          from={i % 2 === 0 ? 'left' : 'right'}
+          delay={i * 70}
+        >
           <div className="repair-step-num">{step.num}</div>
           <div className="repair-step-body">
             <span className="repair-step-icon">{step.icon}</span>
@@ -21,7 +27,7 @@ export default function RepairSteps() {
             <p>{t(step.desc)}</p>
           </div>
           {i < STEP_KEYS.length - 1 && <div className="repair-step-line" />}
-        </div>
+        </ConnectReveal>
       ))}
     </div>
   );
