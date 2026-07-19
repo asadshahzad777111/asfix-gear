@@ -10,6 +10,7 @@ import { filterPublishedProducts } from '../utils/productStatus';
 import { useTranslation } from '../context/LanguageContext';
 import { useChatAssistant } from '../context/ChatAssistantContext';
 import ChatHelperMascot from './ChatHelperMascot';
+import ChatHelperTag from './ChatHelperTag';
 
 let nextId = 1;
 const newId = () => `m${Date.now()}-${nextId++}`;
@@ -290,11 +291,9 @@ export default function ChatAssistant() {
         onPointerDown={onTabPointerDown}
         onClick={onTabClick}
       >
-        <span className="chat-helper__tag">
-          <span className="chat-helper__tag-text">{t('chatbot.helpTab')}</span>
-        </span>
+        <ChatHelperTag text={t('chatbot.helpTab')} />
         <span className="chat-helper__figure-wrap" aria-hidden="true">
-          <ChatHelperMascot className="chat-helper__figure" />
+          <ChatHelperMascot className="chat-helper__figure" variant="bust" />
         </span>
       </button>
 
@@ -316,7 +315,7 @@ export default function ChatAssistant() {
         <div className="chat-assistant-head">
           <div className="chat-assistant-head-main">
             <span className="chat-assistant-head-avatar" aria-hidden="true">
-              <ChatHelperMascot className="chat-assistant-head-avatar-svg" />
+              <ChatHelperMascot className="chat-assistant-head-avatar-svg" variant="compact" />
             </span>
             <div>
               <strong>{t('chatbot.title')}</strong>
