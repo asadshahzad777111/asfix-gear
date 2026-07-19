@@ -179,6 +179,7 @@ export default function AccountRegister() {
                 onCredential={handleGoogleCredential}
                 disabled={submitting}
                 submitting={submitting}
+                buttonText="signup_with"
               />
               {error && <AuthAlert type="error">{error}</AuthAlert>}
               <form onSubmit={handleStart}>
@@ -285,9 +286,6 @@ export default function AccountRegister() {
             </form>
           )}
 
-          <p className="auth-2026-foot">
-            <Link to="/">{t('login.backToStore')}</Link>
-          </p>
         </AuthCard>
       </div>
     </AuthShell>
