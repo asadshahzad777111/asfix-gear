@@ -95,31 +95,26 @@
     background: var(--drawer-bg) !important;
   }
 
-  /* Light ambient on mobile — fewer layers, still soft color */
+  /* Mobile ambient — keep classic blooms + fewer drifting dots */
   .ambient-bg {
     display: block !important;
   }
 
   .ambient-bg .ambient-veil {
-    opacity: 0.96;
+    opacity: 1;
   }
 
-  .ambient-bg .ambient-mesh,
-  .ambient-bg .ambient-flare,
-  .ambient-bg .ambient-grain,
-  .ambient-bg .orb-4,
-  .ambient-bg .orb-5,
   .ambient-bg .grid-overlay {
     display: none !important;
   }
 
   .ambient-bg .orb {
-    filter: blur(40px) !important;
-    opacity: calc(var(--orb-strength) * 0.75);
+    filter: blur(56px) !important;
+    opacity: calc(var(--orb-strength) * 0.8);
   }
 
-  .ambient-bg .orb-3 {
-    display: none;
+  .ambient-bg .ambient-dot:nth-child(n + 25) {
+    display: none !important;
   }
 
   body {
