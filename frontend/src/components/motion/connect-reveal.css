@@ -24,6 +24,11 @@
   filter: blur(0.4px);
 }
 
+/* type wipe lives in type-line.css — keep base opacity from killing it */
+.connect-reveal.connect-reveal--type {
+  opacity: 1;
+}
+
 .connect-reveal.is-in {
   opacity: 1;
   transform: translate3d(0, 0, 0) scale(1);

@@ -1,0 +1,71 @@
+/* Left → right typing / wipe reveal — continuous on scroll */
+
+.type-line {
+  display: inline;
+}
+
+.type-line__ch {
+  display: inline-block;
+  opacity: 0;
+  transform: translate3d(-0.35em, 0.12em, 0);
+  will-change: transform, opacity;
+  transition: none;
+}
+
+.type-line.is-in .type-line__ch {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  transition:
+    opacity 0.38s cubic-bezier(0.16, 1, 0.3, 1),
+    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--i, 0) * var(--type-stagger, 26ms));
+}
+
+/* Block titles use the same typing feel */
+.type-line--block {
+  display: block;
+}
+
+/* Card / board wipe: reveals like typing from the left edge */
+.connect-reveal--type {
+  opacity: 1;
+  transform: translate3d(-18px, 0, 0);
+  clip-path: inset(0 100% 0 0);
+  filter: none;
+  transition: none;
+}
+
+.connect-reveal--type.is-in {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+  clip-path: inset(0 0 0 0);
+  transition:
+    transform 0.55s cubic-bezier(0.16, 1, 0.3, 1),
+    clip-path 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* Section heads that stack typed lines */
+.home-type-head {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.35rem;
+  margin-bottom: 1.5rem;
+}
+
+.home-type-head .section-subtitle {
+  max-width: 36rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .type-line__ch,
+  .type-line.is-in .type-line__ch,
+  .connect-reveal--type,
+  .connect-reveal--type.is-in {
+    opacity: 1 !important;
+    transform: none !important;
+    clip-path: none !important;
+    transition: none !important;
+    filter: none !important;
+  }
+}
