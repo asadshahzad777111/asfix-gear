@@ -10,17 +10,17 @@
   --hero-pad-top: clamp(5.5rem, 12vh, 7.5rem);
 }
 
-/* ── Ambient: ember bloom — soft, brand-tinted atmosphere ── */
+/* ── Ambient: soft drifting bloom (stays in motion under UI) ── */
 .ambient-bg .orb {
-  filter: blur(110px);
+  filter: blur(108px);
 }
 
 .ambient-bg .ambient-mesh {
-  filter: blur(40px);
+  filter: blur(36px);
 }
 
 .ambient-bg .ambient-flare {
-  filter: blur(28px);
+  filter: blur(24px);
 }
 
 .ambient-bg .grid-overlay {
@@ -28,12 +28,8 @@
   background-size: 64px 64px;
 }
 
-[data-theme='dark'] .ambient-bg .orb {
-  opacity: calc(var(--orb-strength) * 1.05);
-}
-
 [data-theme='light'] .ambient-bg .orb {
-  filter: blur(120px);
+  filter: blur(118px);
 }
 
 /* ── Buttons: sharper, less pill-default ── */

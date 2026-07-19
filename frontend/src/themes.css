@@ -24,11 +24,12 @@
   --mint: #ff5a1f;
   --mint-glow: rgba(255, 90, 31, 0.2);
   --mint-focus: rgba(255, 90, 31, 0.12);
-  /* Ember palette — brand orange family only (no purple / blue wash) */
+  /* Ambient: orange lead + soft companion tints */
   --orb-a: rgba(255, 106, 43, 0.55);
-  --orb-b: rgba(255, 140, 72, 0.38);
-  --orb-c: rgba(194, 65, 12, 0.42);
-  --orb-d: rgba(255, 196, 120, 0.28);
+  --orb-b: rgba(255, 168, 96, 0.4);
+  --orb-c: rgba(232, 88, 28, 0.42);
+  --orb-d: rgba(255, 210, 150, 0.3);
+  --orb-e: rgba(200, 110, 90, 0.28);
   --ambient-mesh: none;
   --ambient-flare: none;
   --grain-opacity: 0.04;
@@ -57,28 +58,32 @@
     );
   --bg-card: rgba(255, 248, 240, 0.045);
   --bg-elevated: rgba(28, 20, 16, 0.94);
-  /* Three light orange shades blooming behind the dark UI */
-  --orb-a: rgba(255, 122, 48, 0.58);
-  --orb-b: rgba(255, 168, 96, 0.4);
-  --orb-c: rgba(232, 88, 28, 0.48);
-  --orb-d: rgba(255, 200, 130, 0.32);
+  /* Orange lead + peach, amber, soft copper companions */
+  --orb-a: rgba(255, 122, 48, 0.62);
+  --orb-b: rgba(255, 186, 120, 0.46);
+  --orb-c: rgba(232, 88, 28, 0.5);
+  --orb-d: rgba(255, 214, 150, 0.38);
+  --orb-e: rgba(190, 96, 78, 0.36);
   --ambient-mesh:
     conic-gradient(
       from 210deg at 70% 30%,
-      rgba(255, 106, 43, 0.14),
-      transparent 28%,
-      rgba(255, 170, 90, 0.1) 48%,
-      transparent 68%,
-      rgba(194, 65, 12, 0.12) 88%,
+      rgba(255, 106, 43, 0.16),
+      transparent 26%,
+      rgba(255, 190, 120, 0.12) 44%,
+      transparent 58%,
+      rgba(200, 110, 90, 0.1) 72%,
+      transparent 84%,
+      rgba(255, 150, 70, 0.12) 94%,
       transparent
     );
   --ambient-flare:
     linear-gradient(
       118deg,
       transparent 0%,
-      rgba(255, 150, 80, 0.1) 36%,
-      rgba(255, 106, 43, 0.14) 50%,
-      rgba(255, 190, 120, 0.08) 64%,
+      rgba(255, 170, 100, 0.12) 30%,
+      rgba(255, 106, 43, 0.16) 48%,
+      rgba(210, 120, 90, 0.1) 62%,
+      rgba(255, 200, 140, 0.1) 74%,
       transparent 100%
     );
   --grain-opacity: 0.055;
@@ -132,28 +137,32 @@
     );
   --bg-card: rgba(255, 255, 255, 0.86);
   --bg-elevated: #ffffff;
-  /* Same three orange shades — softer / sunlit */
-  --orb-a: rgba(255, 130, 70, 0.42);
-  --orb-b: rgba(255, 186, 120, 0.4);
-  --orb-c: rgba(255, 106, 43, 0.28);
-  --orb-d: rgba(255, 210, 160, 0.36);
+  /* Orange lead + peach, honey, soft rose-copper — sunlit */
+  --orb-a: rgba(255, 130, 70, 0.46);
+  --orb-b: rgba(255, 196, 140, 0.44);
+  --orb-c: rgba(255, 106, 43, 0.32);
+  --orb-d: rgba(255, 220, 170, 0.4);
+  --orb-e: rgba(220, 140, 120, 0.34);
   --ambient-mesh:
     conic-gradient(
-      from 40deg at 28% 40%,
-      rgba(255, 150, 90, 0.16),
-      transparent 30%,
-      rgba(255, 200, 140, 0.14) 52%,
-      transparent 72%,
-      rgba(255, 106, 43, 0.1) 90%,
+      from 40deg at 30% 40%,
+      rgba(255, 150, 90, 0.18),
+      transparent 28%,
+      rgba(255, 210, 160, 0.16) 48%,
+      transparent 62%,
+      rgba(220, 140, 120, 0.12) 76%,
+      transparent 88%,
+      rgba(255, 106, 43, 0.12) 96%,
       transparent
     );
   --ambient-flare:
     linear-gradient(
       112deg,
       transparent 0%,
-      rgba(255, 180, 120, 0.16) 38%,
-      rgba(255, 130, 70, 0.12) 52%,
-      rgba(255, 210, 160, 0.14) 66%,
+      rgba(255, 190, 130, 0.18) 32%,
+      rgba(255, 130, 70, 0.14) 48%,
+      rgba(220, 150, 120, 0.12) 60%,
+      rgba(255, 220, 170, 0.16) 72%,
       transparent 100%
     );
   --grain-opacity: 0.035;
