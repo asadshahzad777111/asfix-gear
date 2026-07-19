@@ -1,65 +1,53 @@
-/** Shared AsFix & Gear icon mark — orange/white split gear + phone (matches shop theme). */
+/** Shared AsFix & Gear icon mark — phone + gear + wrench (matches brand orange). */
 export const BRAND_ACCENT = '#ff6a2b';
 export const BRAND_WHITE = '#ffffff';
 
 export function LogoMarkPaths({ uid = 'logo' }) {
-  const gear = `${uid}-gear`;
-  const left = `${uid}-left`;
-  const right = `${uid}-right`;
+  const grad = `${uid}-grad`;
 
   return (
     <>
       <defs>
-        <clipPath id={left}>
-          <rect x="0" y="0" width="60" height="120" />
-        </clipPath>
-        <clipPath id={right}>
-          <rect x="60" y="0" width="60" height="120" />
-        </clipPath>
+        <linearGradient id={grad} x1="20" y1="16" x2="100" y2="104" gradientUnits="userSpaceOnUse">
+          <stop stopColor="#ff8a4c" />
+          <stop offset="0.55" stopColor={BRAND_ACCENT} />
+          <stop offset="1" stopColor="#e85a1a" />
+        </linearGradient>
       </defs>
 
-      {/* 8-tooth gear — left orange, right white */}
-      <path
-        id={gear}
-        d="M60 8 L65.8 19.2 L77.8 16.8 L80.2 28.8 L92.2 31.2 L89.8 43.2 L101.8 49.2 L93.4 58.8 L101.8 68.4 L89.8 74.4 L92.2 86.4 L80.2 88.8 L77.8 100.8 L65.8 98.4 L60 110 L54.2 98.4 L42.2 100.8 L39.8 88.8 L27.8 86.4 L30.2 74.4 L18.2 68.4 L26.6 58.8 L18.2 49.2 L30.2 43.2 L27.8 31.2 L39.8 28.8 L42.2 16.8 L54.2 19.2 Z"
-        fill={BRAND_ACCENT}
-        clipPath={`url(#${left})`}
+      {/* Phone body */}
+      <rect
+        x="28"
+        y="18"
+        width="44"
+        height="84"
+        rx="8"
+        fill="none"
+        stroke={`url(#${grad})`}
+        strokeWidth="5.5"
       />
-      <path
-        d="M60 8 L65.8 19.2 L77.8 16.8 L80.2 28.8 L92.2 31.2 L89.8 43.2 L101.8 49.2 L93.4 58.8 L101.8 68.4 L89.8 74.4 L92.2 86.4 L80.2 88.8 L77.8 100.8 L65.8 98.4 L60 110 L54.2 98.4 L42.2 100.8 L39.8 88.8 L27.8 86.4 L30.2 74.4 L18.2 68.4 L26.6 58.8 L18.2 49.2 L30.2 43.2 L27.8 31.2 L39.8 28.8 L42.2 16.8 L54.2 19.2 Z"
-        fill={BRAND_WHITE}
-        clipPath={`url(#${right})`}
-      />
+      {/* Speaker notch */}
+      <rect x="42" y="26" width="16" height="3.5" rx="1.75" fill={`url(#${grad})`} />
+      {/* Home indicator */}
+      <rect x="44" y="90" width="12" height="3" rx="1.5" fill={`url(#${grad})`} opacity="0.85" />
 
-      {/* Phone + repair tools (tilted) */}
-      <g transform="translate(60 62) rotate(-22)">
-        <rect x="-13" y="-26" width="26" height="46" rx="4.5" fill={BRAND_ACCENT} />
-        <rect x="-10" y="-21" width="20" height="32" rx="2.5" fill="#cc5520" opacity="0.35" />
-
-        {/* Wrench */}
+      {/* Gear overlapping phone (right) */}
+      <g transform="translate(78 62)">
         <path
-          d="M-4 -8 L-9 -3 C-10.6 -1.4 -10.6 0.8 -9 2.4 L-2.5 8.8 C-0.9 10.4 1.3 10.4 2.9 8.8 L5.5 6.2 L-4 -8Z"
+          d="M0 -26 L5.2 -18.4 L14.2 -19.6 L16.4 -10.8 L25.2 -8.4 L22.8 0.4 L28.8 7.2 L22.8 14 L25.2 22.4 L16.4 24.8 L14.2 33.6 L5.2 32.4 L0 40 L-5.2 32.4 L-14.2 33.6 L-16.4 24.8 L-25.2 22.4 L-22.8 14 L-28.8 7.2 L-22.8 0.4 L-25.2 -8.4 L-16.4 -10.8 L-14.2 -19.6 L-5.2 -18.4 Z"
+          fill={`url(#${grad})`}
+        />
+        <circle r="12.5" fill="#12121a" />
+      </g>
+
+      {/* Wrench in gear hub */}
+      <g transform="translate(78 62) rotate(-35)">
+        <path
+          d="M-3.2 -11.5 C-6.8 -11.5 -9.5 -8.6 -9.5 -5.1 C-9.5 -3.2 -8.6 -1.5 -7.2 -0.4 L7.8 14.2 C8.7 15.1 10.1 15.1 11 14.2 L13.6 11.6 C14.5 10.7 14.5 9.3 13.6 8.4 L-0.8 -5.6 C-1.9 -7 -3.2 -7.6 -3.2 -11.5 Z"
           fill={BRAND_WHITE}
         />
-        <circle cx="-7.5" cy="-0.5" r="2.2" fill={BRAND_WHITE} />
-
-        {/* Small gears */}
-        <g transform="translate(6 6)">
-          <circle r="4.2" fill="none" stroke={BRAND_WHITE} strokeWidth="1.8" />
-          <circle r="1.4" fill={BRAND_WHITE} />
-          <rect x="-0.7" y="-6.2" width="1.4" height="2.2" rx="0.4" fill={BRAND_WHITE} />
-          <rect x="-0.7" y="4" width="1.4" height="2.2" rx="0.4" fill={BRAND_WHITE} />
-          <rect x="-6.2" y="-0.7" width="2.2" height="1.4" rx="0.4" fill={BRAND_WHITE} />
-          <rect x="4" y="-0.7" width="2.2" height="1.4" rx="0.4" fill={BRAND_WHITE} />
-        </g>
-        <g transform="translate(-5 12) scale(0.72)">
-          <circle r="4.2" fill="none" stroke={BRAND_WHITE} strokeWidth="1.8" />
-          <circle r="1.4" fill={BRAND_WHITE} />
-          <rect x="-0.7" y="-6.2" width="1.4" height="2.2" rx="0.4" fill={BRAND_WHITE} />
-          <rect x="-0.7" y="4" width="1.4" height="2.2" rx="0.4" fill={BRAND_WHITE} />
-          <rect x="-6.2" y="-0.7" width="2.2" height="1.4" rx="0.4" fill={BRAND_WHITE} />
-          <rect x="4" y="-0.7" width="2.2" height="1.4" rx="0.4" fill={BRAND_WHITE} />
-        </g>
+        <circle cx="-5.8" cy="-5.4" r="2.6" fill="#12121a" />
+        <circle cx="-5.8" cy="-5.4" r="4.6" fill="none" stroke={BRAND_WHITE} strokeWidth="2.2" />
       </g>
     </>
   );

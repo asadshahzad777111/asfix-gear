@@ -3,10 +3,14 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="AsFix & Gear by Asad Shahzad — Expert mobile repair & premium accessories. WhatsApp: 03039227000. Open 9 AM – 9 PM." />
     <meta name="theme-color" content="#0a0a0a" />
     <meta name="color-scheme" content="dark light" />
+    <meta property="og:image" content="https://asfixgear.com/og-image.jpg" />
+    <meta property="og:image:alt" content="AsFix & Gear — Mobile Repair & Accessories" />
+    <meta name="twitter:image" content="https://asfixgear.com/og-image.jpg" />
     <title>AsFix & Gear | Mobile Repair & Accessories — Asad Shahzad</title>
     <link rel="dns-prefetch" href="https://asfix-gear.onrender.com" />
     <link rel="preconnect" href="https://asfix-gear.onrender.com" crossorigin />
@@ -36,6 +40,12 @@
         background: #0c0c12;
         color: #e8e8ef;
         font-family: system-ui, -apple-system, Segoe UI, sans-serif;
+      }
+      #boot-splash img {
+        width: 72px;
+        height: 72px;
+        border-radius: 18px;
+        display: block;
       }
       #boot-splash strong { font-size: 1.25rem; letter-spacing: 0.02em; }
       #boot-splash span { opacity: 0.7; font-size: 0.9rem; }
@@ -90,6 +100,7 @@
   <body>
     <div id="root">
       <div id="boot-splash" aria-live="polite" aria-busy="true">
+        <img src="/logo-192.png" alt="AsFix &amp; Gear" width="72" height="72" />
         <strong>AsFix &amp; Gear</strong>
         <span>Loading…</span>
       </div>
