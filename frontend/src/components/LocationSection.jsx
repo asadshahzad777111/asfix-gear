@@ -9,7 +9,7 @@ export default function LocationSection({ showMap = true }) {
   const { t } = useTranslation();
 
   return (
-    <section className="location-section">
+    <section className="location-section" data-section-strap={t('location.title')} id="home-location">
       <div className="container">
         <div className="section-head">
           <span className="eyebrow">📍 {t('location.eyebrow')}</span>

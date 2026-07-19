@@ -9,7 +9,7 @@ export default function BrandGrid() {
   const [activeBrand, setActiveBrand] = useState(null);
 
   return (
-    <section className="home-section">
+    <section className="home-section" data-section-strap={t('home.selectBrand')} id="home-brands">
       <div className="container">
         <div className="home-section-head">
           <span className="eyebrow">{t('home.brandsEyebrow')}</span>

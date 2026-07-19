@@ -12,6 +12,7 @@ import FloatingRepairButton from './components/FloatingRepairButton';
 import FlyToCart from './components/premium/FlyToCart';
 import MobileBottomNav from './components/MobileBottomNav';
 import GuestWelcomeBanner from './components/GuestWelcomeBanner';
+import SectionScrollStrap from './components/SectionScrollStrap';
 import PageTransition from './components/premium/PageTransition';
 import Analytics from './components/seo/Analytics';
 import { useLocation } from 'react-router-dom';
@@ -34,6 +35,7 @@ function AppContent() {
       <Analytics />
       {!isGamingPage && !isAdminRoute && <AmbientBackground />}
       {!isAdminRoute && <Navbar />}
+      {!isAdminRoute && !isGamingPage && <SectionScrollStrap />}
       {!isAdminRoute && <GuestWelcomeBanner />}
       <main className={`app-main ${isAdminRoute ? 'app-main--admin' : ''}`}>
         <ErrorBoundary>
