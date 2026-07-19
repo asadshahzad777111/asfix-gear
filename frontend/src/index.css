@@ -49,7 +49,7 @@ img { max-width: 100%; height: auto; display: block; }
   margin-bottom: 0.75rem;
 }
 
-/* Ambient background — always drifting orange + companion washes */
+/* Ambient — classic orange / violet / mint blooms + drifting dots */
 .ambient-bg {
   position: fixed;
   inset: 0;
@@ -57,7 +57,6 @@ img { max-width: 100%; height: auto; display: block; }
   pointer-events: none;
   overflow: hidden;
   contain: paint;
-  /* Keep motion running while modals/drawers animate */
   animation-play-state: running;
 }
 
@@ -66,203 +65,132 @@ img { max-width: 100%; height: auto; display: block; }
   inset: 0;
   background: var(--bg-gradient);
   opacity: 1;
-  animation: ambientVeilBreathe 18s ease-in-out infinite;
-  will-change: opacity;
-}
-
-.ambient-mesh {
-  position: absolute;
-  inset: -28%;
-  background: var(--ambient-mesh);
-  opacity: 0.9;
-  mix-blend-mode: soft-light;
-  animation: ambientMeshDrift 18s ease-in-out infinite;
-  will-change: transform;
-}
-
-.ambient-flare {
-  position: absolute;
-  inset: -14% -28%;
-  background: var(--ambient-flare);
-  opacity: 0.95;
-  mix-blend-mode: screen;
-  animation: ambientFlareSweep 14s ease-in-out infinite;
-  will-change: transform, opacity;
-}
-
-[data-theme='light'] .ambient-flare {
-  mix-blend-mode: multiply;
-  opacity: 0.6;
-}
-
-[data-theme='light'] .ambient-mesh {
-  mix-blend-mode: multiply;
-  opacity: 0.6;
 }
 
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(64px);
-  animation: ambientDrift 16s ease-in-out infinite;
+  filter: blur(90px);
+  animation: ambientFloat 16s ease-in-out infinite;
   opacity: var(--orb-strength);
   will-change: transform;
   transform: translate3d(0, 0, 0);
-  animation-play-state: running;
 }
 
-/* Mid-size blooms (~half prior) — shuttle forward / back */
+/* Mid-size classic blooms (match first design) */
 .orb-1 {
-  width: min(42vw, 300px);
-  height: min(42vw, 300px);
+  width: min(52vw, 480px);
+  height: min(52vw, 480px);
   background: var(--orb-a);
-  top: -10%;
-  left: -6%;
-  animation-duration: 18s;
-  animation-name: ambientShuttle;
+  top: -120px;
+  left: -80px;
 }
 
 .orb-2 {
-  width: min(36vw, 260px);
-  height: min(36vw, 260px);
+  width: min(46vw, 400px);
+  height: min(46vw, 400px);
   background: var(--orb-b);
-  top: 18%;
-  right: -8%;
-  animation-delay: -4s;
-  animation-duration: 20s;
-  animation-name: ambientShuttleAlt;
+  top: 40%;
+  right: -100px;
+  animation-delay: -5s;
+  animation-duration: 18s;
 }
 
 .orb-3 {
-  width: min(32vw, 230px);
-  height: min(32vw, 230px);
+  width: min(38vw, 320px);
+  height: min(38vw, 320px);
   background: var(--orb-c);
-  bottom: -8%;
-  left: 12%;
-  animation-delay: -8s;
-  animation-duration: 17s;
-  animation-name: ambientShuttle;
-}
-
-.orb-4 {
-  width: min(28vw, 210px);
-  height: min(28vw, 210px);
-  background: var(--orb-d);
-  top: 48%;
-  left: 42%;
-  animation-delay: -11s;
-  animation-duration: 22s;
-  animation-name: ambientShuttleAlt;
-}
-
-.orb-5 {
-  width: min(24vw, 180px);
-  height: min(24vw, 180px);
-  background: var(--orb-e);
-  top: 66%;
-  right: 14%;
-  animation-delay: -5s;
+  bottom: -80px;
+  left: 30%;
+  animation-delay: -9s;
   animation-duration: 15s;
-  animation-name: ambientShuttle;
 }
 
-.ambient-grain {
+/* Tiny marks that drift forward ↔ back across the whole site */
+.ambient-dots {
   position: absolute;
   inset: 0;
-  opacity: var(--grain-opacity);
-  mix-blend-mode: overlay;
-  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 180px 180px;
-  pointer-events: none;
+  overflow: hidden;
+}
+
+.ambient-dot {
+  position: absolute;
+  border-radius: 50%;
+  background: var(--ambient-dot, rgba(255, 255, 255, 0.7));
+  box-shadow: 0 0 4px color-mix(in srgb, var(--ambient-dot, #fff) 45%, transparent);
+  animation-name: ambientDotDrift;
+  animation-timing-function: ease-in-out;
+  animation-iteration-count: infinite;
+  will-change: transform, opacity;
 }
 
 .grid-overlay {
   position: absolute;
   inset: 0;
-  opacity: 0.35;
+  opacity: 0.28;
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at center, black 12%, transparent 74%);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
 }
 
-/* Calm forward ↔ back shuttle — unique, professional, not busy */
-@keyframes ambientShuttle {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: var(--orb-strength);
-  }
-  50% {
-    transform: translate3d(14%, 2%, 0) scale(1.04);
-    opacity: calc(var(--orb-strength) * 1.08);
-  }
-}
-
-@keyframes ambientShuttleAlt {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1.02);
-    opacity: var(--orb-strength);
-  }
-  50% {
-    transform: translate3d(-12%, -2%, 0) scale(0.98);
-    opacity: calc(var(--orb-strength) * 0.9);
-  }
-}
-
-/* Keep old names as aliases so paused/reduced-motion rules still resolve */
-@keyframes ambientDrift {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: var(--orb-strength);
-  }
-  50% {
-    transform: translate3d(12%, 1%, 0) scale(1.03);
-    opacity: calc(var(--orb-strength) * 1.05);
-  }
-}
-
-@keyframes ambientDriftAlt {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: var(--orb-strength);
-  }
-  50% {
-    transform: translate3d(-11%, -1%, 0) scale(0.98);
-    opacity: calc(var(--orb-strength) * 0.92);
-  }
-}
-
-@keyframes ambientDriftPulse {
-  0%, 100% {
-    transform: translate3d(0, 0, 0) scale(1);
-    opacity: var(--orb-strength);
-  }
-  50% {
-    transform: translate3d(10%, 2%, 0) scale(1.05);
-    opacity: calc(var(--orb-strength) * 1.06);
-  }
-}
-
-@keyframes ambientMeshDrift {
+@keyframes ambientFloat {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  50% { transform: translate3d(4%, 0, 0) scale(1.03); }
+  33% { transform: translate3d(28px, -18px, 0) scale(1.05); }
+  66% { transform: translate3d(-18px, 14px, 0) scale(0.96); }
 }
 
-@keyframes ambientFlareSweep {
+/* Slow depth travel — forward and back across the viewport */
+@keyframes ambientDotDrift {
   0%, 100% {
-    transform: translate3d(-6%, 0, 0);
-    opacity: 0.55;
+    transform: translate3d(0, 0, 0) scale(0.85);
+    opacity: 0.2;
   }
   50% {
-    transform: translate3d(7%, 0, 0);
+    transform: translate3d(18px, -28px, 0) scale(1.35);
     opacity: 0.85;
   }
 }
 
+/* Aliases kept for pause / reduced-motion selectors */
+@keyframes ambientShuttle {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(20px, 0, 0) scale(1.03); }
+}
+
+@keyframes ambientShuttleAlt {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-18px, 0, 0) scale(0.98); }
+}
+
+@keyframes ambientDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(20px, -10px, 0) scale(1.04); }
+}
+
+@keyframes ambientDriftAlt {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(-16px, 12px, 0) scale(0.97); }
+}
+
+@keyframes ambientDriftPulse {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(12px, -14px, 0) scale(1.06); }
+}
+
+@keyframes ambientMeshDrift {
+  0%, 100% { transform: none; }
+  50% { transform: none; }
+}
+
+@keyframes ambientFlareSweep {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 0.8; }
+}
+
 @keyframes ambientVeilBreathe {
-  0%, 100% { opacity: 0.96; }
-  50% { opacity: 1; }
+  0%, 100% { opacity: 1; }
 }
 
 /* Theme transition must not freeze ambient motion */
@@ -276,31 +204,26 @@ html.theme-transitioning .ambient-bg * {
   stops the “laggy” feel without removing the atmosphere when idle.
 */
 body.cart-open .ambient-bg .orb,
-body.cart-open .ambient-bg .ambient-mesh,
-body.cart-open .ambient-bg .ambient-flare,
-body.cart-open .ambient-bg .ambient-veil,
+body.cart-open .ambient-bg .ambient-dot,
 body.nav-open .ambient-bg .orb,
-body.nav-open .ambient-bg .ambient-mesh,
-body.nav-open .ambient-bg .ambient-flare,
-body.nav-open .ambient-bg .ambient-veil,
+body.nav-open .ambient-bg .ambient-dot,
 body.is-page-transitioning .ambient-bg .orb,
-body.is-page-transitioning .ambient-bg .ambient-mesh,
-body.is-page-transitioning .ambient-bg .ambient-flare,
-body.is-page-transitioning .ambient-bg .ambient-veil {
+body.is-page-transitioning .ambient-bg .ambient-dot {
   animation-play-state: paused !important;
 }
 
 body.cart-open .ambient-bg .orb,
+body.cart-open .ambient-bg .ambient-dot,
 body.nav-open .ambient-bg .orb,
-body.is-page-transitioning .ambient-bg .orb {
+body.nav-open .ambient-bg .ambient-dot,
+body.is-page-transitioning .ambient-bg .orb,
+body.is-page-transitioning .ambient-bg .ambient-dot {
   will-change: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
   .orb,
-  .ambient-mesh,
-  .ambient-flare,
-  .ambient-veil {
+  .ambient-dot {
     animation: none !important;
   }
 }
