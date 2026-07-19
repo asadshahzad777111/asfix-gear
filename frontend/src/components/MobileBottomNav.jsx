@@ -250,6 +250,7 @@ export default function MobileBottomNav() {
         }
         tabIndex={cartOpen ? -1 : undefined}
         aria-label="Repair"
+        onClick={(e) => burst('repair', e.currentTarget)}
       >
         <motion.span
           className="mobile-bottom-nav__fab-orb"
