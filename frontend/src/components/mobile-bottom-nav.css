@@ -1,5 +1,6 @@
-/* Floating pill dock — Repair floats free above (never joined to top).
-   Morph icons + pop-from-outside on every tap. */
+/* Floating pill dock — Repair above with tight glow.
+   Active highlight locked to icon size. No pop animations.
+   Accent line is a straight inset ember (not along the corner curve). */
 
 :root {
   --bottom-nav-h: 3.5rem;
@@ -7,14 +8,12 @@
   --bottom-nav-float-y: 0.55rem;
   --bottom-nav-inset-x: max(0.75rem, env(safe-area-inset-left, 0px));
   --bottom-nav-inset-r: max(0.75rem, env(safe-area-inset-right, 0px));
-  /* Gap so Repair sits fully above the dock, not fused to its top */
   --bnav-fab-gap: 0.55rem;
-  --bnav-fab-size: 3.15rem;
+  --bnav-fab-size: 3rem;
   --bnav-fab-stack: calc(var(--bnav-fab-size) + 1.05rem + var(--bnav-fab-gap));
   --bottom-nav-total: calc(
     var(--bnav-fab-stack) + var(--bottom-nav-h) + var(--bottom-nav-safe) + var(--bottom-nav-float-y)
   );
-  --bnav-fg: #1a1a1a;
   --bnav-muted: rgba(26, 26, 26, 0.55);
   --bnav-surface: rgba(255, 255, 255, 0.86);
   --bnav-surface-solid: #ffffff;
@@ -22,10 +21,10 @@
   --bnav-accent: #ff6a2b;
   --bnav-shadow: 0 14px 34px rgba(0, 0, 0, 0.16), 0 2px 8px rgba(0, 0, 0, 0.06);
   --bnav-radius: 1.65rem;
+  --bnav-icon-hit: 2.05rem;
 }
 
 [data-theme='dark'] {
-  --bnav-fg: #f4f4f5;
   --bnav-muted: rgba(244, 244, 245, 0.55);
   --bnav-surface: rgba(18, 18, 24, 0.82);
   --bnav-surface-solid: #14141a;
@@ -51,9 +50,9 @@
     visibility: visible;
     transform: translate3d(0, 0, 0);
     transition:
-      transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
-      opacity 0.24s ease,
-      visibility 0.24s ease;
+      transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.2s ease,
+      visibility 0.2s ease;
   }
 
   .mobile-bottom-nav.is-cart-open,
@@ -64,7 +63,6 @@
     pointer-events: none !important;
   }
 
-  /* Solid floating pill — no top notch / cutout joining the FAB */
   .mobile-bottom-nav__dock {
     position: absolute;
     left: var(--bottom-nav-inset-x);
@@ -89,13 +87,52 @@
       );
     backdrop-filter: var(--bnav-glass-blur);
     -webkit-backdrop-filter: var(--bnav-glass-blur);
-    border: 1px solid color-mix(in srgb, #fff 34%, transparent);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 22%, transparent);
+    /* No full border in the corner curves */
+    border: none;
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 6%, transparent);
+  }
+
+  /* Straight inset ember — stops before rounded corners (unique, not curve-following) */
+  .mobile-bottom-nav__glass::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 16%;
+    right: 16%;
+    height: 2px;
+    border-radius: 999px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, var(--bnav-accent) 45%, transparent) 18%,
+      var(--bnav-accent) 50%,
+      color-mix(in srgb, var(--bnav-accent) 45%, transparent) 82%,
+      transparent 100%
+    );
+    pointer-events: none;
+    z-index: 1;
+  }
+
+  /* Tiny end caps so the line reads as a crafted mark, not a rim */
+  .mobile-bottom-nav__glass::after {
+    content: '';
+    position: absolute;
+    top: 5px;
+    left: 18%;
+    right: 18%;
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent 0%,
+      color-mix(in srgb, #fff 18%, transparent) 50%,
+      transparent 100%
+    );
+    pointer-events: none;
+    opacity: 0.55;
   }
 
   [data-theme='dark'] .mobile-bottom-nav__glass {
-    border-color: color-mix(in srgb, #fff 12%, transparent);
-    box-shadow: inset 0 1px 0 color-mix(in srgb, #fff 10%, transparent);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, #fff 8%, transparent);
   }
 
   @supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
@@ -113,45 +150,8 @@
     justify-content: space-between;
     padding: 0 0.65rem;
     pointer-events: auto;
-    overflow: visible;
+    overflow: hidden;
     border-radius: var(--bnav-radius);
-  }
-
-  /* Active orb — pops up from outside; no connecting ring into the dock rim */
-  .mobile-bottom-nav__mark {
-    position: absolute;
-    bottom: 0.42rem;
-    left: 0;
-    width: 2.55rem;
-    height: 2.55rem;
-    margin: 0;
-    border-radius: 1.05rem;
-    background: linear-gradient(145deg, #ff8a4c 0%, var(--bnav-accent) 55%, #e85a1a 100%);
-    z-index: 0;
-    pointer-events: none;
-    box-shadow:
-      0 10px 22px rgba(255, 106, 43, 0.42),
-      inset 0 1px 0 rgba(255, 255, 255, 0.32);
-    will-change: transform, opacity;
-  }
-
-  .mobile-bottom-nav.has-side-mark .mobile-bottom-nav__mark {
-    border-radius: 0.85rem 1.2rem 0.85rem 1.2rem;
-  }
-
-  /* Burst that emerges from below / outside on tap */
-  .mobile-bottom-nav__pop {
-    position: absolute;
-    width: 2.6rem;
-    height: 2.6rem;
-    margin: -1.3rem 0 0 -1.3rem;
-    border-radius: 999px;
-    z-index: 0;
-    pointer-events: none;
-    background:
-      radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55) 0%, transparent 42%),
-      radial-gradient(circle, rgba(255, 106, 43, 0.55) 0%, rgba(255, 106, 43, 0.12) 55%, transparent 72%);
-    box-shadow: 0 0 0 1px rgba(255, 106, 43, 0.25);
   }
 
   .mobile-bottom-nav__item {
@@ -163,9 +163,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 0.1rem;
+    gap: 0.12rem;
     min-height: 2.65rem;
-    padding: 0.2rem 0.15rem;
+    padding: 0.15rem 0.1rem;
     margin: 0;
     border: 0;
     background: transparent;
@@ -186,12 +186,6 @@
     color: #fff;
   }
 
-  .mobile-bottom-nav__item.is-marked .mobile-bottom-nav__icon,
-  .mobile-bottom-nav__item.is-marked .mobile-bottom-nav__icon-wrap {
-    color: #fff;
-    transform: translateY(-0.15rem);
-  }
-
   .mobile-bottom-nav__item.is-marked .mobile-bottom-nav__label {
     color: var(--bnav-accent);
   }
@@ -201,21 +195,35 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    transition: color 0.22s ease, transform 0.22s ease;
   }
 
   .mobile-bottom-nav__icon,
   .mobile-bottom-nav__icon-wrap {
-    display: inline-flex;
-    line-height: 0;
     position: relative;
-    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), color 0.2s ease;
+    display: inline-grid;
+    place-items: center;
+    width: var(--bnav-icon-hit);
+    height: var(--bnav-icon-hit);
+    line-height: 0;
+    color: inherit;
+    isolation: isolate;
+    border-radius: 0.7rem;
   }
 
-  /* Morph faces — same language as header WA / cart / wishlist */
+  /*
+   * Active plate — exactly the icon hit box diameter.
+   * No overflow glow, no travel animation.
+   */
+  .mobile-bottom-nav__item.is-marked .mobile-bottom-nav__icon,
+  .mobile-bottom-nav__item.is-marked .mobile-bottom-nav__icon-wrap {
+    color: #fff;
+    background: linear-gradient(145deg, #ff8a4c 0%, var(--bnav-accent) 55%, #e85a1a 100%);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  }
+
   .mobile-bottom-nav__morph.dx-morph {
-    width: 1.4rem;
-    height: 1.4rem;
+    width: 1.35rem;
+    height: 1.35rem;
   }
 
   .mobile-bottom-nav__item--morph:hover .dx-morph__face--idle,
@@ -224,8 +232,8 @@
   .mobile-bottom-nav__item--morph.is-marked .dx-morph__face--idle,
   .mobile-bottom-nav__item--morph.is-active .dx-morph__face--idle {
     opacity: 0;
-    transform: scale(0.4) rotate(26deg);
-    filter: blur(1px);
+    transform: scale(0.45) rotate(22deg);
+    filter: none;
   }
 
   .mobile-bottom-nav__item--morph:hover .dx-morph__face--hover,
@@ -234,13 +242,8 @@
   .mobile-bottom-nav__item--morph.is-marked .dx-morph__face--hover,
   .mobile-bottom-nav__item--morph.is-active .dx-morph__face--hover {
     opacity: 1;
-    transform: scale(1.08) rotate(0deg);
-    filter: blur(0);
-  }
-
-  .mobile-bottom-nav__item--morph:hover .mobile-bottom-nav__icon,
-  .mobile-bottom-nav__item--morph:hover .mobile-bottom-nav__icon-wrap {
-    transform: translateY(-2px);
+    transform: scale(1) rotate(0deg);
+    filter: none;
   }
 
   .mobile-bottom-nav__fab-slot {
@@ -251,8 +254,8 @@
 
   .mobile-bottom-nav__badge {
     position: absolute;
-    top: -0.35rem;
-    right: -0.55rem;
+    top: -0.2rem;
+    right: -0.35rem;
     min-width: 1rem;
     height: 1rem;
     padding: 0 0.28rem;
@@ -264,13 +267,13 @@
     line-height: 1rem;
     text-align: center;
     box-shadow: 0 0 0 2px var(--bnav-surface-solid);
+    z-index: 2;
   }
 
   [data-theme='dark'] .mobile-bottom-nav__badge {
     background: var(--bnav-accent);
   }
 
-  /* Repair — completely above the pill, with a clear air gap (not docked into top) */
   .mobile-bottom-nav__fab {
     pointer-events: auto;
     position: absolute;
@@ -293,29 +296,27 @@
     touch-action: manipulation;
   }
 
+  /* Glow stays inside the orb diameter — no outer halo rings */
   .mobile-bottom-nav__fab-orb {
     display: grid;
     place-items: center;
     width: var(--bnav-fab-size);
     height: var(--bnav-fab-size);
-    border-radius: 1.15rem;
+    border-radius: 1.05rem;
+    overflow: hidden;
     background: linear-gradient(145deg, #ff8a4c 0%, var(--bnav-accent) 55%, #e85a1a 100%);
     color: #fff;
     box-shadow:
-      0 12px 28px rgba(255, 106, 43, 0.45),
-      0 0 0 3px color-mix(in srgb, var(--bnav-surface-solid) 70%, transparent),
-      inset 0 1px 0 rgba(255, 255, 255, 0.3);
-    transition: border-radius 0.28s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.22s ease;
+      0 6px 14px rgba(255, 106, 43, 0.32),
+      inset 0 1px 0 rgba(255, 255, 255, 0.28);
   }
 
   .mobile-bottom-nav__fab.is-active .mobile-bottom-nav__fab-orb,
   .mobile-bottom-nav.is-repair-active .mobile-bottom-nav__fab-orb {
-    border-radius: 0.85rem 1.25rem 0.85rem 1.25rem;
+    border-radius: 0.9rem 1.15rem 0.9rem 1.15rem;
     box-shadow:
-      0 14px 32px rgba(255, 106, 43, 0.55),
-      0 0 0 3px color-mix(in srgb, var(--bnav-surface-solid) 75%, transparent),
-      0 0 0 7px rgba(255, 106, 43, 0.22),
-      inset 0 1px 0 rgba(255, 255, 255, 0.32);
+      0 6px 14px rgba(255, 106, 43, 0.38),
+      inset 0 1px 0 rgba(255, 255, 255, 0.3);
   }
 
   .mobile-bottom-nav__fab.is-active,
@@ -325,27 +326,11 @@
 
   .mobile-bottom-nav__fab-label {
     line-height: 1;
-    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.18);
-  }
-
-  .mobile-bottom-nav__fab-pop {
-    position: absolute;
-    left: 50%;
-    top: 0.35rem;
-    width: 3.2rem;
-    height: 3.2rem;
-    margin: 0 0 0 -1.6rem;
-    border-radius: 999px;
-    pointer-events: none;
-    z-index: 0;
-    background:
-      radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.55) 0%, transparent 42%),
-      radial-gradient(circle, rgba(255, 106, 43, 0.5) 0%, rgba(255, 106, 43, 0.1) 55%, transparent 72%);
   }
 
   .mobile-bottom-nav__fab .mobile-bottom-nav__morph.dx-morph {
-    width: 1.45rem;
-    height: 1.45rem;
+    width: 1.4rem;
+    height: 1.4rem;
     color: #fff;
   }
 
@@ -432,19 +417,7 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .mobile-bottom-nav__mark,
-  .mobile-bottom-nav__pop,
-  .mobile-bottom-nav__fab-orb,
-  .mobile-bottom-nav__icon,
-  .mobile-bottom-nav__icon-wrap,
   .mobile-bottom-nav__morph .dx-morph__face {
     transition: none !important;
-  }
-
-  .mobile-bottom-nav__item--morph:hover .dx-morph__face--idle,
-  .mobile-bottom-nav__item--morph:hover .dx-morph__face--hover,
-  .mobile-bottom-nav__item--morph.is-marked .dx-morph__face--idle,
-  .mobile-bottom-nav__item--morph.is-marked .dx-morph__face--hover {
-    filter: none !important;
   }
 }
