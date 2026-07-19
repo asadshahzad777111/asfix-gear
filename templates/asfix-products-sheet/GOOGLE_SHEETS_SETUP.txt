@@ -1,0 +1,53 @@
+AsFix & Gear — Products Sheet (full setup)
+==========================================
+
+PRIMARY (already built on website)
+----------------------------------
+1. Staff login → Admin
+2. Products → Products Sheet
+3. Search box mein name type karo (iphone / battery / case)
+4. Price, discount %, stock edit → Save
+5. "Export → Google Sheets" → CSV download + Sheets tab open
+6. Sheets mein File → Import → Upload CSV
+7. Baad mein Sheet se CSV download → Admin → Import CSV
+
+Yahi pura process hai — phone aur laptop dono pe Admin se.
+
+
+OPTIONAL — Sheets Search tab (agar sirf Google Sheets use karna ho)
+------------------------------------------------------------------
+CSV headers:
+  id, name, category, brand, price, discount_percent, sale_price,
+  stock, compatible_models, status, notes
+
+1. Import CSV → tab rename: Products
+2. F2 sale_price formula (drag down):
+
+  =IF(OR(E2="",E2=0),"",ROUND(E2*(1-IF(F2="",0,F2)/100),0))
+
+  NOTE: After Export from website, columns are:
+  A=id B=name C=category D=brand E=price F=discount G=sale H=stock I=models J=status K=notes
+
+  sale_price already filled by export — formula optional.
+
+3. New tab "Search":
+   A1=Search  B1=(type here)
+   A4 formula:
+
+  =IF(B1="",
+    QUERY(Products!A2:J,"SELECT A,B,C,D,E,F,G,H,I,J WHERE B IS NOT NULL",0),
+    IFERROR(
+      FILTER(
+        {Products!A2:A,Products!B2:B,Products!C2:C,Products!D2:D,Products!E2:E,Products!F2:F,Products!G2:G,Products!H2:H,Products!I2:I,Products!J2:J},
+        REGEXMATCH(LOWER(Products!B2:B), LOWER(B1))
+      ),
+      "No match"
+    )
+  )
+
+
+RULES
+-----
+• Website Admin = master
+• Important price/stock changes → Sheet pe Save YA Import after Sheet edit
+• Bill / thermal printer = later

@@ -5,6 +5,7 @@ import { roleLabel } from '../../config/permissions';
 
 const PRODUCT_SUB = [
   { id: 'products', label: 'All Products' },
+  { id: 'sheet', label: 'Products Sheet' },
   { id: 'add', label: 'Add new product' },
   { id: 'categories', label: 'Categories' },
   { id: 'stock', label: 'Stock' },
@@ -96,10 +97,10 @@ export default function AdminLayout({
           <div className="wp-menu-section">
             {navItem('dashboard', 'Dashboard')}
             <p className="wp-menu-heading">Shop</p>
-            <div className={`wp-menu-item ${['products', 'add', 'stock', 'categories'].includes(tab) ? 'is-open' : ''}`}>
+            <div className={`wp-menu-item ${['products', 'sheet', 'add', 'stock', 'categories'].includes(tab) ? 'is-open' : ''}`}>
               <button
                 type="button"
-                className={`wp-menu-link wp-menu-link--parent ${['products', 'add', 'stock', 'categories'].includes(tab) ? 'is-active' : ''}`}
+                className={`wp-menu-link wp-menu-link--parent ${['products', 'sheet', 'add', 'stock', 'categories'].includes(tab) ? 'is-active' : ''}`}
                 onClick={() => goTab('products')}
               >
                 <span className="wp-menu-text">Products</span>

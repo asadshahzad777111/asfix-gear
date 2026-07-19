@@ -18,6 +18,7 @@ import AdminChatInbox from '../components/AdminChatInbox';
 import AdminSalesReport from '../components/AdminSalesReport';
 import AdminOrderCard, { ORDER_STATUSES } from '../components/AdminOrderCard';
 import AdminStockManager from '../components/AdminStockManager';
+import AdminProductsSheet from '../components/admin/AdminProductsSheet';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
 import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts, getLowStockProducts } from '../utils/stock';
@@ -29,7 +30,7 @@ import { startVisibilityPoll } from '../utils/visibilityPoll';
 import useLiveUpdates from '../hooks/useLiveUpdates';
 
 const VALID_TABS = new Set([
-  'dashboard', 'products', 'add', 'categories', 'stock', 'orders', 'customers',
+  'dashboard', 'products', 'add', 'categories', 'stock', 'sheet', 'orders', 'customers',
   'bookings', 'messages', 'feedback', 'sales', 'admins', 'settings', 'payments', 'ads', 'hero',
 ]);
 
@@ -429,6 +430,7 @@ export default function Admin() {
     if (tab === 'products') return 'Products';
     if (tab === 'categories') return 'Categories';
     if (tab === 'stock') return 'Stock';
+    if (tab === 'sheet') return 'Products Sheet';
     if (tab === 'orders') return 'Orders';
     if (tab === 'customers') return 'Customers';
     if (tab === 'bookings') return 'Repair Intake';
@@ -564,6 +566,15 @@ export default function Admin() {
               stockFilter={stockFilter}
               onStockFilterChange={handleStockFilterChange}
               lowStockCount={lowStockCount}
+              onProductUpdated={(updated) =>
+                setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
+              }
+            />
+          ) : tab === 'sheet' ? (
+            <AdminProductsSheet
+              products={products}
+              currentUser={user}
+              onProductsChange={loadData}
               onProductUpdated={(updated) =>
                 setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
               }

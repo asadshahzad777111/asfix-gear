@@ -335,7 +335,7 @@ async function generateAd({ file, title, price, format = 'square', timeoutMs = 6
   return data;
 }
 
-async function downloadDataBackup() {
+async function downloadAuthenticatedFile(path, fallbackFilename) {
   const token = getAuthToken();
   if (!token) throw new Error('Authentication required');
 
@@ -344,15 +344,15 @@ async function downloadDataBackup() {
 
   let res;
   try {
-    res = await fetch(`${API_BASE}/admin/export-data`, {
+    res = await fetch(`${API_BASE}${path}`, {
       headers: { Authorization: `Bearer ${token}` },
       signal: controller.signal,
     });
   } catch (err) {
     if (err?.name === 'AbortError') {
-      throw new Error('Backup download timed out. Please try again.');
+      throw new Error('Download timed out. Please try again.');
     }
-    throw new Error('Network error — could not download backup.');
+    throw new Error('Network error — could not download file.');
   } finally {
     clearTimeout(timeoutId);
   }
@@ -372,7 +372,7 @@ async function downloadDataBackup() {
 
   const blob = await res.blob();
   const disposition = res.headers.get('Content-Disposition');
-  let filename = 'asfix-backup.json';
+  let filename = fallbackFilename;
   const match = disposition?.match(/filename="([^"]+)"/);
   if (match) filename = match[1];
 
@@ -382,6 +382,14 @@ async function downloadDataBackup() {
   link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+async function downloadDataBackup() {
+  return downloadAuthenticatedFile('/admin/export-data', 'asfix-backup.json');
+}
+
+async function downloadProductsCsv() {
+  return downloadAuthenticatedFile('/products/export.csv', 'asfix-products.csv');
 }
 
 export const api = {
@@ -450,6 +458,13 @@ export const api = {
   duplicateProduct: (id) => request(`/products/${id}/duplicate`, { method: 'POST' }),
   bulkDeleteProducts: (ids) =>
     request('/products/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
+  downloadProductsCsv: () => downloadProductsCsv(),
+  importProductsCsv: (csv) =>
+    request('/products/import-csv', {
+      method: 'POST',
+      body: JSON.stringify({ csv }),
+      timeoutMs: 60_000,
+    }),
   uploadProductImage: (file) => uploadProductImage(file),
   uploadHeroMedia: (file) => uploadHeroMedia(file),
   uploadOrderPaymentProof: (orderId, file) => uploadOrderPaymentProof(orderId, file),
