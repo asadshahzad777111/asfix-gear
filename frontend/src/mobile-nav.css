@@ -27,6 +27,16 @@
     backface-visibility: hidden;
   }
 
+  /* DX header: avoid translateZ containing-block so the fixed drawer stays viewport-pinned */
+  .navbar.navbar--dx {
+    transform: none;
+    contain: style;
+  }
+
+  .navbar.navbar--dx.is-menu-open {
+    transform: none !important;
+  }
+
   .navbar-inner {
     position: relative;
     z-index: 107;

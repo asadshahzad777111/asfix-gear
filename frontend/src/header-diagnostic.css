@@ -1634,6 +1634,38 @@ body.cart-open .navbar.navbar--dx:not(.is-menu-open) {
   pointer-events: none;
 }
 
+/*
+ * Menu open — keep the top bar pinned in place (settings/WA/cart stay).
+ * Kill parent transform so the fixed drawer isn't dragged off-screen
+ * (mobile-nav.css uses translateZ(0) which creates a containing block).
+ */
+@media (max-width: 1024px) {
+  .navbar.navbar--dx {
+    transform: none;
+  }
+
+  .navbar.navbar--dx.is-header-hidden:not(.is-menu-open) {
+    transform: translate3d(0, -100%, 0);
+  }
+
+  .navbar.navbar--dx.is-menu-open,
+  body.nav-open .navbar.navbar--dx {
+    transform: none !important;
+    pointer-events: auto !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+  }
+
+  .navbar.navbar--dx.is-menu-open .dx-utility,
+  .navbar.navbar--dx.is-menu-open .dx-actions,
+  body.nav-open .navbar.navbar--dx .dx-utility,
+  body.nav-open .navbar.navbar--dx .dx-actions {
+    visibility: visible !important;
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
+}
+
 body.cart-open .dx-slimline,
 body.nav-open .dx-slimline {
   transform: translate3d(0, -110%, 0) !important;
