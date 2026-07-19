@@ -315,6 +315,17 @@
   transition: transform 0.2s ease;
 }
 
+.home-brand-card--pc .home-brand-icon .nav-search-brand-icon {
+  width: 28px;
+  height: 28px;
+  object-fit: contain;
+}
+
+.home-brand-card--pc .home-brand-icon .nav-search-brand-icon--wide {
+  width: 40px;
+  height: 22px;
+}
+
 .home-brand-card--pc .home-brand-label {
   font-size: 0.72rem;
   font-weight: 600;
