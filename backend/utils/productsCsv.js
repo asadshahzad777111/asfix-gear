@@ -11,6 +11,8 @@ export const PRODUCT_CSV_HEADERS = [
   'stock',
   'compatible_models',
   'status',
+  'sale_count',
+  'purchase_count',
   'notes',
 ];
 
@@ -29,20 +31,27 @@ function csvEscape(value) {
   return str;
 }
 
+export function productToCsvRecord(product) {
+  return {
+    id: product.id ?? '',
+    name: product.name ?? '',
+    category: product.category ?? '',
+    brand: product.brand ?? '',
+    price: product.price ?? '',
+    discount_percent: product.discount_percent ?? 0,
+    sale_price: salePrice(product.price, product.discount_percent),
+    stock: product.stock ?? 0,
+    compatible_models: product.compatible_models ?? '',
+    status: product.status || 'published',
+    sale_count: Math.max(0, Number(product.sale_count) || 0),
+    purchase_count: Math.max(0, Number(product.purchase_count) || 0),
+    notes: '',
+  };
+}
+
 export function productToCsvRow(product) {
-  return [
-    product.id ?? '',
-    product.name ?? '',
-    product.category ?? '',
-    product.brand ?? '',
-    product.price ?? '',
-    product.discount_percent ?? 0,
-    salePrice(product.price, product.discount_percent),
-    product.stock ?? 0,
-    product.compatible_models ?? '',
-    product.status || 'published',
-    '',
-  ];
+  const record = productToCsvRecord(product);
+  return PRODUCT_CSV_HEADERS.map((header) => record[header] ?? '');
 }
 
 export function productsToCsv(products) {
@@ -135,6 +144,16 @@ export function csvRecordToPatch(record) {
     const stock = Number(record.stock);
     if (!Number.isFinite(stock) || stock < 0) throw new Error('Invalid stock');
     patch.stock = Math.floor(stock);
+  }
+  if (record.sale_count !== '' && record.sale_count != null) {
+    const saleCount = Number(record.sale_count);
+    if (!Number.isFinite(saleCount) || saleCount < 0) throw new Error('Invalid sale_count');
+    patch.sale_count = Math.floor(saleCount);
+  }
+  if (record.purchase_count !== '' && record.purchase_count != null) {
+    const purchaseCount = Number(record.purchase_count);
+    if (!Number.isFinite(purchaseCount) || purchaseCount < 0) throw new Error('Invalid purchase_count');
+    patch.purchase_count = Math.floor(purchaseCount);
   }
   if (record.status) {
     const status = String(record.status).toLowerCase();
