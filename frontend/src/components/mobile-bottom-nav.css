@@ -35,12 +35,22 @@
     padding-bottom: var(--bottom-nav-safe);
     pointer-events: none;
     overflow: visible;
-    transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
+    opacity: 1;
+    visibility: visible;
+    transform: translate3d(0, 0, 0);
+    transition:
+      transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 0.24s ease,
+      visibility 0.24s ease;
   }
 
-  .mobile-bottom-nav.is-cart-open {
-    transform: translateY(110%);
+  /* Cart or side menu open — dock slides away completely */
+  .mobile-bottom-nav.is-cart-open,
+  body.nav-open .mobile-bottom-nav {
+    transform: translate3d(0, 110%, 0);
     opacity: 0;
+    visibility: hidden;
+    pointer-events: none !important;
   }
 
   .mobile-bottom-nav__dock {

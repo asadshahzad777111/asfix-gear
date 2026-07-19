@@ -59,10 +59,14 @@
     box-shadow:
       0 8px 22px rgba(255, 106, 43, 0.42),
       inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
-    opacity: 1 !important;
-    visibility: visible !important;
-    pointer-events: auto !important;
-    transform: translateZ(0);
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate3d(0, 0, 0) scale(1);
+    transition:
+      opacity 0.28s ease,
+      transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0.28s ease;
   }
 
   .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger.is-open {
@@ -70,9 +74,23 @@
     box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35) !important;
   }
 
-  body.cart-open .chat-fab-trigger,
-  body.nav-open .chat-fab-trigger {
+  /* Match FAB specificity so drawer/cart hide actually wins */
+  body.cart-open .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger,
+  body.nav-open .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
     opacity: 0 !important;
+    visibility: hidden !important;
+    pointer-events: none !important;
+    transform: translate3d(0, 14px, 0) scale(0.9) !important;
+    transition:
+      opacity 0.22s ease,
+      transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+      visibility 0.22s ease !important;
+  }
+
+  body.nav-open .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel,
+  body.cart-open .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
+    opacity: 0 !important;
+    visibility: hidden !important;
     pointer-events: none !important;
   }
 
