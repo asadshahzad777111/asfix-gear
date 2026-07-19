@@ -17,7 +17,13 @@ const OTP_SEND_PATHS = [
 ];
 /** Staff/customer login + session check — Render cold wake often exceeds 8s. */
 const AUTH_COLD_PATHS = ['/auth/login', '/auth/me'];
-const COLD_START_GET_PREFIXES = ['/products', '/shop/status', '/shop/address-settings', '/ping'];
+const COLD_START_GET_PREFIXES = [
+  '/products',
+  '/shop/status',
+  '/shop/address-settings',
+  '/shop/storefront-images',
+  '/ping',
+];
 
 const COLD_START_MSG =
   'Server start ho raha hai — 30–60 sec wait karein aur refresh karein. / Server is waking up — wait 30–60 seconds and refresh.';
@@ -559,9 +565,14 @@ export const api = {
   getAddressSettings: () => request('/shop/address-settings'),
   setAddressSettings: (body) =>
     request('/shop/address-settings', { method: 'PATCH', body: JSON.stringify(body) }),
-  getStorefrontImages: () => request('/shop/storefront-images'),
+  getStorefrontImages: () =>
+    request('/shop/storefront-images', { timeoutMs: COLD_START_TIMEOUT_MS }),
   updateStorefrontImages: (body) =>
-    request('/shop/storefront-images', { method: 'PATCH', body: JSON.stringify(body) }),
+    request('/shop/storefront-images', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+      timeoutMs: COLD_START_TIMEOUT_MS,
+    }),
 };
 
 export function formatPrice(amount) {
