@@ -18,9 +18,10 @@ import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
 import NavSearch from './nav/NavSearch';
 import ShopMegaMenu from './nav/ShopMegaMenu';
-import { IconCart, IconHeart, IconUser, IconWhatsApp } from './nav/NavIcons';
+import { IconCart, IconChat, IconHeart, IconUser, IconWhatsApp } from './nav/NavIcons';
 import { useWishlistIds } from '../hooks/useWishlist';
 import { useCart } from '../context/CartContext';
+import { useChatAssistant } from '../context/ChatAssistantContext';
 import {
   NavDrawerAdminLink,
   NavDrawerButton,
@@ -38,6 +39,7 @@ export default function Navbar() {
   const prevPathRef = useRef(location.pathname);
   const { count: wishlistCount } = useWishlistIds();
   const { count: cartCount, setOpen: setCartOpen, open: cartOpen } = useCart();
+  const { open: chatOpen, toggle: toggleChat } = useChatAssistant();
   const [menuOpen, setMenuOpen] = useState(false);
   const [shopAccordionOpen, setShopAccordionOpen] = useState(false);
   const [shopMobileLevel, setShopMobileLevel] = useState(1);
@@ -239,6 +241,17 @@ export default function Navbar() {
               >
                 <IconWhatsApp />
               </a>
+
+              <button
+                type="button"
+                className={`dx-icon-btn dx-icon-btn--chat${chatOpen ? ' is-active' : ''}`}
+                onClick={toggleChat}
+                aria-label={t('chatbot.fabAria')}
+                aria-expanded={chatOpen}
+                title={t('chatbot.title')}
+              >
+                <IconChat />
+              </button>
 
               {isCustomer ? (
                 <AccountMenu className="account-menu--toolbar" />

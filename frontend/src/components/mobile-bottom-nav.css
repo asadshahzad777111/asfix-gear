@@ -34,6 +34,7 @@
     height: calc(var(--bottom-nav-h) + var(--bottom-nav-safe));
     padding-bottom: var(--bottom-nav-safe);
     pointer-events: none;
+    overflow: visible;
     transition: transform 0.28s cubic-bezier(0.22, 1, 0.36, 1), opacity 0.2s ease;
   }
 
@@ -266,12 +267,31 @@
     display: none !important;
   }
 
-  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
-    bottom: var(--float-stack-0) !important;
+  .app:not(.app--admin):not(.app--gaming) .staff-access {
+    bottom: calc(var(--bottom-nav-total) + 0.85rem) !important;
+    right: var(--float-dock-right, 0.65rem) !important;
+    left: auto !important;
+    z-index: 1164 !important;
   }
 
-  .app:not(.app--admin):not(.app--gaming) .staff-access {
-    bottom: var(--float-stack-1) !important;
+  .app:not(.app--admin):not(.app--gaming) .fab-add {
+    bottom: calc(var(--bottom-nav-total) + 0.85rem + 3.4rem) !important;
+    right: var(--float-dock-right, 0.65rem) !important;
+    z-index: 1163 !important;
+  }
+
+  .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
+    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.45rem) !important;
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 5.25rem) !important;
+    z-index: 1210 !important;
+  }
+
+  /* Force chat FAB above dock even if other float CSS fights it */
+  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
+    bottom: calc(var(--bottom-nav-total) + 1.5rem) !important;
+    left: max(0.9rem, env(safe-area-inset-left, 0px) + 0.7rem) !important;
+    right: auto !important;
+    z-index: 1200 !important;
   }
 
   .app:not(.app--admin):not(.app--gaming) .app-main {

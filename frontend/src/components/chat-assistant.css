@@ -16,35 +16,14 @@
   transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1025px) {
   .chat-fab-trigger {
     bottom: var(--float-chat-bottom);
     right: var(--float-desktop-edge, 1.5rem);
     width: var(--float-chat-fab-size, 3.25rem);
     height: var(--float-chat-fab-size, 3.25rem);
   }
-}
 
-@media (max-width: 768px) {
-  .chat-fab-trigger {
-    top: auto;
-    left: auto;
-    bottom: var(--float-stack-1);
-    right: var(--float-dock-right, 0.65rem);
-    width: var(--float-dock-size, 3.15rem);
-    height: var(--float-dock-size, 3.15rem);
-    z-index: 201;
-    transform: translateZ(0);
-    pointer-events: auto;
-  }
-
-  .chat-fab-trigger:hover,
-  .chat-fab-trigger:active {
-    transform: translateZ(0);
-  }
-}
-
-@media (min-width: 769px) {
   .chat-fab-trigger:hover {
     transform: translateY(-1px);
     border-color: color-mix(in srgb, var(--hdr-accent, #ff6a2b) 25%, var(--hdr-border, rgba(255, 255, 255, 0.08)));
@@ -53,6 +32,82 @@
 
   .chat-fab-trigger:active {
     transform: translateY(0);
+  }
+}
+
+/*
+  Mobile/tablet: pin chat FAB ABOVE the bottom nav (left).
+  Must stay outside the nav (nav uses transform) so fixed coords are viewport-relative.
+*/
+@media (max-width: 1024px) {
+  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
+    display: grid !important;
+    position: fixed !important;
+    top: auto !important;
+    /* LEFT above dock — never under Account on the right */
+    right: auto !important;
+    left: max(0.9rem, env(safe-area-inset-left, 0px) + 0.7rem) !important;
+    /* Full button clears bottom nav (dock ~4.1rem + safe area) */
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 1.5rem) !important;
+    width: 3.35rem !important;
+    height: 3.35rem !important;
+    z-index: 1200 !important;
+    border: none !important;
+    border-radius: 5px 14px 5px 14px !important;
+    color: #fff !important;
+    background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 52%, #e04e00 100%) !important;
+    box-shadow:
+      0 8px 22px rgba(255, 106, 43, 0.42),
+      inset 0 1px 0 rgba(255, 255, 255, 0.22) !important;
+    opacity: 1 !important;
+    visibility: visible !important;
+    pointer-events: auto !important;
+    transform: translateZ(0);
+  }
+
+  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger.is-open {
+    background: linear-gradient(145deg, #1f1612 0%, #2c1c14 100%) !important;
+    box-shadow: 0 8px 18px rgba(0, 0, 0, 0.35) !important;
+  }
+
+  body.cart-open .chat-fab-trigger,
+  body.nav-open .chat-fab-trigger {
+    opacity: 0 !important;
+    pointer-events: none !important;
+  }
+
+  .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
+    position: fixed;
+    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.45rem);
+    right: 0.65rem;
+    left: 0.65rem;
+    /* Clear bottom nav + chat FAB so the popup never sits under the bar */
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 5.25rem);
+    width: auto;
+    max-height: none;
+    height: auto;
+    z-index: 1210;
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+    border-radius: 16px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
+    animation: chatPanelIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .chat-assistant-head {
+    background: linear-gradient(135deg, #ff6a2b 0%, #ff8a4c 55%, #e85a1a 100%);
+    color: #fffaf6;
+  }
+
+  .chat-assistant-head span {
+    opacity: 0.9;
+  }
+
+  .chat-assistant-close {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
   }
 }
 
@@ -68,7 +123,7 @@
   line-height: 1;
 }
 
-@media (min-width: 769px) {
+@media (min-width: 1025px) {
   .chat-assistant-panel {
     position: fixed;
     right: var(--float-desktop-edge, 1.5rem);
@@ -319,29 +374,8 @@
   cursor: default;
 }
 
-@media (max-width: 768px) {
-  .chat-assistant-panel {
-    position: fixed;
-    right: var(--float-dock-right, 0.65rem);
-    left: var(--float-dock-right, 0.65rem);
-    width: auto;
-    bottom: calc(var(--float-stack-1) + var(--float-dock-size, 3.15rem) + var(--float-dock-gap, 0.75rem));
-    max-height: min(70vh, calc(100dvh - var(--float-dock-row, 16rem) - var(--nav-height, 64px) - 1rem));
-    z-index: 201;
-    display: flex;
-    flex-direction: column;
-    padding: 0;
-    overflow: hidden;
-    border-radius: 20px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
-    animation: chatPanelIn 0.22s cubic-bezier(0.34, 1.56, 0.64, 1);
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
-  @media (min-width: 769px) {
-    .chat-fab-trigger:hover {
-      transform: none;
-    }
+  .chat-assistant-panel {
+    animation: none !important;
   }
 }

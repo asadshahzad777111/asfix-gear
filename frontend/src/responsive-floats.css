@@ -165,17 +165,7 @@
     padding-bottom: 0.25rem;
   }
 
-  .chat-fab-trigger {
-    position: fixed;
-    top: auto;
-    left: auto;
-    bottom: var(--float-stack-1);
-    right: var(--float-dock-right);
-    width: var(--float-dock-size);
-    height: var(--float-dock-size);
-    z-index: 200;
-    transform: translateZ(0);
-  }
+  /* Mobile chat FAB: left dock — rules in chat-assistant.css / mobile-bottom-nav.css */
 
   /* Repair (primary), chat, and staff share one clean vertical column. */
   .floating-repair-btn {
@@ -231,11 +221,6 @@
     display: none;
   }
 
-  /* Repair hidden on /repair — chat drops to bottom slot */
-  body:not(:has(.floating-repair-btn)) .chat-fab-trigger {
-    bottom: var(--float-stack-0) !important;
-  }
-
   body:not(:has(.floating-repair-btn)) .staff-access {
     bottom: var(--float-stack-1) !important;
   }
@@ -261,7 +246,8 @@
 
   .fab-add {
     bottom: calc(var(--float-dock-bottom) + var(--float-dock-size) + 0.5rem);
-    right: 0.65rem;
+    right: var(--float-dock-right, 0.65rem);
+    z-index: 1163;
   }
 
   /* Nav drawer gaming/shop → mobile-nav.css */
@@ -270,35 +256,33 @@
 /* ── Tablet (iPad portrait / small landscape) ── */
 @media (min-width: 768px) and (max-width: 1024px) {
   .app-main {
-    padding-bottom: 5.5rem;
+    padding-bottom: calc(var(--float-dock-row, 5.5rem) + 0.5rem);
   }
 
-  /* Pill layout from index.css (≥769px); only nudge dock position here */
+  /* Keep floats above the bottom nav dock (same tokens as phone) */
   .floating-repair-btn {
-    bottom: 1.25rem;
-    right: 1rem;
-  }
-
-  body:not(:has(.floating-repair-btn)) .chat-fab-trigger {
-    bottom: 1.25rem !important;
-    right: 1rem !important;
+    bottom: var(--float-stack-0);
+    right: var(--float-dock-right, 1rem);
+    z-index: 1162;
   }
 
   body:not(:has(.floating-repair-btn)) .staff-access {
-    bottom: calc(1.25rem + 3.35rem + 0.75rem) !important;
-    right: 1rem !important;
+    bottom: var(--float-stack-1) !important;
+    right: var(--float-dock-right, 1rem) !important;
   }
 
-  .chat-fab-trigger {
-    bottom: calc(1.25rem + 3.35rem + 0.75rem);
-    right: 1rem;
-    width: 3.35rem;
-    height: 3.35rem;
-  }
+  /* Chat FAB geometry lives in chat-assistant.css (fixed above bottom nav) */
 
   .staff-access {
-    bottom: calc(1.25rem + (3.35rem + 0.75rem) * 2);
-    right: 1rem;
+    bottom: var(--float-stack-2);
+    right: var(--float-dock-right, 1rem);
+    z-index: 1164;
+  }
+
+  .fab-add {
+    bottom: calc(var(--float-stack-1) + 0.15rem);
+    right: var(--float-dock-right, 1rem);
+    z-index: 1163;
   }
 
   .staff-toolbar {

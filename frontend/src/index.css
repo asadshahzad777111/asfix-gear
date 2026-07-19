@@ -49,100 +49,251 @@ img { max-width: 100%; height: auto; display: block; }
   margin-bottom: 0.75rem;
 }
 
-/* Ambient background — slow color wash behind the page */
+/* Ambient background — always drifting orange + companion washes */
 .ambient-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
-  contain: strict;
+  contain: paint;
+  /* Keep motion running while modals/drawers animate */
+  animation-play-state: running;
 }
 
 .ambient-veil {
   position: absolute;
   inset: 0;
   background: var(--bg-gradient);
-  opacity: 0.88;
+  opacity: 1;
+  animation: ambientVeilBreathe 18s ease-in-out infinite;
+  will-change: opacity;
+}
+
+.ambient-mesh {
+  position: absolute;
+  inset: -28%;
+  background: var(--ambient-mesh);
+  opacity: 0.9;
+  mix-blend-mode: soft-light;
+  animation: ambientMeshDrift 18s ease-in-out infinite;
+  will-change: transform;
+}
+
+.ambient-flare {
+  position: absolute;
+  inset: -14% -28%;
+  background: var(--ambient-flare);
+  opacity: 0.95;
+  mix-blend-mode: screen;
+  animation: ambientFlareSweep 14s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+[data-theme='light'] .ambient-flare {
+  mix-blend-mode: multiply;
+  opacity: 0.6;
+}
+
+[data-theme='light'] .ambient-mesh {
+  mix-blend-mode: multiply;
+  opacity: 0.6;
 }
 
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(88px);
-  animation: ambientDrift 22s ease-in-out infinite;
+  filter: blur(80px);
+  animation: ambientDrift 14s ease-in-out infinite;
   opacity: var(--orb-strength);
   will-change: transform;
   transform: translate3d(0, 0, 0);
+  animation-play-state: running;
 }
 
 .orb-1 {
-  width: min(72vw, 520px);
-  height: min(72vw, 520px);
+  width: min(82vw, 600px);
+  height: min(82vw, 600px);
   background: var(--orb-a);
-  top: -18%;
-  left: -12%;
-  animation-duration: 26s;
+  top: -24%;
+  left: -16%;
+  animation-duration: 13s;
 }
 
 .orb-2 {
-  width: min(60vw, 440px);
-  height: min(60vw, 440px);
+  width: min(68vw, 500px);
+  height: min(68vw, 500px);
   background: var(--orb-b);
-  top: 28%;
-  right: -16%;
-  animation-delay: -7s;
-  animation-duration: 32s;
+  top: 14%;
+  right: -20%;
+  animation-delay: -3s;
+  animation-duration: 16s;
   animation-name: ambientDriftAlt;
 }
 
 .orb-3 {
-  width: min(55vw, 400px);
-  height: min(55vw, 400px);
+  width: min(62vw, 440px);
+  height: min(62vw, 440px);
   background: var(--orb-c);
-  bottom: -12%;
-  left: 18%;
-  animation-delay: -13s;
-  animation-duration: 28s;
+  bottom: -18%;
+  left: 6%;
+  animation-delay: -6s;
+  animation-duration: 15s;
+  animation-name: ambientDriftPulse;
 }
 
 .orb-4 {
-  width: min(48vw, 340px);
-  height: min(48vw, 340px);
+  width: min(54vw, 400px);
+  height: min(54vw, 400px);
   background: var(--orb-d);
-  top: 52%;
-  left: 42%;
-  animation-delay: -19s;
-  animation-duration: 36s;
+  top: 44%;
+  left: 36%;
+  animation-delay: -9s;
+  animation-duration: 17s;
   animation-name: ambientDriftAlt;
+}
+
+.orb-5 {
+  width: min(46vw, 320px);
+  height: min(46vw, 320px);
+  background: var(--orb-e);
+  top: 62%;
+  right: 8%;
+  animation-delay: -4s;
+  animation-duration: 12s;
+  animation-name: ambientDriftPulse;
+}
+
+.ambient-grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  pointer-events: none;
 }
 
 .grid-overlay {
   position: absolute;
   inset: 0;
-  opacity: 0.4;
+  opacity: 0.35;
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at center, black 15%, transparent 72%);
+  mask-image: radial-gradient(ellipse at center, black 12%, transparent 74%);
 }
 
+/* Noticeable but calm travel — readable while drawers/modals open */
 @keyframes ambientDrift {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  25% { transform: translate3d(6%, 4%, 0) scale(1.08); }
-  50% { transform: translate3d(-4%, 8%, 0) scale(0.94); }
-  75% { transform: translate3d(5%, -5%, 0) scale(1.04); }
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: var(--orb-strength);
+  }
+  25% {
+    transform: translate3d(10%, 7%, 0) scale(1.1);
+    opacity: calc(var(--orb-strength) * 0.88);
+  }
+  50% {
+    transform: translate3d(-8%, 11%, 0) scale(0.92);
+    opacity: calc(var(--orb-strength) * 1.05);
+  }
+  75% {
+    transform: translate3d(9%, -8%, 0) scale(1.06);
+    opacity: calc(var(--orb-strength) * 0.92);
+  }
 }
 
 @keyframes ambientDriftAlt {
-  0%, 100% { transform: translate3d(0, 0, 0) scale(1.02); }
-  33% { transform: translate3d(-7%, 5%, 0) scale(0.92); }
-  66% { transform: translate3d(5%, -6%, 0) scale(1.1); }
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1.02);
+    opacity: var(--orb-strength);
+  }
+  33% {
+    transform: translate3d(-11%, 8%, 0) scale(0.9);
+    opacity: calc(var(--orb-strength) * 0.85);
+  }
+  66% {
+    transform: translate3d(8%, -10%, 0) scale(1.12);
+    opacity: calc(var(--orb-strength) * 1.08);
+  }
+}
+
+@keyframes ambientDriftPulse {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: calc(var(--orb-strength) * 0.9);
+  }
+  40% {
+    transform: translate3d(7%, -9%, 0) scale(1.14);
+    opacity: calc(var(--orb-strength) * 1.1);
+  }
+  70% {
+    transform: translate3d(-9%, 6%, 0) scale(0.88);
+    opacity: calc(var(--orb-strength) * 0.82);
+  }
+}
+
+@keyframes ambientMeshDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  25% { transform: translate3d(-5%, 4%, 0) rotate(6deg) scale(1.05); }
+  50% { transform: translate3d(4%, -3%, 0) rotate(-5deg) scale(1.08); }
+  75% { transform: translate3d(-3%, -4%, 0) rotate(4deg) scale(1.02); }
+}
+
+@keyframes ambientFlareSweep {
+  0%, 100% {
+    transform: translate3d(-8%, 2%, 0) rotate(-3deg);
+    opacity: 0.7;
+  }
+  50% {
+    transform: translate3d(9%, -5%, 0) rotate(4deg);
+    opacity: 1;
+  }
+}
+
+@keyframes ambientVeilBreathe {
+  0%, 100% { opacity: 0.96; }
+  50% { opacity: 1; }
+}
+
+/* Theme transition must not freeze ambient motion */
+html.theme-transitioning .ambient-bg,
+html.theme-transitioning .ambient-bg * {
+  transition: none !important;
+}
+
+/*
+  Pause ambient compositor work while cart/nav/page UI is moving —
+  stops the “laggy” feel without removing the atmosphere when idle.
+*/
+body.cart-open .ambient-bg .orb,
+body.cart-open .ambient-bg .ambient-mesh,
+body.cart-open .ambient-bg .ambient-flare,
+body.cart-open .ambient-bg .ambient-veil,
+body.nav-open .ambient-bg .orb,
+body.nav-open .ambient-bg .ambient-mesh,
+body.nav-open .ambient-bg .ambient-flare,
+body.nav-open .ambient-bg .ambient-veil,
+body.is-page-transitioning .ambient-bg .orb,
+body.is-page-transitioning .ambient-bg .ambient-mesh,
+body.is-page-transitioning .ambient-bg .ambient-flare,
+body.is-page-transitioning .ambient-bg .ambient-veil {
+  animation-play-state: paused !important;
+}
+
+body.cart-open .ambient-bg .orb,
+body.nav-open .ambient-bg .orb,
+body.is-page-transitioning .ambient-bg .orb {
+  will-change: auto;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .orb {
+  .orb,
+  .ambient-mesh,
+  .ambient-flare,
+  .ambient-veil {
     animation: none !important;
   }
 }
@@ -5449,12 +5600,16 @@ body.modal-open .guest-welcome-banner {
   padding-top: 0.75rem;
 }
 
-/* Guest welcome banner — stick below navbar, not over it */
+/* Guest welcome banner — stick just under the real mobile header height */
 .guest-welcome-banner {
   position: sticky;
-  top: var(--guest-banner-top, 0);
-  z-index: 85;
-  background: linear-gradient(90deg, rgba(99, 102, 241, 0.15), rgba(34, 197, 94, 0.1));
+  top: var(--guest-banner-top, var(--nav-mobile-bar-h, 0px));
+  z-index: 390;
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--primary) 16%, transparent),
+    color-mix(in srgb, var(--primary) 6%, transparent)
+  );
   border-bottom: 1px solid var(--glass-edge);
   backdrop-filter: blur(8px);
 }

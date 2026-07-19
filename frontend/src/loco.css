@@ -10,14 +10,26 @@
   --hero-pad-top: clamp(5.5rem, 12vh, 7.5rem);
 }
 
-/* ── Ambient: quieter, more atmospheric ── */
+/* ── Ambient: soft bloom — lighter filters for smoother UI ── */
 .ambient-bg .orb {
-  filter: blur(100px);
+  filter: blur(88px);
+}
+
+.ambient-bg .ambient-mesh {
+  filter: blur(28px);
+}
+
+.ambient-bg .ambient-flare {
+  filter: blur(18px);
 }
 
 .ambient-bg .grid-overlay {
-  opacity: 0.35;
+  opacity: 0.22;
   background-size: 64px 64px;
+}
+
+[data-theme='light'] .ambient-bg .orb {
+  filter: blur(96px);
 }
 
 /* ── Buttons: sharper, less pill-default ── */
@@ -803,21 +815,21 @@
   }
 }
 
-/* Page enter — slightly longer, more intentional */
-@media (prefers-reduced-motion: no-preference) {
+/* Page enter — snappy; do not override mobile opacity-only fade */
+@media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
   .page-transition-page--enter {
-    animation: locoPageEnter 0.55s var(--loco-ease) both;
+    animation: locoPageEnter 0.22s var(--loco-ease) both;
   }
 }
 
 @keyframes locoPageEnter {
   from {
     opacity: 0;
-    transform: translateY(18px);
+    transform: translate3d(0, 8px, 0);
   }
   to {
     opacity: 1;
-    transform: none;
+    transform: translate3d(0, 0, 0);
   }
 }
 

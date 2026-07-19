@@ -32,6 +32,8 @@ const ShippingWarrantyPage = lazy(() =>
 const Faq = lazy(() => import('../../pages/Faq'));
 const Wishlist = lazy(() => import('../../pages/Wishlist'));
 
+const ENTER_MS = 220;
+
 export default function PageTransition() {
   const location = useLocation();
   const pageRef = useRef(null);
@@ -44,6 +46,7 @@ export default function PageTransition() {
     const el = pageRef.current;
     if (!el || prefersReducedMotion.current) return undefined;
 
+    document.body.classList.add('is-page-transitioning');
     el.classList.remove('page-transition-page--enter');
     // Force reflow so repeated navigations retrigger the enter animation.
     void el.offsetWidth;
@@ -51,9 +54,13 @@ export default function PageTransition() {
 
     const timer = window.setTimeout(() => {
       el.classList.remove('page-transition-page--enter');
-    }, 400);
+      document.body.classList.remove('is-page-transitioning');
+    }, ENTER_MS);
 
-    return () => window.clearTimeout(timer);
+    return () => {
+      window.clearTimeout(timer);
+      document.body.classList.remove('is-page-transitioning');
+    };
   }, [location.key]);
 
   return (

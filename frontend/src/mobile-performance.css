@@ -95,25 +95,30 @@
     background: var(--drawer-bg) !important;
   }
 
-  /* Light ambient on mobile — softer blur, still drifting colors */
+  /* Light ambient on mobile — fewer layers, still soft color */
   .ambient-bg {
     display: block !important;
   }
 
   .ambient-bg .ambient-veil {
-    opacity: 0.92;
+    opacity: 0.96;
+  }
+
+  .ambient-bg .ambient-mesh,
+  .ambient-bg .ambient-flare,
+  .ambient-bg .ambient-grain,
+  .ambient-bg .orb-4,
+  .ambient-bg .orb-5,
+  .ambient-bg .grid-overlay {
+    display: none !important;
   }
 
   .ambient-bg .orb {
-    filter: blur(48px) !important;
-    opacity: calc(var(--orb-strength) * 0.85);
+    filter: blur(40px) !important;
+    opacity: calc(var(--orb-strength) * 0.75);
   }
 
-  .ambient-bg .orb-4 {
-    display: none;
-  }
-
-  .ambient-bg .grid-overlay {
+  .ambient-bg .orb-3 {
     display: none;
   }
 
@@ -128,11 +133,7 @@
     animation: none !important;
   }
 
-  .chat-fab-trigger {
-    background: var(--hdr-bg-elevated, var(--bg-elevated)) !important;
-    color: var(--hdr-icon, var(--text-muted)) !important;
-    border: 1px solid var(--hdr-border, var(--glass-edge)) !important;
-  }
+  /* Mobile chat FAB: fixed above bottom nav — see chat-assistant.css */
 
   .floating-repair-btn {
     background: var(--hdr-bg-elevated, var(--bg-elevated)) !important;

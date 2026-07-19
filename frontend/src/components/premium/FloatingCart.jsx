@@ -562,6 +562,8 @@ export default function FloatingCart() {
 
               exit={{ opacity: 0 }}
 
+              transition={{ duration: 0.18, ease: 'easeOut' }}
+
               onClick={() => setOpen(false)}
 
             />
@@ -570,13 +572,13 @@ export default function FloatingCart() {
 
               className="floating-cart-panel"
 
-              initial={{ x: '105%', opacity: 0.6 }}
+              initial={{ x: '100%' }}
 
-              animate={{ x: 0, opacity: 1 }}
+              animate={{ x: 0 }}
 
-              exit={{ x: '105%', opacity: 0 }}
+              exit={{ x: '100%' }}
 
-              transition={{ type: 'spring', stiffness: 320, damping: 32 }}
+              transition={{ type: 'tween', duration: 0.26, ease: [0.22, 1, 0.36, 1] }}
 
             >
 
@@ -1169,13 +1171,11 @@ export default function FloatingCart() {
 
                         className="floating-cart-item"
 
-                        layout
+                        initial={{ opacity: 0 }}
 
-                        initial={{ opacity: 0, x: 24 }}
+                        animate={{ opacity: 1 }}
 
-                        animate={{ opacity: 1, x: 0 }}
-
-                        exit={{ opacity: 0, x: 24 }}
+                        transition={{ duration: 0.16, ease: 'easeOut' }}
 
                       >
 
