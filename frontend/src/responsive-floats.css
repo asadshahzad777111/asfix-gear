@@ -165,16 +165,9 @@
     padding-bottom: 0.25rem;
   }
 
+  /* Floating chat FAB unused on phone — header control owns chat */
   .chat-fab-trigger {
-    position: fixed;
-    top: auto;
-    left: auto;
-    bottom: var(--float-stack-0);
-    right: var(--float-dock-right);
-    width: var(--float-dock-size);
-    height: var(--float-dock-size);
-    z-index: 1165;
-    transform: translateZ(0);
+    display: none;
   }
 
   /* Repair (primary), chat, and staff share one clean vertical column. */

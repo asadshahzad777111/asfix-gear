@@ -266,13 +266,13 @@
     display: none !important;
   }
 
+  /* Chat FAB removed on mobile — opens from header .dx-icon-btn--chat */
   .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
-    bottom: var(--float-stack-0) !important;
-    z-index: 1165 !important;
+    display: none !important;
   }
 
   .app:not(.app--admin):not(.app--gaming) .staff-access {
-    bottom: var(--float-stack-1) !important;
+    bottom: var(--float-stack-0) !important;
     z-index: 1164 !important;
   }
 
@@ -283,10 +283,8 @@
   }
 
   .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
-    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.55rem) !important;
-    bottom: calc(
-      var(--float-dock-bottom) + var(--float-dock-size, 3.15rem) + 0.75rem
-    ) !important;
+    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.45rem) !important;
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 0.75rem) !important;
     z-index: 1170 !important;
   }
 

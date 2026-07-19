@@ -25,23 +25,10 @@
   }
 }
 
+/* Mobile / tablet with bottom nav: chat lives in the top header — hide float FAB */
 @media (max-width: 1024px) {
-  .chat-fab-trigger {
-    top: auto;
-    left: auto;
-    bottom: var(--float-stack-0, var(--float-dock-bottom));
-    right: var(--float-dock-right, 0.65rem);
-    width: var(--float-dock-size, 3.15rem);
-    height: var(--float-dock-size, 3.15rem);
-    /* Above mobile bottom nav (1150) so the shadow FAB stays visible/tappable */
-    z-index: 1165;
-    transform: translateZ(0);
-    pointer-events: auto;
-  }
-
-  .chat-fab-trigger:hover,
-  .chat-fab-trigger:active {
-    transform: translateZ(0);
+  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
+    display: none !important;
   }
 }
 
@@ -323,13 +310,11 @@
 @media (max-width: 1024px) {
   .chat-assistant-panel {
     position: fixed;
-    /* Pin between real header and float FAB — never tuck under either nav */
-    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.55rem);
-    right: var(--float-dock-right, 0.65rem);
-    left: var(--float-dock-right, 0.65rem);
-    bottom: calc(
-      var(--float-dock-bottom, 1.25rem) + var(--float-dock-size, 3.15rem) + 0.75rem
-    );
+    /* Drop from under the header chat control — clear of bottom nav */
+    top: calc(var(--nav-mobile-bar-h, 7rem) + 0.45rem);
+    right: 0.65rem;
+    left: 0.65rem;
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 0.75rem);
     width: auto;
     max-height: none;
     height: auto;
@@ -338,9 +323,23 @@
     flex-direction: column;
     padding: 0;
     overflow: hidden;
-    border-radius: 18px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+    border-radius: 16px;
+    box-shadow: 0 18px 48px rgba(0, 0, 0, 0.28);
     animation: chatPanelIn 0.22s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .chat-assistant-head {
+    background: linear-gradient(135deg, #ff6a2b 0%, #ff8a4c 55%, #e85a1a 100%);
+    color: #fffaf6;
+  }
+
+  .chat-assistant-head span {
+    opacity: 0.9;
+  }
+
+  .chat-assistant-close {
+    background: rgba(255, 255, 255, 0.2);
+    color: #fff;
   }
 }
 

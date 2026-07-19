@@ -8,6 +8,7 @@ import { OrderNotificationProvider } from './components/OrderNotificationCenter'
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { ShopStatusProvider } from './context/ShopStatusContext';
+import { ChatAssistantProvider } from './context/ChatAssistantContext';
 import App from './App.jsx';
 import './themes.css';
 import './index.css';
@@ -44,7 +45,9 @@ createRoot(document.getElementById('root')).render(
             <ShopStatusProvider>
               <GamingProvider>
                 <CartProvider>
-                  <App />
+                  <ChatAssistantProvider>
+                    <App />
+                  </ChatAssistantProvider>
                 </CartProvider>
               </GamingProvider>
             </ShopStatusProvider>

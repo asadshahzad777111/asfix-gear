@@ -8,13 +8,14 @@ import { hasDiscount, getSalePrice } from '../utils/pricing';
 import { detectIntent, parseOrderTrackInfo } from '../utils/chatEngine';
 import { filterPublishedProducts } from '../utils/productStatus';
 import { useTranslation } from '../context/LanguageContext';
+import { useChatAssistant } from '../context/ChatAssistantContext';
 
 let nextId = 1;
 const newId = () => `m${Date.now()}-${nextId++}`;
 
 export default function ChatAssistant() {
   const { t, lang } = useTranslation();
-  const [open, setOpen] = useState(false);
+  const { open, setOpen, toggle } = useChatAssistant();
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState('');
   const [pending, setPending] = useState(null); // null | 'track' | 'product'
@@ -225,12 +226,13 @@ export default function ChatAssistant() {
 
   return (
     <>
+      {/* Desktop / no-bottom-nav: floating FAB. Mobile uses header chat control. */}
       <button
         type="button"
         className={`chat-fab-trigger ${open ? 'is-open' : ''}`}
         aria-label={t('chatbot.fabAria')}
         aria-expanded={open}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         {open ? (
           <span className="chat-fab-close" aria-hidden="true">✕</span>

@@ -134,9 +134,7 @@
   }
 
   .chat-fab-trigger {
-    background: var(--hdr-bg-elevated, var(--bg-elevated)) !important;
-    color: var(--hdr-icon, var(--text-muted)) !important;
-    border: 1px solid var(--hdr-border, var(--glass-edge)) !important;
+    display: none !important;
   }
 
   .floating-repair-btn {
