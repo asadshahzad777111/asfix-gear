@@ -139,31 +139,56 @@ export default function MobileBottomNav() {
         >
           <path
             className="mobile-bottom-nav__cutout-fill"
-            d="M0 20
-               C0 9 9 0 20 0
-               H148
-               C156 0 162 6 166 14
-               C174 32 186 44 195 44
-               C204 44 216 32 224 14
-               C228 6 234 0 242 0
-               H370
-               C381 0 390 9 390 20
+            d="M0 28
+               C0 12.5 12.5 0 28 0
+               H146
+               C155 0 161 7 165 16
+               C172 32 183 42 195 42
+               C207 42 218 32 225 16
+               C229 7 235 0 244 0
+               H362
+               C377.5 0 390 12.5 390 28
                V72 H0 Z"
           />
         </svg>
 
         <div className="mobile-bottom-nav__items" ref={itemsRef}>
-          {/* Sliding cutout mark — only on the clicked / active side tab */}
+          {/* Slideshow mark — springs between tabs like a slide frame */}
           {mark.ready && (
             <motion.span
               className="mobile-bottom-nav__mark"
               aria-hidden="true"
               initial={false}
-              animate={{ left: mark.x, opacity: 1 }}
+              style={{ x: '-50%' }}
+              animate={
+                reduceMotion
+                  ? { left: mark.x, opacity: 1, scaleX: 1, scaleY: 1 }
+                  : {
+                      left: mark.x,
+                      opacity: 1,
+                      scaleX: [1.32, 1],
+                      scaleY: [0.88, 1],
+                    }
+              }
               transition={
                 reduceMotion
                   ? { duration: 0 }
-                  : { type: 'tween', duration: 0.22, ease: [0.22, 1, 0.36, 1] }
+                  : {
+                      left: {
+                        type: 'spring',
+                        stiffness: 340,
+                        damping: 28,
+                        mass: 0.75,
+                      },
+                      scaleX: {
+                        duration: 0.36,
+                        ease: [0.22, 1, 0.36, 1],
+                      },
+                      scaleY: {
+                        duration: 0.36,
+                        ease: [0.22, 1, 0.36, 1],
+                      },
+                    }
               }
             />
           )}
