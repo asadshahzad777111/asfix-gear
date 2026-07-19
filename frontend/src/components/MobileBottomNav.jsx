@@ -7,7 +7,7 @@ import { useWishlistIds } from '../hooks/useWishlist';
 import { IconCart, IconHeart, IconShop, IconUser } from './nav/NavIcons';
 import './mobile-bottom-nav.css';
 
-function IconRepair({ size = 18 }) {
+function IconRepair({ size = 22 }) {
   return (
     <svg
       width={size}
@@ -44,29 +44,31 @@ export default function MobileBottomNav() {
   const active = activeKey(location.pathname);
   const itemsRef = useRef(null);
   const tabRefs = useRef({});
-  const [pill, setPill] = useState({ x: 0, w: 0, ready: false });
+  const [mark, setMark] = useState({ x: 0, ready: false });
   const [ripple, setRipple] = useState(null);
-  const [pressed, setPressed] = useState(null);
+  /** Brief cutout mark on Cart (not a route) */
+  const [flashKey, setFlashKey] = useState(null);
 
   const openAccount = () => {
     if (isCustomer) navigate('/account');
     else navigate('/account/login');
   };
 
+  const markedKey = flashKey || active;
+
   useLayoutEffect(() => {
     const measure = () => {
-      if (!active || active === 'repair' || cartOpen) {
-        setPill((p) => ({ ...p, ready: false }));
+      if (!markedKey || markedKey === 'repair' || cartOpen) {
+        setMark((m) => ({ ...m, ready: false }));
         return;
       }
-      const el = tabRefs.current[active];
+      const el = tabRefs.current[markedKey];
       const row = itemsRef.current;
       if (!el || !row) return;
       const rowBox = row.getBoundingClientRect();
       const box = el.getBoundingClientRect();
-      setPill({
-        x: box.left - rowBox.left + box.width * 0.14,
-        w: box.width * 0.72,
+      setMark({
+        x: box.left - rowBox.left + box.width / 2,
         ready: true,
       });
     };
@@ -74,7 +76,7 @@ export default function MobileBottomNav() {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [active, cartOpen, wishlistCount, cartCount]);
+  }, [markedKey, cartOpen, wishlistCount, cartCount]);
 
   const burst = (key, el) => {
     if (reduceMotion || !el) return;
@@ -83,40 +85,41 @@ export default function MobileBottomNav() {
     const rowBox = row.getBoundingClientRect();
     const box = el.getBoundingClientRect();
     setRipple({
-      key,
       x: box.left - rowBox.left + box.width / 2,
       y: box.top - rowBox.top + box.height / 2,
       id: Date.now(),
     });
   };
 
-  const pressHandlers = (key) => ({
-    onPointerDown: () => setPressed(key),
-    onPointerUp: () => setPressed(null),
-    onPointerCancel: () => setPressed(null),
-    onPointerLeave: () => setPressed(null),
-  });
+  const flashCart = () => {
+    setFlashKey('cart');
+    window.setTimeout(() => setFlashKey(null), 420);
+  };
 
   const tabClass = (key) =>
     [
       'mobile-bottom-nav__item',
+      markedKey === key ? 'is-marked' : '',
       active === key ? 'is-active' : '',
-      pressed === key ? 'is-cut' : '',
     ]
       .filter(Boolean)
       .join(' ');
 
-  const iconMotion = (key) =>
-    active === key && !reduceMotion ? { y: -1, scale: 1.05 } : { y: 0, scale: 1 };
-
   return (
     <nav
-      className={`mobile-bottom-nav${cartOpen ? ' is-cart-open' : ''}${active === 'repair' ? ' is-repair-active' : ''}`}
+      className={[
+        'mobile-bottom-nav',
+        cartOpen ? 'is-cart-open' : '',
+        active === 'repair' ? 'is-repair-active' : '',
+        markedKey && markedKey !== 'repair' ? 'has-side-mark' : '',
+      ]
+        .filter(Boolean)
+        .join(' ')}
       aria-label="Quick navigation"
       aria-hidden={cartOpen ? 'true' : undefined}
     >
       <div className="mobile-bottom-nav__dock">
-        {/* Smaller center cutout for the Repair FAB */}
+        {/* Center dock cutout — Repair FAB (original size) */}
         <svg
           className="mobile-bottom-nav__cutout"
           viewBox="0 0 390 72"
@@ -125,30 +128,31 @@ export default function MobileBottomNav() {
         >
           <path
             className="mobile-bottom-nav__cutout-fill"
-            d="M0 18
-               C0 8 8 0 18 0
-               H156
-               C163 0 168 5 171 11
-               C177 24 187 34 195 34
-               C203 34 213 24 219 11
-               C222 5 227 0 234 0
-               H372
-               C382 0 390 8 390 18
+            d="M0 20
+               C0 9 9 0 20 0
+               H148
+               C156 0 162 6 166 14
+               C174 32 186 44 195 44
+               C204 44 216 32 224 14
+               C228 6 234 0 242 0
+               H370
+               C381 0 390 9 390 20
                V72 H0 Z"
           />
         </svg>
 
         <div className="mobile-bottom-nav__items" ref={itemsRef}>
-          {pill.ready && (
+          {/* Sliding cutout mark — only on the clicked / active side tab */}
+          {mark.ready && (
             <motion.span
-              className="mobile-bottom-nav__pill"
+              className="mobile-bottom-nav__mark"
               aria-hidden="true"
               initial={false}
-              animate={{ x: pill.x, width: pill.w, opacity: 1 }}
+              animate={{ left: mark.x, opacity: 1 }}
               transition={
                 reduceMotion
                   ? { duration: 0 }
-                  : { type: 'spring', stiffness: 420, damping: 32, mass: 0.7 }
+                  : { type: 'spring', stiffness: 380, damping: 28, mass: 0.65 }
               }
             />
           )}
@@ -158,7 +162,7 @@ export default function MobileBottomNav() {
               key={ripple.id}
               className="mobile-bottom-nav__ripple"
               style={{ left: ripple.x, top: ripple.y }}
-              initial={{ scale: 0.2, opacity: 0.45 }}
+              initial={{ scale: 0.2, opacity: 0.4 }}
               animate={{ scale: 2.2, opacity: 0 }}
               transition={{ duration: 0.4, ease: 'easeOut' }}
               onAnimationComplete={() => setRipple(null)}
@@ -174,16 +178,9 @@ export default function MobileBottomNav() {
               tabRefs.current.shop = el;
             }}
             onClick={(e) => burst('shop', e.currentTarget)}
-            {...pressHandlers('shop')}
           >
-            <span className="mobile-bottom-nav__cut">
-              <motion.span
-                className="mobile-bottom-nav__icon"
-                animate={iconMotion('shop')}
-                transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-              >
-                <IconShop size={20} />
-              </motion.span>
+            <span className="mobile-bottom-nav__icon">
+              <IconShop size={22} />
             </span>
             <span className="mobile-bottom-nav__label">Shop</span>
           </NavLink>
@@ -196,19 +193,12 @@ export default function MobileBottomNav() {
               tabRefs.current.wishlist = el;
             }}
             onClick={(e) => burst('wishlist', e.currentTarget)}
-            {...pressHandlers('wishlist')}
           >
-            <span className="mobile-bottom-nav__cut">
-              <motion.span
-                className="mobile-bottom-nav__icon-wrap mobile-bottom-nav__icon"
-                animate={iconMotion('wishlist')}
-                transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-              >
-                <IconHeart size={20} />
-                {wishlistCount > 0 && (
-                  <span className="mobile-bottom-nav__badge">{wishlistCount > 99 ? '99+' : wishlistCount}</span>
-                )}
-              </motion.span>
+            <span className="mobile-bottom-nav__icon-wrap mobile-bottom-nav__icon">
+              <IconHeart size={22} />
+              {wishlistCount > 0 && (
+                <span className="mobile-bottom-nav__badge">{wishlistCount > 99 ? '99+' : wishlistCount}</span>
+              )}
             </span>
             <span className="mobile-bottom-nav__label">Wishlist</span>
           </NavLink>
@@ -220,6 +210,7 @@ export default function MobileBottomNav() {
             className={tabClass('cart')}
             onClick={(e) => {
               burst('cart', e.currentTarget);
+              flashCart();
               setCartOpen(true);
             }}
             aria-label={cartCount ? `Cart, ${cartCount} items` : 'Cart'}
@@ -227,18 +218,12 @@ export default function MobileBottomNav() {
             ref={(el) => {
               tabRefs.current.cart = el;
             }}
-            {...pressHandlers('cart')}
           >
-            <span className="mobile-bottom-nav__cut">
-              <motion.span
-                className="mobile-bottom-nav__icon-wrap mobile-bottom-nav__icon"
-                whileTap={reduceMotion ? undefined : { scale: 0.9 }}
-              >
-                <IconCart size={20} />
-                {cartCount > 0 && (
-                  <span className="mobile-bottom-nav__badge">{cartCount > 99 ? '99+' : cartCount}</span>
-                )}
-              </motion.span>
+            <span className="mobile-bottom-nav__icon-wrap mobile-bottom-nav__icon">
+              <IconCart size={22} />
+              {cartCount > 0 && (
+                <span className="mobile-bottom-nav__badge">{cartCount > 99 ? '99+' : cartCount}</span>
+              )}
             </span>
             <span className="mobile-bottom-nav__label">Cart</span>
           </button>
@@ -254,17 +239,9 @@ export default function MobileBottomNav() {
             ref={(el) => {
               tabRefs.current.account = el;
             }}
-            {...pressHandlers('account')}
           >
-            <span className="mobile-bottom-nav__cut">
-              <motion.span
-                className="mobile-bottom-nav__icon"
-                animate={iconMotion('account')}
-                transition={{ type: 'spring', stiffness: 500, damping: 28 }}
-                whileTap={reduceMotion ? undefined : { scale: 0.9 }}
-              >
-                <IconUser size={20} />
-              </motion.span>
+            <span className="mobile-bottom-nav__icon">
+              <IconUser size={22} />
             </span>
             <span className="mobile-bottom-nav__label">Account</span>
           </button>
@@ -274,18 +251,11 @@ export default function MobileBottomNav() {
       <NavLink
         to="/repair"
         className={() =>
-          [
-            'mobile-bottom-nav__fab',
-            active === 'repair' ? 'is-active' : '',
-            pressed === 'repair' ? 'is-cut' : '',
-          ]
-            .filter(Boolean)
-            .join(' ')
+          `mobile-bottom-nav__fab${active === 'repair' ? ' is-active' : ''}`
         }
         tabIndex={cartOpen ? -1 : undefined}
         aria-label="Repair"
         onClick={(e) => burst('repair', e.currentTarget)}
-        {...pressHandlers('repair')}
       >
         <motion.span
           className="mobile-bottom-nav__fab-orb"
@@ -294,12 +264,12 @@ export default function MobileBottomNav() {
             reduceMotion
               ? undefined
               : active === 'repair'
-                ? { scale: 1.04, y: -1 }
+                ? { scale: 1.05, y: -2 }
                 : { scale: 1, y: 0 }
           }
-          transition={{ type: 'spring', stiffness: 400, damping: 24 }}
+          transition={{ type: 'spring', stiffness: 380, damping: 22 }}
         >
-          <IconRepair size={18} />
+          <IconRepair size={22} />
         </motion.span>
         <span className="mobile-bottom-nav__fab-label">Repair</span>
       </NavLink>
