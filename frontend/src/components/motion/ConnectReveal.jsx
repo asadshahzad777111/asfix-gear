@@ -2,7 +2,7 @@ import useScrollReveal from '../../hooks/useScrollReveal';
 
 /**
  * Continuous connect-together scroll motion.
- * from = 'left' | 'right' | 'up' | 'line' | 'type' (LTR wipe, typing feel)
+ * from = 'left' | 'right' | 'up' | 'line'
  */
 export default function ConnectReveal({
   children,

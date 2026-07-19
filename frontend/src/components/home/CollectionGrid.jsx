@@ -45,21 +45,22 @@ export default function CollectionGrid() {
             as="span"
             className="eyebrow type-line--block"
             text={t('home.collectionsEyebrow')}
-            staggerMs={22}
+            staggerMs={18}
           />
           <TypeLine
             as="h2"
             className="section-title type-line--block"
             text={t('home.shopCollection')}
-            staggerMs={30}
-            delay={80}
+            staggerMs={24}
+            delay={60}
           />
           <TypeLine
             as="p"
             className="section-subtitle type-line--block"
             text={t('home.shopCollectionSub')}
-            staggerMs={14}
-            delay={220}
+            mode="words"
+            staggerMs={36}
+            delay={160}
           />
         </div>
         <div className="home-collection-grid">
@@ -68,8 +69,8 @@ export default function CollectionGrid() {
               key={category}
               as="button"
               type="button"
-              from="type"
-              delay={140 + Math.min(i, 8) * 85}
+              from={i % 2 === 0 ? 'left' : 'right'}
+              delay={Math.min(i, 6) * 60}
               onClick={() => handleClick(category)}
               className="home-collection-card"
             >

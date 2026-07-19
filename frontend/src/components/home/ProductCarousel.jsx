@@ -67,8 +67,9 @@ export default function ProductCarousel({ titleKey, subtitleKey, products = [], 
                 as="p"
                 className="section-subtitle type-line--block"
                 text={t(subtitleKey)}
-                staggerMs={14}
-                delay={160}
+                mode="words"
+                staggerMs={32}
+                delay={140}
               />
             )}
           </div>
