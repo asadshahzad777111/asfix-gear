@@ -382,7 +382,12 @@ export default function Navbar() {
 
       {typeof document !== 'undefined' &&
         createPortal(
-          <div className="navbar navbar--dx navbar--pc navbar--mobile-pro dx-drawer-portal-root">
+          /* Style-scope classes stay for child CSS; .dx-drawer-portal-root
+             strips sticky/glass so fixed drawer stays viewport-pinned. */
+          <div
+            className="navbar navbar--dx navbar--pc navbar--mobile-pro dx-drawer-portal-root"
+            data-drawer-open={menuOpen ? 'true' : 'false'}
+          >
             <div
               className={`nav-overlay ${menuOpen ? 'visible' : ''}`}
               onClick={closeMenu}
