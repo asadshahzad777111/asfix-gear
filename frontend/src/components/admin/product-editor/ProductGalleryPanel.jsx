@@ -2,6 +2,7 @@ import { useRef } from 'react';
 import { MAX_GALLERY_IMAGES } from '../../../config/products';
 import { uploadProductImageFile } from '../../../utils/productImageUpload';
 
+/** Extra photos for the product detail page only (not card hover). */
 export default function ProductGalleryPanel({
   gallery = [],
   uploading,
@@ -33,7 +34,7 @@ export default function ProductGalleryPanel({
         next.push(url);
       }
       onGalleryChange(next);
-      onMessage?.(`${batch.length} gallery image(s) added ✓`);
+      onMessage?.(`${batch.length} detail gallery image(s) added ✓`);
     } catch (err) {
       onMessage?.(err.message || 'Gallery upload failed');
     } finally {
@@ -48,7 +49,7 @@ export default function ProductGalleryPanel({
 
   return (
     <div className="wp-postbox wp-product-gallery">
-      <div className="wp-postbox-head">Product gallery</div>
+      <div className="wp-postbox-head">Detail gallery</div>
       <div className="wp-postbox-body">
         {gallery.length > 0 ? (
           <ul className="wp-product-gallery-grid">
@@ -62,12 +63,14 @@ export default function ProductGalleryPanel({
             ))}
           </ul>
         ) : (
-          <p className="wp-product-hint">Yahan apni real photos add karein — pehli photo featured ban jati hai (koi auto stock pic nahi).</p>
+          <p className="wp-product-hint">
+            Detail page ki extra photos yahan — product open hone par yeh dikhengi (hover wali nahi).
+          </p>
         )}
         <button type="button" className="wp-button wp-button--secondary wp-button--small" onClick={addImages} disabled={uploading || atMax}>
-          Add to gallery
+          Add detail photos
         </button>
-        <p className="wp-product-hint">{gallery.length}/{MAX_GALLERY_IMAGES} gallery photos</p>
+        <p className="wp-product-hint">{gallery.length}/{MAX_GALLERY_IMAGES} detail photos</p>
         <input ref={fileRef} type="file" accept="image/*" multiple hidden onChange={handleFiles} />
       </div>
     </div>

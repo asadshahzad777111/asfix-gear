@@ -15,13 +15,12 @@ function prefersReducedMotion() {
 }
 
 /**
- * Shop-card image swap — main + gallery[0] as second image on hover (desktop) or tap flash (mobile).
+ * Shop-card image swap — Pic 1 (main) + dedicated hover_image on hover/thumb.
+ * Detail gallery photos are never used here.
  */
 export default function useProductCardImage(product, { popping = false } = {}) {
-  const { main: mainImage, images } = getProductCardImages(product);
-  const hoverImage = images[1] || null;
-  const thirdImage = images[2] || null;
-  const hasGallery = images.length > 1;
+  const { main: mainImage, hover: hoverImage, images } = getProductCardImages(product);
+  const hasHoverImage = Boolean(hoverImage && hoverImage !== mainImage);
   const [imageIndex, setImageIndex] = useState(0);
   const hoverTimer = useRef(null);
   const tapTimer = useRef(null);
@@ -46,29 +45,29 @@ export default function useProductCardImage(product, { popping = false } = {}) {
     resetIndex();
     clearHoverTimer();
     clearTapTimer();
-  }, [mainImage, images.join('|'), clearHoverTimer, clearTapTimer, resetIndex]);
+  }, [mainImage, hoverImage, clearHoverTimer, clearTapTimer, resetIndex]);
 
   useEffect(() => {
-    if (popping && hasGallery) {
+    if (popping && hasHoverImage) {
       setImageIndex(1);
       clearTapTimer();
     }
-  }, [popping, hasGallery, clearTapTimer]);
+  }, [popping, hasHoverImage, clearTapTimer]);
 
   const showAltImage = useCallback(() => {
-    if (!hasGallery) return;
+    if (!hasHoverImage) return;
     setImageIndex(1);
-  }, [hasGallery]);
+  }, [hasHoverImage]);
 
   const onMouseEnter = useCallback(() => {
-    if (!hasGallery || !deviceHasHover()) return;
+    if (!hasHoverImage || !deviceHasHover()) return;
     clearHoverTimer();
     if (prefersReducedMotion()) {
       showAltImage();
       return;
     }
     hoverTimer.current = window.setTimeout(showAltImage, HOVER_DELAY_MS);
-  }, [hasGallery, clearHoverTimer, showAltImage]);
+  }, [hasHoverImage, clearHoverTimer, showAltImage]);
 
   const onMouseLeave = useCallback(() => {
     if (!deviceHasHover()) return;
@@ -76,28 +75,28 @@ export default function useProductCardImage(product, { popping = false } = {}) {
     if (!popping) resetIndex();
   }, [popping, clearHoverTimer, resetIndex]);
 
-  /** Mobile tap flash — brief 2nd image, not sticky */
+  /** Mobile tap flash — brief hover image, not sticky */
   const onTouchStart = useCallback(() => {
-    if (!hasGallery || deviceHasHover()) return;
+    if (!hasHoverImage || deviceHasHover()) return;
     clearTapTimer();
     showAltImage();
-  }, [hasGallery, clearTapTimer, showAltImage]);
+  }, [hasHoverImage, clearTapTimer, showAltImage]);
 
   const onTouchEnd = useCallback(() => {
-    if (!hasGallery || deviceHasHover() || popping) return;
+    if (!hasHoverImage || deviceHasHover() || popping) return;
     clearTapTimer();
     tapTimer.current = window.setTimeout(resetIndex, TAP_FLASH_MS);
-  }, [hasGallery, popping, clearTapTimer, resetIndex]);
+  }, [hasHoverImage, popping, clearTapTimer, resetIndex]);
 
   const onPointerDown = useCallback(() => {
     /* noop — image swap handled by hover / touch; keep for API compat */
   }, []);
 
   const onPointerUp = useCallback(() => {
-    if (popping || !hasGallery || deviceHasHover()) return;
+    if (popping || !hasHoverImage || deviceHasHover()) return;
     clearTapTimer();
     tapTimer.current = window.setTimeout(resetIndex, TAP_FLASH_MS);
-  }, [popping, hasGallery, clearTapTimer, resetIndex]);
+  }, [popping, hasHoverImage, clearTapTimer, resetIndex]);
 
   const onPointerLeave = useCallback(() => {
     clearHoverTimer();
@@ -113,13 +112,13 @@ export default function useProductCardImage(product, { popping = false } = {}) {
     displayImage: images[imageIndex] || mainImage,
     mainImage,
     hoverImage,
-    thirdImage,
+    thirdImage: null,
     altSrc: hoverImage,
-    thirdSrc: thirdImage,
+    thirdSrc: null,
     imageIndex,
     showAlt,
     images,
-    hasHoverImage: hasGallery,
+    hasHoverImage,
     onMouseEnter,
     onMouseLeave,
     onTouchStart,

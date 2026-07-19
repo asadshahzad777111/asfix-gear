@@ -4,7 +4,7 @@ import { api, formatPrice } from '../api/client';
 import { getDefaultImage } from '../config/products';
 import { getSalePrice, getSavings, hasDiscount } from '../utils/pricing';
 import { isInStock, getStockStatus, normalizeStock } from '../utils/stock';
-import { getProductCardImages } from '../utils/productImages';
+import { getProductDetailImages } from '../utils/productImages';
 import { productPath as buildProductPath } from '../utils/slug';
 import { useWishlistIds } from '../hooks/useWishlist';
 import { useCart } from '../context/CartContext';
@@ -121,7 +121,7 @@ export default function Wishlist() {
               <div className="pc-wishlist-grid">
                 {products.map((p) => {
                   const sale = getSalePrice(p);
-                  const { main } = getProductCardImages(p);
+                  const { main } = getProductDetailImages(p);
                   const img = main || getDefaultImage(p.category);
                   const onSale = hasDiscount(p);
                   const stockStatus = getStockStatus(p.stock);

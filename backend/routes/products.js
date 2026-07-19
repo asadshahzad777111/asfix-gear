@@ -64,6 +64,7 @@ function sanitizeSlug(slug) {
 function sanitizeProductBody(body) {
   const next = { ...body };
   if (next.image != null) next.image = validateProductImage(next.image);
+  if (next.hover_image != null) next.hover_image = validateProductImage(next.hover_image);
   if (next.gallery != null) next.gallery = sanitizeGallery(next.gallery);
   if (next.tags != null) next.tags = sanitizeTags(next.tags);
   if (next.slug != null) next.slug = sanitizeSlug(next.slug);
@@ -192,6 +193,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       slug,
       tags,
       image,
+      hover_image,
       gallery,
       stock,
       featured,
@@ -214,6 +216,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
       slug,
       tags,
       image,
+      hover_image,
       gallery,
       stock,
       featured,
