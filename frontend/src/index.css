@@ -49,57 +49,102 @@ img { max-width: 100%; height: auto; display: block; }
   margin-bottom: 0.75rem;
 }
 
-/* Ambient background */
+/* Ambient background — slow color wash behind the page */
 .ambient-bg {
   position: fixed;
   inset: 0;
   z-index: 0;
   pointer-events: none;
   overflow: hidden;
+  contain: strict;
+}
+
+.ambient-veil {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-gradient);
+  opacity: 0.88;
 }
 
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(90px);
-  animation: float 14s ease-in-out infinite;
+  filter: blur(88px);
+  animation: ambientDrift 22s ease-in-out infinite;
   opacity: var(--orb-strength);
+  will-change: transform;
+  transform: translate3d(0, 0, 0);
 }
 
 .orb-1 {
-  width: 480px; height: 480px;
-  background: var(--primary-glow);
-  top: -120px; left: -80px;
+  width: min(72vw, 520px);
+  height: min(72vw, 520px);
+  background: var(--orb-a);
+  top: -18%;
+  left: -12%;
+  animation-duration: 26s;
 }
 
 .orb-2 {
-  width: 400px; height: 400px;
-  background: var(--violet-glow);
-  top: 40%; right: -100px;
-  animation-delay: -5s;
+  width: min(60vw, 440px);
+  height: min(60vw, 440px);
+  background: var(--orb-b);
+  top: 28%;
+  right: -16%;
+  animation-delay: -7s;
+  animation-duration: 32s;
+  animation-name: ambientDriftAlt;
 }
 
 .orb-3 {
-  width: 320px; height: 320px;
-  background: var(--mint-glow);
-  bottom: -80px; left: 30%;
-  animation-delay: -9s;
+  width: min(55vw, 400px);
+  height: min(55vw, 400px);
+  background: var(--orb-c);
+  bottom: -12%;
+  left: 18%;
+  animation-delay: -13s;
+  animation-duration: 28s;
+}
+
+.orb-4 {
+  width: min(48vw, 340px);
+  height: min(48vw, 340px);
+  background: var(--orb-d);
+  top: 52%;
+  left: 42%;
+  animation-delay: -19s;
+  animation-duration: 36s;
+  animation-name: ambientDriftAlt;
 }
 
 .grid-overlay {
   position: absolute;
   inset: 0;
+  opacity: 0.4;
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
-  background-size: 48px 48px;
-  mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
+  background-size: 56px 56px;
+  mask-image: radial-gradient(ellipse at center, black 15%, transparent 72%);
 }
 
-@keyframes float {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  33% { transform: translate(30px, -20px) scale(1.05); }
-  66% { transform: translate(-20px, 15px) scale(0.95); }
+@keyframes ambientDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  25% { transform: translate3d(6%, 4%, 0) scale(1.08); }
+  50% { transform: translate3d(-4%, 8%, 0) scale(0.94); }
+  75% { transform: translate3d(5%, -5%, 0) scale(1.04); }
+}
+
+@keyframes ambientDriftAlt {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.02); }
+  33% { transform: translate3d(-7%, 5%, 0) scale(0.92); }
+  66% { transform: translate3d(5%, -6%, 0) scale(1.1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .orb {
+    animation: none !important;
+  }
 }
 
 /* Glass card — iOS frosted glass */
