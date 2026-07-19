@@ -100,9 +100,10 @@
     linear-gradient(165deg, #e8e8ee 0%, #f2f2f7 38%, #fafafa 100%);
   --bg-card: rgba(255, 255, 255, 0.86);
   --bg-elevated: #ffffff;
-  --orb-a: rgba(255, 107, 44, 0.28);
-  --orb-b: rgba(124, 58, 237, 0.2);
-  --orb-c: rgba(0, 168, 150, 0.2);
+  /* Clearer blooms in light mode so motion is readable (still soft) */
+  --orb-a: rgba(255, 107, 44, 0.38);
+  --orb-b: rgba(124, 58, 237, 0.3);
+  --orb-c: rgba(0, 168, 150, 0.3);
   --ambient-mesh: none;
   --ambient-flare: none;
   --grain-opacity: 0.02;
@@ -125,7 +126,7 @@
   --nav-hover: rgba(255, 120, 50, 0.07);
   --section-tint: rgba(255, 140, 70, 0.05);
   --grid-line: rgba(0, 0, 0, 0.04);
-  --orb-strength: 0.42;
+  --orb-strength: 0.58;
   --shadow-elevated: 0 8px 28px rgba(120, 50, 20, 0.07);
   --shadow-nav: 0 4px 16px rgba(120, 50, 20, 0.05);
   --shadow-hover: 0 18px 40px rgba(120, 50, 20, 0.1), 0 0 0 1px rgba(200, 100, 50, 0.06);

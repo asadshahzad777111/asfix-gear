@@ -67,11 +67,24 @@ img { max-width: 100%; height: auto; display: block; }
   opacity: 1;
 }
 
+/* Scroll parallax layer — orbs keep floating inside */
+.ambient-orbs {
+  position: absolute;
+  inset: -8%;
+  transform: translate3d(
+    calc(var(--ambient-parallax-x, 0px) * -1),
+    calc(var(--ambient-parallax-y, 0px) * -0.85),
+    0
+  );
+  will-change: transform;
+}
+
 .orb {
   position: absolute;
   border-radius: 50%;
   filter: blur(90px);
-  animation: ambientFloat 16s ease-in-out infinite;
+  /* Noticeably faster than before — motion should read while idle + scroll */
+  animation: ambientFloat 8.5s ease-in-out infinite;
   opacity: var(--orb-strength);
   will-change: transform;
   transform: translate3d(0, 0, 0);
@@ -84,6 +97,7 @@ img { max-width: 100%; height: auto; display: block; }
   background: var(--orb-a);
   top: -120px;
   left: -80px;
+  animation-duration: 7.5s;
 }
 
 .orb-2 {
@@ -92,8 +106,9 @@ img { max-width: 100%; height: auto; display: block; }
   background: var(--orb-b);
   top: 40%;
   right: -100px;
-  animation-delay: -5s;
-  animation-duration: 18s;
+  animation-delay: -2.2s;
+  animation-duration: 9s;
+  animation-name: ambientFloatAlt;
 }
 
 .orb-3 {
@@ -102,8 +117,9 @@ img { max-width: 100%; height: auto; display: block; }
   background: var(--orb-c);
   bottom: -80px;
   left: 30%;
-  animation-delay: -9s;
-  animation-duration: 15s;
+  animation-delay: -4.5s;
+  animation-duration: 8s;
+  animation-name: ambientFloatPulse;
 }
 
 /* Tiny marks that drift forward ↔ back across the whole site */
@@ -135,10 +151,22 @@ img { max-width: 100%; height: auto; display: block; }
   mask-image: radial-gradient(ellipse at center, black 20%, transparent 75%);
 }
 
+/* Larger travel + quicker cycle so blooms never look jammed */
 @keyframes ambientFloat {
   0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
-  33% { transform: translate3d(28px, -18px, 0) scale(1.05); }
-  66% { transform: translate3d(-18px, 14px, 0) scale(0.96); }
+  25% { transform: translate3d(72px, -48px, 0) scale(1.08); }
+  50% { transform: translate3d(-36px, 56px, 0) scale(0.94); }
+  75% { transform: translate3d(54px, 28px, 0) scale(1.05); }
+}
+
+@keyframes ambientFloatAlt {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1.02); }
+  50% { transform: translate3d(-80px, -40px, 0) scale(1.1); }
+}
+
+@keyframes ambientFloatPulse {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  50% { transform: translate3d(64px, -52px, 0) scale(1.12); }
 }
 
 /* Slow depth travel — forward and back across the viewport */

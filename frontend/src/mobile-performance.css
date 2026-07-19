@@ -110,7 +110,16 @@
 
   .ambient-bg .orb {
     filter: blur(56px) !important;
-    opacity: calc(var(--orb-strength) * 0.8);
+    opacity: calc(var(--orb-strength) * 0.85);
+    animation-duration: 7s !important;
+  }
+
+  .ambient-bg .orb-2 {
+    animation-duration: 8s !important;
+  }
+
+  .ambient-bg .orb-3 {
+    animation-duration: 7.2s !important;
   }
 
   .ambient-bg .ambient-dot:nth-child(n + 25) {
