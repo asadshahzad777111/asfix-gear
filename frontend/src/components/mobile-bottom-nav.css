@@ -282,8 +282,16 @@
 
   .app:not(.app--admin):not(.app--gaming) .chat-assistant-panel {
     top: calc(var(--nav-mobile-bar-h, 7rem) + 0.45rem) !important;
-    bottom: calc(var(--bottom-nav-total, 4.1rem) + 4.75rem) !important;
-    z-index: 1170 !important;
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 5.25rem) !important;
+    z-index: 1210 !important;
+  }
+
+  /* Force chat FAB above dock even if other float CSS fights it */
+  .app:not(.app--admin):not(.app--gaming) .chat-fab-trigger {
+    bottom: calc(var(--bottom-nav-total) + 1.5rem) !important;
+    left: max(0.9rem, env(safe-area-inset-left, 0px) + 0.7rem) !important;
+    right: auto !important;
+    z-index: 1200 !important;
   }
 
   .app:not(.app--admin):not(.app--gaming) .app-main {

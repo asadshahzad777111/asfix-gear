@@ -44,13 +44,14 @@
     display: grid !important;
     position: fixed !important;
     top: auto !important;
+    /* LEFT above dock — never under Account on the right */
     right: auto !important;
-    left: max(0.85rem, env(safe-area-inset-left, 0px) + 0.65rem) !important;
-    /* Clear full dock height + gap so the whole button sits above the bar */
-    bottom: calc(var(--bottom-nav-total, 4.1rem) + 1.15rem) !important;
-    width: 3.25rem !important;
-    height: 3.25rem !important;
-    z-index: 1165 !important;
+    left: max(0.9rem, env(safe-area-inset-left, 0px) + 0.7rem) !important;
+    /* Full button clears bottom nav (dock ~4.1rem + safe area) */
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 1.5rem) !important;
+    width: 3.35rem !important;
+    height: 3.35rem !important;
+    z-index: 1200 !important;
     border: none !important;
     border-radius: 5px 14px 5px 14px !important;
     color: #fff !important;
@@ -81,11 +82,11 @@
     right: 0.65rem;
     left: 0.65rem;
     /* Clear bottom nav + chat FAB so the popup never sits under the bar */
-    bottom: calc(var(--bottom-nav-total, 4.1rem) + 4.75rem);
+    bottom: calc(var(--bottom-nav-total, 4.1rem) + 5.25rem);
     width: auto;
     max-height: none;
     height: auto;
-    z-index: 1170;
+    z-index: 1210;
     display: flex;
     flex-direction: column;
     padding: 0;
