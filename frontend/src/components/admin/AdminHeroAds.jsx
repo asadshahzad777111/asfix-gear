@@ -1,12 +1,23 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../api/client';
+import { defaultHeroSlidesForAdmin } from '../../config/heroSlides';
+import { getDefaultImage } from '../../config/products';
+import { productPath } from '../../utils/slug';
 import { uploadProductImageFile } from '../../utils/productImageUpload';
+import { ProductPrice } from '../DiscountPicker';
 
-const DRAFT_KEY = 'asfix_hero_ads_draft_v1';
+const DRAFT_KEY = 'asfix_hero_ads_draft_v2';
 const MAX_SLIDES = 8;
 
-const emptySlide = () => ({ image: '', title: '', subtitle: '', href: '/shop' });
+const emptySlide = () => ({
+  image: '',
+  title: '',
+  subtitle: '',
+  href: '/shop',
+  product_id: null,
+  source: 'custom',
+});
 
 function normalizeSlides(slides) {
   if (!Array.isArray(slides)) return [];
@@ -15,6 +26,8 @@ function normalizeSlides(slides) {
     title: String(s?.title || ''),
     subtitle: String(s?.subtitle || ''),
     href: String(s?.href || '/shop'),
+    product_id: s?.product_id || null,
+    source: s?.source || (s?.product_id ? 'product' : 'custom'),
   }));
 }
 
@@ -46,8 +59,20 @@ function clearDraft() {
   }
 }
 
+function productImage(product) {
+  const gallery = Array.isArray(product?.gallery) ? product.gallery : [];
+  return (
+    String(product?.image || '').trim()
+    || String(gallery[0] || '').trim()
+    || getDefaultImage(product?.category)
+  );
+}
+
 export default function AdminHeroAds() {
   const [heroSlides, setHeroSlides] = useState([]);
+  const [usingDefaults, setUsingDefaults] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [productSearch, setProductSearch] = useState('');
   const [status, setStatus] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadingIndex, setUploadingIndex] = useState(null);
@@ -60,31 +85,32 @@ export default function AdminHeroAds() {
     let cancelled = false;
     const draft = loadDraft();
 
-    api
-      .getStorefrontImages()
-      .then((data) => {
-        if (cancelled) return;
-        const serverSlides = normalizeSlides(data?.hero_slides);
-        if (draft?.length && JSON.stringify(draft) !== JSON.stringify(serverSlides)) {
-          setHeroSlides(draft);
-          setDraftRestored(true);
-          setStatus('Local draft restored — Save to publish on the website.');
-        } else {
-          setHeroSlides(serverSlides);
-        }
-        setLoaded(true);
-        skipDraftWrite.current = false;
-      })
-      .catch(() => {
-        if (cancelled) return;
-        if (draft?.length) {
-          setHeroSlides(draft);
-          setDraftRestored(true);
-          setStatus('Could not load server — showing local draft.');
-        }
-        setLoaded(true);
-        skipDraftWrite.current = false;
-      });
+    Promise.all([
+      api.getStorefrontImages().catch(() => null),
+      api.getProducts().catch(() => []),
+    ]).then(([data, productList]) => {
+      if (cancelled) return;
+      const list = Array.isArray(productList) ? productList : productList?.products || [];
+      setProducts(list);
+
+      const serverSlides = normalizeSlides(data?.hero_slides);
+      if (draft?.length && JSON.stringify(draft) !== JSON.stringify(serverSlides.length ? serverSlides : defaultHeroSlidesForAdmin())) {
+        setHeroSlides(draft);
+        setUsingDefaults(false);
+        setDraftRestored(true);
+        setStatus('Local draft restored — Save to publish on the website.');
+      } else if (serverSlides.length) {
+        setHeroSlides(serverSlides);
+        setUsingDefaults(false);
+      } else {
+        // Show the slides currently running on the home page (defaults)
+        setHeroSlides(defaultHeroSlidesForAdmin());
+        setUsingDefaults(true);
+        setStatus('Ye abhi home pe chal rahi default slides hain — edit / product add / naya photo laga ke Save karo.');
+      }
+      setLoaded(true);
+      skipDraftWrite.current = false;
+    });
 
     return () => {
       cancelled = true;
@@ -96,21 +122,37 @@ export default function AdminHeroAds() {
     saveDraft(heroSlides);
   }, [heroSlides, loaded]);
 
+  const filteredProducts = useMemo(() => {
+    const q = productSearch.trim().toLowerCase();
+    const active = products.filter((p) => p && p.status !== 'archived' && p.status !== 'hidden');
+    if (!q) return active.slice(0, 40);
+    return active
+      .filter((p) => {
+        const hay = `${p.name || ''} ${p.category || ''} ${p.brand || ''}`.toLowerCase();
+        return hay.includes(q);
+      })
+      .slice(0, 40);
+  }, [products, productSearch]);
+
   const updateSlide = (index, field, value) => {
+    setUsingDefaults(false);
     setHeroSlides((prev) =>
       prev.map((slide, i) => (i === index ? { ...slide, [field]: value } : slide))
     );
   };
 
   const addSlide = () => {
+    setUsingDefaults(false);
     setHeroSlides((prev) => (prev.length >= MAX_SLIDES ? prev : [...prev, emptySlide()]));
   };
 
   const removeSlide = (index) => {
+    setUsingDefaults(false);
     setHeroSlides((prev) => prev.filter((_, i) => i !== index));
   };
 
   const moveSlide = (index, dir) => {
+    setUsingDefaults(false);
     setHeroSlides((prev) => {
       const next = [...prev];
       const target = index + dir;
@@ -121,10 +163,33 @@ export default function AdminHeroAds() {
     });
   };
 
+  const addProductAsAd = (product) => {
+    if (!product) return;
+    if (heroSlides.length >= MAX_SLIDES) {
+      setStatus(`Max ${MAX_SLIDES} slides — pehle koi slide remove karo.`);
+      return;
+    }
+    const image = productImage(product);
+    const href = productPath(product);
+    const priceBit = product.price != null ? `Rs ${Number(product.price).toLocaleString('en-PK')}` : '';
+    const next = {
+      image,
+      title: String(product.name || 'Product').slice(0, 120),
+      subtitle: [product.category, priceBit].filter(Boolean).join(' · ').slice(0, 160),
+      href,
+      product_id: product.id || null,
+      source: 'product',
+    };
+    setUsingDefaults(false);
+    setHeroSlides((prev) => [...prev, next]);
+    setStatus(`“${product.name}” home ad me add ho gaya — Save Home Ads dabao.`);
+  };
+
   const uploadSlideImage = async (index, file) => {
     if (!file) return;
     setStatus('');
     setUploadingIndex(index);
+    setUsingDefaults(false);
     try {
       const url = await uploadProductImageFile(file, {
         onPreview: (preview) => updateSlide(index, 'image', preview),
@@ -146,16 +211,18 @@ export default function AdminHeroAds() {
     try {
       const current = await api.getStorefrontImages();
       const hero_slides = heroSlides
-        .map((s) => ({
+        .map((s, i) => ({
+          id: s.product_id ? `product-${s.product_id}` : `slide-${i}`,
           image: String(s.image || '').trim(),
           title: String(s.title || '').trim(),
           subtitle: String(s.subtitle || '').trim(),
           href: String(s.href || '/shop').trim() || '/shop',
+          product_id: s.product_id || null,
         }))
         .filter((s) => s.image && !s.image.startsWith('blob:'));
 
       if (!hero_slides.length) {
-        setStatus('Add at least one photo before saving.');
+        setStatus('Add at least one photo or product before saving.');
         setSaving(false);
         return;
       }
@@ -173,10 +240,11 @@ export default function AdminHeroAds() {
         category_images: current?.category_images || {},
         hero_slides,
       });
-      setHeroSlides(hero_slides);
+      setHeroSlides(normalizeSlides(hero_slides));
+      setUsingDefaults(false);
       clearDraft();
       setDraftRestored(false);
-      setStatus('Saved — home page will show your selected photos.');
+      setStatus('Saved — home page slider ab yehi photos / products dikhayega.');
     } catch (err) {
       setStatus(err.message || 'Save failed');
     } finally {
@@ -190,14 +258,21 @@ export default function AdminHeroAds() {
     api
       .getStorefrontImages()
       .then((data) => {
-        setHeroSlides(normalizeSlides(data?.hero_slides));
+        const serverSlides = normalizeSlides(data?.hero_slides);
+        if (serverSlides.length) {
+          setHeroSlides(serverSlides);
+          setUsingDefaults(false);
+        } else {
+          setHeroSlides(defaultHeroSlidesForAdmin());
+          setUsingDefaults(true);
+        }
         setStatus('Draft discarded — showing live website ads.');
       })
       .catch(() => setStatus('Could not reload live ads.'));
   };
 
   const resetToDefault = async () => {
-    if (!window.confirm('Remove all custom home ads? Website will show default slides again.')) return;
+    if (!window.confirm('Custom home ads hata ke default slides wapas?')) return;
     setSaving(true);
     setStatus('');
     try {
@@ -206,10 +281,11 @@ export default function AdminHeroAds() {
         category_images: current?.category_images || {},
         hero_slides: [],
       });
-      setHeroSlides([]);
+      setHeroSlides(defaultHeroSlidesForAdmin());
+      setUsingDefaults(true);
       clearDraft();
       setDraftRestored(false);
-      setStatus('Cleared — home page will use default slides.');
+      setStatus('Default slides restore ho gayi — home pe wahi chalengi.');
     } catch (err) {
       setStatus(err.message || 'Reset failed');
     } finally {
@@ -223,11 +299,13 @@ export default function AdminHeroAds() {
         <div className="wp-postbox-head">Home floating ads (hero photos)</div>
         <div className="wp-postbox-body">
           <p style={{ fontSize: '0.88rem', color: '#50575e', marginTop: 0, lineHeight: 1.45 }}>
-            Yahan se homepage header ke neeche wali floating / sliding photos control hoti hain.
-            Apni marzi ki pic upload karo, title/ad text likho, Save dabao — website pe wahi chalega.
+            Upar wali list = abhi home slider pe chal rahi / chalane wali slides.
+            Niche se kisi bhi product ko tap karke home ad banao, ya apni pic upload karo — dono saath chal sakte hain.
           </p>
           <p style={{ fontSize: '0.82rem', color: '#646970', marginTop: 0 }}>
-            Max {MAX_SLIDES} slides. Changes apply without redeploy.{' '}
+            Max {MAX_SLIDES} slides.{' '}
+            {usingDefaults ? <strong>Default slides (live)</strong> : <strong>Custom ads</strong>}
+            {' · '}
             <Link to="/" target="_blank" rel="noreferrer">
               View home page
             </Link>
@@ -235,15 +313,9 @@ export default function AdminHeroAds() {
 
           {!loaded && <p style={{ fontSize: '0.84rem' }}>Loading…</p>}
 
-          {heroSlides.length === 0 && loaded && (
-            <p style={{ fontSize: '0.84rem', color: '#646970' }}>
-              Abhi koi custom ad nahi — niche + Add photo se pehli slide banao.
-            </p>
-          )}
-
           {heroSlides.map((slide, index) => (
             <div
-              key={`hero-ad-${index}`}
+              key={`hero-ad-${index}-${slide.product_id || 'x'}`}
               className="admin-hero-ad-card"
               style={{
                 border: '1px solid #dcdcde',
@@ -263,14 +335,13 @@ export default function AdminHeroAds() {
                   flexWrap: 'wrap',
                 }}
               >
-                <strong style={{ fontSize: '0.9rem' }}>Ad {index + 1}</strong>
+                <strong style={{ fontSize: '0.9rem' }}>
+                  Ad {index + 1}
+                  {slide.source === 'product' ? ' · Product' : ''}
+                  {slide.source === 'default' ? ' · Default' : ''}
+                </strong>
                 <div style={{ display: 'flex', gap: '0.35rem', flexWrap: 'wrap' }}>
-                  <button
-                    type="button"
-                    className="wp-button wp-button--secondary"
-                    disabled={index === 0}
-                    onClick={() => moveSlide(index, -1)}
-                  >
+                  <button type="button" className="wp-button wp-button--secondary" disabled={index === 0} onClick={() => moveSlide(index, -1)}>
                     ↑
                   </button>
                   <button
@@ -281,11 +352,7 @@ export default function AdminHeroAds() {
                   >
                     ↓
                   </button>
-                  <button
-                    type="button"
-                    className="wp-button wp-button--secondary"
-                    onClick={() => removeSlide(index)}
-                  >
+                  <button type="button" className="wp-button wp-button--secondary" onClick={() => removeSlide(index)}>
                     Remove
                   </button>
                 </div>
@@ -336,12 +403,24 @@ export default function AdminHeroAds() {
               </label>
 
               {slide.image && (
-                <div style={{ marginBottom: '0.65rem' }}>
+                <div style={{ marginBottom: '0.65rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                   <label htmlFor={`hero-ad-upload-${index}`} className="wp-button wp-button--secondary" style={{ cursor: 'pointer' }}>
-                    {uploadingIndex === index ? 'Uploading…' : 'Change photo'}
+                    {uploadingIndex === index ? 'Uploading…' : 'Change / upload image'}
                   </label>
                 </div>
               )}
+
+              <label style={{ display: 'block', marginBottom: '0.55rem' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>Image URL (optional)</span>
+                <input
+                  type="url"
+                  className="wp-input"
+                  style={{ width: '100%', marginTop: 4 }}
+                  value={slide.image?.startsWith('blob:') ? '' : slide.image}
+                  onChange={(e) => updateSlide(index, 'image', e.target.value)}
+                  placeholder="https://… or upload above"
+                />
+              </label>
 
               <label style={{ display: 'block', marginBottom: '0.55rem' }}>
                 <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>Ad title</span>
@@ -377,7 +456,7 @@ export default function AdminHeroAds() {
                   style={{ width: '100%', marginTop: 4 }}
                   value={slide.href}
                   onChange={(e) => updateSlide(index, 'href', e.target.value)}
-                  placeholder="/shop or /shop?category=Cases"
+                  placeholder="/shop or /shop/p/your-product"
                   maxLength={200}
                 />
               </label>
@@ -391,7 +470,7 @@ export default function AdminHeroAds() {
               onClick={addSlide}
               disabled={heroSlides.length >= MAX_SLIDES}
             >
-              + Add photo / ad
+              + Blank photo slide
             </button>
             <button type="button" className="wp-button" onClick={save} disabled={saving || !loaded}>
               {saving ? 'Saving…' : 'Save Home Ads'}
@@ -411,9 +490,99 @@ export default function AdminHeroAds() {
             </button>
           </div>
           {status && (
-            <p style={{ marginTop: 10, fontSize: '0.86rem', color: status.includes('fail') || status.includes('Could not') ? '#b32d2e' : '#1d2327' }}>
+            <p
+              style={{
+                marginTop: 10,
+                fontSize: '0.86rem',
+                color: status.toLowerCase().includes('fail') || status.includes('Could not') ? '#b32d2e' : '#1d2327',
+              }}
+            >
               {status}
             </p>
+          )}
+        </div>
+      </div>
+
+      <div className="wp-postbox" style={{ marginTop: '1rem' }}>
+        <div className="wp-postbox-head">Products → Home Ad</div>
+        <div className="wp-postbox-body">
+          <p style={{ fontSize: '0.84rem', color: '#50575e', marginTop: 0 }}>
+            Niche se product choose karo — uski image + name slider pe aa jayegi. Phir upar Save Home Ads dabao.
+          </p>
+          <label style={{ display: 'block', marginBottom: '0.75rem' }}>
+            <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>Search products</span>
+            <input
+              type="search"
+              className="wp-input"
+              style={{ width: '100%', marginTop: 4 }}
+              value={productSearch}
+              onChange={(e) => setProductSearch(e.target.value)}
+              placeholder="Name, category, brand…"
+            />
+          </label>
+
+          {filteredProducts.length === 0 ? (
+            <p style={{ fontSize: '0.84rem', color: '#646970' }}>Koi product nahi mila.</p>
+          ) : (
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(140px, 1fr))',
+                gap: '0.65rem',
+              }}
+            >
+              {filteredProducts.map((product) => {
+                const img = productImage(product);
+                const already = heroSlides.some((s) => String(s.product_id) === String(product.id));
+                return (
+                  <button
+                    key={product.id}
+                    type="button"
+                    onClick={() => addProductAsAd(product)}
+                    disabled={heroSlides.length >= MAX_SLIDES}
+                    style={{
+                      border: already ? '2px solid #2271b1' : '1px solid #dcdcde',
+                      borderRadius: 10,
+                      padding: '0.45rem',
+                      background: '#fff',
+                      textAlign: 'left',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    <img
+                      src={img}
+                      alt=""
+                      style={{
+                        width: '100%',
+                        aspectRatio: '1',
+                        objectFit: 'cover',
+                        borderRadius: 8,
+                        display: 'block',
+                        marginBottom: 6,
+                        background: '#f0f0f1',
+                      }}
+                    />
+                    <span
+                      style={{
+                        display: 'block',
+                        fontSize: '0.78rem',
+                        fontWeight: 700,
+                        lineHeight: 1.25,
+                        color: '#1d2327',
+                      }}
+                    >
+                      {product.name}
+                    </span>
+                    <span style={{ display: 'block', fontSize: '0.72rem', color: '#646970', marginTop: 2 }}>
+                      <ProductPrice product={product} />
+                    </span>
+                    <span style={{ display: 'block', fontSize: '0.72rem', color: '#2271b1', marginTop: 4, fontWeight: 600 }}>
+                      {already ? 'Add again' : '+ Home Ad'}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           )}
         </div>
       </div>

@@ -1,40 +1,13 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
 import { PremiumLink } from '../premium/PremiumButton';
 import { useTranslation } from '../../context/LanguageContext';
 import { api } from '../../api/client';
-
-const FALLBACK_SLIDES = [
-  {
-    id: 'cases',
-    image:
-      'https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=1400&h=900&fit=crop&q=80',
-    titleKey: 'home.heroSlide1Title',
-    subKey: 'home.heroSlide1Sub',
-    ctaTo: '/shop?category=Cases',
-  },
-  {
-    id: 'chargers',
-    image:
-      'https://images.unsplash.com/photo-1583863788434-e58a36330cf0?w=1400&h=900&fit=crop&q=80',
-    titleKey: 'home.heroSlide2Title',
-    subKey: 'home.heroSlide2Sub',
-    ctaTo: '/shop?category=Chargers',
-  },
-  {
-    id: 'guards',
-    image:
-      'https://images.unsplash.com/photo-1512941937669-90a1b58e7e9c?w=1400&h=900&fit=crop&q=80',
-    titleKey: 'home.heroSlide3Title',
-    subKey: 'home.heroSlide3Sub',
-    ctaTo: '/shop?category=Screen%20Guards',
-  },
-];
+import { DEFAULT_HERO_SLIDES } from '../../config/heroSlides';
 
 /** PhoneCase-style full-bleed hero carousel — no Repair CTA in hero */
 export default function HomeHero() {
   const { t } = useTranslation();
-  const [slides, setSlides] = useState(FALLBACK_SLIDES);
+  const [slides, setSlides] = useState(DEFAULT_HERO_SLIDES);
   const [index, setIndex] = useState(0);
 
   useEffect(() => {
@@ -59,7 +32,6 @@ export default function HomeHero() {
 
     api.getStorefrontImages().then(applySlides).catch(() => {});
 
-    // Refresh when staff returns to the tab after editing Home Ads
     const onVisible = () => {
       if (document.visibilityState === 'visible') {
         api.getStorefrontImages().then(applySlides).catch(() => {});
@@ -83,7 +55,7 @@ export default function HomeHero() {
 
   const slide = slides[index] || slides[0];
   const title = slide.title || (slide.titleKey ? t(slide.titleKey) : '');
-  const sub = slide.sub || (slide.subKey ? t(slide.subKey) : '');
+  const sub = slide.sub || slide.subtitle || (slide.subKey ? t(slide.subKey) : '');
 
   return (
     <section className="pc-hero-carousel" aria-roledescription="carousel">
@@ -101,7 +73,7 @@ export default function HomeHero() {
         <p className="pc-hero-kicker">{t('home.heroTag')}</p>
         <h1 className="pc-hero-title">{title}</h1>
         <p className="pc-hero-sub">{sub}</p>
-        <PremiumLink to={slide.ctaTo || '/shop'} className="btn btn-primary pc-hero-cta">
+        <PremiumLink to={slide.ctaTo || slide.href || '/shop'} className="btn btn-primary pc-hero-cta">
           {t('home.shopNow')}
         </PremiumLink>
         <div className="pc-hero-dots" role="tablist" aria-label="Hero slides">
