@@ -129,7 +129,8 @@ export default function MobileBottomNav() {
       aria-hidden={cartOpen ? 'true' : undefined}
     >
       <div className="mobile-bottom-nav__dock">
-        {/* Center dock cutout — Repair FAB (original size) */}
+        {/* Frosted glass shell — cutout mask (blurred, not clear glass) */}
+        <div className="mobile-bottom-nav__glass" aria-hidden="true" />
         <svg
           className="mobile-bottom-nav__cutout"
           viewBox="0 0 390 72"
