@@ -19,7 +19,7 @@ import { PremiumLink } from '../components/premium/PremiumButton';
 import { DiscountRibbon, ProductPrice } from '../components/DiscountPicker';
 import { getSavings, hasDiscount } from '../utils/pricing';
 import { getStockStatus, isInStock, maxCartQty, normalizeStock } from '../utils/stock';
-import { getProductCardImages } from '../utils/productImages';
+import { getProductDetailImages } from '../utils/productImages';
 import DocumentHead from '../components/seo/DocumentHead';
 import { ProductJsonLd } from '../components/seo/JsonLd';
 import { productPath } from '../utils/slug';
@@ -60,7 +60,7 @@ export default function ProductDetail() {
           return;
         }
         setProduct(data);
-        const { main, images } = getProductCardImages(data);
+        const { main, images } = getProductDetailImages(data);
         setActiveImage(main || images[0] || data.image || '');
       })
       .catch((err) => setError(err.message))

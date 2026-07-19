@@ -1,66 +1,102 @@
 import { isDefaultProductImage } from '../config/products';
 
-/** Second image for shop cards: first gallery photo after the main image. */
-export function getProductHoverImage(product) {
-  if (!product) return null;
-  const { extras } = getProductCardImages(product);
-  return extras[0] || null;
+function cleanUrl(url) {
+  const value = String(url || '').trim();
+  if (!value || value.startsWith('blob:') || value.startsWith('data:')) return '';
+  if (isDefaultProductImage(value)) return '';
+  return value;
 }
 
-/** Third image for premium hover cycle (gallery[1]). */
-export function getProductThirdImage(product) {
+function cleanGallery(gallery) {
+  return (Array.isArray(gallery) ? gallery : [])
+    .map(cleanUrl)
+    .filter(Boolean);
+}
+
+/** Dedicated hover / thumb-swap image for shop cards (never shown on detail). */
+export function getProductHoverImage(product) {
   if (!product) return null;
-  const { extras } = getProductCardImages(product);
-  return extras[1] || null;
+  return cleanUrl(product.hover_image) || null;
 }
 
 /**
- * Normalized image set for cards & detail — main + up to 2 unique gallery URLs (3 total).
- * Skips stock Unsplash placeholders when real gallery photos exist.
+ * Card image set: Pic 1 (main) + optional hover_image for mouse/thumb swap.
+ * Gallery photos are detail-only and are not included here.
  */
 export function getProductCardImages(product) {
-  if (!product) return { main: '', extras: [], images: [] };
+  if (!product) return { main: '', hover: '', extras: [], images: [] };
 
-  const gallery = Array.isArray(product.gallery)
-    ? product.gallery.filter((url) => url && !isDefaultProductImage(url))
-    : [];
+  const gallery = cleanGallery(product.gallery);
+  let main = cleanUrl(product.image);
+  const hover = cleanUrl(product.hover_image);
 
-  let main = String(product.image || '').trim();
-  if (isDefaultProductImage(main)) {
-    // Don't show placeholder stock art alongside real gallery uploads
-    main = gallery[0] || '';
-  }
-
-  const extras = [];
-  for (const url of gallery) {
-    if (url && url !== main && !extras.includes(url)) extras.push(url);
-    if (extras.length >= 2) break;
-  }
-
-  // Fallback: only show category placeholder when there are no real photos at all
-  if (!main && !extras.length) {
+  // Fallback: only use a stock placeholder when there are no real photos
+  if (!main && !hover && !gallery.length) {
     const fallback = String(product.image || '').trim();
     if (fallback) main = fallback;
   }
 
-  const images = main ? [main, ...extras] : extras;
-  return { main, extras, images };
+  // If main missing but gallery exists, first gallery can stand in for card main
+  if (!main && gallery.length) main = gallery[0];
+
+  const images = [];
+  if (main) images.push(main);
+  if (hover && hover !== main) images.push(hover);
+
+  return { main, hover, extras: hover && hover !== main ? [hover] : [], images };
 }
 
 /**
- * Resolve main + gallery for save — never persist a stock placeholder
- * when the staff uploaded real gallery photos.
+ * Detail page images: Pic 1 (main) + gallery only.
+ * Hover image is excluded so it never appears in the detail carousel.
  */
-export function resolveProductImagesForSave(image, gallery = []) {
-  const cleanGallery = (Array.isArray(gallery) ? gallery : [])
-    .map((url) => String(url || '').trim())
-    .filter((url) => url && !url.startsWith('blob:') && !url.startsWith('data:') && !isDefaultProductImage(url));
+export function getProductDetailImages(product) {
+  if (!product) return { main: '', images: [] };
 
-  let main = String(image || '').trim();
-  if (!main || main.startsWith('blob:') || main.startsWith('data:') || isDefaultProductImage(main)) {
-    main = cleanGallery[0] || '';
+  const gallery = cleanGallery(product.gallery);
+  const hover = cleanUrl(product.hover_image);
+  let main = cleanUrl(product.image);
+
+  if (!main && gallery.length) main = gallery[0];
+
+  const images = [];
+  if (main) images.push(main);
+  for (const url of gallery) {
+    if (!url || url === main || url === hover) continue;
+    if (!images.includes(url)) images.push(url);
   }
 
-  const extras = cleanGallery.filter((url) => url !== main);
-  return { image: main, gallery: extras };
+  if (!images.length) {
+    const fallback = String(product.image || '').trim();
+    if (fallback) images.push(fallback);
+  }
+
+  return { main: images[0] || '', images };
+}
+
+/** @deprecated use getProductDetailImages / getProductCardImages */
+export function getProductThirdImage(product) {
+  if (!product) return null;
+  const { images } = getProductDetailImages(product);
+  return images[2] || null;
+}
+
+/**
+ * Resolve main + hover + gallery for save.
+ * Never persists stock placeholders; hover stays separate from gallery.
+ */
+export function resolveProductImagesForSave(image, hoverImage = '', gallery = []) {
+  let main = cleanUrl(image);
+  let hover = cleanUrl(hoverImage);
+  let extras = cleanGallery(gallery).filter((url) => url !== main && url !== hover);
+
+  // If staff only filled gallery, promote first as main (not as hover)
+  if (!main && extras.length) {
+    main = extras[0];
+    extras = extras.slice(1);
+  }
+
+  if (hover && hover === main) hover = '';
+
+  return { image: main, hover_image: hover, gallery: extras };
 }

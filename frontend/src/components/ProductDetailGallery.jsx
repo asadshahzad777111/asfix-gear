@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { getProductCardImages } from '../utils/productImages';
+import { getProductDetailImages } from '../utils/productImages';
 import { useTranslation } from '../context/LanguageContext';
 
 function deviceHasHover() {
@@ -27,8 +27,8 @@ export default function ProductDetailGallery({
   DiscountRibbon,
 }) {
   const { t } = useTranslation();
-  const { main, images } = useMemo(() => getProductCardImages(product), [product]);
-  const displayImages = images.length ? images : [main];
+  const { main, images } = useMemo(() => getProductDetailImages(product), [product]);
+  const displayImages = images.length ? images : (main ? [main] : []);
   const selectedIndex = Math.max(0, displayImages.indexOf(activeImage || main));
   const [slideIndex, setSlideIndex] = useState(selectedIndex);
   const [fullscreen, setFullscreen] = useState(false);

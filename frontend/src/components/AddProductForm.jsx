@@ -23,13 +23,17 @@ function isTransientImageUrl(url) {
 function productToForm(editProduct) {
   if (!editProduct) return { ...EMPTY_PRODUCT, gallery: [] };
   const rawImage = editProduct.image || '';
+  const rawHover = editProduct.hover_image || '';
   let image = isDefaultProductImage(rawImage) ? '' : rawImage;
+  let hover_image = isDefaultProductImage(rawHover) ? '' : rawHover;
   let gallery = Array.isArray(editProduct.gallery) ? [...editProduct.gallery] : [];
-  // Promote first real gallery photo when featured was only a stock placeholder
+  // Promote first gallery photo only when Pic 1 is empty (not as hover)
   if (!image && gallery.length) {
     image = gallery[0];
     gallery = gallery.slice(1);
   }
+  if (hover_image && hover_image === image) hover_image = '';
+  gallery = gallery.filter((url) => url && url !== image && url !== hover_image);
   return {
     name: editProduct.name || '',
     category: editProduct.category || 'Cases',
@@ -41,6 +45,7 @@ function productToForm(editProduct) {
     slug: editProduct.slug || '',
     tags: Array.isArray(editProduct.tags) ? editProduct.tags : [],
     image,
+    hover_image,
     gallery,
     stock: String(editProduct.stock ?? 0),
     featured: Boolean(editProduct.featured),
@@ -92,15 +97,7 @@ export default function AddProductForm({
   };
 
   const handleGalleryChange = (gallery) => {
-    setProduct((prev) => {
-      const next = { ...prev, gallery };
-      // If staff only uploaded gallery photos, first one becomes the featured image
-      if (isDefaultProductImage(prev.image) && gallery.length) {
-        next.image = gallery[0];
-        next.gallery = gallery.slice(1);
-      }
-      return next;
-    });
+    setField('gallery', gallery);
   };
 
   const handleImageFile = async (e) => {
@@ -126,7 +123,11 @@ export default function AddProductForm({
   };
 
   const buildPayload = (statusOverride) => {
-    const { image, gallery } = resolveProductImagesForSave(product.image, product.gallery);
+    const { image, hover_image, gallery } = resolveProductImagesForSave(
+      product.image,
+      product.hover_image,
+      product.gallery
+    );
     return {
       name: product.name.trim(),
       category: product.category,
@@ -138,6 +139,7 @@ export default function AddProductForm({
       slug: product.slug.trim() || slugify(product.name),
       tags: Array.isArray(product.tags) ? product.tags : [],
       image,
+      hover_image,
       gallery,
       stock: Number(product.stock) || 0,
       featured: product.featured,
@@ -148,7 +150,11 @@ export default function AddProductForm({
   };
 
   const saveProduct = async (statusOverride) => {
-    if (uploadingImage || String(product.image || '').startsWith('blob:')) {
+    if (
+      uploadingImage
+      || String(product.image || '').startsWith('blob:')
+      || String(product.hover_image || '').startsWith('blob:')
+    ) {
       setMessage({ type: 'error', text: 'Photo upload complete hone ka wait karein.' });
       return null;
     }
@@ -157,12 +163,12 @@ export default function AddProductForm({
       return null;
     }
 
-    const resolved = resolveProductImagesForSave(product.image, product.gallery);
+    const resolved = resolveProductImagesForSave(product.image, product.hover_image, product.gallery);
     const publishStatus = statusOverride || product.status || 'published';
     if (publishStatus !== 'draft' && !resolved.image) {
       setMessage({
         type: 'error',
-        text: 'Product image zaroori hai — Set product image ya gallery se photo add karein.',
+        text: 'Pic 1 (main image) zaroori hai — card / ad wali photo set karein.',
       });
       return null;
     }
@@ -183,10 +189,11 @@ export default function AddProductForm({
         slugTouchedRef.current = true;
         setField('slug', saved.slug);
       }
-      // Keep form in sync with what was saved (promoted gallery → main)
+      // Keep form in sync with what was saved
       setProduct((prev) => ({
         ...prev,
         image: saved.image || payload.image || '',
+        hover_image: saved.hover_image ?? payload.hover_image ?? '',
         gallery: Array.isArray(saved.gallery) ? saved.gallery : payload.gallery,
       }));
 
@@ -434,11 +441,29 @@ export default function AddProductForm({
             />
             <ProductImagePanel
               image={product.image}
-              category={product.category}
               uploading={uploadingImage}
               onUploadingChange={setUploadingImage}
               onImageChange={(url) => setField('image', url)}
               onMessage={sidebarHint}
+              title="Pic 1 — Card / Ad"
+              emptyText="No image yet — yeh photo ads & shop cards pe dikhegi"
+              hint="Default photo — hamesha card / ad pe pehli nazar aati hai."
+              setLabel="Set Pic 1"
+              replaceLabel="Replace Pic 1"
+              removeLabel="Remove Pic 1"
+            />
+            <ProductImagePanel
+              image={product.hover_image}
+              uploading={uploadingImage}
+              onUploadingChange={setUploadingImage}
+              onImageChange={(url) => setField('hover_image', url)}
+              onMessage={sidebarHint}
+              title="Hover image"
+              emptyText="Optional — mouse / thumb pass lanay par card pe swap hogi"
+              hint="Sirf card hover / thumb pe dikhegi — product details mein show nahi hogi."
+              setLabel="Set hover image"
+              replaceLabel="Replace hover image"
+              removeLabel="Remove hover image"
             />
             <ProductGalleryPanel
               gallery={product.gallery}

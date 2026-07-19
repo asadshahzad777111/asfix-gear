@@ -7,7 +7,7 @@ import { useTranslation } from '../context/LanguageContext';
 import { useShopGate } from '../hooks/useShopGate';
 import useWishlist from '../hooks/useWishlist';
 import { ProductPrice } from './DiscountPicker';
-import { getProductCardImages } from '../utils/productImages';
+import { getProductDetailImages } from '../utils/productImages';
 import { isInStock, maxCartQty } from '../utils/stock';
 import { productPath as buildProductPath } from '../utils/slug';
 import ShopLoginPrompt from './ShopLoginPrompt';
@@ -40,8 +40,8 @@ export default function ProductQuickView({ product, open, onClose }) {
   if (!open || !product || typeof document === 'undefined') return null;
 
   const inStock = isInStock(product.stock);
-  const { main, images } = getProductCardImages(product);
-  const gallery = images.length ? images : [main];
+  const { main, images } = getProductDetailImages(product);
+  const gallery = images.length ? images : (main ? [main] : []);
   const displayImage = gallery[imageIndex] || main;
   const productPath = buildProductPath(product);
   const maxQty = maxCartQty(product);

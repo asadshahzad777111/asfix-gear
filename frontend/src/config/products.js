@@ -100,6 +100,7 @@ export const EMPTY_PRODUCT = {
   slug: '',
   tags: [],
   image: '',
+  hover_image: '',
   gallery: [],
   stock: '10',
   featured: false,

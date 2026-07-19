@@ -278,6 +278,7 @@ export function createProduct(input) {
       slug,
       tags: normalizeTags(input.tags),
       image: input.image || '',
+      hover_image: String(input.hover_image || '').trim(),
       gallery: normalizeGallery(input.gallery),
       stock: Number(input.stock) || 0,
       featured: input.featured ? 1 : 0,
@@ -331,6 +332,8 @@ export function updateProduct(id, input) {
           : existing.slug ?? '',
       tags: input.tags != null ? normalizeTags(input.tags) : existing.tags ?? [],
       image: input.image ?? existing.image,
+      hover_image:
+        input.hover_image != null ? String(input.hover_image || '').trim() : existing.hover_image ?? '',
       gallery: input.gallery != null ? normalizeGallery(input.gallery) : existing.gallery ?? [],
       stock: input.stock != null ? Number(input.stock) : existing.stock,
       featured:
