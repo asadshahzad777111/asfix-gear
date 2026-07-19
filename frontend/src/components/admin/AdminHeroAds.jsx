@@ -83,8 +83,12 @@ export default function AdminHeroAds() {
   const [uploadingIndex, setUploadingIndex] = useState(null);
   const [loaded, setLoaded] = useState(false);
   const [draftRestored, setDraftRestored] = useState(false);
+  const [dirty, setDirty] = useState(false);
+  const [lastSavedAt, setLastSavedAt] = useState(null);
   const fileInputs = useRef({});
   const skipDraftWrite = useRef(true);
+  const heroSlidesRef = useRef(heroSlides);
+  heroSlidesRef.current = heroSlides;
 
   useEffect(() => {
     let cancelled = false;
@@ -99,12 +103,13 @@ export default function AdminHeroAds() {
       setProducts(list);
 
       const serverSlides = normalizeSlides(data?.hero_slides);
-      if (draft?.length && JSON.stringify(draft) !== JSON.stringify(serverSlides.length ? serverSlides : defaultHeroSlidesForAdmin())) {
-        setHeroSlides(draft);
-        setUsingDefaults(false);
-        setDraftRestored(true);
-        setStatus('Local draft restored — Save to publish on the website.');
-      } else if (serverSlides.length) {
+        if (draft?.length && JSON.stringify(draft) !== JSON.stringify(serverSlides.length ? serverSlides : defaultHeroSlidesForAdmin())) {
+          setHeroSlides(draft);
+          setUsingDefaults(false);
+          setDraftRestored(true);
+          setDirty(true);
+          setStatus('Pehli wali upload draft me mili — neeche Save changes dabao taake live pe aa jaye.');
+        } else if (serverSlides.length) {
         setHeroSlides(serverSlides);
         setUsingDefaults(false);
       } else {
@@ -139,25 +144,30 @@ export default function AdminHeroAds() {
       .slice(0, 40);
   }, [products, productSearch]);
 
-  const updateSlide = (index, field, value) => {
+  const markDirty = () => {
     setUsingDefaults(false);
+    setDirty(true);
+  };
+
+  const updateSlide = (index, field, value) => {
+    markDirty();
     setHeroSlides((prev) =>
-      prev.map((slide, i) => (i === index ? { ...slide, [field]: value } : slide))
+      prev.map((slide, i) => (i === index ? { ...slide, [field]: value, source: 'custom' } : slide))
     );
   };
 
   const addSlide = () => {
-    setUsingDefaults(false);
+    markDirty();
     setHeroSlides((prev) => (prev.length >= MAX_SLIDES ? prev : [...prev, emptySlide()]));
   };
 
   const removeSlide = (index) => {
-    setUsingDefaults(false);
+    markDirty();
     setHeroSlides((prev) => prev.filter((_, i) => i !== index));
   };
 
   const moveSlide = (index, dir) => {
-    setUsingDefaults(false);
+    markDirty();
     setHeroSlides((prev) => {
       const next = [...prev];
       const target = index + dir;
@@ -168,9 +178,9 @@ export default function AdminHeroAds() {
     });
   };
 
-  const addProductAsAd = (product) => {
+  const addProductAsAd = async (product) => {
     if (!product) return;
-    if (heroSlides.length >= MAX_SLIDES) {
+    if (heroSlidesRef.current.length >= MAX_SLIDES) {
       setStatus(`Max ${MAX_SLIDES} slides — pehle koi slide remove karo.`);
       return;
     }
@@ -186,51 +196,20 @@ export default function AdminHeroAds() {
       product_id: product.id || null,
       source: 'product',
     };
-    setUsingDefaults(false);
-    setHeroSlides((prev) => [...prev, next]);
-    setStatus(`“${product.name}” home ad me add ho gaya — Save Home Ads dabao.`);
+    markDirty();
+    const nextSlides = [...heroSlidesRef.current, next];
+    setHeroSlides(nextSlides);
+    setStatus(`“${product.name}” add ho gaya — live pe save ho raha hai…`);
+    await save(nextSlides, { silent: true });
   };
 
-  const uploadSlideMedia = async (index, file) => {
-    if (!file) return;
-    setStatus('');
-    setUploadingIndex(index);
-    setUsingDefaults(false);
-    try {
-      const { url, media_type } = await uploadHeroMediaFile(file, {
-        onPreview: (preview, type) => {
-          setHeroSlides((prev) =>
-            prev.map((slide, i) =>
-              i === index ? { ...slide, image: preview, media_type: type || 'image' } : slide
-            )
-          );
-        },
-      });
-      setHeroSlides((prev) =>
-        prev.map((slide, i) =>
-          i === index ? { ...slide, image: url, media_type: media_type || 'image' } : slide
-        )
-      );
-      setStatus(
-        media_type === 'video'
-          ? 'Video ready — Save Home Ads dabao (muted autoplay home pe).'
-          : 'Photo ready — Save Home Ads dabao.'
-      );
-    } catch (err) {
-      setStatus(err.message || 'Upload failed');
-    } finally {
-      setUploadingIndex(null);
-      const input = fileInputs.current[index];
-      if (input) input.value = '';
-    }
-  };
-
-  const save = async () => {
+  const save = async (slidesOverride, { silent } = {}) => {
+    const sourceSlides = slidesOverride || heroSlidesRef.current;
     setSaving(true);
-    setStatus('');
+    if (!silent) setStatus('');
     try {
       const current = await api.getStorefrontImages();
-      const hero_slides = heroSlides
+      const hero_slides = sourceSlides
         .map((s, i) => ({
           id: s.product_id ? `product-${s.product_id}` : `slide-${i}`,
           image: String(s.image || '').trim(),
@@ -240,12 +219,12 @@ export default function AdminHeroAds() {
           href: String(s.href || '/shop').trim() || '/shop',
           product_id: s.product_id || null,
         }))
-        .filter((s) => s.image && !s.image.startsWith('blob:'));
+        .filter((s) => s.image && !s.image.startsWith('blob:') && !s.image.startsWith('data:'));
 
       if (!hero_slides.length) {
         setStatus('Add at least one photo or product before saving.');
         setSaving(false);
-        return;
+        return false;
       }
 
       const invalid = hero_slides.find(
@@ -254,7 +233,7 @@ export default function AdminHeroAds() {
       if (invalid) {
         setStatus('Wait for photo upload to finish, then save again.');
         setSaving(false);
-        return;
+        return false;
       }
 
       await api.updateStorefrontImages({
@@ -263,13 +242,51 @@ export default function AdminHeroAds() {
       });
       setHeroSlides(normalizeSlides(hero_slides));
       setUsingDefaults(false);
+      setDirty(false);
+      setLastSavedAt(Date.now());
       clearDraft();
       setDraftRestored(false);
-      setStatus('Saved — home page slider ab yehi photos / products dikhayega.');
+      setStatus('✓ Saved — live home page pe ab yehi ads dikhengi. Redeploy se ye wipe nahi hongi.');
+      return true;
     } catch (err) {
       setStatus(err.message || 'Save failed');
+      return false;
     } finally {
       setSaving(false);
+    }
+  };
+
+  const uploadSlideMedia = async (index, file) => {
+    if (!file) return;
+    setStatus('');
+    setUploadingIndex(index);
+    markDirty();
+    try {
+      const { url, media_type } = await uploadHeroMediaFile(file, {
+        onPreview: (preview, type) => {
+          setHeroSlides((prev) =>
+            prev.map((slide, i) =>
+              i === index
+                ? { ...slide, image: preview, media_type: type || 'image', source: 'custom' }
+                : slide
+            )
+          );
+        },
+      });
+      const nextSlides = heroSlidesRef.current.map((slide, i) =>
+        i === index
+          ? { ...slide, image: url, media_type: media_type || 'image', source: 'custom' }
+          : slide
+      );
+      setHeroSlides(nextSlides);
+      setStatus('Uploading done — ab live pe save ho raha hai…');
+      await save(nextSlides, { silent: true });
+    } catch (err) {
+      setStatus(err.message || 'Upload failed');
+    } finally {
+      setUploadingIndex(null);
+      const input = fileInputs.current[index];
+      if (input) input.value = '';
     }
   };
 
@@ -320,17 +337,24 @@ export default function AdminHeroAds() {
         <div className="wp-postbox-head">Home floating ads (hero photos)</div>
         <div className="wp-postbox-body">
           <p style={{ fontSize: '0.88rem', color: '#50575e', marginTop: 0, lineHeight: 1.45 }}>
-            Upar wali list = abhi home slider pe chal rahi / chalane wali slides.
-            Gallery se photo ya short video choose karo (camera nahi — gallery khulegi). Product bhi niche se add ho sakta hai.
+            Photo/video upload ke baad <strong>auto-save</strong> ho jata hai (live site update).
+            Title/text change ke baad neeche sticky <strong>Save changes</strong> dabao.
+            MongoDB pe save hota hai — redeploy se ye ads wipe nahi hongi.
           </p>
           <p style={{ fontSize: '0.82rem', color: '#646970', marginTop: 0 }}>
             Max {MAX_SLIDES} slides.{' '}
-            {usingDefaults ? <strong>Default slides (live)</strong> : <strong>Custom ads</strong>}
+            {usingDefaults ? <strong>Default slides</strong> : <strong>Custom ads (live)</strong>}
+            {lastSavedAt ? ` · Last saved ${new Date(lastSavedAt).toLocaleTimeString()}` : ''}
             {' · '}
             <Link to="/" target="_blank" rel="noreferrer">
               View home page
             </Link>
           </p>
+          {dirty && (
+            <p className="admin-hero-ads-unsaved" style={{ fontSize: '0.86rem', color: '#b32d2e', fontWeight: 600 }}>
+              Unsaved changes — neeche “Save changes” dabao.
+            </p>
+          )}
 
           {!loaded && <p style={{ fontSize: '0.84rem' }}>Loading…</p>}
 
@@ -460,11 +484,16 @@ export default function AdminHeroAds() {
                   value={slide.image?.startsWith('blob:') ? '' : slide.image}
                   onChange={(e) => {
                     const value = e.target.value;
-                    setUsingDefaults(false);
+                    markDirty();
                     setHeroSlides((prev) =>
                       prev.map((item, i) =>
                         i === index
-                          ? { ...item, image: value, media_type: detectMediaType(value, item.media_type) }
+                          ? {
+                              ...item,
+                              image: value,
+                              media_type: detectMediaType(value, item.media_type),
+                              source: 'custom',
+                            }
                           : item
                       )
                     );
@@ -523,9 +552,6 @@ export default function AdminHeroAds() {
             >
               + Blank photo / video slide
             </button>
-            <button type="button" className="wp-button" onClick={save} disabled={saving || !loaded}>
-              {saving ? 'Saving…' : 'Save Home Ads'}
-            </button>
             {draftRestored && (
               <button type="button" className="wp-button wp-button--secondary" onClick={discardDraft}>
                 Discard local draft
@@ -545,12 +571,36 @@ export default function AdminHeroAds() {
               style={{
                 marginTop: 10,
                 fontSize: '0.86rem',
-                color: status.toLowerCase().includes('fail') || status.includes('Could not') ? '#b32d2e' : '#1d2327',
+                color: status.toLowerCase().includes('fail') || status.includes('Could not') || status.includes('Unsaved')
+                  ? '#b32d2e'
+                  : '#1d2327',
               }}
             >
               {status}
             </p>
           )}
+        </div>
+      </div>
+
+      <div className={`admin-hero-ads-sticky${dirty ? ' is-dirty' : ''}`} role="region" aria-label="Save home ads">
+        <div className="admin-hero-ads-sticky-inner">
+          <span className="admin-hero-ads-sticky-msg">
+            {saving
+              ? 'Saving…'
+              : dirty
+                ? 'Changes ready — Save dabao (live update)'
+                : lastSavedAt
+                  ? 'Live pe saved ✓'
+                  : 'Upload auto-saves · text ke liye Save'}
+          </span>
+          <button
+            type="button"
+            className="wp-button admin-hero-ads-sticky-btn"
+            onClick={() => save()}
+            disabled={saving || !loaded}
+          >
+            {saving ? 'Saving…' : 'Save changes'}
+          </button>
         </div>
       </div>
 
