@@ -1,35 +1,33 @@
-# AsFix Products — Google Sheet process
+# AsFix Products Sheet — full setup
 
-Tight, professional stock sheet for AsFix & Gear.  
-**Master of truth remains the website admin** until sync is built. This sheet is your day-to-day working copy + search.
+## Live on website (recommended)
 
-## Files
+Staff login → **Admin → Products → Products Sheet**
+
+- Type product name → matching rows (price, discount, sale, stock)
+- Edit inline → **Save** → website updates immediately
+- **Export → Google Sheets** downloads CSV and opens Google Sheets
+- **Import CSV** pulls Sheet edits back into the website
+
+Mobile + laptop: same Admin URL after staff login.
+
+## Google Sheets (optional offline copy)
+
+1. Admin → Products Sheet → **Export → Google Sheets**
+2. In the new Google Sheet: **File → Import → Upload** the downloaded CSV
+3. Edit prices/stock on the Sheet when needed
+4. **File → Download → Comma Separated Values (.csv)**
+5. Admin → Products Sheet → **Import CSV**
+
+Master of truth = **website**. Sheet is a working / backup copy.
+
+## Template files (manual seed)
 
 | File | Purpose |
 |------|---------|
-| `AsFix_Products_Master.csv` | Import into Google Sheets (headers + example rows) |
-| `GOOGLE_SHEETS_SETUP.txt` | Step-by-step: import, formulas, Search tab, share |
+| `AsFix_Products_Master.csv` | Blank starter if you have no products yet |
+| `GOOGLE_SHEETS_SETUP.txt` | Search-tab formulas for a pure Sheets workflow |
 
-## Quick start
+## Bill print
 
-1. Open [Google Sheets](https://sheets.google.com) → **Blank**
-2. **File → Import → Upload** → `AsFix_Products_Master.csv`
-3. Rename sheet tab to **Products**
-4. Follow `GOOGLE_SHEETS_SETUP.txt` (sale_price formula + Search tab)
-5. Share with staff (Editor / Viewer)
-
-## Columns (match website)
-
-`id` · `name` · `category` · `price` · `discount_percent` · `sale_price` · `stock` · `compatible_models` · `status` · `notes`
-
-## Rules
-
-1. Edit sheet during the day; push important changes to website admin.
-2. Do not treat sheet as final truth until website sync exists.
-3. Billing / thermal print = later phase (not in this sheet).
-
-## Next (when you ask)
-
-- Export live products from website into this CSV
-- Sync sheet ↔ website
-- Bill print layout + mobile Bluetooth printer
+Later phase — not part of this sheet setup.

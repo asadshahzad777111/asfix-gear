@@ -4,6 +4,11 @@ import * as store from '../store.js';
 import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import { isR2Configured, uploadProductImage } from '../services/r2.js';
 import { publishProductEvent } from '../services/liveEvents.js';
+import {
+  productsToCsv,
+  parseCsv,
+  csvRecordToPatch,
+} from '../utils/productsCsv.js';
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
@@ -153,6 +158,101 @@ router.post('/upload-image', requireAuth, requireRole(...STAFF), (req, res, next
     console.error('[R2] upload failed:', err.message);
     res.status(500).json({ error: 'Image upload failed' });
   }
+});
+
+/**
+ * Staff Products Sheet — download Google-Sheets-ready CSV of the catalog.
+ * Registered before /:id so "export.csv" is not treated as an id.
+ */
+router.get('/export.csv', requireAuth, requireRole(...STAFF), (req, res) => {
+  const products = store.getProducts({ status: 'all' });
+  const csv = productsToCsv(products);
+  const stamp = new Date().toISOString().slice(0, 10);
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', `attachment; filename="asfix-products-${stamp}.csv"`);
+  res.send(csv);
+});
+
+/**
+ * Import CSV (from Google Sheets export or the Admin Sheet download).
+ * Updates by id when editable; creates rows without id when name+category+price present.
+ */
+router.post('/import-csv', requireAuth, requireRole(...STAFF), (req, res) => {
+  const csv = typeof req.body?.csv === 'string' ? req.body.csv : '';
+  if (!csv.trim()) {
+    return res.status(400).json({ error: 'CSV text required (field: csv)' });
+  }
+  if (csv.length > 200_000) {
+    return res.status(400).json({ error: 'CSV too large (max 200KB)' });
+  }
+
+  let records;
+  try {
+    ({ records } = parseCsv(csv));
+  } catch {
+    return res.status(400).json({ error: 'Could not parse CSV' });
+  }
+
+  if (!records.length) {
+    return res.status(400).json({ error: 'No product rows found in CSV' });
+  }
+  if (records.length > 2000) {
+    return res.status(400).json({ error: 'Too many rows (max 2000)' });
+  }
+
+  const summary = { updated: 0, created: 0, skipped: 0, errors: [] };
+
+  for (let i = 0; i < records.length; i += 1) {
+    const record = records[i];
+    const rowNum = i + 2;
+    try {
+      const patch = csvRecordToPatch(record);
+      const idRaw = record.id != null ? String(record.id).trim() : '';
+
+      if (idRaw) {
+        const existing = store.getProductById(idRaw);
+        if (!existing) {
+          summary.skipped += 1;
+          summary.errors.push({ row: rowNum, error: `Product id ${idRaw} not found` });
+          continue;
+        }
+        if (!canEditProduct(req.auth.user, existing)) {
+          summary.skipped += 1;
+          summary.errors.push({ row: rowNum, error: `No permission for id ${idRaw}` });
+          continue;
+        }
+        const updated = store.updateProduct(existing.id, patch);
+        if (updated) {
+          publishProductEvent(updated);
+          summary.updated += 1;
+        }
+        continue;
+      }
+
+      if (!patch.name || !patch.category || patch.price == null) {
+        summary.skipped += 1;
+        summary.errors.push({
+          row: rowNum,
+          error: 'New row needs name, category, and price (or an existing id)',
+        });
+        continue;
+      }
+
+      const created = store.createProduct({
+        ...patch,
+        description: '',
+        created_by: req.auth.user.id,
+        created_by_name: req.auth.user.name || req.auth.user.username,
+      });
+      summary.created += 1;
+      if (created) publishProductEvent(created);
+    } catch (err) {
+      summary.skipped += 1;
+      summary.errors.push({ row: rowNum, error: err.message || 'Row failed' });
+    }
+  }
+
+  res.json(summary);
 });
 
 router.get('/by-slug/:slug', optionalAuth, (req, res) => {

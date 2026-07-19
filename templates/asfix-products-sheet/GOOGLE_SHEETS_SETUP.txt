@@ -1,121 +1,53 @@
-AsFix & Gear — Google Sheet setup (Products Master)
-====================================================
+AsFix & Gear — Products Sheet (full setup)
+==========================================
 
-Aapke paas ready CSV hai:
-  AsFix_Products_Master.csv
+PRIMARY (already built on website)
+----------------------------------
+1. Staff login → Admin
+2. Products → Products Sheet
+3. Search box mein name type karo (iphone / battery / case)
+4. Price, discount %, stock edit → Save
+5. "Export → Google Sheets" → CSV download + Sheets tab open
+6. Sheets mein File → Import → Upload CSV
+7. Baad mein Sheet se CSV download → Admin → Import CSV
 
-Yeh website fields ke saath match karti hai:
-  id, name, category, price, discount_percent, sale_price, stock,
-  compatible_models, status, notes
-
-
-STEP 1 — Google Sheet banao (1 minute)
---------------------------------------
-1. Phone/Laptop: https://sheets.google.com
-2. Blank spreadsheet → rename: AsFix Products Master
-3. File → Import → Upload → AsFix_Products_Master.csv
-4. Import location: "Replace spreadsheet"
-5. Separator: Comma
-6. Import data
+Yahi pura process hai — phone aur laptop dono pe Admin se.
 
 
-STEP 2 — Sheet tabs rename
---------------------------
-- Pehli sheet ka naam: Products
-- Neeche + se nayi sheet: Search
+OPTIONAL — Sheets Search tab (agar sirf Google Sheets use karna ho)
+------------------------------------------------------------------
+CSV headers:
+  id, name, category, brand, price, discount_percent, sale_price,
+  stock, compatible_models, status, notes
 
+1. Import CSV → tab rename: Products
+2. F2 sale_price formula (drag down):
 
-STEP 3 — Products sheet: sale_price formula
--------------------------------------------
-Column F = sale_price
+  =IF(OR(E2="",E2=0),"",ROUND(E2*(1-IF(F2="",0,F2)/100),0))
 
-Cell F2 mein yeh paste karo, phir neeche drag karo (F2 → F500):
+  NOTE: After Export from website, columns are:
+  A=id B=name C=category D=brand E=price F=discount G=sale H=stock I=models J=status K=notes
 
-  =IF(OR(D2="",D2=0),"",ROUND(D2*(1-IF(E2="",0,E2)/100),0))
+  sale_price already filled by export — formula optional.
 
-Matlab:
-  price 1500 + discount 10% → sale_price 1350 (auto)
-
-
-STEP 4 — Search sheet (name likho → products aayein)
-----------------------------------------------------
-Search sheet mein layout:
-
-  A1 = Search
-  B1 =   ← yahan type karo (jaise: iphone  OR  case  OR  charger)
-
-  A3 = id
-  B3 = name
-  C3 = category
-  D3 = price
-  E3 = discount_%
-  F3 = sale_price
-  G3 = stock
-  H3 = models
-  I3 = status
-
-Cell A4 mein YE formula paste karo (poori results table):
+3. New tab "Search":
+   A1=Search  B1=(type here)
+   A4 formula:
 
   =IF(B1="",
-    QUERY(Products!A2:J,"SELECT A,B,C,D,E,F,G,H,I WHERE B IS NOT NULL",0),
+    QUERY(Products!A2:J,"SELECT A,B,C,D,E,F,G,H,I,J WHERE B IS NOT NULL",0),
     IFERROR(
       FILTER(
-        {Products!A2:A,Products!B2:B,Products!C2:C,Products!D2:D,Products!E2:E,Products!F2:F,Products!G2:G,Products!H2:H,Products!I2:I},
+        {Products!A2:A,Products!B2:B,Products!C2:C,Products!D2:D,Products!E2:E,Products!F2:F,Products!G2:G,Products!H2:H,Products!I2:I,Products!J2:J},
         REGEXMATCH(LOWER(Products!B2:B), LOWER(B1))
       ),
-      "No match — spelling check karo"
+      "No match"
     )
   )
 
-Ab B1 mein "iphone" likho → jitne names mein iphone hai sab aa jayenge
-sirf "case" likho → case wale
-khali chhoro → saari list
 
-
-STEP 5 — Mobile / laptop access
--------------------------------
-1. Sheet → Share → aapna Gmail / staff Gmail
-2. Role: Editor (jo update kare) ya Viewer (sirf dekhna)
-3. Phone: Google Sheets app se same file
-
-
-STEP 6 — Website ke saath abhi ka process (tight, safe)
--------------------------------------------------------
-Abhi (Phase 1 — recommended):
-  • Naye / change products → pehle Website Admin mein save
-  • Phir Sheet update (copy name, price, discount, stock)
-  • Search / price check Sheet se karo (mobile par easy)
-
-Baad mein (Phase 2):
-  • Sheet → website auto-sync (jab aap bolo tab banayenge)
-
-
-COLUMNS meaning (short)
------------------------
-id                 = website product id (agar pata ho)
-name               = product name (search isi se)
-category           = Cases / Chargers / Screen Guards / Audio / Gaming ...
-price              = regular price (Rs)
-discount_percent   = 0 se 90
-sale_price         = auto formula
-stock              = kitne pieces
-compatible_models  = iPhone 13, S23 ...
-status             = published  YA  draft
-notes              = apna remark
-
-
-TIPS
-----
-• Example rows delete karke apna data dalo
-• Category spelling website jaisi rakho
-• discount_percent mein sirf number (10), % sign mat likho
-• Printer baad mein — abhi Sheet + Search kaafi
-
-
-Done checklist
---------------
-[ ] Google Sheet ban gaya + CSV import
-[ ] Products tab + sale_price formula
-[ ] Search tab + FILTER formula
-[ ] Share mobile/laptop par
-[ ] 5–10 real products daal ke search test
+RULES
+-----
+• Website Admin = master
+• Important price/stock changes → Sheet pe Save YA Import after Sheet edit
+• Bill / thermal printer = later
