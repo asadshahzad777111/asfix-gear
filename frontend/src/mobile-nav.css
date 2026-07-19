@@ -363,17 +363,27 @@
     width: 100%;
   }
 
-  /* Keep bottom dock from overlapping drawer account links */
+  /* Drawer open — hide every float / dock so nothing sits on menu links */
   body.nav-open .floating-cart-trigger,
   body.nav-open .gaming-mode-btn--trigger,
   body.nav-open .whatsapp-float,
   body.nav-open .chat-fab-trigger,
+  body.nav-open .chat-assistant-panel,
   body.nav-open .floating-repair-btn,
-  body.nav-open .staff-access {
-    visibility: hidden;
-    pointer-events: none;
-    opacity: 0;
-    transition: opacity 0.2s ease, visibility 0.2s ease;
+  body.nav-open .staff-access,
+  body.nav-open .fab-add,
+  body.nav-open .mobile-bottom-nav {
+    visibility: hidden !important;
+    pointer-events: none !important;
+    opacity: 0 !important;
+  }
+
+  body.nav-open .mobile-bottom-nav {
+    transform: translate3d(0, 110%, 0) !important;
+  }
+
+  body.nav-open .chat-fab-trigger {
+    transform: translate3d(0, 14px, 0) scale(0.9) !important;
   }
 
   .nav-drawer a:not(.nav-drawer-accordion-link):not(.dx-drawer-cta),
