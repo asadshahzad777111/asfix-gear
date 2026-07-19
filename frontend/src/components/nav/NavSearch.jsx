@@ -8,6 +8,7 @@ import { filterPublishedProducts } from '../../utils/productStatus';
 import SearchBrandIcon from './SearchBrandIcon';
 import { getBrandMeta } from '../../utils/brandIcon';
 import { IconSearch } from './NavIcons';
+import { FOCUS_SEARCH_EVENT } from '../MobileBottomNav';
 
 const SUGGEST_DEBOUNCE_MS = 250;
 const MAX_SUGGESTIONS = 6;
@@ -23,6 +24,7 @@ export default function NavSearch({ className = '' }) {
   const [loading, setLoading] = useState(false);
 
   const wrapRef = useRef(null);
+  const inputRef = useRef(null);
   const debounceRef = useRef(null);
   const requestSeqRef = useRef(0);
 
@@ -71,6 +73,20 @@ export default function NavSearch({ className = '' }) {
     };
   }, []);
 
+  useEffect(() => {
+    const onFocusSearch = () => {
+      // Prefer the mobile search row when this instance is the mobile one
+      const isMobileInstance = className.includes('dx-search--mobile');
+      const isDesktopInstance = className.includes('dx-search--desktop');
+      if (isDesktopInstance && window.matchMedia('(max-width: 1024px)').matches) return;
+      if (!isMobileInstance && !isDesktopInstance) return;
+      setOpen(true);
+      window.setTimeout(() => inputRef.current?.focus({ preventScroll: true }), 50);
+    };
+    window.addEventListener(FOCUS_SEARCH_EVENT, onFocusSearch);
+    return () => window.removeEventListener(FOCUS_SEARCH_EVENT, onFocusSearch);
+  }, [className]);
+
   const runSearch = (term) => {
     const q = term.trim();
     if (!q) {
@@ -105,6 +121,7 @@ export default function NavSearch({ className = '' }) {
           <IconSearch />
         </span>
         <input
+          ref={inputRef}
           type="search"
           className="nav-search-input"
           placeholder={t('nav.searchPlaceholder')}
