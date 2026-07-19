@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, formatPrice } from '../api/client';
-import AdminCounterBill from '../components/admin/AdminCounterBill';
+import AdminCounterBill, { CounterBillReceipt } from '../components/admin/AdminCounterBill';
 import { SHOP } from '../config/shop';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
@@ -12,6 +12,7 @@ export default function Counter() {
   const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState([]);
+  const [printOrder, setPrintOrder] = useState(null);
   const [loading, setLoading] = useState(true);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
@@ -34,6 +35,11 @@ export default function Counter() {
   }, []);
 
   const total = sales.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+
+  const printCounterSale = (sale) => {
+    setPrintOrder(sale);
+    window.setTimeout(() => window.print(), 100);
+  };
 
   return (
     <div className="wp-admin-shell counter-shell">
@@ -68,7 +74,11 @@ export default function Counter() {
         {loading ? (
           <div className="wp-loading">{t('common.loading')}</div>
         ) : (
-          <AdminCounterBill products={products} onBillCreated={() => loadCounterData({ showLoading: false })} />
+          <AdminCounterBill
+            products={products}
+            onBillCreated={() => loadCounterData({ showLoading: false })}
+            onPrintOrder={printCounterSale}
+          />
         )}
 
         <section className="counter-sales glass-card">
@@ -90,6 +100,7 @@ export default function Counter() {
                     <th>{t('admin.counterBillCustomer')}</th>
                     <th>{t('admin.counterBillPayment')}</th>
                     <th>{t('admin.counterBillTotal')}</th>
+                    <th>{t('admin.counterBillPrint')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -100,6 +111,15 @@ export default function Counter() {
                       <td>{sale.customer_name || 'Walk-in Customer'}</td>
                       <td>{sale.payment_mode}</td>
                       <td>{formatPrice(sale.total_amount)}</td>
+                      <td>
+                        <button
+                          type="button"
+                          className="wp-button wp-button--secondary counter-sales__print"
+                          onClick={() => printCounterSale(sale)}
+                        >
+                          {t('admin.counterBillReprint')}
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -107,6 +127,10 @@ export default function Counter() {
             </div>
           )}
         </section>
+
+        <div className="counter-print-stage" aria-hidden="true">
+          <CounterBillReceipt order={printOrder} printable />
+        </div>
       </main>
     </div>
   );

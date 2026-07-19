@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../../api/client';
 import { SHOP } from '../../config/shop';
 import { useTranslation } from '../../context/LanguageContext';
@@ -40,8 +40,70 @@ function paymentLabel(mode) {
   return labels[mode] || mode;
 }
 
-export default function AdminCounterBill({ products, onBillCreated }) {
+export function CounterBillReceipt({ order, printable = false }) {
   const { t } = useTranslation();
+  if (!order) return null;
+
+  const paymentNote = String(order.notes || '').startsWith('Counter sale payment note:')
+    ? String(order.notes).replace('Counter sale payment note:', '').trim()
+    : '';
+
+  return (
+    <div
+      className={`counter-bill-print${printable ? ' counter-bill-print--active' : ''}`}
+      aria-label={t('admin.counterBillReceipt')}
+    >
+      <div className="counter-bill-print__shop">
+        <h2>{SHOP.name}</h2>
+        <p>{SHOP.addressLine1}</p>
+        <p>{SHOP.addressLine2} | {SHOP.phone}</p>
+      </div>
+      <div className="counter-bill-print__meta">
+        <span>{t('admin.counterBillNo')}: {order.order_id || order.id}</span>
+        <span>{t('admin.counterBillDate')}: {order.created_at ? new Date(order.created_at).toLocaleString() : '-'}</span>
+        <span>
+          {t('admin.counterBillPayment')}: {paymentLabel(order.payment_mode)}
+          {paymentNote ? ` (${paymentNote})` : ''}
+        </span>
+        <span>{t('admin.counterBillCustomer')}: {order.customer_name || 'Walk-in Customer'}</span>
+        {order.phone ? <span>{t('admin.counterBillPhone')}: {order.phone}</span> : null}
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>{t('admin.counterBillItem')}</th>
+            <th>{t('admin.counterBillQty')}</th>
+            <th>{t('admin.counterBillRate')}</th>
+            <th>{t('admin.counterBillAmount')}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {(order.items || []).map((item, index) => (
+            <tr key={`${item.product_id}-${index}`}>
+              <td>{index + 1}</td>
+              <td>{item.name}</td>
+              <td>{item.qty}</td>
+              <td>{formatPrice(item.price)}</td>
+              <td>{formatPrice(Number(item.price) * Number(item.qty || 1))}</td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colSpan={4}>{t('admin.counterBillTotal')}</td>
+            <td>{formatPrice(order.total_amount)}</td>
+          </tr>
+        </tfoot>
+      </table>
+      <p className="counter-bill-print__thanks">{t('admin.counterBillThanks')}</p>
+    </div>
+  );
+}
+
+export default function AdminCounterBill({ products, onBillCreated, onPrintOrder }) {
+  const { t } = useTranslation();
+  const searchRef = useRef(null);
   const [query, setQuery] = useState('');
   const [lines, setLines] = useState([]);
   const [customerName, setCustomerName] = useState('');
@@ -80,6 +142,13 @@ export default function AdminCounterBill({ products, onBillCreated }) {
       return [...prev, { product, qty: 1 }];
     });
     setQuery('');
+    window.setTimeout(() => searchRef.current?.focus(), 0);
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (e.key !== 'Enter' || !results[0]) return;
+    e.preventDefault();
+    addProduct(results[0]);
   };
 
   const setQty = (productId, value) => {
@@ -131,6 +200,7 @@ export default function AdminCounterBill({ products, onBillCreated }) {
       setReceiptOrder(result.order);
       setFeedback({ type: 'success', text: t('admin.counterBillCreated') });
       onBillCreated?.(result.order);
+      window.setTimeout(() => printReceipt(result.order), 150);
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || t('admin.counterBillFailed') });
     } finally {
@@ -138,7 +208,12 @@ export default function AdminCounterBill({ products, onBillCreated }) {
     }
   };
 
-  const printReceipt = () => {
+  const printReceipt = (order = receiptOrder) => {
+    if (!order) return;
+    if (onPrintOrder) {
+      onPrintOrder(order);
+      return;
+    }
     window.print();
   };
 
@@ -168,12 +243,15 @@ export default function AdminCounterBill({ products, onBillCreated }) {
           <label className="counter-bill__search">
             <span>{t('admin.counterBillSearch')}</span>
             <input
+              ref={searchRef}
               type="search"
               value={query}
               onChange={(e) => setQuery(e.target.value)}
+              onKeyDown={handleSearchKeyDown}
               placeholder={t('admin.counterBillSearchPh')}
               autoComplete="off"
             />
+            <small>{t('admin.counterBillSearchHint')}</small>
           </label>
 
           <div className="counter-bill__results">
@@ -202,36 +280,60 @@ export default function AdminCounterBill({ products, onBillCreated }) {
 
         <section className="counter-bill__panel">
           <h4>{t('admin.counterBillCart')}</h4>
-          {lines.length === 0 ? (
-            <p className="counter-bill__empty">{t('admin.counterBillEmptyState')}</p>
-          ) : (
-            <div className="counter-bill__lines">
-              {lines.map((line) => {
-                const unit = salePrice(line.product);
-                return (
-                  <div key={line.product.id} className="counter-bill__line">
-                    <div>
-                      <strong>{line.product.name}</strong>
-                      <small>{formatPrice(unit)} each</small>
-                    </div>
-                    <input
-                      type="number"
-                      min="1"
-                      max={Number(line.product.stock) || 1}
-                      step="1"
-                      value={line.qty}
-                      onChange={(e) => setQty(line.product.id, e.target.value)}
-                      aria-label={`${line.product.name} quantity`}
-                    />
-                    <strong>{formatPrice(unit * line.qty)}</strong>
-                    <button type="button" onClick={() => removeLine(line.product.id)}>
-                      {t('admin.counterBillRemove')}
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+          <div className="counter-bill__lines counter-bill__sheet">
+            <table>
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>{t('admin.counterBillItem')}</th>
+                  <th>{t('admin.counterBillQty')}</th>
+                  <th>{t('admin.counterBillRate')}</th>
+                  <th>{t('admin.counterBillAmount')}</th>
+                  <th>{t('admin.counterBillRemove')}</th>
+                </tr>
+              </thead>
+              <tbody>
+                {lines.length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="counter-bill__empty-cell">
+                      {t('admin.counterBillEmptyState')}
+                    </td>
+                  </tr>
+                ) : (
+                  lines.map((line, index) => {
+                    const unit = salePrice(line.product);
+                    return (
+                      <tr key={line.product.id}>
+                        <td>{index + 1}</td>
+                        <td>
+                          <strong>{line.product.name}</strong>
+                          <small>{formatPrice(unit)} each · {t('admin.stockLabel', { count: Number(line.product.stock) || 0 })}</small>
+                        </td>
+                        <td>
+                          <input
+                            type="number"
+                            min="1"
+                            max={Number(line.product.stock) || 1}
+                            step="1"
+                            value={line.qty}
+                            onChange={(e) => setQty(line.product.id, e.target.value)}
+                            aria-label={`${line.product.name} quantity`}
+                          />
+                        </td>
+                        <td>{formatPrice(unit)}</td>
+                        <td>{formatPrice(unit * line.qty)}</td>
+                        <td>
+                          <button type="button" onClick={() => removeLine(line.product.id)}>
+                            {t('admin.counterBillRemove')}
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
 
           <div className="counter-bill__customer">
             <label>
@@ -274,73 +376,38 @@ export default function AdminCounterBill({ products, onBillCreated }) {
             </label>
           </div>
 
-          <div className="counter-bill__total">
-            <span>{t('admin.counterBillTotal')}</span>
-            <strong>{formatPrice(total)}</strong>
-          </div>
+          <div className="counter-bill__footer">
+            <div className="counter-bill__total">
+              <span>{t('admin.counterBillTotal')}</span>
+              <strong>{formatPrice(total)}</strong>
+            </div>
 
-          <div className="counter-bill__actions">
-            <button type="button" className="wp-button wp-button--secondary" onClick={resetBill}>
-              {t('admin.counterBillReset')}
-            </button>
-            <button type="button" className="wp-button" onClick={confirmBill} disabled={submitting || !lines.length}>
-              {submitting ? t('common.saving') : t('admin.counterBillConfirm')}
-            </button>
-            {receiptOrder ? (
-              <button type="button" className="wp-button" onClick={printReceipt}>
-                {t('admin.counterBillPrint')}
+            <div className="counter-bill__actions">
+              <button type="button" className="wp-button wp-button--secondary" onClick={resetBill}>
+                {t('admin.counterBillReset')}
               </button>
-            ) : null}
+              <button type="button" className="wp-button" onClick={confirmBill} disabled={submitting || !lines.length}>
+                {submitting ? t('common.saving') : t('admin.counterBillConfirm')}
+              </button>
+              {receiptOrder ? (
+                <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
+                  {t('admin.counterBillPrintNow')}
+                </button>
+              ) : null}
+            </div>
           </div>
         </section>
       </div>
 
       {receiptOrder ? (
         <section className="counter-bill__receipt">
-          <div className="counter-bill-print" aria-label={t('admin.counterBillReceipt')}>
-            <div className="counter-bill-print__shop">
-              <h2>{SHOP.name}</h2>
-              <p>{SHOP.addressLine1}</p>
-              <p>{SHOP.addressLine2} | {SHOP.phone}</p>
-            </div>
-            <div className="counter-bill-print__meta">
-              <span>{t('admin.counterBillNo')}: {receiptOrder.order_id || receiptOrder.id}</span>
-              <span>{t('admin.counterBillDate')}: {new Date(receiptOrder.created_at).toLocaleString()}</span>
-              <span>
-                {t('admin.counterBillPayment')}: {paymentLabel(receiptOrder.payment_mode)}
-                {paymentNote ? ` (${paymentNote})` : ''}
-              </span>
-              <span>{t('admin.counterBillCustomer')}: {receiptOrder.customer_name || 'Walk-in Customer'}</span>
-              {receiptOrder.phone ? <span>{t('admin.counterBillPhone')}: {receiptOrder.phone}</span> : null}
-            </div>
-            <table>
-              <thead>
-                <tr>
-                  <th>{t('admin.counterBillItem')}</th>
-                  <th>{t('admin.counterBillQty')}</th>
-                  <th>{t('admin.counterBillRate')}</th>
-                  <th>{t('admin.counterBillAmount')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {receiptOrder.items.map((item, index) => (
-                  <tr key={`${item.product_id}-${index}`}>
-                    <td>{item.name}</td>
-                    <td>{item.qty}</td>
-                    <td>{formatPrice(item.price)}</td>
-                    <td>{formatPrice(Number(item.price) * Number(item.qty || 1))}</td>
-                  </tr>
-                ))}
-              </tbody>
-              <tfoot>
-                <tr>
-                  <td colSpan={3}>{t('admin.counterBillTotal')}</td>
-                  <td>{formatPrice(receiptOrder.total_amount)}</td>
-                </tr>
-              </tfoot>
-            </table>
-            <p className="counter-bill-print__thanks">{t('admin.counterBillThanks')}</p>
+          <div className="counter-bill__receipt-head">
+            <strong>{t('admin.counterBillSavedReady')}</strong>
+            <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
+              {t('admin.counterBillPrintNow')}
+            </button>
           </div>
+          <CounterBillReceipt order={receiptOrder} printable={!onPrintOrder} />
         </section>
       ) : null}
     </div>

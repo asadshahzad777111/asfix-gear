@@ -1,6 +1,6 @@
 .counter-bill {
-  background: #fff;
-  border: 1px solid #c3c4c7;
+  background: #f0f0f1;
+  border: 1px solid #1d2327;
   border-radius: 4px;
   padding: 1rem;
   box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
@@ -54,6 +54,20 @@
   padding: 1rem;
 }
 
+.counter-sales__print {
+  min-height: 30px;
+  padding: 0 0.6rem;
+  white-space: nowrap;
+}
+
+.counter-print-stage {
+  position: fixed;
+  left: -10000px;
+  top: 0;
+  width: 760px;
+  pointer-events: none;
+}
+
 .counter-sales__head {
   display: flex;
   justify-content: space-between;
@@ -72,6 +86,10 @@
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 1rem;
+  padding: 0.85rem;
+  border-radius: 4px;
+  background: #1d2327;
+  color: #fff;
 }
 
 .counter-bill__head h3 {
@@ -83,8 +101,13 @@
 .counter-bill__shop span,
 .counter-bill__empty {
   margin: 0;
-  color: #50575e;
+  color: #646970;
   font-size: 0.88rem;
+}
+
+.counter-bill__head p,
+.counter-bill__head .counter-bill__shop span {
+  color: #c3c4c7;
 }
 
 .counter-bill__shop {
@@ -114,14 +137,14 @@
 
 .counter-bill__grid {
   display: grid;
-  grid-template-columns: minmax(260px, 0.85fr) minmax(320px, 1.15fr);
-  gap: 1rem;
+  grid-template-columns: minmax(280px, 0.75fr) minmax(520px, 1.25fr);
+  gap: 0.85rem;
 }
 
 .counter-bill__panel {
   border: 1px solid #dcdcde;
   border-radius: 4px;
-  padding: 0.85rem;
+  padding: 0.75rem;
   background: #f6f7f7;
 }
 
@@ -139,10 +162,15 @@
   color: #1d2327;
 }
 
+.counter-bill__search small {
+  color: #646970;
+  font-weight: 400;
+}
+
 .counter-bill__search input,
 .counter-bill__customer input,
 .counter-bill__customer select,
-.counter-bill__line input {
+.counter-bill__sheet input {
   width: 100%;
   min-height: 34px;
   border: 1px solid #8c8f94;
@@ -155,12 +183,10 @@
 .counter-bill__results,
 .counter-bill__lines {
   display: grid;
-  gap: 0.5rem;
   margin-top: 0.75rem;
 }
 
-.counter-bill__result,
-.counter-bill__line {
+.counter-bill__result {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 0.6rem;
@@ -183,7 +209,7 @@
 }
 
 .counter-bill__result small,
-.counter-bill__line small {
+.counter-bill__sheet small {
   display: block;
   margin-top: 0.15rem;
   color: #646970;
@@ -191,17 +217,73 @@
   font-weight: 400;
 }
 
-.counter-bill__line {
-  grid-template-columns: minmax(0, 1fr) 4.75rem auto auto;
+.counter-bill__sheet {
+  overflow-x: auto;
+  border: 1px solid #c3c4c7;
+  background: #fff;
 }
 
-.counter-bill__line button {
+.counter-bill__sheet table {
+  width: 100%;
+  min-width: 680px;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.counter-bill__sheet th,
+.counter-bill__sheet td {
+  border: 1px solid #dcdcde;
+  padding: 0.38rem 0.45rem;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.counter-bill__sheet th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: #1d2327;
+  color: #fff;
+  font-size: 0.74rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.counter-bill__sheet th:nth-child(1),
+.counter-bill__sheet td:nth-child(1),
+.counter-bill__sheet th:nth-child(3),
+.counter-bill__sheet td:nth-child(3) {
+  text-align: center;
+}
+
+.counter-bill__sheet th:nth-child(4),
+.counter-bill__sheet th:nth-child(5),
+.counter-bill__sheet td:nth-child(4),
+.counter-bill__sheet td:nth-child(5) {
+  text-align: right;
+}
+
+.counter-bill__sheet td:nth-child(3) {
+  width: 5rem;
+}
+
+.counter-bill__sheet input {
+  min-height: 30px;
+  text-align: center;
+}
+
+.counter-bill__sheet button {
   border: none;
   background: transparent;
   color: #b32d2e;
   cursor: pointer;
   font: inherit;
   font-size: 0.82rem;
+}
+
+.counter-bill__empty-cell {
+  color: #646970;
+  text-align: center !important;
 }
 
 .counter-bill__customer {
@@ -215,13 +297,21 @@
   grid-column: 1 / -1;
 }
 
+.counter-bill__footer {
+  position: sticky;
+  bottom: 0;
+  z-index: 3;
+  margin: 1rem -0.75rem -0.75rem;
+  padding: 0.75rem;
+  border-top: 1px solid #c3c4c7;
+  background: #fff;
+  box-shadow: 0 -8px 18px rgba(0, 0, 0, 0.08);
+}
+
 .counter-bill__total {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1rem;
-  padding-top: 0.85rem;
-  border-top: 1px solid #dcdcde;
   font-size: 1.1rem;
 }
 
@@ -233,12 +323,33 @@
   margin-top: 0.85rem;
 }
 
+.counter-bill__actions .wp-button {
+  min-height: 38px;
+  font-weight: 700;
+}
+
+.counter-bill__print-cta {
+  background: #00a32a !important;
+  border-color: #008a20 !important;
+  color: #fff !important;
+  font-size: 0.95rem;
+}
+
 .counter-bill__receipt {
   margin-top: 1rem;
   border: 1px dashed #8c8f94;
   border-radius: 4px;
   padding: 1rem;
   background: #fff;
+}
+
+.counter-bill__receipt-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+  flex-wrap: wrap;
 }
 
 .counter-bill-print {
@@ -292,15 +403,17 @@
   background: #f1f1f1;
 }
 
-.counter-bill-print th:nth-child(2),
-.counter-bill-print td:nth-child(2) {
+.counter-bill-print th:nth-child(1),
+.counter-bill-print th:nth-child(3),
+.counter-bill-print td:nth-child(1),
+.counter-bill-print td:nth-child(3) {
   text-align: center;
 }
 
-.counter-bill-print th:nth-child(3),
 .counter-bill-print th:nth-child(4),
-.counter-bill-print td:nth-child(3),
+.counter-bill-print th:nth-child(5),
 .counter-bill-print td:nth-child(4),
+.counter-bill-print td:nth-child(5),
 .counter-bill-print tfoot td {
   text-align: right;
 }
@@ -324,13 +437,8 @@
     text-align: left;
   }
 
-  .counter-bill__line {
-    grid-template-columns: minmax(0, 1fr) 4.5rem;
-  }
-
-  .counter-bill__line > strong,
-  .counter-bill__line > button {
-    justify-self: start;
+  .counter-bill__footer {
+    position: static;
   }
 }
 
@@ -339,12 +447,12 @@
     visibility: hidden !important;
   }
 
-  .counter-bill-print,
-  .counter-bill-print * {
+  .counter-bill-print--active,
+  .counter-bill-print--active * {
     visibility: visible !important;
   }
 
-  .counter-bill-print {
+  .counter-bill-print--active {
     position: fixed;
     inset: 0;
     max-width: none;
