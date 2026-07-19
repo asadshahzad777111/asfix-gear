@@ -27,9 +27,11 @@ body.cart-open .dx-section-strap {
   background:
     linear-gradient(
       180deg,
-      color-mix(in srgb, var(--hdr-bg, #0a0a0a) 94%, var(--hdr-accent, #ff6a2b)) 0%,
-      var(--hdr-bg, #0a0a0a) 100%
+      color-mix(in srgb, var(--hdr-accent, #ff6a2b) 8%, color-mix(in srgb, var(--hdr-bg, #0a0a0a) 82%, transparent)) 0%,
+      color-mix(in srgb, var(--hdr-bg, #0a0a0a) 84%, transparent) 100%
     );
+  backdrop-filter: blur(16px) saturate(1.35);
+  -webkit-backdrop-filter: blur(16px) saturate(1.35);
   border-bottom: 1px solid color-mix(in srgb, var(--hdr-accent, #ff6a2b) 22%, transparent);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.14);
 }
