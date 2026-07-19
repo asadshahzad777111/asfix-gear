@@ -24,12 +24,12 @@
   --mint: #ff5a1f;
   --mint-glow: rgba(255, 90, 31, 0.2);
   --mint-focus: rgba(255, 90, 31, 0.12);
-  /* Ambient: orange lead + soft companion tints */
-  --orb-a: rgba(255, 106, 43, 0.55);
-  --orb-b: rgba(255, 168, 96, 0.4);
-  --orb-c: rgba(232, 88, 28, 0.42);
-  --orb-d: rgba(255, 210, 150, 0.3);
-  --orb-e: rgba(200, 110, 90, 0.28);
+  /* Ambient: soft peach/amber light — mid size, not heavy orange */
+  --orb-a: rgba(255, 170, 120, 0.28);
+  --orb-b: rgba(255, 200, 150, 0.22);
+  --orb-c: rgba(255, 140, 90, 0.2);
+  --orb-d: rgba(255, 220, 180, 0.18);
+  --orb-e: rgba(230, 170, 140, 0.16);
   --ambient-mesh: none;
   --ambient-flare: none;
   --grain-opacity: 0.04;
@@ -46,47 +46,47 @@
   /* Warm charcoal base — never cold pure black */
   --bg: #100c0a;
   --bg-gradient:
-    radial-gradient(ellipse 90% 70% at 12% -8%, rgba(255, 140, 72, 0.22) 0%, transparent 55%),
-    radial-gradient(ellipse 70% 55% at 92% 8%, rgba(255, 106, 43, 0.16) 0%, transparent 50%),
-    radial-gradient(ellipse 80% 60% at 50% 110%, rgba(194, 65, 12, 0.2) 0%, transparent 55%),
+    radial-gradient(ellipse 55% 45% at 14% -6%, rgba(255, 170, 120, 0.12) 0%, transparent 58%),
+    radial-gradient(ellipse 45% 40% at 90% 10%, rgba(255, 150, 100, 0.08) 0%, transparent 52%),
+    radial-gradient(ellipse 50% 40% at 50% 108%, rgba(200, 120, 80, 0.1) 0%, transparent 55%),
     linear-gradient(
       165deg,
-      #1a110d 0%,
+      #161210 0%,
       #120e0b 38%,
       #0e0a08 72%,
-      #140f0c 100%
+      #14100d 100%
     );
   --bg-card: rgba(255, 248, 240, 0.045);
   --bg-elevated: rgba(28, 20, 16, 0.94);
-  /* Orange lead + peach, amber, soft copper companions */
-  --orb-a: rgba(255, 122, 48, 0.62);
-  --orb-b: rgba(255, 186, 120, 0.46);
-  --orb-c: rgba(232, 88, 28, 0.5);
-  --orb-d: rgba(255, 214, 150, 0.38);
-  --orb-e: rgba(190, 96, 78, 0.36);
+  /* Soft ember light — half the previous intensity */
+  --orb-a: rgba(255, 168, 120, 0.32);
+  --orb-b: rgba(255, 200, 155, 0.26);
+  --orb-c: rgba(255, 140, 90, 0.22);
+  --orb-d: rgba(255, 220, 180, 0.2);
+  --orb-e: rgba(220, 160, 130, 0.18);
   --ambient-mesh:
     conic-gradient(
       from 210deg at 70% 30%,
-      rgba(255, 106, 43, 0.16),
+      rgba(255, 170, 120, 0.08),
       transparent 26%,
-      rgba(255, 190, 120, 0.12) 44%,
+      rgba(255, 200, 150, 0.07) 44%,
       transparent 58%,
-      rgba(200, 110, 90, 0.1) 72%,
+      rgba(220, 160, 130, 0.05) 72%,
       transparent 84%,
-      rgba(255, 150, 70, 0.12) 94%,
+      rgba(255, 160, 100, 0.06) 94%,
       transparent
     );
   --ambient-flare:
     linear-gradient(
       118deg,
       transparent 0%,
-      rgba(255, 170, 100, 0.12) 30%,
-      rgba(255, 106, 43, 0.16) 48%,
-      rgba(210, 120, 90, 0.1) 62%,
-      rgba(255, 200, 140, 0.1) 74%,
+      rgba(255, 190, 140, 0.07) 30%,
+      rgba(255, 150, 100, 0.08) 48%,
+      rgba(220, 160, 130, 0.05) 62%,
+      rgba(255, 210, 170, 0.06) 74%,
       transparent 100%
     );
-  --grain-opacity: 0.055;
+  --grain-opacity: 0.035;
   --nav-glass: rgba(14, 10, 8, 0.82);
   --drawer-bg: rgba(16, 12, 10, 0.97);
   --nav-menu-solid: #16110e;
@@ -104,8 +104,8 @@
   --input-border: rgba(255, 190, 140, 0.14);
   --nav-hover: rgba(255, 160, 100, 0.08);
   --section-tint: rgba(255, 120, 50, 0.035);
-  --grid-line: rgba(255, 170, 110, 0.045);
-  --orb-strength: 0.82;
+  --grid-line: rgba(255, 170, 110, 0.03);
+  --orb-strength: 0.48;
   --shadow-elevated: 0 8px 28px rgba(0, 0, 0, 0.52), 0 0 40px rgba(255, 90, 31, 0.04);
   --shadow-nav: 0 4px 20px rgba(0, 0, 0, 0.38);
   --shadow-hover: 0 20px 48px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 160, 100, 0.08);
@@ -125,47 +125,47 @@
   /* Soft mist white with apricot blush — not flat cream */
   --bg: #fff8f3;
   --bg-gradient:
-    radial-gradient(ellipse 95% 70% at 8% -10%, rgba(255, 170, 110, 0.38) 0%, transparent 52%),
-    radial-gradient(ellipse 75% 55% at 96% 4%, rgba(255, 106, 43, 0.14) 0%, transparent 48%),
-    radial-gradient(ellipse 85% 55% at 48% 108%, rgba(255, 196, 140, 0.32) 0%, transparent 52%),
+    radial-gradient(ellipse 55% 42% at 10% -8%, rgba(255, 190, 145, 0.22) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 38% at 94% 6%, rgba(255, 160, 110, 0.1) 0%, transparent 50%),
+    radial-gradient(ellipse 50% 40% at 48% 108%, rgba(255, 210, 170, 0.18) 0%, transparent 52%),
     linear-gradient(
       168deg,
-      #fff9f4 0%,
-      #fff3ea 36%,
-      #ffece0 68%,
-      #fff7f1 100%
+      #fffaf6 0%,
+      #fff6ef 36%,
+      #fff1e8 68%,
+      #fff9f4 100%
     );
   --bg-card: rgba(255, 255, 255, 0.86);
   --bg-elevated: #ffffff;
-  /* Orange lead + peach, honey, soft rose-copper — sunlit */
-  --orb-a: rgba(255, 130, 70, 0.46);
-  --orb-b: rgba(255, 196, 140, 0.44);
-  --orb-c: rgba(255, 106, 43, 0.32);
-  --orb-d: rgba(255, 220, 170, 0.4);
-  --orb-e: rgba(220, 140, 120, 0.34);
+  /* Soft apricot mist — lighter mid-size blooms */
+  --orb-a: rgba(255, 180, 130, 0.28);
+  --orb-b: rgba(255, 210, 170, 0.26);
+  --orb-c: rgba(255, 150, 100, 0.2);
+  --orb-d: rgba(255, 225, 190, 0.24);
+  --orb-e: rgba(230, 170, 145, 0.18);
   --ambient-mesh:
     conic-gradient(
       from 40deg at 30% 40%,
-      rgba(255, 150, 90, 0.18),
+      rgba(255, 180, 130, 0.1),
       transparent 28%,
-      rgba(255, 210, 160, 0.16) 48%,
+      rgba(255, 210, 170, 0.09) 48%,
       transparent 62%,
-      rgba(220, 140, 120, 0.12) 76%,
+      rgba(230, 170, 145, 0.07) 76%,
       transparent 88%,
-      rgba(255, 106, 43, 0.12) 96%,
+      rgba(255, 150, 100, 0.07) 96%,
       transparent
     );
   --ambient-flare:
     linear-gradient(
       112deg,
       transparent 0%,
-      rgba(255, 190, 130, 0.18) 32%,
-      rgba(255, 130, 70, 0.14) 48%,
-      rgba(220, 150, 120, 0.12) 60%,
-      rgba(255, 220, 170, 0.16) 72%,
+      rgba(255, 200, 150, 0.1) 32%,
+      rgba(255, 170, 120, 0.08) 48%,
+      rgba(230, 170, 145, 0.07) 60%,
+      rgba(255, 225, 190, 0.09) 72%,
       transparent 100%
     );
-  --grain-opacity: 0.035;
+  --grain-opacity: 0.025;
   --nav-glass: rgba(255, 248, 242, 0.88);
   --drawer-bg: rgba(255, 252, 248, 0.98);
   --nav-menu-solid: #ffffff;
@@ -183,8 +183,8 @@
   --input-border: rgba(140, 70, 35, 0.12);
   --nav-hover: rgba(255, 120, 50, 0.07);
   --section-tint: rgba(255, 140, 70, 0.05);
-  --grid-line: rgba(200, 110, 60, 0.06);
-  --orb-strength: 0.58;
+  --grid-line: rgba(200, 110, 60, 0.04);
+  --orb-strength: 0.4;
   --shadow-elevated: 0 8px 28px rgba(120, 50, 20, 0.07);
   --shadow-nav: 0 4px 16px rgba(120, 50, 20, 0.05);
   --shadow-hover: 0 18px 40px rgba(120, 50, 20, 0.1), 0 0 0 1px rgba(200, 100, 50, 0.06);
