@@ -49,7 +49,7 @@ img { max-width: 100%; height: auto; display: block; }
   margin-bottom: 0.75rem;
 }
 
-/* Ambient background — slow color wash behind the page */
+/* Ambient background — ember / apricot atmosphere behind the page */
 .ambient-bg {
   position: fixed;
   inset: 0;
@@ -63,13 +63,43 @@ img { max-width: 100%; height: auto; display: block; }
   position: absolute;
   inset: 0;
   background: var(--bg-gradient);
-  opacity: 0.88;
+  opacity: 1;
+}
+
+.ambient-mesh {
+  position: absolute;
+  inset: -20%;
+  background: var(--ambient-mesh);
+  opacity: 0.85;
+  mix-blend-mode: soft-light;
+  animation: ambientMeshDrift 40s ease-in-out infinite;
+  will-change: transform;
+}
+
+.ambient-flare {
+  position: absolute;
+  inset: -10% -20%;
+  background: var(--ambient-flare);
+  opacity: 0.9;
+  mix-blend-mode: screen;
+  animation: ambientFlareSweep 28s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+[data-theme='light'] .ambient-flare {
+  mix-blend-mode: multiply;
+  opacity: 0.55;
+}
+
+[data-theme='light'] .ambient-mesh {
+  mix-blend-mode: multiply;
+  opacity: 0.55;
 }
 
 .orb {
   position: absolute;
   border-radius: 50%;
-  filter: blur(88px);
+  filter: blur(96px);
   animation: ambientDrift 22s ease-in-out infinite;
   opacity: var(--orb-strength);
   will-change: transform;
@@ -77,55 +107,65 @@ img { max-width: 100%; height: auto; display: block; }
 }
 
 .orb-1 {
-  width: min(72vw, 520px);
-  height: min(72vw, 520px);
+  width: min(78vw, 560px);
+  height: min(78vw, 560px);
   background: var(--orb-a);
-  top: -18%;
-  left: -12%;
+  top: -22%;
+  left: -14%;
   animation-duration: 26s;
 }
 
 .orb-2 {
-  width: min(60vw, 440px);
-  height: min(60vw, 440px);
+  width: min(64vw, 480px);
+  height: min(64vw, 480px);
   background: var(--orb-b);
-  top: 28%;
-  right: -16%;
+  top: 18%;
+  right: -18%;
   animation-delay: -7s;
   animation-duration: 32s;
   animation-name: ambientDriftAlt;
 }
 
 .orb-3 {
-  width: min(55vw, 400px);
-  height: min(55vw, 400px);
+  width: min(58vw, 420px);
+  height: min(58vw, 420px);
   background: var(--orb-c);
-  bottom: -12%;
-  left: 18%;
+  bottom: -16%;
+  left: 10%;
   animation-delay: -13s;
   animation-duration: 28s;
 }
 
 .orb-4 {
-  width: min(48vw, 340px);
-  height: min(48vw, 340px);
+  width: min(52vw, 380px);
+  height: min(52vw, 380px);
   background: var(--orb-d);
-  top: 52%;
-  left: 42%;
+  top: 48%;
+  left: 38%;
   animation-delay: -19s;
   animation-duration: 36s;
   animation-name: ambientDriftAlt;
 }
 
+.ambient-grain {
+  position: absolute;
+  inset: 0;
+  opacity: var(--grain-opacity);
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  background-size: 180px 180px;
+  pointer-events: none;
+}
+
 .grid-overlay {
   position: absolute;
   inset: 0;
-  opacity: 0.4;
+  opacity: 0.35;
   background-image:
     linear-gradient(var(--grid-line) 1px, transparent 1px),
     linear-gradient(90deg, var(--grid-line) 1px, transparent 1px);
   background-size: 56px 56px;
-  mask-image: radial-gradient(ellipse at center, black 15%, transparent 72%);
+  mask-image: radial-gradient(ellipse at center, black 12%, transparent 74%);
 }
 
 @keyframes ambientDrift {
@@ -141,8 +181,26 @@ img { max-width: 100%; height: auto; display: block; }
   66% { transform: translate3d(5%, -6%, 0) scale(1.1); }
 }
 
+@keyframes ambientMeshDrift {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg) scale(1); }
+  50% { transform: translate3d(-3%, 2%, 0) rotate(8deg) scale(1.06); }
+}
+
+@keyframes ambientFlareSweep {
+  0%, 100% {
+    transform: translate3d(-4%, 0, 0) rotate(-2deg);
+    opacity: 0.75;
+  }
+  50% {
+    transform: translate3d(5%, -3%, 0) rotate(3deg);
+    opacity: 1;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .orb {
+  .orb,
+  .ambient-mesh,
+  .ambient-flare {
     animation: none !important;
   }
 }

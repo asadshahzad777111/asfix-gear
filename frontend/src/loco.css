@@ -10,14 +10,30 @@
   --hero-pad-top: clamp(5.5rem, 12vh, 7.5rem);
 }
 
-/* ── Ambient: quieter, more atmospheric ── */
+/* ── Ambient: ember bloom — soft, brand-tinted atmosphere ── */
 .ambient-bg .orb {
-  filter: blur(100px);
+  filter: blur(110px);
+}
+
+.ambient-bg .ambient-mesh {
+  filter: blur(40px);
+}
+
+.ambient-bg .ambient-flare {
+  filter: blur(28px);
 }
 
 .ambient-bg .grid-overlay {
-  opacity: 0.35;
+  opacity: 0.28;
   background-size: 64px 64px;
+}
+
+[data-theme='dark'] .ambient-bg .orb {
+  opacity: calc(var(--orb-strength) * 1.05);
+}
+
+[data-theme='light'] .ambient-bg .orb {
+  filter: blur(120px);
 }
 
 /* ── Buttons: sharper, less pill-default ── */
