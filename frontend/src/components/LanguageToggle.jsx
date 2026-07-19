@@ -2,27 +2,11 @@ import { useEffect, useRef, useState } from 'react';
 import { useLanguage } from '../context/LanguageContext';
 import { LANGS, LANG_LABELS, LANG_SHORT } from '../locales/translations';
 
-function IconGlobe({ size = 16 }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" fill="none">
-      <circle cx="12" cy="12" r="9" stroke="currentColor" strokeWidth="1.7" />
-      <path
-        d="M3.5 12h17M12 3.5c2.4 2.6 3.6 5.4 3.6 8.5S14.4 17.9 12 20.5C9.6 17.9 8.4 15.1 8.4 12S9.6 6.1 12 3.5Z"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinejoin="round"
-      />
-    </svg>
-  );
-}
-
 export default function LanguageToggle({ className = '' }) {
   const { lang, setLang, t } = useLanguage();
   const trackRef = useRef(null);
   const dragRef = useRef({ active: false, startX: 0, startLang: lang });
   const [pill, setPill] = useState({ left: 0, width: 0 });
-
-  const activeIndex = Math.max(0, LANGS.indexOf(lang));
 
   useEffect(() => {
     const track = trackRef.current;
@@ -65,10 +49,6 @@ export default function LanguageToggle({ className = '' }) {
       role="group"
       aria-label={t('lang.label')}
     >
-      <span className="lang-world-globe" title={t('lang.label')} aria-hidden="true">
-        <IconGlobe />
-      </span>
-
       <div
         className="lang-world-track"
         ref={trackRef}

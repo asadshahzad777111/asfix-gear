@@ -277,13 +277,12 @@ html.theme-transitioning *::after {
     box-shadow 0.45s ease !important;
 }
 
-/* ── World language control — EN · اردو · RO with swipe ── */
+/* ── Language control — EN · RO only (no globe) ── */
 .lang-world {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
   flex-shrink: 0;
-  padding: 0.2rem 0.28rem 0.2rem 0.35rem;
+  padding: 0.18rem;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--primary) 28%, var(--glass-edge));
   background:
@@ -296,14 +295,7 @@ html.theme-transitioning *::after {
 }
 
 .lang-world-globe {
-  display: grid;
-  place-items: center;
-  width: 1.45rem;
-  height: 1.45rem;
-  border-radius: 50%;
-  color: var(--primary);
-  background: color-mix(in srgb, var(--primary) 14%, transparent);
-  flex-shrink: 0;
+  display: none !important;
 }
 
 .lang-world-track {

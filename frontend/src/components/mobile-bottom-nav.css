@@ -1,7 +1,8 @@
 /* Cutout dock — Repair keeps center cutout; sliding mark follows the clicked side tab */
 
 :root {
-  --bottom-nav-h: 4.1rem;
+  /* Slimmer dock — mid-size buttons stay, bar hugs them */
+  --bottom-nav-h: 3.45rem;
   --bottom-nav-safe: env(safe-area-inset-bottom, 0px);
   --bottom-nav-total: calc(var(--bottom-nav-h) + var(--bottom-nav-safe));
   --bnav-fg: #1a1a1a;
@@ -81,7 +82,7 @@
     display: flex;
     align-items: flex-end;
     justify-content: space-between;
-    padding: 0 0.2rem 0.45rem;
+    padding: 0 0.15rem 0.28rem;
     pointer-events: auto;
   }
 
@@ -91,10 +92,10 @@
    */
   .mobile-bottom-nav__mark {
     position: absolute;
-    bottom: 1.35rem;
+    bottom: 1.05rem;
     left: 0;
-    width: 2.55rem;
-    height: 2.55rem;
+    width: 2.4rem;
+    height: 2.4rem;
     margin: 0;
     border-radius: 999px;
     background: linear-gradient(145deg, #ff8a4c 0%, var(--bnav-accent) 55%, #e85a1a 100%);
@@ -133,9 +134,9 @@
     flex-direction: column;
     align-items: center;
     justify-content: flex-end;
-    gap: 0.12rem;
-    min-height: 2.85rem;
-    padding: 0.25rem 0.1rem 0.1rem;
+    gap: 0.08rem;
+    min-height: 2.45rem;
+    padding: 0.15rem 0.08rem 0.05rem;
     margin: 0;
     border: 0;
     background: transparent;
@@ -162,7 +163,7 @@
   .mobile-bottom-nav__item.is-active.is-marked .mobile-bottom-nav__icon,
   .mobile-bottom-nav__item.is-active.is-marked .mobile-bottom-nav__icon-wrap {
     color: #fff;
-    transform: translateY(-0.55rem);
+    transform: translateY(-0.4rem);
   }
 
   .mobile-bottom-nav__item.is-marked .mobile-bottom-nav__label {
@@ -187,8 +188,8 @@
   }
 
   .mobile-bottom-nav__fab-slot {
-    flex: 0 0 4.6rem;
-    width: 4.6rem;
+    flex: 0 0 4.2rem;
+    width: 4.2rem;
     pointer-events: none;
   }
 
@@ -218,16 +219,16 @@
     pointer-events: auto;
     position: absolute;
     left: 50%;
-    bottom: calc(var(--bottom-nav-safe) + 0.55rem);
+    bottom: calc(var(--bottom-nav-safe) + 0.35rem);
     transform: translateX(-50%);
     z-index: 2;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.15rem;
+    gap: 0.1rem;
     text-decoration: none;
     color: var(--bnav-muted);
-    font-size: 0.58rem;
+    font-size: 0.56rem;
     font-weight: 700;
     letter-spacing: 0.02em;
     -webkit-tap-highlight-color: transparent;
@@ -237,8 +238,8 @@
   .mobile-bottom-nav__fab-orb {
     display: grid;
     place-items: center;
-    width: 3.35rem;
-    height: 3.35rem;
+    width: 3.05rem;
+    height: 3.05rem;
     border-radius: 999px;
     background: linear-gradient(145deg, #ff8a4c 0%, var(--bnav-accent) 55%, #e85a1a 100%);
     color: #fff;
@@ -325,12 +326,12 @@
 
 @media (min-width: 769px) and (max-width: 1024px) {
   :root {
-    --bottom-nav-h: 4.25rem;
+    --bottom-nav-h: 3.65rem;
   }
 
   .mobile-bottom-nav__item,
   .mobile-bottom-nav__fab {
-    font-size: 0.64rem;
+    font-size: 0.6rem;
   }
 }
 

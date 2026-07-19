@@ -53,8 +53,7 @@ export default function AccountMenu({ className = '' }) {
         aria-haspopup="true"
         aria-label={t('nav.accountMenu')}
       >
-        <span className="account-menu-avatar" aria-hidden="true">{initial}</span>
-        <span className="account-menu-icon" aria-hidden="true">⚙</span>
+        <span className="account-menu-avatar" aria-hidden="true">{initial || 'A'}</span>
       </button>
 
       {open && (

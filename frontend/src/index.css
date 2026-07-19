@@ -5449,33 +5449,43 @@ body.modal-open .guest-welcome-banner {
 }
 
 .account-menu-trigger {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  padding: 0.35rem 0.5rem;
-  border-radius: 999px;
-  border: 1px solid var(--glass-edge);
-  background: rgba(255, 255, 255, 0.05);
+  display: inline-grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  min-width: 42px;
+  padding: 0;
+  border-radius: 12px;
+  border: 1px solid color-mix(in srgb, var(--primary, #ff6a2b) 35%, var(--glass-edge));
+  background: color-mix(in srgb, var(--primary, #ff6a2b) 14%, var(--bg-elevated, #fff));
   color: var(--text);
   cursor: pointer;
 }
 
 .account-menu-avatar {
-  width: 28px;
-  height: 28px;
+  width: 30px;
+  height: 30px;
   border-radius: 50%;
-  background: var(--accent);
+  background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 700;
+  font-size: 0.92rem;
+  font-weight: 800;
+  letter-spacing: 0;
+  line-height: 1;
+  box-shadow: 0 2px 8px rgba(255, 106, 43, 0.35);
 }
 
 .account-menu-icon {
-  font-size: 0.9rem;
-  opacity: 0.85;
+  display: none;
+}
+
+[data-theme='light'] .account-menu-trigger {
+  border-color: color-mix(in srgb, var(--primary, #ff6a2b) 40%, rgba(20, 20, 26, 0.12));
+  background: #fff;
+  box-shadow: 0 1px 0 rgba(20, 20, 26, 0.04);
 }
 
 .account-menu-dropdown {

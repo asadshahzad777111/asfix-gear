@@ -433,6 +433,48 @@
   background: rgba(37, 211, 102, 0.12);
 }
 
+/* Account = clear letter “A” (not a faint person icon) */
+.dx-icon-btn--account {
+  color: #fff;
+  background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%);
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(255, 106, 43, 0.32);
+}
+
+.dx-icon-btn--account:hover {
+  color: #fff;
+  background: linear-gradient(145deg, #ff9a5c 0%, #ff7a3b 55%, #ef6a2a 100%);
+  border-color: transparent;
+  box-shadow: 0 6px 16px rgba(255, 106, 43, 0.4);
+}
+
+.dx-account-letter {
+  font-family: var(--hdr-font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: 0.02em;
+}
+
+[data-theme='light'] .dx-icon-btn {
+  border-color: color-mix(in srgb, var(--hdr-border) 80%, rgba(20, 20, 26, 0.08));
+  background: #fff;
+  color: #3f3f46;
+}
+
+[data-theme='light'] .dx-icon-btn:hover {
+  color: var(--hdr-text);
+  background: var(--hdr-accent-soft);
+}
+
+[data-theme='light'] .dx-icon-btn--account,
+[data-theme='light'] .dx-icon-btn--account:hover {
+  color: #fff !important;
+  background: linear-gradient(145deg, #ff8a4c 0%, #ff6a2b 55%, #e85a1a 100%) !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 14px rgba(255, 106, 43, 0.28);
+}
+
 /* Header chat removed — use floating FAB / bottom dock only */
 .navbar.navbar--dx .dx-icon-btn--chat {
   display: none !important;

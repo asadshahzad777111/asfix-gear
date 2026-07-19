@@ -18,7 +18,7 @@ import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
 import NavSearch from './nav/NavSearch';
 import ShopMegaMenu from './nav/ShopMegaMenu';
-import { IconCart, IconHeart, IconUser, IconWhatsApp } from './nav/NavIcons';
+import { IconCart, IconHeart, IconWhatsApp } from './nav/NavIcons';
 import { useWishlistIds } from '../hooks/useWishlist';
 import { useCart } from '../context/CartContext';
 import {
@@ -254,7 +254,7 @@ export default function Navbar() {
                   aria-label={t('nav.signIn')}
                   title={t('nav.signIn')}
                 >
-                  <IconUser />
+                  <span className="dx-account-letter" aria-hidden="true">A</span>
                 </button>
               )}
 
