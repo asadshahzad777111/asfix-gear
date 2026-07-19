@@ -10,6 +10,7 @@ import ButtonEffects from './components/ButtonEffects';
 import FloatingCart from './components/premium/FloatingCart';
 import FloatingRepairButton from './components/FloatingRepairButton';
 import FlyToCart from './components/premium/FlyToCart';
+import MobileBottomNav from './components/MobileBottomNav';
 import GuestWelcomeBanner from './components/GuestWelcomeBanner';
 import PageTransition from './components/premium/PageTransition';
 import Analytics from './components/seo/Analytics';
@@ -26,6 +27,7 @@ function AppContent() {
     wakeApiServer();
   }, []);
   const showCart = !isAdminRoute;
+  const showBottomNav = !isAdminRoute && !isGamingPage;
 
   return (
     <div className={`app ${isGamingPage ? 'app--gaming' : ''} ${isAdminRoute ? 'app--admin' : ''}`}>
@@ -43,6 +45,7 @@ function AppContent() {
       {!isAdminRoute && !isGamingPage && <ChatAssistant />}
       {!isAdminRoute && !isGamingPage && <FloatingRepairButton />}
       {showCart && <FloatingCart />}
+      {showBottomNav && <MobileBottomNav />}
       <FlyToCart />
       <ExitGamingButton />
       <GamingTransition />
