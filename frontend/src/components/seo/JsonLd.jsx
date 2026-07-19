@@ -31,7 +31,7 @@ export function LocalBusinessJsonLd() {
       url: SITE,
       telephone: `+${SHOP.phoneIntl}`,
       email: SHOP.email,
-      image: `${SITE}/logo.svg`,
+      image: `${SITE}/logo.png`,
       address: {
         '@type': 'PostalAddress',
         addressLocality: SHOP.city,

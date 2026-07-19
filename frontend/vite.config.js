@@ -21,7 +21,7 @@ export default defineConfig({
       // caches on activate so stale apex/www shells cannot stick after deploy.
       selfDestroying: true,
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.svg'],
+      includeAssets: ['favicon.svg', 'logo.png', 'apple-touch-icon.png', 'logo-192.png', 'logo-512.png'],
       manifest: {
         name: 'AsFix & Gear',
         short_name: 'AsFix',
@@ -32,6 +32,9 @@ export default defineConfig({
         start_url: '/',
         icons: [
           { src: '/favicon.svg', sizes: 'any', type: 'image/svg+xml', purpose: 'any' },
+          { src: '/logo-192.png', sizes: '192x192', type: 'image/png', purpose: 'any' },
+          { src: '/logo-512.png', sizes: '512x512', type: 'image/png', purpose: 'any' },
+          { src: '/apple-touch-icon.png', sizes: '180x180', type: 'image/png', purpose: 'any' },
         ],
       },
     }),

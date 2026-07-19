@@ -48,8 +48,11 @@ export default function DocumentHead({
     upsertMeta('property', 'og:description', description);
     upsertMeta('property', 'og:url', url);
     upsertMeta('property', 'og:type', 'website');
-    upsertMeta('name', 'twitter:card', 'summary');
+    upsertMeta('property', 'og:image', `${SITE}/og-image.jpg`);
+    upsertMeta('name', 'twitter:card', 'summary_large_image');
+    upsertMeta('name', 'twitter:image', `${SITE}/og-image.jpg`);
     upsertLink('canonical', url);
+    upsertLink('apple-touch-icon', '/apple-touch-icon.png');
     if (noindex) {
       upsertMeta('name', 'robots', 'noindex,nofollow');
     } else {
