@@ -28,11 +28,34 @@ export function IconShop({ size = 20 }) {
   );
 }
 
+/** Hover morph — open bag */
+export function IconShopBag({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
+      <path d="M6.5 8.5h11l-.9 10.2a1.6 1.6 0 0 1-1.6 1.4H9a1.6 1.6 0 0 1-1.6-1.4L6.5 8.5Z" />
+      <path d="M9 8.5V7a3 3 0 0 1 6 0v1.5" />
+      <path d="M10 12.5h4" />
+    </svg>
+  );
+}
+
 export function IconUser({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
       <circle cx="12" cy="8" r="3.5" />
       <path d="M5.5 19.5c1.5-3.2 4-4.8 6.5-4.8s5 1.6 6.5 4.8" />
+    </svg>
+  );
+}
+
+export function IconUserFilled({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="8" r="3.6" fill="currentColor" />
+      <path
+        fill="currentColor"
+        d="M5.2 19.8c1.4-3.4 3.9-5.1 6.8-5.1s5.4 1.7 6.8 5.1c.2.4 0 .9-.5.9H5.7c-.5 0-.7-.5-.5-.9Z"
+      />
     </svg>
   );
 }
@@ -112,6 +135,25 @@ export function IconSettingsSpin({ size = 20 }) {
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
       <path d="M12 8.2a3.8 3.8 0 1 1 0 7.6 3.8 3.8 0 0 1 0-7.6Z" />
       <path d="M12 2.8v1.8M12 19.4v1.8M2.8 12h1.8M19.4 12h1.8M5.4 5.4l1.3 1.3M17.3 17.3l1.3 1.3M18.6 5.4l-1.3 1.3M6.7 17.3l-1.3 1.3" />
+    </svg>
+  );
+}
+
+export function IconRepair({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
+      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" />
+    </svg>
+  );
+}
+
+export function IconRepairBolt({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M13.2 2.4 7.1 13.1c-.2.3 0 .7.4.7h4.1l-1.2 7.6c-.1.5.6.8.9.4l6.8-11.2c.2-.3 0-.7-.4-.7h-4.2l1.1-7c.1-.5-.6-.8-.9-.3Z"
+      />
     </svg>
   );
 }
