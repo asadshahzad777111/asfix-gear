@@ -3,9 +3,11 @@ import Logo from './Logo';
 import { SHOP, directionsContactPath, generalContactPath } from '../config/shop';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
+import { canManageProducts } from '../config/permissions';
 
 export default function Footer() {
-  const { isStaff } = useAuth();
+  const { isStaff, user } = useAuth();
+  const canAddProducts = canManageProducts(user);
   const { t } = useTranslation();
 
   return (
@@ -29,7 +31,7 @@ export default function Footer() {
             <ul className="footer-links">
               <li><Link to="/gaming">{t('common.gamingZone')}</Link></li>
               <li><Link to="/shop">{t('common.accessoriesShop')}</Link></li>
-              {isStaff && <li><Link to="/shop?add=1">{t('common.addProductStaff')}</Link></li>}
+              {canAddProducts && <li><Link to="/shop?add=1">{t('common.addProductStaff')}</Link></li>}
               <li><Link to="/repair">{t('common.bookRepair')}</Link></li>
               <li><Link to="/faq">{t('footer.faq')}</Link></li>
               <li><Link to="/contact">{t('common.contactMap')}</Link></li>

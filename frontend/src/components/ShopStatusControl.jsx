@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useShopStatus } from '../context/ShopStatusContext';
 import { useTranslation } from '../context/LanguageContext';
+import { canManageShopSettings } from '../config/permissions';
 
 export default function ShopStatusControl({ compact = false }) {
-  const { isStaff } = useAuth();
+  const { user } = useAuth();
   const { manual_override, isOpen, setManualOverride } = useShopStatus();
   const { t } = useTranslation();
   const [busy, setBusy] = useState(false);
 
-  if (!isStaff) return null;
+  if (!canManageShopSettings(user)) return null;
 
   const apply = async (value) => {
     setBusy(true);

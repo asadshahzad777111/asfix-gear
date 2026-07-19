@@ -7,6 +7,7 @@ const router = Router();
 const SALES_VIEWERS = ['super_admin', 'admin', 'editor'];
 const CATEGORY_EDITORS = ['super_admin', 'admin', 'editor'];
 const BACKUP_EXPORTERS = ['super_admin', 'admin'];
+const AUDIT_VIEWERS = ['super_admin', 'admin'];
 const VALID_PERIODS = ['day', 'week', 'range'];
 const MAX_CATEGORY_NAME_LEN = 80;
 
@@ -48,6 +49,14 @@ router.get('/sales-report', requireAuth, requireRole(...SALES_VIEWERS), (req, re
 
 router.get('/customers-summary', requireAuth, requireRole(...SALES_VIEWERS), (_req, res) => {
   res.json(store.getCustomerSummaries());
+});
+
+router.get('/audit', requireAuth, requireRole(...AUDIT_VIEWERS), (req, res) => {
+  res.json(store.getAuditLogs({
+    action: req.query.action,
+    actorUserId: req.query.actor_user_id,
+    limit: req.query.limit,
+  }));
 });
 
 router.get('/categories', requireAuth, requireRole(...CATEGORY_EDITORS), (_req, res) => {

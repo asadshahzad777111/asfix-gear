@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../../api/client';
-import { canEditProduct } from '../../config/permissions';
+import { canEditProduct, canManageProducts } from '../../config/permissions';
 import { getStockStatus } from '../../utils/stock';
 import './admin-products-sheet.css';
 
@@ -29,7 +29,7 @@ function matchesQuery(product, query) {
 
 /**
  * Live Products Sheet for staff — type a name to filter; edit price / discount /
- * stock inline. Export CSV opens in Google Sheets; Import pulls Sheet edits back.
+ * stock inline. CSV stays a backup/import helper; the backend remains master.
  */
 export default function AdminProductsSheet({ products, currentUser, onProductsChange, onProductUpdated }) {
   const [query, setQuery] = useState('');
@@ -39,6 +39,7 @@ export default function AdminProductsSheet({ products, currentUser, onProductsCh
   const [exporting, setExporting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const fileRef = useRef(null);
+  const canUseCsv = canManageProducts(currentUser);
 
   useEffect(() => {
     setDrafts({});
@@ -140,9 +141,8 @@ export default function AdminProductsSheet({ products, currentUser, onProductsCh
       await api.downloadProductsCsv();
       setFeedback({
         type: 'success',
-        text: 'CSV download ho gaya. Google Sheets → File → Import → Upload → yeh file.',
+        text: 'CSV download ho gaya. Backup/import ke liye use karein — website DB master hai.',
       });
-      window.open('https://sheets.google.com/create', '_blank', 'noopener,noreferrer');
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || 'Export failed' });
     } finally {
@@ -180,30 +180,32 @@ export default function AdminProductsSheet({ products, currentUser, onProductsCh
         <div>
           <h3>Products Sheet</h3>
           <p>
-            Name type karo → matching products. Price / discount / stock yahin edit — website pe live save.
-            Google Sheets ke liye Export CSV, wapas lane ke liye Import.
+            Name type karo → matching products. Price / discount / stock yahin edit — website DB pe live save.
+            CSV export/import backup ke liye hai; master data AsFix backend mein rahega.
           </p>
         </div>
-        <div className="aps-actions">
-          <button type="button" className="wp-button" onClick={handleExport} disabled={exporting}>
-            {exporting ? 'Exporting…' : 'Export → Google Sheets'}
-          </button>
-          <button
-            type="button"
-            className="wp-button wp-button--secondary"
-            onClick={() => fileRef.current?.click()}
-            disabled={importing}
-          >
-            {importing ? 'Importing…' : 'Import CSV'}
-          </button>
-          <input
-            ref={fileRef}
-            type="file"
-            accept=".csv,text/csv"
-            hidden
-            onChange={(e) => handleImportFile(e.target.files?.[0])}
-          />
-        </div>
+        {canUseCsv ? (
+          <div className="aps-actions">
+            <button type="button" className="wp-button" onClick={handleExport} disabled={exporting}>
+              {exporting ? 'Exporting…' : 'Export CSV Backup'}
+            </button>
+            <button
+              type="button"
+              className="wp-button wp-button--secondary"
+              onClick={() => fileRef.current?.click()}
+              disabled={importing}
+            >
+              {importing ? 'Importing…' : 'Import CSV'}
+            </button>
+            <input
+              ref={fileRef}
+              type="file"
+              accept=".csv,text/csv"
+              hidden
+              onChange={(e) => handleImportFile(e.target.files?.[0])}
+            />
+          </div>
+        ) : null}
       </div>
 
       <label className="aps-search">

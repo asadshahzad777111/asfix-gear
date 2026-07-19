@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { formatPrice } from '../api/client';
+import { SHOP } from '../config/shop';
 import { useTranslation } from '../context/LanguageContext';
 import { buildOrderReceipt } from '../utils/receipts';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
@@ -18,6 +19,78 @@ const ORDER_QUICK_ACTIONS = [
 function statusBtnLabel(status) {
   const found = ORDER_QUICK_ACTIONS.find((a) => a.status === status);
   return found?.short || status;
+}
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+function printOrderReceipt(order) {
+  const rows = (order.items || []).map((item) => {
+    const qty = Number(item.qty) || 1;
+    const price = Number(item.price) || 0;
+    return `
+      <tr>
+        <td>${escapeHtml(item.name)}</td>
+        <td>${qty}</td>
+        <td>${escapeHtml(formatPrice(price))}</td>
+        <td>${escapeHtml(formatPrice(price * qty))}</td>
+      </tr>
+    `;
+  }).join('');
+  const win = window.open('', '_blank', 'width=780,height=900');
+  if (!win) return;
+  win.document.write(`
+    <!doctype html>
+    <html>
+      <head>
+        <title>${escapeHtml(order.order_id || order.id)} receipt</title>
+        <style>
+          body { font-family: Arial, sans-serif; color: #111; margin: 24px; }
+          .shop { text-align: center; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 12px; }
+          h1 { margin: 0 0 4px; font-size: 24px; }
+          p { margin: 3px 0; }
+          .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; margin: 12px 0; font-size: 14px; }
+          table { width: 100%; border-collapse: collapse; font-size: 14px; }
+          th, td { border: 1px solid #111; padding: 6px 8px; text-align: left; }
+          th { background: #f1f1f1; }
+          th:nth-child(2), td:nth-child(2) { text-align: center; }
+          th:nth-child(3), th:nth-child(4), td:nth-child(3), td:nth-child(4), tfoot td { text-align: right; }
+          tfoot td { font-weight: 700; }
+          .thanks { text-align: center; margin-top: 14px; }
+          @page { margin: 8mm; }
+        </style>
+      </head>
+      <body>
+        <div class="shop">
+          <h1>${escapeHtml(SHOP.name)}</h1>
+          <p>${escapeHtml(SHOP.addressLine1)}</p>
+          <p>${escapeHtml(SHOP.addressLine2)} | ${escapeHtml(SHOP.phone)}</p>
+        </div>
+        <div class="meta">
+          <span>Bill #: ${escapeHtml(order.order_id || order.id)}</span>
+          <span>Date: ${escapeHtml(order.created_at ? new Date(order.created_at).toLocaleString() : '')}</span>
+          <span>Customer: ${escapeHtml(order.customer_name || 'Walk-in Customer')}</span>
+          <span>Payment: ${escapeHtml(order.payment_mode || '')}</span>
+          <span>Staff: ${escapeHtml(order.created_by_staff_name || '-')}</span>
+          <span>Total: ${escapeHtml(formatPrice(order.total_amount))}</span>
+        </div>
+        <table>
+          <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
+          <tbody>${rows}</tbody>
+          <tfoot><tr><td colspan="3">Total</td><td>${escapeHtml(formatPrice(order.total_amount))}</td></tr></tfoot>
+        </table>
+        <p class="thanks">Thank you for shopping at AsFix & Gear.</p>
+        <script>window.onload = () => { window.print(); };</script>
+      </body>
+    </html>
+  `);
+  win.document.close();
 }
 
 function AssignRiderForm({ onSubmit, onCancel, t, mapUrl }) {
@@ -167,6 +240,11 @@ export default function AdminOrderCard({
         <strong>#{o.order_id || o.id} · {o.customer_name}</strong>
         <span>{formatPrice(o.total_amount)}</span>
       </div>
+      {o.source === 'counter_sale' ? (
+        <p className="admin-float-sub">
+          Counter sale{ o.created_by_staff_name ? ` · Sold by ${o.created_by_staff_name}` : '' }
+        </p>
+      ) : null}
       <p className="admin-float-meta">
         {o.phone} · {o.city || 'No city'} ·{' '}
         <span className={o.payment_mode === 'cod' ? 'admin-payment-cod' : undefined}>
@@ -235,6 +313,9 @@ export default function AdminOrderCard({
         >
           {t('sales.receiptStaff')}
         </a>
+        <button type="button" className="btn btn-outline btn-sm" onClick={() => printOrderReceipt(o)}>
+          {t('admin.counterBillPrint')}
+        </button>
       </div>
 
       <div className="admin-order-actions admin-order-actions--delivery">

@@ -511,6 +511,12 @@ export const api = {
   getRepairChatUnread: () => request('/repairs/messages/unread'),
 
   placeOrder: (body) => request('/orders', { method: 'POST', body: JSON.stringify(body) }),
+  createCounterSale: (body) =>
+    request('/orders/counter-sale', { method: 'POST', body: JSON.stringify(body) }),
+  getCounterSales: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/orders/counter-sales${query ? `?${query}` : ''}`);
+  },
   getOrders: () => request('/orders'),
   updateOrderStatus: (id, shipping_status) =>
     request(`/orders/${id}/status`, {
@@ -545,6 +551,10 @@ export const api = {
   getSalesReport: (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return request(`/admin/sales-report${query ? `?${query}` : ''}`);
+  },
+  getAuditLogs: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/admin/audit${query ? `?${query}` : ''}`);
   },
   getAdminDashboardStats: () => request('/admin/dashboard-stats'),
   getCustomersSummary: () => request('/admin/customers-summary'),

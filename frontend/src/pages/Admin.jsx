@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api/client';
 import { useAuth } from '../context/AuthContext';
-import { canDeleteProducts, canEditProduct, canManageTeam, canManageShopSettings, canViewSalesReport } from '../config/permissions';
+import { canDeleteProducts, canEditProduct, canManageProducts, canManageTeam, canManageShopSettings, canViewAuditLog, canViewSalesReport } from '../config/permissions';
 import AdminLayout from '../components/admin/AdminLayout';
 import AdminDashboard from '../components/admin/AdminDashboard';
 import AdminCategories from '../components/admin/AdminCategories';
@@ -19,6 +19,8 @@ import AdminSalesReport from '../components/AdminSalesReport';
 import AdminOrderCard, { ORDER_STATUSES } from '../components/AdminOrderCard';
 import AdminStockManager from '../components/AdminStockManager';
 import AdminProductsSheet from '../components/admin/AdminProductsSheet';
+import AdminCounterBill from '../components/admin/AdminCounterBill';
+import AdminAuditLog from '../components/admin/AdminAuditLog';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
 import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts, getLowStockProducts } from '../utils/stock';
@@ -30,8 +32,8 @@ import { startVisibilityPoll } from '../utils/visibilityPoll';
 import useLiveUpdates from '../hooks/useLiveUpdates';
 
 const VALID_TABS = new Set([
-  'dashboard', 'products', 'add', 'categories', 'stock', 'sheet', 'orders', 'customers',
-  'bookings', 'messages', 'feedback', 'sales', 'admins', 'settings', 'payments', 'ads', 'hero',
+  'dashboard', 'products', 'add', 'categories', 'stock', 'sheet', 'bill', 'orders', 'customers',
+  'bookings', 'messages', 'feedback', 'sales', 'audit', 'admins', 'settings', 'payments', 'ads', 'hero',
 ]);
 
 const STOCK_FILTERS = new Set(['all', 'low_stock', 'out_of_stock']);
@@ -80,6 +82,9 @@ export default function Admin() {
   const [productSort, setProductSort] = useState({ key: 'date', dir: 'desc' });
   const [selectedProductIds, setSelectedProductIds] = useState([]);
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
+  const [orderSourceFilter, setOrderSourceFilter] = useState('all');
+  const [orderStaffFilter, setOrderStaffFilter] = useState('all');
+  const [orderDateFilter, setOrderDateFilter] = useState('');
   const [bulkLoading, setBulkLoading] = useState(false);
   const [noteDrafts, setNoteDrafts] = useState({});
   const [noteSaving, setNoteSaving] = useState({});
@@ -93,6 +98,8 @@ export default function Admin() {
   const showSales = canViewSalesReport(user);
   const allowDelete = canDeleteProducts(user);
   const showShopControl = canManageShopSettings(user);
+  const showProductManagement = canManageProducts(user);
+  const showAudit = canViewAuditLog(user);
 
   const setTab = (next, options = {}) => {
     setTabState(next);
@@ -209,9 +216,25 @@ export default function Admin() {
     });
   }, [filteredProducts, productSort]);
 
-  const filteredOrders = orderStatusFilter === 'all'
-    ? orders
-    : orders.filter((o) => o.shipping_status === orderStatusFilter);
+  const orderStaffOptions = useMemo(() => {
+    const byId = new Map();
+    for (const order of orders) {
+      if (order.created_by_staff_id == null) continue;
+      byId.set(String(order.created_by_staff_id), order.created_by_staff_name || `Staff #${order.created_by_staff_id}`);
+    }
+    return [...byId.entries()].map(([id, name]) => ({ id, name }));
+  }, [orders]);
+
+  const filteredOrders = orders.filter((o) => {
+    if (orderStatusFilter !== 'all' && o.shipping_status !== orderStatusFilter) return false;
+    if (orderSourceFilter !== 'all' && (o.source || 'online') !== orderSourceFilter) return false;
+    if (orderStaffFilter !== 'all' && String(o.created_by_staff_id || '') !== orderStaffFilter) return false;
+    if (orderDateFilter) {
+      const date = o.created_at ? new Date(o.created_at).toISOString().slice(0, 10) : '';
+      if (date !== orderDateFilter) return false;
+    }
+    return true;
+  });
 
   const navigateAdmin = (nextTab, filter = {}) => {
     if (filter.category) setProductCategory(filter.category);
@@ -424,6 +447,15 @@ export default function Admin() {
     }
   };
 
+  const handleCounterBillCreated = (order) => {
+    if (order?.id) {
+      setOrders((prev) => [order, ...prev.filter((o) => o.id !== order.id)]);
+    }
+    api.getProducts({ status: 'all' })
+      .then(setProducts)
+      .catch(console.error);
+  };
+
   const pageTitle = (() => {
     if (tab === 'dashboard') return 'Dashboard';
     if (tab === 'add') return editingProduct ? 'Edit product' : 'Add new product';
@@ -431,12 +463,14 @@ export default function Admin() {
     if (tab === 'categories') return 'Categories';
     if (tab === 'stock') return 'Stock';
     if (tab === 'sheet') return 'Products Sheet';
+    if (tab === 'bill') return t('admin.counterBillTitle');
     if (tab === 'orders') return 'Orders';
     if (tab === 'customers') return 'Customers';
     if (tab === 'bookings') return 'Repair Intake';
     if (tab === 'messages') return t('admin.messages');
     if (tab === 'feedback') return 'Reviews & Feedback';
     if (tab === 'sales') return t('sales.tab');
+    if (tab === 'audit') return t('admin.auditTitle');
     if (tab === 'admins') return t('team.manageTeam');
     if (tab === 'settings') return 'Settings';
     if (tab === 'payments') return 'Payments';
@@ -461,7 +495,7 @@ export default function Admin() {
         lowStockCount,
         repairChatUnread: repairChatUnreadTotal,
       }}
-      flags={{ showSales, showAdminMgmt, showShopControl }}
+      flags={{ showSales, showAdminMgmt, showShopControl, showAudit }}
       pageTitle={pageTitle}
       onStockAlertClick={goToStockAlerts}
     >
@@ -500,6 +534,8 @@ export default function Admin() {
         <AdminFeedback />
       ) : tab === 'sales' && showSales ? (
         <AdminSalesReport />
+      ) : tab === 'audit' && showAudit ? (
+        <AdminAuditLog />
       ) : tab === 'add' ? (
         <>
           {editingProduct && (
@@ -507,7 +543,11 @@ export default function Admin() {
               ← Cancel edit
             </button>
           )}
-          <AddProductForm editProduct={editingProduct} onSuccess={handleFormSuccess} wpLayout />
+          {showProductManagement ? (
+            <AddProductForm editProduct={editingProduct} onSuccess={handleFormSuccess} wpLayout />
+          ) : (
+            <div className="wp-empty">{t('admin.productManagerOnly')}</div>
+          )}
         </>
       ) : tab === 'admins' && showAdminMgmt ? (
         <AdminManagement />
@@ -536,6 +576,38 @@ export default function Admin() {
                   );
                 })}
               </div>
+              <div className="wp-filter-bar">
+                <select value={orderSourceFilter} onChange={(e) => setOrderSourceFilter(e.target.value)} aria-label={t('admin.orderSourceFilter')}>
+                  <option value="all">{t('admin.orderSourceAll')}</option>
+                  <option value="counter_sale">{t('admin.orderSourceCounter')}</option>
+                  <option value="online">{t('admin.orderSourceOnline')}</option>
+                </select>
+                <select value={orderStaffFilter} onChange={(e) => setOrderStaffFilter(e.target.value)} aria-label={t('admin.orderStaffFilter')}>
+                  <option value="all">{t('admin.orderStaffAll')}</option>
+                  {orderStaffOptions.map((staff) => (
+                    <option key={staff.id} value={staff.id}>{staff.name}</option>
+                  ))}
+                </select>
+                <input
+                  type="date"
+                  value={orderDateFilter}
+                  onChange={(e) => setOrderDateFilter(e.target.value)}
+                  aria-label={t('admin.orderDateFilter')}
+                />
+                {(orderSourceFilter !== 'all' || orderStaffFilter !== 'all' || orderDateFilter) ? (
+                  <button
+                    type="button"
+                    className="wp-button wp-button--secondary wp-button--small"
+                    onClick={() => {
+                      setOrderSourceFilter('all');
+                      setOrderStaffFilter('all');
+                      setOrderDateFilter('');
+                    }}
+                  >
+                    Clear filters
+                  </button>
+                ) : null}
+              </div>
             <div className="admin-orders-list">
               {filteredOrders.length === 0 ? (
                 <div className="empty-state glass-card">Is filter mein koi order nahi.</div>
@@ -559,7 +631,7 @@ export default function Admin() {
             </>
           ) : tab === 'customers' ? (
             <AdminCustomers />
-          ) : tab === 'stock' ? (
+          ) : tab === 'stock' && showProductManagement ? (
             <AdminStockManager
               products={products}
               currentUser={user}
@@ -570,6 +642,8 @@ export default function Admin() {
                 setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
               }
             />
+          ) : tab === 'stock' ? (
+            <div className="wp-empty">{t('admin.productManagerOnly')}</div>
           ) : tab === 'sheet' ? (
             <AdminProductsSheet
               products={products}
@@ -579,13 +653,20 @@ export default function Admin() {
                 setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
               }
             />
+          ) : tab === 'bill' ? (
+            <AdminCounterBill
+              products={products}
+              onBillCreated={handleCounterBillCreated}
+            />
           ) : tab === 'products' ? (
             <>
               <div className="wp-toolbar">
                 <div className="wp-toolbar-left">
-                  <button type="button" className="wp-button" onClick={() => { setEditingProduct(null); setTab('add'); }}>
-                    Add new product
-                  </button>
+                  {showProductManagement ? (
+                    <button type="button" className="wp-button" onClick={() => { setEditingProduct(null); setTab('add'); }}>
+                      Add new product
+                    </button>
+                  ) : null}
                 </div>
                 <div className="wp-toolbar-right">
                   <span style={{ fontSize: '0.84rem', color: '#50575e' }}>{filteredProducts.length} of {products.length}</span>
@@ -650,7 +731,7 @@ export default function Admin() {
               {filteredProducts.length === 0 ? (
                 <div className="wp-empty">
                   <p>{products.length === 0 ? t('admin.noProducts') : 'No products match these filters.'}</p>
-                  {products.length === 0 ? (
+                  {products.length === 0 && showProductManagement ? (
                     <button type="button" className="wp-button" style={{ marginTop: '0.75rem' }} onClick={() => setTab('add')}>
                       Add new product
                     </button>

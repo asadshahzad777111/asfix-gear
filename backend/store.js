@@ -70,6 +70,50 @@ function now() {
   return new Date().toISOString();
 }
 
+function staffAuditUser(user = {}) {
+  const name = String(user.name || user.username || user.email || '').trim();
+  return {
+    id: user.id ?? null,
+    name: name.slice(0, 120),
+    role: String(user.role || '').trim().slice(0, 40),
+  };
+}
+
+function appendAuditLog(data, action, payload = {}) {
+  if (!Array.isArray(data.audit_logs)) data.audit_logs = [];
+  if (!data.meta.nextAuditId) {
+    data.meta.nextAuditId = data.audit_logs.reduce((max, log) => Math.max(max, Number(log.id) || 0), 0) + 1;
+  }
+  const actor = staffAuditUser(payload.actor);
+  const entry = {
+    id: data.meta.nextAuditId++,
+    action: String(action || '').trim().slice(0, 80),
+    entity_type: String(payload.entity_type || '').trim().slice(0, 80),
+    entity_id: payload.entity_id ?? null,
+    at: now(),
+    actor_user_id: actor.id,
+    actor_name: actor.name,
+    actor_role: actor.role,
+    summary: String(payload.summary || '').trim().slice(0, 300),
+    details: payload.details && typeof payload.details === 'object' ? payload.details : {},
+  };
+  data.audit_logs.unshift(entry);
+  data.audit_logs = data.audit_logs.slice(0, 2000);
+  return entry;
+}
+
+export function getAuditLogs({ action, actorUserId, limit = 250 } = {}) {
+  let logs = Array.isArray(readData().audit_logs) ? readData().audit_logs : [];
+  if (action && action !== 'all') {
+    logs = logs.filter((log) => log.action === action);
+  }
+  if (actorUserId != null && actorUserId !== '' && actorUserId !== 'all') {
+    logs = logs.filter((log) => String(log.actor_user_id) === String(actorUserId));
+  }
+  const n = Math.max(1, Math.min(500, Number(limit) || 250));
+  return logs.slice(0, n);
+}
+
 function normalizePhone(phone) {
   return String(phone || '').replace(/\D/g, '');
 }
@@ -284,6 +328,8 @@ export function createProduct(input) {
       featured: input.featured ? 1 : 0,
       discount_percent: Math.min(90, Math.max(0, Number(input.discount_percent) || 0)),
       warranty: String(input.warranty || '').trim(),
+      sale_count: Math.max(0, Number(input.sale_count) || 0),
+      purchase_count: Math.max(0, Number(input.purchase_count) || 0),
       created_at: now(),
       // Ownership: whoever adds a product is the only one (besides a Super
       // Admin) who can edit its details/stock/discount going forward — keeps
@@ -336,6 +382,12 @@ export function updateProduct(id, input) {
         input.hover_image != null ? String(input.hover_image || '').trim() : existing.hover_image ?? '',
       gallery: input.gallery != null ? normalizeGallery(input.gallery) : existing.gallery ?? [],
       stock: input.stock != null ? Number(input.stock) : existing.stock,
+      sale_count:
+        input.sale_count != null ? Math.max(0, Number(input.sale_count) || 0) : existing.sale_count ?? 0,
+      purchase_count:
+        input.purchase_count != null
+          ? Math.max(0, Number(input.purchase_count) || 0)
+          : existing.purchase_count ?? 0,
       featured:
         input.featured != null ? (input.featured ? 1 : 0) : existing.featured,
       discount_percent: discount,
@@ -358,7 +410,12 @@ export function updateProduct(id, input) {
  * newly restocked units. Every adjustment is appended to the product's
  * `stock_log` so staff can audit who changed what and why later.
  */
-export function adjustProductStock(id, delta, { reason = 'offline_sale', note = '', staffName = '' } = {}) {
+export function adjustProductStock(id, delta, {
+  reason = 'offline_sale',
+  note = '',
+  staffName = '',
+  actor = null,
+} = {}) {
   return withData((data) => {
     const numId = Number(id);
     const index = data.products.findIndex((p) => p.id === numId);
@@ -370,19 +427,41 @@ export function adjustProductStock(id, delta, { reason = 'offline_sale', note = 
     const product = data.products[index];
     const currentStock = Number(product.stock) || 0;
     const nextStock = Math.max(0, currentStock + change);
+    const cleanReason = String(reason || 'manual_adjust').trim().slice(0, 80);
+    const cleanNote = String(note || '').trim().slice(0, 200);
 
     const logEntry = {
       at: now(),
       delta: nextStock - currentStock,
-      reason,
-      note: String(note || '').trim().slice(0, 200),
+      reason: cleanReason,
+      note: cleanNote,
       staff: String(staffName || '').trim().slice(0, 60),
       resulting_stock: nextStock,
     };
 
     const stockLog = Array.isArray(product.stock_log) ? product.stock_log : [];
     product.stock = nextStock;
+    if (logEntry.delta < 0) {
+      product.sale_count = Math.max(0, Number(product.sale_count || 0) + Math.abs(logEntry.delta));
+    } else if (logEntry.delta > 0 && reason === 'restock') {
+      product.purchase_count = Math.max(0, Number(product.purchase_count || 0) + logEntry.delta);
+    }
     product.stock_log = [...stockLog, logEntry].slice(-50);
+    appendAuditLog(data, 'stock_adjust', {
+      actor,
+      entity_type: 'product',
+      entity_id: product.id,
+      summary: `${product.name}: stock ${currentStock} -> ${nextStock}`,
+      details: {
+        product_id: product.id,
+        product_name: product.name,
+        before_stock: currentStock,
+        after_stock: nextStock,
+        delta: nextStock - currentStock,
+        reason: cleanReason,
+        note: cleanNote,
+      },
+    });
 
     return product;
   });
@@ -400,12 +479,26 @@ export function setProductDiscount(id, discountPercent) {
   });
 }
 
-export function deleteProduct(id) {
+export function deleteProduct(id, { actor = null } = {}) {
   return withData((data) => {
     const numId = Number(id);
-    const before = data.products.length;
-    data.products = data.products.filter((p) => p.id !== numId);
-    return before !== data.products.length;
+    const index = data.products.findIndex((p) => p.id === numId);
+    if (index === -1) return false;
+    const [deleted] = data.products.splice(index, 1);
+    appendAuditLog(data, 'product_delete', {
+      actor,
+      entity_type: 'product',
+      entity_id: deleted.id,
+      summary: `Deleted product: ${deleted.name}`,
+      details: {
+        product_id: deleted.id,
+        product_name: deleted.name,
+        category: deleted.category,
+        stock: deleted.stock,
+        price: deleted.price,
+      },
+    });
+    return true;
   });
 }
 
@@ -435,13 +528,29 @@ export function duplicateProduct(id, input = {}) {
   });
 }
 
-export function bulkDeleteProducts(ids = []) {
+export function bulkDeleteProducts(ids = [], { actor = null } = {}) {
   const idSet = new Set(ids.map((id) => Number(id)).filter((id) => Number.isFinite(id)));
   if (!idSet.size) return 0;
   return withData((data) => {
-    const before = data.products.length;
+    const deleted = data.products.filter((p) => idSet.has(p.id));
     data.products = data.products.filter((p) => !idSet.has(p.id));
-    return before - data.products.length;
+    for (const product of deleted) {
+      appendAuditLog(data, 'product_delete', {
+        actor,
+        entity_type: 'product',
+        entity_id: product.id,
+        summary: `Deleted product: ${product.name}`,
+        details: {
+          product_id: product.id,
+          product_name: product.name,
+          category: product.category,
+          stock: product.stock,
+          price: product.price,
+          bulk: true,
+        },
+      });
+    }
+    return deleted.length;
   });
 }
 
@@ -699,6 +808,10 @@ function restoreOrderStock(data, order) {
     const index = data.products.findIndex((p) => p.id === productId);
     if (index >= 0) {
       data.products[index].stock = Math.max(0, Number(data.products[index].stock || 0) + qty);
+      data.products[index].sale_count = Math.max(
+        0,
+        Number(data.products[index].sale_count || 0) - qty
+      );
     }
   }
 }
@@ -746,6 +859,7 @@ function deductOrderStock(products, items) {
     const index = products.findIndex((p) => p.id === item.product_id);
     if (index >= 0) {
       products[index].stock = Math.max(0, Number(products[index].stock || 0) - item.qty);
+      products[index].sale_count = Math.max(0, Number(products[index].sale_count || 0) + item.qty);
     }
   }
 }
@@ -1391,6 +1505,17 @@ export function createOrder(input) {
     const id = data.meta.nextOrderId++;
     const total = items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 1), 0);
     const createdAt = now();
+    const shippingStatus = input.shipping_status || 'pending';
+    const paymentStatus = input.payment_status || 'pending_payment';
+    const deliveryStatus = input.delivery_status ?? null;
+    const staffActor = staffAuditUser(input.staff_user || {});
+    const activityLog = input.activity_message
+      ? [{
+          at: createdAt,
+          message: String(input.activity_message).trim().slice(0, 240),
+          by: staffActor.id ?? input.staff_user_id ?? null,
+        }]
+      : [];
     const order = {
       id,
       order_id: formatOrderId(id),
@@ -1401,9 +1526,9 @@ export function createOrder(input) {
       fulfillment_method: input.fulfillment_method === 'pickup' ? 'pickup' : 'delivery',
       items,
       total_amount: total,
-      shipping_status: 'pending',
-      payment_status: 'pending_payment',
-      delivery_status: null,
+      shipping_status: shippingStatus,
+      payment_status: paymentStatus,
+      delivery_status: deliveryStatus,
       rider_phone: '',
       delivery_charge: 0,
       shipping_address: input.shipping_address || null,
@@ -1411,13 +1536,37 @@ export function createOrder(input) {
       gmail: '',
       notes: input.notes || '',
       customer_user_id: input.customer_user_id ?? null,
+      source: input.source || 'online',
+      created_by_staff_id: staffActor.id ?? input.staff_user_id ?? null,
+      created_by_staff_name: staffActor.name || '',
       stock_deducted: true,
-      status_history: [{ status: 'pending', at: createdAt, by: null }],
-      activity_log: [],
+      status_history: [{ status: shippingStatus, at: createdAt, by: staffActor.id ?? input.staff_user_id ?? null }],
+      activity_log: activityLog,
       updated_at: createdAt,
       created_at: createdAt,
     };
     data.orders.push(order);
+    if (input.source === 'counter_sale') {
+      appendAuditLog(data, 'bill_create', {
+        actor: input.staff_user,
+        entity_type: 'order',
+        entity_id: order.id,
+        summary: `Counter bill ${order.order_id} created for ${order.total_amount}`,
+        details: {
+          order_id: order.id,
+          order_ref: order.order_id,
+          total_amount: order.total_amount,
+          payment_mode: order.payment_mode,
+          customer_name: order.customer_name,
+          items: order.items.map((item) => ({
+            product_id: item.product_id,
+            name: item.name,
+            qty: item.qty,
+            price: item.price,
+          })),
+        },
+      });
+    }
     return order;
   });
 }
@@ -2078,7 +2227,7 @@ export function listUsers() {
     .sort((a, b) => a.id - b.id);
 }
 
-export const STAFF_ROLES = ['super_admin', 'admin', 'editor'];
+export const STAFF_ROLES = ['super_admin', 'admin', 'editor', 'counter'];
 
 export function listStaffUsers() {
   return readData()

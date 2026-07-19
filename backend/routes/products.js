@@ -12,6 +12,7 @@ import {
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
+const PRODUCT_MANAGERS = ['super_admin', 'admin'];
 const MAX_IMAGE_DATA_URL = 180_000;
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
 
@@ -94,6 +95,7 @@ function isStaffUser(user) {
 // stock, or discount by mistake (or on purpose).
 function canEditProduct(user, product) {
   if (user.role === 'super_admin') return true;
+  if (user.role !== 'admin') return false;
   return product.created_by != null && String(product.created_by) === String(user.id);
 }
 
@@ -127,7 +129,7 @@ router.get('/categories', optionalAuth, (req, res) => {
   res.json(store.getProductCategories({ includeDrafts }));
 });
 
-router.post('/upload-image', requireAuth, requireRole(...STAFF), (req, res, next) => {
+router.post('/upload-image', requireAuth, requireRole(...PRODUCT_MANAGERS), (req, res, next) => {
   upload.single('image')(req, res, (err) => {
     if (err) {
       if (err.code === 'LIMIT_FILE_SIZE') {
@@ -179,7 +181,7 @@ router.get('/export.csv', requireAuth, requireRole(...STAFF), sendProductsCsv);
  * Import CSV (from Google Sheets export or the Admin Sheet download).
  * Updates by id when editable; creates rows without id when name+category+price present.
  */
-router.post('/import-csv', requireAuth, requireRole(...STAFF), (req, res) => {
+router.post('/import-csv', requireAuth, requireRole(...PRODUCT_MANAGERS), (req, res) => {
   const csv = typeof req.body?.csv === 'string' ? req.body.csv : '';
   if (!csv.trim()) {
     return res.status(400).json({ error: 'CSV text required (field: csv)' });
@@ -247,7 +249,9 @@ router.post('/import-csv', requireAuth, requireRole(...STAFF), (req, res) => {
         created_by_name: req.auth.user.name || req.auth.user.username,
       });
       summary.created += 1;
-      if (created) publishProductEvent(created);
+      if (created) {
+        publishProductEvent(created);
+      }
     } catch (err) {
       summary.skipped += 1;
       summary.errors.push({ row: rowNum, error: err.message || 'Row failed' });
@@ -281,7 +285,7 @@ router.get('/:id', optionalAuth, (req, res) => {
   res.json(staff ? product : store.stripProductCost(product));
 });
 
-router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
+router.post('/', requireAuth, requireRole(...PRODUCT_MANAGERS), (req, res) => {
   try {
     const body = sanitizeProductBody(req.body);
     const {
@@ -335,7 +339,7 @@ router.post('/', requireAuth, requireRole(...STAFF), (req, res) => {
   }
 });
 
-router.put('/:id', requireAuth, requireRole(...STAFF), (req, res) => {
+router.put('/:id', requireAuth, requireRole(...PRODUCT_MANAGERS), (req, res) => {
   const existing = store.getProductById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
   if (!canEditProduct(req.auth.user, existing)) return ownerOnlyResponse(res);
@@ -351,7 +355,7 @@ router.put('/:id', requireAuth, requireRole(...STAFF), (req, res) => {
   }
 });
 
-router.patch('/:id/discount', requireAuth, requireRole(...STAFF), (req, res) => {
+router.patch('/:id/discount', requireAuth, requireRole(...PRODUCT_MANAGERS), (req, res) => {
   const existing = store.getProductById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
   if (!canEditProduct(req.auth.user, existing)) return ownerOnlyResponse(res);
@@ -365,14 +369,18 @@ router.patch('/:id/discount', requireAuth, requireRole(...STAFF), (req, res) => 
  * physical restocks (positive delta) that never go through the website
  * checkout flow, so staff can keep online stock counts accurate.
  */
-router.patch('/:id/stock', requireAuth, requireRole(...STAFF), (req, res) => {
+router.patch('/:id/stock', requireAuth, requireRole(...PRODUCT_MANAGERS), (req, res) => {
   const existing = store.getProductById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
   if (!canEditProduct(req.auth.user, existing)) return ownerOnlyResponse(res);
 
   const delta = Number(req.body.delta);
+  const note = String(req.body.note || '').trim();
   if (!Number.isFinite(delta) || delta === 0) {
     return res.status(400).json({ error: 'Enter a non-zero quantity' });
+  }
+  if (note.length < 3) {
+    return res.status(400).json({ error: 'Stock adjustment reason/note is required' });
   }
   if (Math.abs(delta) > 100000) {
     return res.status(400).json({ error: 'Quantity is too large' });
@@ -381,8 +389,9 @@ router.patch('/:id/stock', requireAuth, requireRole(...STAFF), (req, res) => {
   try {
     const product = store.adjustProductStock(req.params.id, delta, {
       reason: req.body.reason === 'restock' ? 'restock' : 'offline_sale',
-      note: req.body.note,
+      note,
       staffName: req.auth.user.name || req.auth.user.username,
+      actor: req.auth.user,
     });
     publishProductEvent(product);
     res.json(product);
@@ -396,12 +405,12 @@ router.delete('/:id', requireAuth, requireRole(...CAN_DELETE), (req, res) => {
   if (!existing) return res.status(404).json({ error: 'Product not found' });
   if (!canEditProduct(req.auth.user, existing)) return ownerOnlyResponse(res);
 
-  const deleted = store.deleteProduct(req.params.id);
+  const deleted = store.deleteProduct(req.params.id, { actor: req.auth.user });
   if (!deleted) return res.status(404).json({ error: 'Product not found' });
   res.json({ message: 'Product deleted' });
 });
 
-router.post('/:id/duplicate', requireAuth, requireRole(...STAFF), (req, res) => {
+router.post('/:id/duplicate', requireAuth, requireRole(...PRODUCT_MANAGERS), (req, res) => {
   const existing = store.getProductById(req.params.id);
   if (!existing) return res.status(404).json({ error: 'Product not found' });
 
@@ -422,7 +431,7 @@ router.post('/bulk-delete', requireAuth, requireRole(...CAN_DELETE), (req, res) 
     const existing = store.getProductById(id);
     if (!existing) continue;
     if (!canEditProduct(req.auth.user, existing)) continue;
-    if (store.deleteProduct(id)) deleted += 1;
+    if (store.deleteProduct(id, { actor: req.auth.user })) deleted += 1;
   }
   res.json({ deleted });
 });

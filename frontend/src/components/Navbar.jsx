@@ -40,9 +40,12 @@ import {
 import { useTranslation } from '../context/LanguageContext';
 import useHeaderScrollHide from '../hooks/useHeaderScrollHide';
 import { BRAND_ACCENT } from './LogoMark';
+import { canManageProducts, isCounterStaff } from '../config/permissions';
+import { getPostLoginPath } from '../utils/authRedirect';
 
 export default function Navbar() {
-  const { isStaff, isCustomer, logout } = useAuth();
+  const { isStaff, isCustomer, user, logout } = useAuth();
+  const canAddProducts = canManageProducts(user);
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
@@ -283,8 +286,8 @@ export default function Navbar() {
               {isCustomer ? (
                 <AccountMenu className="account-menu--toolbar" />
               ) : isStaff ? (
-                <Link to="/admin" className="dx-admin-link" onClick={closeMenu}>
-                  {t('nav.admin')}
+                <Link to={getPostLoginPath(user)} className="dx-admin-link" onClick={closeMenu}>
+                  {isCounterStaff(user) ? t('counter.title') : t('nav.admin')}
                 </Link>
               ) : (
                 <button
@@ -662,7 +665,7 @@ export default function Navbar() {
                         </>
                       ) : isStaff ? (
                         <>
-                          <NavDrawerAdminLink to="/admin" icon="⚙️" label={t('nav.admin')} onClick={closeMenu} />
+                          <NavDrawerAdminLink to={getPostLoginPath(user)} icon="⚙️" label={isCounterStaff(user) ? t('counter.title') : t('nav.admin')} onClick={closeMenu} />
                           <NavDrawerButton
                             icon="🚪"
                             label={t('account.logout')}
@@ -683,7 +686,7 @@ export default function Navbar() {
                       )}
                     </div>
 
-                    {isStaff && (
+                    {canAddProducts && (
                       <>
                         <span className="nav-drawer-section-label">{t('staff.staffOnly')}</span>
                         <div className="nav-links-staff">
@@ -716,7 +719,7 @@ export default function Navbar() {
           document.body
         )}
 
-      {isStaff && <AddProductModal open={addOpen} onClose={() => setAddOpen(false)} />}
+      {canAddProducts && <AddProductModal open={addOpen} onClose={() => setAddOpen(false)} />}
       <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
       <PhoneFinderModal
         open={Boolean(finderCategory)}

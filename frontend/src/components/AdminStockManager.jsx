@@ -31,6 +31,7 @@ export default function AdminStockManager({
   const { t } = useTranslation();
   const [query, setQuery] = useState('');
   const [qtyById, setQtyById] = useState({});
+  const [noteById, setNoteById] = useState({});
   const [busyId, setBusyId] = useState(null);
   const [feedback, setFeedback] = useState(null);
 
@@ -66,19 +67,29 @@ export default function AdminStockManager({
   }, [products, query, stockFilter]);
 
   const getQty = (id) => qtyById[id] ?? 1;
+  const getNote = (id) => noteById[id] ?? '';
   const setQty = (id, value) => {
     const n = Math.max(1, Math.min(9999, Math.trunc(Number(value)) || 1));
     setQtyById((prev) => ({ ...prev, [id]: n }));
   };
+  const setNote = (id, value) => {
+    setNoteById((prev) => ({ ...prev, [id]: value }));
+  };
 
   const adjust = async (product, sign, reason) => {
     const qty = getQty(product.id);
+    const note = getNote(product.id).trim();
+    if (note.length < 3) {
+      setFeedback({ type: 'error', text: t('admin.stockReasonRequired') });
+      return;
+    }
     const delta = sign * qty;
     setBusyId(product.id);
     setFeedback(null);
     try {
-      const updated = await api.adjustProductStock(product.id, delta, { reason });
+      const updated = await api.adjustProductStock(product.id, delta, { reason, note });
       onProductUpdated(updated);
+      setNote(product.id, '');
       setFeedback({
         type: 'success',
         text:
@@ -187,6 +198,15 @@ export default function AdminStockManager({
                       onChange={(e) => setQty(p.id, e.target.value)}
                       disabled={busyId === p.id}
                       aria-label={t('admin.stockQtyLabel')}
+                    />
+                    <input
+                      type="text"
+                      className="admin-stock-note-input"
+                      value={getNote(p.id)}
+                      onChange={(e) => setNote(p.id, e.target.value)}
+                      disabled={busyId === p.id}
+                      placeholder={t('admin.stockReasonPh')}
+                      aria-label={t('admin.stockReasonLabel')}
                     />
                     <button
                       type="button"

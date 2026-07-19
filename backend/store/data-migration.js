@@ -18,6 +18,7 @@ export const DEFAULT_DATA = {
     nextCategoryId: 1,
     nextAddressId: 1,
     nextRepairMessageId: 1,
+    nextAuditId: 1,
   },
   users: [],
   sessions: [],
@@ -29,6 +30,7 @@ export const DEFAULT_DATA = {
   repair_messages: [],
   contact_messages: [],
   orders: [],
+  audit_logs: [],
   verification_codes: [],
   settings: {
     shop: {
@@ -66,6 +68,7 @@ export function migrateData(data) {
   data.repair_messages = data.repair_messages || [];
   data.contact_messages = data.contact_messages || [];
   data.orders = data.orders || [];
+  data.audit_logs = Array.isArray(data.audit_logs) ? data.audit_logs : [];
   data.verification_codes = data.verification_codes || [];
   data.settings = data.settings || {};
   data.settings.shop = data.settings.shop || {
@@ -81,6 +84,10 @@ export function migrateData(data) {
   if (!data.meta.nextCategoryId) data.meta.nextCategoryId = 1;
   if (!data.meta.nextAddressId) data.meta.nextAddressId = 1;
   if (!data.meta.nextRepairMessageId) data.meta.nextRepairMessageId = 1;
+  if (!data.meta.nextAuditId) {
+    const maxAuditId = data.audit_logs.reduce((max, log) => Math.max(max, Number(log.id) || 0), 0);
+    data.meta.nextAuditId = maxAuditId + 1;
+  }
 
   if (!Array.isArray(data.settings.product_categories)) {
     data.settings.product_categories = [];
@@ -136,6 +143,8 @@ export function migrateData(data) {
     }
     if (product.slug == null) product.slug = '';
     if (!Array.isArray(product.tags)) product.tags = [];
+    if (product.sale_count == null) product.sale_count = 0;
+    if (product.purchase_count == null) product.purchase_count = 0;
   }
 
   for (const order of data.orders) {
@@ -147,6 +156,9 @@ export function migrateData(data) {
       ];
     }
     if (!order.activity_log) order.activity_log = [];
+    if (order.source == null) order.source = 'online';
+    if (order.created_by_staff_id == null) order.created_by_staff_id = null;
+    if (order.created_by_staff_name == null) order.created_by_staff_name = '';
     if (!order.updated_at) order.updated_at = order.created_at || nowIso;
     if (order.shipping_status === 'confirmed') order.shipping_status = 'payment_verified';
   }

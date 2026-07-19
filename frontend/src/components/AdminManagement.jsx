@@ -230,6 +230,7 @@ export default function AdminManagement({ compact = false }) {
           <div className="form-group">
             <label>{t('team.role')} *</label>
             <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
+              <option value="counter">{t('team.roleCounter')}</option>
               <option value="editor">{t('team.roleStaff')}</option>
               <option value="admin">{t('team.roleAdmin')}</option>
             </select>
@@ -277,6 +278,7 @@ export default function AdminManagement({ compact = false }) {
                           >
                             <option value="admin">{t('team.roleAdmin')}</option>
                             <option value="editor">{t('team.roleStaff')}</option>
+                            <option value="counter">{t('team.roleCounter')}</option>
                           </select>
                         )}
                       </td>

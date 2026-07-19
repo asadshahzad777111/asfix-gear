@@ -44,7 +44,7 @@ export default function AccountLogin() {
 
   if (user) {
     if (isStaff(user)) {
-      return <Navigate to="/admin" replace />;
+      return <Navigate to={getPostLoginPath(user, from)} replace />;
     }
     return <Navigate to={getPostLoginPath(user, from)} replace />;
   }

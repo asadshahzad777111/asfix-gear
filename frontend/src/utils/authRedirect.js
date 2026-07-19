@@ -1,4 +1,4 @@
-import { isStaff, isCustomer } from '../config/permissions';
+import { isAdminStaff, isCounterStaff, isCustomer } from '../config/permissions';
 
 const LOGIN_PATHS = new Set(['/account/login', '/login']);
 
@@ -7,7 +7,12 @@ export function getPostLoginPath(user, from) {
   const safeFrom =
     typeof from === 'string' && from && !LOGIN_PATHS.has(from) ? from : null;
 
-  if (isStaff(user)) {
+  if (isCounterStaff(user)) {
+    if (safeFrom?.startsWith('/counter')) return safeFrom;
+    return '/counter';
+  }
+
+  if (isAdminStaff(user)) {
     if (safeFrom?.startsWith('/admin')) return safeFrom;
     return '/admin';
   }

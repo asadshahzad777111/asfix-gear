@@ -8,7 +8,7 @@ import { useAuth } from '../context/AuthContext';
 
 import { api } from '../api/client';
 
-import { canManageTeam, roleLabel, canManageShopSettings, canViewSalesReport } from '../config/permissions';
+import { canManageTeam, roleLabel, canManageShopSettings, canViewSalesReport, isAdminStaff } from '../config/permissions';
 
 import AddProductModal from './AddProductModal';
 
@@ -32,7 +32,8 @@ const BOOKING_STATUSES = ['pending', 'in_progress', 'completed', 'cancelled'];
 export default function AdminFloatingDashboard() {
 
   const { t } = useTranslation();
-  const { user, isStaff, logout } = useAuth();
+  const { user, logout } = useAuth();
+  const canOpenAdminDesk = isAdminStaff(user);
 
   const [open, setOpen] = useState(false);
 
@@ -62,7 +63,7 @@ export default function AdminFloatingDashboard() {
 
   const loadDesk = useCallback(async () => {
 
-    if (!isStaff) return;
+    if (!canOpenAdminDesk) return;
 
     setLoading(true);
 
@@ -94,31 +95,31 @@ export default function AdminFloatingDashboard() {
 
     }
 
-  }, [isStaff]);
+  }, [canOpenAdminDesk]);
 
 
 
   useEffect(() => {
 
-    if (!isStaff) return undefined;
+    if (!canOpenAdminDesk) return undefined;
 
     loadDesk();
 
     return startVisibilityPoll(loadDesk, POLL_MS);
 
-  }, [isStaff, loadDesk]);
+  }, [canOpenAdminDesk, loadDesk]);
 
 
 
   useEffect(() => {
 
-    if (open && isStaff) loadDesk();
+    if (open && canOpenAdminDesk) loadDesk();
 
-  }, [open, isStaff, loadDesk]);
+  }, [open, canOpenAdminDesk, loadDesk]);
 
 
 
-  if (!isStaff || !user) return null;
+  if (!canOpenAdminDesk || !user) return null;
 
 
 

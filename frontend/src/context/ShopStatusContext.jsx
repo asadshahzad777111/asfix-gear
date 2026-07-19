@@ -2,11 +2,13 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useState } 
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
+import { canManageShopSettings } from '../config/permissions';
 
 const ShopStatusContext = createContext(null);
 const POLL_MS = 60_000;
 export function ShopStatusProvider({ children }) {
-  const { isStaff } = useAuth();
+  const { user } = useAuth();
+  const canManageStatus = canManageShopSettings(user);
   const [status, setStatus] = useState({
     is_open: true,
     by_hours: true,
@@ -30,11 +32,11 @@ export function ShopStatusProvider({ children }) {
     return startVisibilityPoll(refresh, POLL_MS);
   }, [refresh]);
   const setManualOverride = useCallback(async (manual_override) => {
-    if (!isStaff) return null;
+    if (!canManageStatus) return null;
     const data = await api.setShopStatus(manual_override);
     setStatus((prev) => ({ ...prev, ...data, loading: false }));
     return data;
-  }, [isStaff]);
+  }, [canManageStatus]);
 
   const value = useMemo(
     () => ({

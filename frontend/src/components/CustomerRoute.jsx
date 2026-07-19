@@ -1,5 +1,6 @@
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { isCounterStaff } from '../config/permissions';
 
 export default function CustomerRoute({ children }) {
   const { user, loading, isCustomer, isStaff } = useAuth();
@@ -10,7 +11,7 @@ export default function CustomerRoute({ children }) {
   }
 
   if (isStaff) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to={isCounterStaff(user) ? '/counter' : '/admin'} replace />;
   }
 
   if (!user || !isCustomer) {

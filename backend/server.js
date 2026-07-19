@@ -85,6 +85,7 @@ app.get('/api/health', (_req, res) => {
     ready: ready != null && ready !== false,
     r2: isR2Configured() ? 'configured' : 'off',
     n8n: isN8nConfigured() ? 'configured' : 'off',
+    products_sheet_sync: 'off',
   });
 });
 

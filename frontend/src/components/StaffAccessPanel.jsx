@@ -11,6 +11,7 @@ import { useTranslation } from '../context/LanguageContext';
 import { SHOP } from '../config/shop';
 
 import PasswordField from './auth/PasswordField';
+import { getPostLoginPath } from '../utils/authRedirect';
 
 
 
@@ -71,7 +72,7 @@ export default function StaffAccessPanel() {
 
       setOpen(false);
 
-      navigate('/admin');
+      navigate(getPostLoginPath(loggedIn));
 
     } catch (err) {
 
@@ -245,7 +246,7 @@ export default function StaffAccessPanel() {
 
               <p className="field-hint">{t('staff.dashboardHint')}</p>
 
-              <Link to="/admin" className="btn btn-primary btn-block" onClick={() => setOpen(false)}>
+              <Link to={getPostLoginPath(user)} className="btn btn-primary btn-block" onClick={() => setOpen(false)}>
 
                 {t('staff.openAdmin')}
 

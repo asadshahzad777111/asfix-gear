@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTranslation } from '../../context/LanguageContext';
-import { roleLabel } from '../../config/permissions';
+import { canManageProducts, roleLabel } from '../../config/permissions';
 
 const PRODUCT_SUB = [
   { id: 'products', label: 'All Products' },
   { id: 'sheet', label: 'Products Sheet' },
-  { id: 'add', label: 'Add new product' },
-  { id: 'categories', label: 'Categories' },
-  { id: 'stock', label: 'Stock' },
+  { id: 'bill', label: 'Counter Bill' },
+  { id: 'add', label: 'Add new product', managerOnly: true },
+  { id: 'categories', label: 'Categories', managerOnly: true },
+  { id: 'stock', label: 'Stock', managerOnly: true },
 ];
 
 export default function AdminLayout({
@@ -26,7 +27,9 @@ export default function AdminLayout({
 }) {
   const { t } = useTranslation();
   const { products = 0, orders = 0, bookings = 0, pendingOrders = 0, lowStockCount = 0, repairChatUnread = 0 } = counts || {};
-  const { showSales, showAdminMgmt, showShopControl } = flags || {};
+  const { showSales, showAdminMgmt, showShopControl, showAudit } = flags || {};
+  const showProductManagement = canManageProducts(user);
+  const productSub = PRODUCT_SUB.filter((item) => !item.managerOnly || showProductManagement);
   const [menuOpen, setMenuOpen] = useState(false);
 
   useEffect(() => {
@@ -97,10 +100,10 @@ export default function AdminLayout({
           <div className="wp-menu-section">
             {navItem('dashboard', 'Dashboard')}
             <p className="wp-menu-heading">Shop</p>
-            <div className={`wp-menu-item ${['products', 'sheet', 'add', 'stock', 'categories'].includes(tab) ? 'is-open' : ''}`}>
+            <div className={`wp-menu-item ${['products', 'sheet', 'bill', 'add', 'stock', 'categories'].includes(tab) ? 'is-open' : ''}`}>
               <button
                 type="button"
-                className={`wp-menu-link wp-menu-link--parent ${['products', 'sheet', 'add', 'stock', 'categories'].includes(tab) ? 'is-active' : ''}`}
+                className={`wp-menu-link wp-menu-link--parent ${['products', 'sheet', 'bill', 'add', 'stock', 'categories'].includes(tab) ? 'is-active' : ''}`}
                 onClick={() => goTab('products')}
               >
                 <span className="wp-menu-text">Products</span>
@@ -114,7 +117,7 @@ export default function AdminLayout({
                 </span>
               </button>
               <div className="wp-submenu">
-                {PRODUCT_SUB.map((item) => (
+                {productSub.map((item) => (
                   <button
                     key={item.id}
                     type="button"
@@ -141,6 +144,7 @@ export default function AdminLayout({
             ) : null}
             {navItem('orders', 'Orders', pendingOrders > 0 ? pendingOrders : orders || null)}
             {navItem('customers', 'Customers')}
+            {showAudit && navItem('audit', 'Activity / Audit')}
             {navItem('bookings', 'Repair Intake', repairChatUnread > 0 ? repairChatUnread : (bookings || null))}
             {navItem('messages', t('admin.messages'))}
             {navItem('feedback', 'Reviews')}

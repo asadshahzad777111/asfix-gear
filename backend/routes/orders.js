@@ -45,6 +45,7 @@ function notifyCustomerStatusChange(order, previousStatus) {
 
 const router = Router();
 const STAFF = ['super_admin', 'admin', 'editor'];
+const COUNTER_SELLERS = ['super_admin', 'admin', 'editor', 'counter'];
 const MAX_NAME = 120;
 const MAX_PHONE = 30;
 const MAX_CITY = 80;
@@ -54,7 +55,15 @@ const MAX_NOTES = 500;
 const MAX_PROOF_BYTES = 5 * 1024 * 1024;
 const VALID_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 const VALID_PAYMENT_MODES = ['jazzcash', 'easypaisa', 'bank', 'cod'];
+const VALID_COUNTER_PAYMENT_MODES = ['cash', 'card', 'jazzcash', 'easypaisa', 'bank', 'cod', 'other'];
 const SHOP_PICKUP_COORDS = { lat: 31.59375, lng: 74.46745 };
+
+function salePrice(product) {
+  const price = Number(product.price);
+  if (!Number.isFinite(price) || price < 0) return 0;
+  const discount = Math.min(90, Math.max(0, Number(product.discount_percent) || 0));
+  return Math.round(price * (1 - discount / 100));
+}
 
 const proofUpload = multer({
   storage: multer.memoryStorage(),
@@ -225,6 +234,99 @@ router.post('/', requireAuth, (req, res) => {
   }
 });
 
+router.post('/counter-sale', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
+  const {
+    customer_name,
+    phone,
+    payment_mode,
+    payment_note,
+    items,
+  } = req.body || {};
+
+  const name = String(customer_name || '').trim().slice(0, MAX_NAME) || 'Walk-in Customer';
+  const phoneText = String(phone || '').trim().slice(0, MAX_PHONE);
+  const note = String(payment_note || '').trim().slice(0, MAX_NOTES);
+  const mode = String(payment_mode || 'cash').trim().toLowerCase();
+
+  if (!VALID_COUNTER_PAYMENT_MODES.includes(mode)) {
+    return res.status(400).json({ error: 'Invalid counter payment method' });
+  }
+  if (customer_name && String(customer_name).trim().length > MAX_NAME) {
+    return res.status(400).json({ error: 'Customer name is too long' });
+  }
+  if (phone && String(phone).trim().length > MAX_PHONE) {
+    return res.status(400).json({ error: 'Phone is too long' });
+  }
+  if (!Array.isArray(items) || items.length === 0 || items.length > MAX_ITEMS) {
+    return res.status(400).json({ error: 'Bill must include 1–20 items' });
+  }
+
+  try {
+    const orderItems = items.map((item) => {
+      const productId = Number(item?.product_id);
+      const qty = Number(item?.qty);
+      if (!Number.isInteger(productId) || productId <= 0) {
+        throw new store.StockError('Invalid product in bill');
+      }
+      if (!Number.isInteger(qty) || qty < 1 || qty > 99) {
+        throw new store.StockError('Quantity must be between 1 and 99');
+      }
+      const product = store.getProductById(productId);
+      if (!product) {
+        throw new store.StockError(`Product not found: ${productId}`);
+      }
+      return {
+        product_id: productId,
+        qty,
+        price: salePrice(product),
+      };
+    });
+
+    const order = store.createOrder({
+      customer_name: name,
+      phone: phoneText,
+      city: 'Lahore',
+      payment_mode: mode,
+      fulfillment_method: 'pickup',
+      items: orderItems,
+      notes: note ? `Counter sale payment note: ${note}` : 'Counter sale',
+      shipping_address: buildPickupAddress({ name, phone: phoneText }),
+      source: 'counter_sale',
+      payment_status: 'paid',
+      shipping_status: 'delivered',
+      delivery_status: 'delivered',
+      activity_message: `Counter bill created by Staff: ${req.auth.user.username || req.auth.user.name || 'staff'}`,
+      staff_user_id: req.auth.user.id,
+      staff_user: req.auth.user,
+    });
+
+    publishOrderEvent('order_created', order);
+    res.status(201).json({ message: 'Counter bill created', order });
+  } catch (err) {
+    if (err instanceof store.StockError) {
+      return res.status(409).json({ error: err.message, details: err.details });
+    }
+    res.status(400).json({ error: err.message || 'Could not create counter bill' });
+  }
+});
+
+router.get('/counter-sales', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
+  const date = String(req.query.date || '').trim();
+  let orders = store.getOrders().filter((order) => (order.source || 'online') === 'counter_sale');
+  if (req.auth.user.role === 'counter') {
+    orders = orders.filter((order) => String(order.created_by_staff_id || '') === String(req.auth.user.id));
+  } else if (req.query.staff_id) {
+    orders = orders.filter((order) => String(order.created_by_staff_id || '') === String(req.query.staff_id));
+  }
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    orders = orders.filter((order) => {
+      const orderDate = order.created_at ? new Date(order.created_at).toISOString().slice(0, 10) : '';
+      return orderDate === date;
+    });
+  }
+  res.json(orders);
+});
+
 router.post('/:id/payment-proof', requireAuth, (req, res, next) => {
   proofUpload.single('image')(req, res, (err) => {
     if (err) {
@@ -313,6 +415,8 @@ router.patch('/:id/status', requireAuth, requireRole(...STAFF), (req, res) => {
   notifyIfNewlyDelivered(order, previous?.shipping_status);
   notifyCustomerStatusChange(order, previous?.shipping_status);
   publishOrderEvent('order_updated', order);
+  if (shipping_status === 'cancelled' && previous?.stock_deducted) {
+  }
   res.json(order);
 });
 

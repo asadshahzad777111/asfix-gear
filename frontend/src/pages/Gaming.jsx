@@ -8,6 +8,7 @@ import { useTranslation } from '../context/LanguageContext';
 import GamingLogo from '../components/gaming/GamingLogo';
 import GamingProductCard from '../components/gaming/GamingProductCard';
 import { SHOP } from '../config/shop';
+import { canManageProducts } from '../config/permissions';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import { filterPublishedProducts } from '../utils/productStatus';
 
@@ -15,7 +16,8 @@ const PUBG_TAGS = ['PUBG Mobile', 'Battle Royale', 'Triggers', 'Claw Grip', 'Low
 const STOCK_POLL_MS = 20_000;
 
 export default function Gaming() {
-  const { isStaff } = useAuth();
+  const { user } = useAuth();
+  const canAddProducts = canManageProducts(user);
   const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -128,7 +130,7 @@ export default function Gaming() {
           ) : products.length === 0 ? (
             <div className="gaming-empty">
               <p>{t('gaming.empty')}</p>
-              {isStaff && (
+              {canAddProducts && (
                 <Link to="/admin?tab=add" className="btn-gaming-primary">{t('gaming.addProduct')}</Link>
               )}
             </div>

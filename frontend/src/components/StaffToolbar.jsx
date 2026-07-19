@@ -5,16 +5,19 @@ import { api } from '../api/client';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import AddProductModal from './AddProductModal';
 import AdminChatInbox from './AdminChatInbox';
+import { canManageProducts, isAdminStaff } from '../config/permissions';
 
 export default function StaffToolbar() {
-  const { isStaff, user } = useAuth();
+  const { user } = useAuth();
+  const canUseToolbar = isAdminStaff(user);
+  const canAddProducts = canManageProducts(user);
   const { t } = useTranslation();
   const [addOpen, setAddOpen] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [unread, setUnread] = useState(0);
 
   useEffect(() => {
-    if (!isStaff || chatOpen) return undefined;
+    if (!canUseToolbar || chatOpen) return undefined;
 
     const refreshUnread = () => {
       api.getContactMessages()
@@ -27,22 +30,24 @@ export default function StaffToolbar() {
 
     refreshUnread();
     return startVisibilityPoll(refreshUnread, 60_000);
-  }, [isStaff, chatOpen]);
+  }, [canUseToolbar, chatOpen]);
 
-  if (!isStaff || !user) return null;
+  if (!canUseToolbar || !user) return null;
 
   return (
     <>
       <div className="staff-toolbar" aria-label="Staff quick actions">
-        <button
-          type="button"
-          className="staff-toolbar-btn staff-toolbar-btn--add"
-          onClick={() => setAddOpen(true)}
-          title={t('nav.addProduct')}
-        >
-          <span className="staff-toolbar-btn-icon">+</span>
-          <span className="staff-toolbar-btn-text">{t('nav.addProduct')}</span>
-        </button>
+        {canAddProducts ? (
+          <button
+            type="button"
+            className="staff-toolbar-btn staff-toolbar-btn--add"
+            onClick={() => setAddOpen(true)}
+            title={t('nav.addProduct')}
+          >
+            <span className="staff-toolbar-btn-icon">+</span>
+            <span className="staff-toolbar-btn-text">{t('nav.addProduct')}</span>
+          </button>
+        ) : null}
 
         <button
           type="button"
@@ -81,7 +86,7 @@ export default function StaffToolbar() {
         </aside>
       )}
 
-      <AddProductModal open={addOpen} onClose={() => setAddOpen(false)} />
+      {canAddProducts ? <AddProductModal open={addOpen} onClose={() => setAddOpen(false)} /> : null}
     </>
   );
 }

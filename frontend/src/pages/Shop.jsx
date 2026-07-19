@@ -7,6 +7,7 @@ import AddProductModal from '../components/AddProductModal';
 import { useAuth } from '../context/AuthContext';
 import { api, ensureApiReady } from '../api/client';
 import { SHOP_BRANDS } from '../config/products';
+import { canManageProducts } from '../config/permissions';
 import { useTranslation } from '../context/LanguageContext';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import { readProductsCache, writeProductsCache } from '../utils/productCache';
@@ -22,7 +23,8 @@ function productCacheKey(params) {
 }
 
 export default function Shop() {
-  const { isStaff } = useAuth();
+  const { user } = useAuth();
+  const canAddProducts = canManageProducts(user);
   const { t } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [products, setProducts] = useState([]);
@@ -174,8 +176,8 @@ export default function Shop() {
   };
 
   useEffect(() => {
-    if (isStaff && searchParams.get('add') === '1') setAddOpen(true);
-  }, [searchParams, isStaff]);
+    if (canAddProducts && searchParams.get('add') === '1') setAddOpen(true);
+  }, [searchParams, canAddProducts]);
 
   const handleProductAdded = () => {
     loadProducts();
@@ -198,7 +200,7 @@ export default function Shop() {
         title={t('shop.title')}
         subtitle={t('shop.subtitle')}
       >
-        {isStaff && (
+        {canAddProducts && (
           <PremiumButton className="btn btn-primary page-add-btn" onClick={() => setAddOpen(true)}>
             ➕ {t('shop.addProduct')}
           </PremiumButton>
@@ -247,7 +249,7 @@ export default function Shop() {
             <div className="search-box">
               <input type="search" placeholder={t('shop.searchPlaceholder')} value={search} onChange={(e) => setSearch(e.target.value)} />
             </div>
-            {isStaff && (
+            {canAddProducts && (
               <button type="button" className="filter-btn filter-add" onClick={() => setAddOpen(true)}>+ {t('nav.addProduct')}</button>
             )}
           </div>
@@ -263,7 +265,7 @@ export default function Shop() {
           ) : products.length === 0 ? (
             <div className="empty-state">
               <p>{t('shop.emptyCategory')}</p>
-              {isStaff && (
+              {canAddProducts && (
                 <button type="button" className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => setAddOpen(true)}>
                   ➕ {t('shop.addProductShort')}
                 </button>
@@ -279,7 +281,7 @@ export default function Shop() {
         </div>
       </section>
 
-      {isStaff && (
+      {canAddProducts && (
         <>
           <button type="button" className="fab-add" onClick={() => setAddOpen(true)} title={t('shop.addProduct')}>
             <span className="fab-icon">+</span>

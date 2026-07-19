@@ -14,6 +14,7 @@ const ProductDetail = lazy(() => import('../../pages/ProductDetail'));
 const Repair = lazy(() => import('../../pages/Repair'));
 const Contact = lazy(() => import('../../pages/Contact'));
 const Admin = lazy(() => import('../../pages/Admin'));
+const Counter = lazy(() => import('../../pages/Counter'));
 const Login = lazy(() => import('../../pages/Login'));
 const Gaming = lazy(() => import('../../pages/Gaming'));
 const OrderTrack = lazy(() => import('../../pages/OrderTrack'));
@@ -108,6 +109,14 @@ export default function PageTransition() {
               element={
                 <ProtectedRoute>
                   <Admin />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/counter"
+              element={
+                <ProtectedRoute requireCounter>
+                  <Counter />
                 </ProtectedRoute>
               }
             />

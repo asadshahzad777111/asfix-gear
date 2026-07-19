@@ -1,4 +1,5 @@
-export const STAFF_ROLES = ['super_admin', 'admin', 'editor'];
+export const STAFF_ROLES = ['super_admin', 'admin', 'editor', 'counter'];
+export const ADMIN_ROLES = ['super_admin', 'admin', 'editor'];
 
 export function isCustomer(user) {
   return Boolean(user?.active && !user?.blocked && user.role === 'customer');
@@ -12,6 +13,14 @@ export function isStaff(user) {
   return Boolean(user?.active && !user?.blocked && STAFF_ROLES.includes(user.role));
 }
 
+export function isAdminStaff(user) {
+  return Boolean(user?.active && !user?.blocked && ADMIN_ROLES.includes(user.role));
+}
+
+export function isCounterStaff(user) {
+  return Boolean(user?.active && !user?.blocked && user.role === 'counter');
+}
+
 export function canViewSalesReport(user) {
   return isStaff(user);
 }
@@ -21,7 +30,7 @@ export function canManageTeam(user) {
 }
 
 export function canManageProducts(user) {
-  return isStaff(user);
+  return Boolean(user?.active && !user?.blocked && ['super_admin', 'admin'].includes(user.role));
 }
 
 export function canDeleteProducts(user) {
@@ -36,7 +45,12 @@ export function canDeleteProducts(user) {
 export function canEditProduct(user, product) {
   if (!isStaff(user)) return false;
   if (user.role === 'super_admin') return true;
+  if (user.role !== 'admin') return false;
   return product?.created_by != null && String(product.created_by) === String(user.id);
+}
+
+export function canViewAuditLog(user) {
+  return Boolean(user?.active && !user?.blocked && ['super_admin', 'admin'].includes(user.role));
 }
 
 export function canManageAdmins(user) {
@@ -44,7 +58,7 @@ export function canManageAdmins(user) {
 }
 
 export function canManageBookings(user) {
-  return isStaff(user);
+  return isAdminStaff(user);
 }
 
 export function canManageShopSettings(user) {
@@ -52,7 +66,7 @@ export function canManageShopSettings(user) {
 }
 
 export function canUpdateOrderStatus(user) {
-  return isStaff(user);
+  return isAdminStaff(user);
 }
 
 export function roleLabel(role) {
@@ -60,6 +74,7 @@ export function roleLabel(role) {
     super_admin: 'Super Admin',
     admin: 'Admin',
     editor: 'Staff Editor',
+    counter: 'Counter Staff',
     customer: 'Client',
   };
   return labels[role] || role;

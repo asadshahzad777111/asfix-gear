@@ -134,8 +134,8 @@ function validateStaffPayload(body, requirePassword = true) {
   if (!emailKey.endsWith('@gmail.com')) {
     return { error: 'Staff must use a @gmail.com address' };
   }
-  if (!['admin', 'editor'].includes(role)) {
-    return { error: 'Role must be admin or editor' };
+  if (!['admin', 'editor', 'counter'].includes(role)) {
+    return { error: 'Role must be admin, editor, or counter' };
   }
   if (requirePassword) {
     const pwErr = validatePassword(password);
@@ -220,7 +220,7 @@ router.post('/login', loginLimiter, (req, res) => {
 
   store.recordLastLogin(result.user.id);
   const session = store.createSession(result.user.id);
-  const STAFF_ROLES = ['super_admin', 'admin', 'editor'];
+  const STAFF_ROLES = ['super_admin', 'admin', 'editor', 'counter'];
   if (STAFF_ROLES.includes(result.user.role)) {
     const staffEmail = String(result.user.email || login).trim().toLowerCase();
     if (!staffEmail.endsWith('@gmail.com')) {
@@ -794,10 +794,10 @@ router.patch('/admins/:id', requireAuth, requireRole(...SUPER_ADMIN), (req, res)
   }
 
   const { role, active, blocked, name } = req.body;
-  if (role && !['admin', 'editor', 'customer'].includes(role)) {
+  if (role && !['admin', 'editor', 'counter', 'customer'].includes(role)) {
     return res.status(400).json({ error: 'Invalid role' });
   }
-  if (role === 'customer' && !['admin', 'editor'].includes(target.role)) {
+  if (role === 'customer' && !['admin', 'editor', 'counter'].includes(target.role)) {
     return res.status(400).json({ error: 'Only staff accounts can be changed to client' });
   }
 

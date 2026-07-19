@@ -16,6 +16,7 @@ import {
 } from '../components/auth/AuthUI';
 import PasswordField from '../components/auth/PasswordField';
 import { AuthGoogleSection } from '../components/auth/GoogleSignIn';
+import { getPostLoginPath } from '../utils/authRedirect';
 
 export default function AccountRegister() {
   const { isCustomer, isStaff, user, loading, completeSession } = useAuth();
@@ -41,7 +42,7 @@ export default function AccountRegister() {
   }
 
   if (user && isStaff) {
-    return <Navigate to="/admin" replace />;
+    return <Navigate to={getPostLoginPath(user)} replace />;
   }
 
   if (user && isCustomer) {
