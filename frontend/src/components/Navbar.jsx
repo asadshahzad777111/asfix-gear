@@ -18,8 +18,17 @@ import ThemeToggle from './ThemeToggle';
 import LanguageToggle from './LanguageToggle';
 import NavSearch from './nav/NavSearch';
 import ShopMegaMenu from './nav/ShopMegaMenu';
-import { IconCart, IconHeart, IconWhatsApp } from './nav/NavIcons';
-import ProfileMark from './nav/ProfileMark';
+import {
+  IconCart,
+  IconCartReady,
+  IconHeart,
+  IconHeartFilled,
+  IconSettings,
+  IconSettingsSpin,
+  IconWhatsApp,
+  IconWhatsAppOutline,
+} from './nav/NavIcons';
+import MorphIcon from './nav/MorphIcon';
 import { useWishlistIds } from '../hooks/useWishlist';
 import { useCart } from '../context/CartContext';
 import {
@@ -252,13 +261,16 @@ export default function Navbar() {
             <div className="dx-actions">
               <a
                 href={waHref}
-                className="dx-icon-btn dx-icon-btn--wa"
+                className="dx-icon-btn dx-icon-btn--wa dx-icon-btn--morph"
                 target="_blank"
                 rel="noopener noreferrer"
                 aria-label={t('nav.whatsapp')}
                 title={t('nav.whatsapp')}
               >
-                <IconWhatsApp />
+                <MorphIcon
+                  idle={<IconWhatsAppOutline size={20} />}
+                  hover={<IconWhatsApp size={20} />}
+                />
               </a>
 
               {isCustomer ? (
@@ -270,22 +282,28 @@ export default function Navbar() {
               ) : (
                 <button
                   type="button"
-                  className="dx-icon-btn dx-icon-btn--account"
+                  className="dx-icon-btn dx-icon-btn--account dx-icon-btn--morph"
                   onClick={() => setLoginOpen(true)}
                   aria-label={t('nav.signIn')}
                   title={t('nav.signIn')}
                 >
-                  <ProfileMark size={20} />
+                  <MorphIcon
+                    idle={<IconSettings size={20} />}
+                    hover={<IconSettingsSpin size={20} />}
+                  />
                 </button>
               )}
 
               <Link
                 to="/wishlist"
-                className="dx-icon-btn dx-icon-btn--wishlist"
+                className="dx-icon-btn dx-icon-btn--wishlist dx-icon-btn--morph"
                 aria-label={t('wishlist.nav')}
                 onClick={closeMenu}
               >
-                <IconHeart />
+                <MorphIcon
+                  idle={<IconHeart size={20} />}
+                  hover={<IconHeartFilled size={20} />}
+                />
                 {wishlistCount > 0 && (
                   <span className="dx-badge">{wishlistCount > 99 ? '99+' : wishlistCount}</span>
                 )}
@@ -293,12 +311,15 @@ export default function Navbar() {
 
               <button
                 type="button"
-                className={`dx-icon-btn dx-icon-btn--cart${cartBump ? ' is-bump' : ''}`}
+                className={`dx-icon-btn dx-icon-btn--cart dx-icon-btn--morph${cartBump ? ' is-bump' : ''}`}
                 data-cart-target="header"
                 onClick={() => setCartOpen(true)}
                 aria-label={t('cart.openCart', { count: cartCount })}
               >
-                <IconCart />
+                <MorphIcon
+                  idle={<IconCart size={20} />}
+                  hover={<IconCartReady size={20} />}
+                />
                 {cartCount > 0 && (
                   <span className="dx-badge">{cartCount > 99 ? '99+' : cartCount}</span>
                 )}
