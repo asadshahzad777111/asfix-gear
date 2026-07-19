@@ -716,6 +716,11 @@
   object-fit: cover;
 }
 
+.pc-hero-slide-video {
+  pointer-events: none;
+  background: #0a0a0a;
+}
+
 .pc-hero-overlay {
   position: absolute;
   inset: 0;

@@ -4,14 +4,15 @@ import { api } from '../../api/client';
 import { defaultHeroSlidesForAdmin } from '../../config/heroSlides';
 import { getDefaultImage } from '../../config/products';
 import { productPath } from '../../utils/slug';
-import { uploadProductImageFile } from '../../utils/productImageUpload';
+import { detectMediaType, uploadHeroMediaFile } from '../../utils/heroMediaUpload';
 import { ProductPrice } from '../DiscountPicker';
 
-const DRAFT_KEY = 'asfix_hero_ads_draft_v2';
+const DRAFT_KEY = 'asfix_hero_ads_draft_v3';
 const MAX_SLIDES = 8;
 
 const emptySlide = () => ({
   image: '',
+  media_type: 'image',
   title: '',
   subtitle: '',
   href: '/shop',
@@ -21,14 +22,18 @@ const emptySlide = () => ({
 
 function normalizeSlides(slides) {
   if (!Array.isArray(slides)) return [];
-  return slides.slice(0, MAX_SLIDES).map((s) => ({
-    image: String(s?.image || s?.src || ''),
-    title: String(s?.title || ''),
-    subtitle: String(s?.subtitle || ''),
-    href: String(s?.href || '/shop'),
-    product_id: s?.product_id || null,
-    source: s?.source || (s?.product_id ? 'product' : 'custom'),
-  }));
+  return slides.slice(0, MAX_SLIDES).map((s) => {
+    const image = String(s?.image || s?.src || '');
+    return {
+      image,
+      media_type: detectMediaType(image, s?.media_type),
+      title: String(s?.title || ''),
+      subtitle: String(s?.subtitle || ''),
+      href: String(s?.href || '/shop'),
+      product_id: s?.product_id || null,
+      source: s?.source || (s?.product_id ? 'product' : 'custom'),
+    };
+  });
 }
 
 function loadDraft() {
@@ -174,6 +179,7 @@ export default function AdminHeroAds() {
     const priceBit = product.price != null ? `Rs ${Number(product.price).toLocaleString('en-PK')}` : '';
     const next = {
       image,
+      media_type: 'image',
       title: String(product.name || 'Product').slice(0, 120),
       subtitle: [product.category, priceBit].filter(Boolean).join(' · ').slice(0, 160),
       href,
@@ -185,19 +191,33 @@ export default function AdminHeroAds() {
     setStatus(`“${product.name}” home ad me add ho gaya — Save Home Ads dabao.`);
   };
 
-  const uploadSlideImage = async (index, file) => {
+  const uploadSlideMedia = async (index, file) => {
     if (!file) return;
     setStatus('');
     setUploadingIndex(index);
     setUsingDefaults(false);
     try {
-      const url = await uploadProductImageFile(file, {
-        onPreview: (preview) => updateSlide(index, 'image', preview),
+      const { url, media_type } = await uploadHeroMediaFile(file, {
+        onPreview: (preview, type) => {
+          setHeroSlides((prev) =>
+            prev.map((slide, i) =>
+              i === index ? { ...slide, image: preview, media_type: type || 'image' } : slide
+            )
+          );
+        },
       });
-      updateSlide(index, 'image', url);
-      setStatus('Photo ready — press Save Home Ads to show it on the site.');
+      setHeroSlides((prev) =>
+        prev.map((slide, i) =>
+          i === index ? { ...slide, image: url, media_type: media_type || 'image' } : slide
+        )
+      );
+      setStatus(
+        media_type === 'video'
+          ? 'Video ready — Save Home Ads dabao (muted autoplay home pe).'
+          : 'Photo ready — Save Home Ads dabao.'
+      );
     } catch (err) {
-      setStatus(err.message || 'Image upload failed');
+      setStatus(err.message || 'Upload failed');
     } finally {
       setUploadingIndex(null);
       const input = fileInputs.current[index];
@@ -214,6 +234,7 @@ export default function AdminHeroAds() {
         .map((s, i) => ({
           id: s.product_id ? `product-${s.product_id}` : `slide-${i}`,
           image: String(s.image || '').trim(),
+          media_type: detectMediaType(s.image, s.media_type),
           title: String(s.title || '').trim(),
           subtitle: String(s.subtitle || '').trim(),
           href: String(s.href || '/shop').trim() || '/shop',
@@ -300,7 +321,7 @@ export default function AdminHeroAds() {
         <div className="wp-postbox-body">
           <p style={{ fontSize: '0.88rem', color: '#50575e', marginTop: 0, lineHeight: 1.45 }}>
             Upar wali list = abhi home slider pe chal rahi / chalane wali slides.
-            Niche se kisi bhi product ko tap karke home ad banao, ya apni pic upload karo — dono saath chal sakte hain.
+            Gallery se photo ya short video choose karo (camera nahi — gallery khulegi). Product bhi niche se add ho sakta hai.
           </p>
           <p style={{ fontSize: '0.82rem', color: '#646970', marginTop: 0 }}>
             Max {MAX_SLIDES} slides.{' '}
@@ -337,6 +358,7 @@ export default function AdminHeroAds() {
               >
                 <strong style={{ fontSize: '0.9rem' }}>
                   Ad {index + 1}
+                  {slide.media_type === 'video' ? ' · Video' : ''}
                   {slide.source === 'product' ? ' · Product' : ''}
                   {slide.source === 'default' ? ' · Default' : ''}
                 </strong>
@@ -372,20 +394,40 @@ export default function AdminHeroAds() {
                 }}
               >
                 {slide.image ? (
-                  <img
-                    src={slide.image}
-                    alt=""
-                    style={{
-                      width: '100%',
-                      maxHeight: 200,
-                      objectFit: 'cover',
-                      borderRadius: 8,
-                      display: 'block',
-                    }}
-                  />
+                  slide.media_type === 'video' ? (
+                    <video
+                      src={slide.image}
+                      muted
+                      playsInline
+                      loop
+                      autoPlay
+                      style={{
+                        width: '100%',
+                        maxHeight: 200,
+                        objectFit: 'cover',
+                        borderRadius: 8,
+                        display: 'block',
+                        background: '#111',
+                      }}
+                    />
+                  ) : (
+                    <img
+                      src={slide.image}
+                      alt=""
+                      style={{
+                        width: '100%',
+                        maxHeight: 200,
+                        objectFit: 'cover',
+                        borderRadius: 8,
+                        display: 'block',
+                      }}
+                    />
+                  )
                 ) : (
                   <span style={{ fontSize: '0.9rem', color: '#1d2327', fontWeight: 600 }}>
-                    {uploadingIndex === index ? 'Uploading…' : 'Tap to choose photo from gallery'}
+                    {uploadingIndex === index
+                      ? 'Uploading…'
+                      : 'Tap — gallery se photo ya short video choose karo'}
                   </span>
                 )}
                 <input
@@ -394,31 +436,40 @@ export default function AdminHeroAds() {
                   }}
                   id={`hero-ad-upload-${index}`}
                   type="file"
-                  accept="image/*"
-                  capture="environment"
+                  accept="image/*,video/mp4,video/webm,video/quicktime,.mp4,.webm,.mov"
                   className="sr-only"
                   disabled={uploadingIndex === index}
-                  onChange={(e) => uploadSlideImage(index, e.target.files?.[0])}
+                  onChange={(e) => uploadSlideMedia(index, e.target.files?.[0])}
                 />
               </label>
 
               {slide.image && (
                 <div style={{ marginBottom: '0.65rem', display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
                   <label htmlFor={`hero-ad-upload-${index}`} className="wp-button wp-button--secondary" style={{ cursor: 'pointer' }}>
-                    {uploadingIndex === index ? 'Uploading…' : 'Change / upload image'}
+                    {uploadingIndex === index ? 'Uploading…' : 'Change photo / video (gallery)'}
                   </label>
                 </div>
               )}
 
               <label style={{ display: 'block', marginBottom: '0.55rem' }}>
-                <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>Image URL (optional)</span>
+                <span style={{ fontWeight: 600, fontSize: '0.8rem' }}>Media URL (optional)</span>
                 <input
                   type="url"
                   className="wp-input"
                   style={{ width: '100%', marginTop: 4 }}
                   value={slide.image?.startsWith('blob:') ? '' : slide.image}
-                  onChange={(e) => updateSlide(index, 'image', e.target.value)}
-                  placeholder="https://… or upload above"
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setUsingDefaults(false);
+                    setHeroSlides((prev) =>
+                      prev.map((item, i) =>
+                        i === index
+                          ? { ...item, image: value, media_type: detectMediaType(value, item.media_type) }
+                          : item
+                      )
+                    );
+                  }}
+                  placeholder="https://… image or .mp4/.webm"
                 />
               </label>
 
@@ -470,7 +521,7 @@ export default function AdminHeroAds() {
               onClick={addSlide}
               disabled={heroSlides.length >= MAX_SLIDES}
             >
-              + Blank photo slide
+              + Blank photo / video slide
             </button>
             <button type="button" className="wp-button" onClick={save} disabled={saving || !loaded}>
               {saving ? 'Saving…' : 'Save Home Ads'}

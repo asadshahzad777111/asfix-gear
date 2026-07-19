@@ -206,6 +206,53 @@ async function uploadProductImage(file, { timeoutMs = 45000 } = {}) {
   return data;
 }
 
+async function uploadHeroMedia(file, { timeoutMs = 90000 } = {}) {
+  const token = getAuthToken();
+  if (!token) throw new Error('Staff login required to upload media');
+
+  const form = new FormData();
+  form.append('media', file);
+
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  let res;
+  try {
+    res = await fetch(`${API_BASE}/shop/hero-media`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err?.name === 'AbortError') {
+      throw new Error('Upload timed out. Try a smaller file or check your connection.');
+    }
+    throw new Error('Network error — could not upload media.');
+  } finally {
+    clearTimeout(timeoutId);
+  }
+
+  const text = await res.text();
+  let data = {};
+  if (text) {
+    try {
+      data = JSON.parse(text);
+    } catch {
+      /* non-JSON */
+    }
+  }
+
+  if (!res.ok) {
+    if (res.status === 503) {
+      throw new Error('Server par R2 abhi configure nahi hai');
+    }
+    throw new Error(data.error || 'Media upload failed');
+  }
+  if (!data.url) throw new Error('Upload succeeded but no URL was returned');
+  return data;
+}
+
 async function uploadOrderPaymentProof(orderId, file, { timeoutMs = 45000 } = {}) {
   const token = getAuthToken();
   if (!token) throw new Error('Sign in required to upload payment proof');
@@ -398,6 +445,7 @@ export const api = {
   bulkDeleteProducts: (ids) =>
     request('/products/bulk-delete', { method: 'POST', body: JSON.stringify({ ids }) }),
   uploadProductImage: (file) => uploadProductImage(file),
+  uploadHeroMedia: (file) => uploadHeroMedia(file),
   uploadOrderPaymentProof: (orderId, file) => uploadOrderPaymentProof(orderId, file),
   generateAd: (opts) => generateAd(opts),
 

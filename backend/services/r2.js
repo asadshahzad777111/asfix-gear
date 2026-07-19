@@ -6,6 +6,9 @@ const EXT_BY_TYPE = {
   'image/png': '.png',
   'image/webp': '.webp',
   'image/gif': '.gif',
+  'video/mp4': '.mp4',
+  'video/webm': '.webm',
+  'video/quicktime': '.mov',
 };
 
 let client = null;
@@ -40,13 +43,43 @@ function getClient() {
 function pickExtension(mimetype, originalName) {
   const fromType = EXT_BY_TYPE[String(mimetype || '').toLowerCase()];
   if (fromType) return fromType;
-  const fromName = String(originalName || '').match(/\.(jpe?g|png|webp|gif)$/i);
-  if (fromName) return `.${fromName[1].toLowerCase().replace('jpeg', 'jpg')}`;
+  const fromName = String(originalName || '').match(/\.(jpe?g|png|webp|gif|mp4|webm|mov)$/i);
+  if (fromName) {
+    const ext = fromName[1].toLowerCase().replace('jpeg', 'jpg');
+    return `.${ext}`;
+  }
   return '.jpg';
 }
 
 export function buildProductImageKey(originalName, mimetype) {
   return `products/${randomUUID()}${pickExtension(mimetype, originalName)}`;
+}
+
+export function buildHeroMediaKey(originalName, mimetype) {
+  const folder = String(mimetype || '').startsWith('video/') ? 'hero/videos' : 'hero/images';
+  return `${folder}/${randomUUID()}${pickExtension(mimetype, originalName)}`;
+}
+
+export async function uploadHeroMedia(buffer, originalName, mimetype) {
+  if (!Buffer.isBuffer(buffer) || buffer.length === 0) {
+    throw new Error('Empty media file');
+  }
+
+  const key = buildHeroMediaKey(originalName, mimetype);
+  const bucket = process.env.R2_BUCKET_NAME.trim();
+  const publicBase = process.env.R2_PUBLIC_BASE_URL.trim().replace(/\/$/, '');
+
+  await getClient().send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: buffer,
+      ContentType: mimetype || 'application/octet-stream',
+      CacheControl: 'public, max-age=31536000, immutable',
+    })
+  );
+
+  return `${publicBase}/${key}`;
 }
 
 export function buildPaymentProofKey(originalName, mimetype) {
