@@ -1,17 +1,21 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Bidirectional scroll reveal — elements animate in when entering the viewport
- * and reset when leaving, so reverse scroll feels alive (not one-shot).
+ * Continuous scroll reveal — plays when entering the view band and
+ * resets when leaving, so up/down scrolling keeps replaying (not one-shot).
  */
 export default function useScrollReveal({
-  threshold = 0.15,
+  threshold = 0.12,
   delay = 0,
   disabled = false,
-  rootMargin = '0px 0px -6% 0px',
+  /** Inset band: leave top/bottom → reset; re-enter → animate again */
+  rootMargin = '-10% 0px -18% 0px',
 } = {}) {
   const ref = useRef(null);
   const [revealed, setRevealed] = useState(disabled);
+  const [playId, setPlayId] = useState(0);
+  const delayRef = useRef(delay);
+  delayRef.current = delay;
 
   useEffect(() => {
     if (disabled) {
@@ -27,38 +31,47 @@ export default function useScrollReveal({
       return undefined;
     }
 
-    let delayTimer = null;
-
-    const clearDelay = () => {
-      if (delayTimer) {
-        window.clearTimeout(delayTimer);
-        delayTimer = null;
-      }
-    };
-
     const observer = new IntersectionObserver(
       ([entry]) => {
         if (entry.isIntersecting) {
-          if (delay > 0) {
-            clearDelay();
-            delayTimer = window.setTimeout(() => setRevealed(true), delay);
-          } else {
-            setRevealed(true);
-          }
-        } else {
-          clearDelay();
+          /* Bump playId so enter always restarts even if still "revealed" */
           setRevealed(false);
+          setPlayId((n) => n + 1);
+        } else {
+          setRevealed(false);
+          setPlayId(0);
         }
       },
       { threshold, rootMargin }
     );
 
     observer.observe(el);
+    return () => observer.disconnect();
+  }, [threshold, disabled, rootMargin]);
+
+  /* After reset, wait a frame so CSS can apply the hidden state, then reveal */
+  useEffect(() => {
+    if (disabled || playId === 0) return undefined;
+
+    let delayTimer = null;
+    let raf2 = 0;
+    const raf1 = window.requestAnimationFrame(() => {
+      raf2 = window.requestAnimationFrame(() => {
+        const wait = Math.max(0, delayRef.current);
+        if (wait === 0) {
+          setRevealed(true);
+        } else {
+          delayTimer = window.setTimeout(() => setRevealed(true), wait);
+        }
+      });
+    });
+
     return () => {
-      observer.disconnect();
-      clearDelay();
+      window.cancelAnimationFrame(raf1);
+      window.cancelAnimationFrame(raf2);
+      if (delayTimer) window.clearTimeout(delayTimer);
     };
-  }, [threshold, delay, disabled, rootMargin]);
+  }, [playId, disabled]);
 
   return {
     ref,

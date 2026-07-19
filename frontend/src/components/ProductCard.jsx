@@ -47,8 +47,8 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(product?.id);
   const revealDelay = inGrid && revealIndex >= 0 ? getProductRevealDelay(revealIndex) : 0;
   const { ref: revealRef, revealClass } = useScrollReveal({
-    threshold: 0.08,
-    rootMargin: '0px 0px -8% 0px',
+    threshold: 0.1,
+    rootMargin: '-8% 0px -16% 0px',
     delay: revealDelay,
     disabled: !inGrid || revealIndex < 0,
   });
