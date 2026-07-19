@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { api } from '../../api/client';
+import { api, ensureApiReady } from '../../api/client';
 import { defaultHeroSlidesForAdmin } from '../../config/heroSlides';
 import { getDefaultImage } from '../../config/products';
 import { productPath } from '../../utils/slug';
@@ -97,26 +97,77 @@ export default function AdminHeroAds() {
     Promise.all([
       api.getStorefrontImages().catch(() => null),
       api.getProducts().catch(() => []),
-    ]).then(([data, productList]) => {
+    ]).then(async ([data, productList]) => {
       if (cancelled) return;
       const list = Array.isArray(productList) ? productList : productList?.products || [];
       setProducts(list);
 
       const serverSlides = normalizeSlides(data?.hero_slides);
-        if (draft?.length && JSON.stringify(draft) !== JSON.stringify(serverSlides.length ? serverSlides : defaultHeroSlidesForAdmin())) {
-          setHeroSlides(draft);
-          setUsingDefaults(false);
-          setDraftRestored(true);
+      const draftSlides = draft?.length ? normalizeSlides(draft) : [];
+      const draftPublishable = draftSlides.filter(
+        (s) => s.image && /^https?:\/\//i.test(s.image) && !s.image.includes('unsplash.com')
+      );
+      const draftHasCustomMedia = draftPublishable.length > 0;
+      const draftDiffers =
+        draftSlides.length > 0
+        && JSON.stringify(draftSlides) !== JSON.stringify(serverSlides.length ? serverSlides : defaultHeroSlidesForAdmin());
+
+      // Upload reached R2 but PATCH timed out earlier — auto-publish draft to fix live home
+      if (!serverSlides.length && draftHasCustomMedia) {
+        setHeroSlides(draftSlides);
+        setUsingDefaults(false);
+        setLoaded(true);
+        skipDraftWrite.current = false;
+        setStatus('Purani upload mili — live pe publish ho rahi hai…');
+        setSaving(true);
+        try {
+          await ensureApiReady(60000);
+          const hero_slides = draftSlides
+            .map((s, i) => ({
+              id: s.product_id ? `product-${s.product_id}` : `slide-${i}`,
+              image: String(s.image || '').trim(),
+              media_type: detectMediaType(s.image, s.media_type),
+              title: String(s.title || '').trim(),
+              subtitle: String(s.subtitle || '').trim(),
+              href: String(s.href || '/shop').trim() || '/shop',
+              product_id: s.product_id || null,
+            }))
+            .filter((s) => s.image && /^https?:\/\//i.test(s.image));
+          await api.updateStorefrontImages({
+            category_images: data?.category_images || {},
+            hero_slides,
+          });
+          if (cancelled) return;
+          setHeroSlides(normalizeSlides(hero_slides));
+          setDirty(false);
+          setDraftRestored(false);
+          clearDraft();
+          setLastSavedAt(Date.now());
+          setStatus('✓ Live home pe ab aapki images aa gayi hain. Home page refresh karein.');
+        } catch (err) {
+          if (cancelled) return;
           setDirty(true);
-          setStatus('Pehli wali upload draft me mili — neeche Save changes dabao taake live pe aa jaye.');
-        } else if (serverSlides.length) {
+          setDraftRestored(true);
+          setStatus(`${err.message || 'Publish fail'} — neeche Save changes dubara dabao.`);
+        } finally {
+          if (!cancelled) setSaving(false);
+        }
+        return;
+      }
+
+      if (draftDiffers && draftHasCustomMedia) {
+        setHeroSlides(draftSlides);
+        setUsingDefaults(false);
+        setDraftRestored(true);
+        setDirty(true);
+        setStatus('Draft me custom ads hain — neeche Save changes dabao taake live update ho.');
+      } else if (serverSlides.length) {
         setHeroSlides(serverSlides);
         setUsingDefaults(false);
       } else {
-        // Show the slides currently running on the home page (defaults)
         setHeroSlides(defaultHeroSlidesForAdmin());
         setUsingDefaults(true);
-        setStatus('Ye abhi home pe chal rahi default slides hain — edit / product add / naya photo laga ke Save karo.');
+        setStatus('Abhi default slides chal rahi hain — photo upload karo (auto-save) ya Save changes dabao.');
       }
       setLoaded(true);
       skipDraftWrite.current = false;
@@ -208,6 +259,7 @@ export default function AdminHeroAds() {
     setSaving(true);
     if (!silent) setStatus('');
     try {
+      await ensureApiReady(60000);
       const current = await api.getStorefrontImages();
       const hero_slides = sourceSlides
         .map((s, i) => ({
