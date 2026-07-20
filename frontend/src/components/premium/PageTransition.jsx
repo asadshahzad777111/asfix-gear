@@ -16,6 +16,7 @@ const Contact = lazy(() => import('../../pages/Contact'));
 const Admin = lazy(() => import('../../pages/Admin'));
 const Counter = lazy(() => import('../../pages/Counter'));
 const Login = lazy(() => import('../../pages/Login'));
+const PosLogin = lazy(() => import('../../pages/PosLogin'));
 const Gaming = lazy(() => import('../../pages/Gaming'));
 const OrderTrack = lazy(() => import('../../pages/OrderTrack'));
 const Account = lazy(() => import('../../pages/Account'));
@@ -104,6 +105,7 @@ export default function PageTransition() {
               }
             />
             <Route path="/login" element={<Login />} />
+            <Route path="/pos/login" element={<PosLogin />} />
             <Route
               path="/admin"
               element={
@@ -112,8 +114,9 @@ export default function PageTransition() {
                 </ProtectedRoute>
               }
             />
+            <Route path="/counter" element={<Navigate to="/pos" replace />} />
             <Route
-              path="/counter"
+              path="/pos"
               element={
                 <ProtectedRoute requireCounter>
                   <Counter />

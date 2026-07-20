@@ -18,6 +18,7 @@
     "check:i18n": "node scripts/check-i18n.js",
     "check:secrets": "node scripts/check-secrets.js",
     "check:smoke": "node scripts/smoke-test.js",
+    "check:pos": "node scripts/pos-access-smoke.mjs",
     "check:registration": "node scripts/registration-smoke.js",
     "backup:data": "node scripts/backup-data-json.mjs",
     "migrate:mongo": "node scripts/migrate-json-to-mongo.mjs",

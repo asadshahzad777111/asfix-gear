@@ -21,6 +21,10 @@ export function isCounterStaff(user) {
   return Boolean(user?.active && !user?.blocked && user.role === 'counter');
 }
 
+export function canUsePos(user) {
+  return isCounterStaff(user) || isAdminStaff(user);
+}
+
 export function canViewSalesReport(user) {
   return isStaff(user);
 }
@@ -74,7 +78,7 @@ export function roleLabel(role) {
     super_admin: 'Super Admin',
     admin: 'Admin',
     editor: 'Staff Editor',
-    counter: 'Counter Staff',
+    counter: 'POS Staff',
     customer: 'Client',
   };
   return labels[role] || role;

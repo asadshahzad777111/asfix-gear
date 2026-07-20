@@ -25,12 +25,13 @@ const AUTH_PATHS = new Set([
   '/account/register',
   '/account/forgot-password',
   '/login',
+  '/pos/login',
 ]);
 
 function AppContent() {
   const { isGamingPage } = useGaming();
   const location = useLocation();
-  const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/counter');
+  const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/counter') || location.pathname.startsWith('/pos');
   const isAuthRoute = AUTH_PATHS.has(location.pathname);
 
   useEffect(() => {

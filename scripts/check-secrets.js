@@ -17,6 +17,7 @@ const IGNORE = [
 ];
 
 const DOC_FILES = /\.(md|mdc)$/i;
+const BINARY_ASSETS = /\.(avif|gif|ico|jpe?g|mp4|pdf|png|svgz|ttf|webm|webp|woff2?)$/i;
 
 function isEnvExampleFile(file) {
   return file === '.env.example' || file.endsWith('/.env.example');
@@ -43,7 +44,7 @@ function listTrackedFiles() {
   }
 }
 
-const files = listTrackedFiles().filter((f) => !IGNORE.some((re) => re.test(f)));
+const files = listTrackedFiles().filter((f) => !IGNORE.some((re) => re.test(f)) && !BINARY_ASSETS.test(f));
 let hits = 0;
 
 for (const file of files) {

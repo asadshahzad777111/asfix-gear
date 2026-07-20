@@ -1,8 +1,13 @@
 // Vercel/Pages builds often omit VITE_API_BASE — fall back to the public Render API
 // in production so /api is not rewritten to index.html on the static host.
+function isLocalBrowserHost() {
+  if (typeof window === 'undefined') return false;
+  return ['localhost', '127.0.0.1'].includes(window.location.hostname);
+}
+
 const API_BASE = String(
   import.meta.env.VITE_API_BASE
-  || (import.meta.env.PROD ? 'https://asfix-gear.onrender.com/api' : '/api')
+  || (import.meta.env.PROD && !isLocalBrowserHost() ? 'https://asfix-gear.onrender.com/api' : '/api')
 ).replace(/\/$/, '');
 const TOKEN_KEY = 'asfix_auth_token';
 const DEFAULT_TIMEOUT_MS = 8000;

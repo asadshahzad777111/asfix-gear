@@ -11,7 +11,7 @@ export default function CustomerRoute({ children }) {
   }
 
   if (isStaff) {
-    return <Navigate to={isCounterStaff(user) ? '/counter' : '/admin'} replace />;
+    return <Navigate to={isCounterStaff(user) ? '/pos' : '/admin'} replace />;
   }
 
   if (!user || !isCustomer) {
