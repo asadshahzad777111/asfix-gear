@@ -185,8 +185,8 @@ function thermalAmountText(amount) {
 
 function buildThermalReceiptText(order) {
   if (!order) return '';
-  /* Fewer chars/line → larger glyphs + letter-spacing on PNG */
-  return `${buildReceiptLines(order, 26).map((line) => line.value).join('\n')}\n\n`;
+  /* Fewer chars/line → larger glyphs on paper (sample AS FIX bill size) */
+  return `${buildReceiptLines(order, 20).map((line) => line.value).join('\n')}\n\n`;
 }
 
 /** Mate Technologies "Bluetooth Thermal Printer" (Thermer) — package mate.bluetoothprint */
@@ -249,8 +249,20 @@ function approximatePdfTextWidth(value, size) {
   return String(value ?? '').length * size * 0.56;
 }
 
-/** Shared receipt lines — reference-style thermal (clear size like Mate bill samples). */
-function buildReceiptLines(order, maxChars = 26) {
+/** Shared receipt lines — big POS size matching AS FIX & GEAR BILL sample. */
+function shortReceiptDate(order) {
+  if (!order?.created_at) return '-';
+  const d = new Date(order.created_at);
+  if (Number.isNaN(d.getTime())) return '-';
+  const dd = String(d.getDate()).padStart(2, '0');
+  const mm = String(d.getMonth() + 1).padStart(2, '0');
+  const yy = String(d.getFullYear()).slice(-2);
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mi = String(d.getMinutes()).padStart(2, '0');
+  return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+}
+
+function buildReceiptLines(order, maxChars = 20) {
   const { subtotal, discount, grandTotal } = receiptTotals(order);
   const rows = order?.items || [];
   const lines = [];
@@ -270,7 +282,7 @@ function buildReceiptLines(order, maxChars = 26) {
     const left = String(label);
     let right = String(value ?? '');
     if (left.length + 1 + right.length > maxChars) {
-      right = right.slice(0, Math.max(4, maxChars - left.length - 1));
+      right = right.slice(0, Math.max(3, maxChars - left.length - 1));
     }
     const gap = Math.max(1, maxChars - left.length - right.length);
     push(`${left}${' '.repeat(gap)}${right}`, {
@@ -291,17 +303,19 @@ function buildReceiptLines(order, maxChars = 26) {
     });
   };
 
-  push('ASFIX & GEAR', { align: 'center', weight: 'bold', title: true });
-  wrap(SHOP.addressLine1, { align: 'center', small: true });
+  /* Sample style header — short lines so glyphs stay LARGE */
+  push('AS FIX & GEAR', { align: 'center', weight: 'bold', title: true });
+  push('BILL', { align: 'center', weight: 'bold', title: true });
+  wrap('Mobile Repair', { align: 'center', small: true });
   wrap(SHOP.addressLine2, { align: 'center', small: true });
-  wrap(`Tel: ${SHOP.phone}`, { align: 'center', small: true });
+  wrap(SHOP.phone, { align: 'center', small: true });
   rule();
-  kv('Bill No', receiptNumber(order));
-  kv('Date', order?.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-');
-  kv('Staff', order?.created_by_staff_name || 'Counter');
-  kv('Payment', paymentLabel(order?.payment_mode));
-  kv('Customer', order?.customer_name || 'Walk-in');
-  if (order?.phone) kv('Phone', order.phone);
+  kv('Bill', receiptNumber(order));
+  kv('Date', shortReceiptDate(order));
+  kv('Staff', (order?.created_by_staff_name || 'Counter').slice(0, 12));
+  kv('Pay', paymentLabel(order?.payment_mode));
+  kv('Cust', (order?.customer_name || 'Walk-in').slice(0, 12));
+  if (order?.phone) kv('Phone', String(order.phone).slice(0, 12));
   rule();
 
   if (!rows.length) {
@@ -311,12 +325,8 @@ function buildReceiptLines(order, maxChars = 26) {
       const qty = Number(item.qty) || 1;
       const unit = Number(item.price) || 0;
       wrap(item.name || 'Item', { weight: 'bold' });
-      let left = `${qty} x ${thermalAmountText(unit)}`;
-      let right = thermalAmountText(unit * qty);
-      if (left.length + 1 + right.length > maxChars) {
-        left = `${qty} x ${Math.round(unit)}`;
-        right = String(Math.round(unit * qty));
-      }
+      let left = `${qty}x${Math.round(unit)}`;
+      let right = String(Math.round(unit * qty));
       if (left.length + 1 + right.length > maxChars) {
         left = `${qty}x`;
         right = String(Math.round(unit * qty));
@@ -330,49 +340,45 @@ function buildReceiptLines(order, maxChars = 26) {
   money('Subtotal', subtotal);
   if (discount) money('Discount', discount);
   rule();
-  /* Reference bills: TOTAL label + oversized amount on next line */
   push('TOTAL AMOUNT', { align: 'center', weight: 'bold', totalLabel: true });
   push(thermalAmountText(grandTotal), { align: 'center', weight: 'bold', grand: true });
   const note = counterPaymentNote(order);
   if (note) wrap(`Note: ${note}`, { small: true });
   rule();
-  push('Thank you for shopping!', { align: 'center', weight: 'bold' });
-  push(RECEIPT_SITE, { align: 'center', weight: 'bold' });
+  push('Thank You', { align: 'center', weight: 'bold' });
+  push(RECEIPT_SITE, { align: 'center', weight: 'bold', small: true });
   return lines;
 }
 
 /**
- * Reference-style thermal PNG (Mate bill clarity):
- * ~8% side margins, tall monospaced glyphs, letter tracking, big TOTAL.
+ * BIG thermal PNG — glyph size fills ~20 columns like the sample AS FIX bill.
+ * Does NOT shrink the whole slip for one long line (wrap/truncate instead).
  */
 export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
   const baseWidth = pageWidth === '80mm' ? 576 : 384;
-  const scale = 3;
+  const scale = 4;
   const widthPx = baseWidth * scale;
-  const maxChars = pageWidth === '80mm' ? 34 : 26;
-  /* ~8% side padding like clear sample slips — avoids edge cut-off */
-  const padX = Math.round(widthPx * 0.08);
-  const padY = Math.round(16 * scale);
+  const maxChars = pageWidth === '80mm' ? 28 : 20;
+  const padX = Math.round(widthPx * 0.07);
+  const padY = Math.round(18 * scale);
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas unavailable');
 
   const usable = widthPx - padX * 2;
-  /* Body size tuned to look like the clear Mate/reference receipts */
-  let fontSize = (pageWidth === '80mm' ? 24 : 22) * scale;
-  const minFont = 14 * scale;
   const fontStack = '"Courier New", Courier, monospace';
 
-  const setFont = (size, weight = 'bold') => {
-    ctx.font = `${weight === 'bold' ? 'bold ' : ''}${size}px ${fontStack}`;
+  const setFont = (size) => {
+    ctx.font = `bold ${size}px ${fontStack}`;
   };
 
-  const letterGapFor = (size) => Math.max(3, Math.round(size * 0.12));
+  const letterGapFor = (size) => Math.max(4, Math.round(size * 0.1));
 
-  const measureSpaced = (text, size, letterGap) => {
-    setFont(size, 'bold');
+  const measureSpaced = (text, size) => {
+    setFont(size);
+    const letterGap = letterGapFor(size);
     const chars = Array.from(String(text ?? ''));
     if (!chars.length) return 0;
     let width = 0;
@@ -383,41 +389,41 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return width;
   };
 
+  /* Size so maxChars columns fill the paper — this is the sample “bara size”. */
+  let fontSize = Math.floor(usable / (maxChars * 0.62));
+  const minFont = Math.round(usable / (maxChars * 0.78));
+  while (fontSize > minFont && measureSpaced('M'.repeat(maxChars), fontSize) > usable) {
+    fontSize -= 1;
+  }
+  /* Prefer filling width: bump up if still loose */
+  while (measureSpaced('M'.repeat(maxChars), fontSize + 1) <= usable) {
+    fontSize += 1;
+  }
+
   const lineSize = (line, base) => {
-    if (line.grand) return Math.round(base * 1.85);
-    if (line.totalLabel) return Math.round(base * 1.2);
-    if (line.title) return Math.round(base * 1.25);
-    if (line.small) return Math.max(minFont, base - 4 * scale);
-    if (line.rule) return Math.max(minFont, base - 2 * scale);
+    if (line.grand) return Math.round(base * 1.7);
+    if (line.totalLabel) return Math.round(base * 1.15);
+    if (line.title) return Math.round(base * 1.2);
+    if (line.small) return Math.max(minFont, Math.round(base * 0.82));
+    if (line.rule) return Math.max(minFont, Math.round(base * 0.9));
     return base;
   };
 
-  const measureLineWidth = (line, base) => {
-    const size = lineSize(line, base);
-    const gap = letterGapFor(size);
-    if (line.columns) {
-      const colGap = 16 * scale;
-      return measureSpaced(line.columns.left, size, gap)
-        + colGap
-        + measureSpaced(line.columns.right, size, gap);
-    }
-    return measureSpaced(line.value, size, gap);
+  const fitSize = (text, preferred) => {
+    let size = preferred;
+    const floor = Math.max(10 * scale, Math.round(preferred * 0.7));
+    while (size > floor && measureSpaced(text, size) > usable) size -= 1;
+    return size;
   };
 
-  while (fontSize > minFont) {
-    const widest = Math.max(...lines.map((line) => measureLineWidth(line, fontSize)), 0);
-    if (widest <= usable) break;
-    fontSize -= scale;
-  }
-
-  const lineH = Math.ceil(fontSize * 1.78);
-  let heightPx = padY * 2 + 8 * scale;
+  const lineH = Math.ceil(fontSize * 1.85);
+  let heightPx = padY * 2 + 10 * scale;
   lines.forEach((line) => {
     const size = lineSize(line, fontSize);
-    if (line.grand) heightPx += Math.ceil(size * 1.35) + 6 * scale;
-    else if (line.totalLabel) heightPx += Math.ceil(lineH * 0.95) + 2 * scale;
-    else if (line.title) heightPx += lineH + 6 * scale;
-    else if (line.rule) heightPx += Math.ceil(lineH * 0.75);
+    if (line.grand) heightPx += Math.ceil(size * 1.4) + 8 * scale;
+    else if (line.totalLabel) heightPx += Math.ceil(lineH * 1.05) + 4 * scale;
+    else if (line.title) heightPx += lineH + 4 * scale;
+    else if (line.rule) heightPx += Math.ceil(lineH * 0.7);
     else heightPx += lineH;
   });
 
@@ -433,8 +439,9 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   ctx.imageSmoothingEnabled = false;
 
   const drawSpacedText = (text, anchorX, y, size, align = 'left') => {
-    setFont(size, 'bold');
-    const letterGap = letterGapFor(size);
+    const fitted = fitSize(text, size);
+    setFont(fitted);
+    const letterGap = letterGapFor(fitted);
     const chars = Array.from(String(text ?? ''));
     const widths = chars.map((ch) => ctx.measureText(ch).width);
     const totalW = widths.reduce((sum, w, i) => sum + w + (i < widths.length - 1 ? letterGap : 0), 0);
@@ -442,14 +449,11 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     let x = anchorX;
     if (align === 'center') x = anchorX - totalW / 2;
     if (align === 'right') x = anchorX - totalW;
-
     if (x < padX) x = padX;
     if (x + totalW > widthPx - padX) x = Math.max(padX, widthPx - padX - totalW);
 
-    /* Heavy stroke = dense black like reference thermal slips */
-    ctx.lineWidth = Math.max(2, Math.round(scale * (size >= fontSize * 1.5 ? 1.6 : 1.25)));
+    ctx.lineWidth = Math.max(3, Math.round(scale * 1.4));
     ctx.lineJoin = 'round';
-    ctx.miterLimit = 2;
 
     let cursor = x;
     chars.forEach((ch, index) => {
@@ -457,7 +461,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       ctx.fillText(ch, cursor, y);
       cursor += widths[index] + letterGap;
     });
-    return totalW;
+    return fitted;
   };
 
   let y = padY;
@@ -466,12 +470,12 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
 
     if (line.columns) {
       let rightSize = size;
-      const colGap = 16 * scale;
-      const leftW = measureSpaced(line.columns.left, size, letterGapFor(size));
-      let rightW = measureSpaced(line.columns.right, rightSize, letterGapFor(rightSize));
+      const colGap = 14 * scale;
+      const leftW = measureSpaced(line.columns.left, size);
+      let rightW = measureSpaced(line.columns.right, rightSize);
       while (leftW + colGap + rightW > usable && rightSize > minFont) {
-        rightSize -= scale;
-        rightW = measureSpaced(line.columns.right, rightSize, letterGapFor(rightSize));
+        rightSize -= 2;
+        rightW = measureSpaced(line.columns.right, rightSize);
       }
       drawSpacedText(line.columns.left, padX, y, size, 'left');
       drawSpacedText(line.columns.right, widthPx - padX, y, rightSize, 'right');
@@ -484,10 +488,10 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
           ? widthPx - padX
           : padX;
       drawSpacedText(line.value, anchor, y, size, align);
-      if (line.grand) y += Math.ceil(size * 1.35) + 6 * scale;
-      else if (line.totalLabel) y += Math.ceil(lineH * 0.95) + 2 * scale;
-      else if (line.title) y += lineH + 6 * scale;
-      else if (line.rule) y += Math.ceil(lineH * 0.75);
+      if (line.grand) y += Math.ceil(size * 1.4) + 8 * scale;
+      else if (line.totalLabel) y += Math.ceil(lineH * 1.05) + 4 * scale;
+      else if (line.title) y += lineH + 4 * scale;
+      else if (line.rule) y += Math.ceil(lineH * 0.7);
       else y += lineH;
     }
   });
@@ -509,9 +513,9 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const marginX = pdfPointsFromMillimeters(0.8);
   const marginTop = pdfPointsFromMillimeters(1.2);
   const marginBottom = pdfPointsFromMillimeters(1.2);
-  const maxChars = pageWidth === '80mm' ? 34 : 26;
-  const bodySize = pageWidth === '80mm' ? 10.5 : 9.5;
-  const bodyLeading = pageWidth === '80mm' ? 14 : 13;
+  const maxChars = pageWidth === '80mm' ? 28 : 20;
+  const bodySize = pageWidth === '80mm' ? 12 : 11;
+  const bodyLeading = pageWidth === '80mm' ? 16 : 15;
   const receiptLines = buildReceiptLines(order, maxChars).map((line) => ({
     value: line.value,
     size: line.title ? bodySize + 3 : line.small ? bodySize - 0.5 : bodySize,
@@ -611,7 +615,7 @@ function buildThermalReceiptHtml(order, thermalWidth = '58mm') {
     const unit = Number(item.price) || 0;
     return `<div class="r-item">
       <strong>${escapeHtml(item.name || 'Item')}</strong>
-      <div class="r-row"><span>${qty} x ${escapeHtml(thermalAmountText(unit))}</span><b>${escapeHtml(thermalAmountText(unit * qty))}</b></div>
+      <div class="r-row"><span>${qty}x${Math.round(unit)}</span><b>${Math.round(unit * qty)}</b></div>
     </div>`;
   }).join('');
 
@@ -630,29 +634,30 @@ html, body {
   width: ${widthMm}mm !important;
   max-width: ${widthMm}mm !important;
   margin: 0 !important;
-  padding: 3mm 2.8mm !important;
+  padding: 3.5mm 3mm !important;
   font-family: "Courier New", Courier, monospace !important;
-  font-size: 13px !important;
+  font-size: 15px !important;
   font-weight: 700 !important;
-  line-height: 1.55 !important;
-  letter-spacing: 0.06em !important;
+  line-height: 1.6 !important;
+  letter-spacing: 0.08em !important;
 }
-.r-shop { text-align: center; margin-bottom: 6px; }
-.r-shop h1 { margin: 0 0 4px; font-size: 16px; font-weight: 900; letter-spacing: 0.08em; }
-.r-shop p { margin: 2px 0; font-size: 11px; letter-spacing: 0.05em; }
-.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 3px 8px; margin: 6px 0; font-size: 12px; }
+.r-shop { text-align: center; margin-bottom: 7px; }
+.r-shop h1 { margin: 0 0 2px; font-size: 18px; font-weight: 900; letter-spacing: 0.1em; }
+.r-shop .r-bill { margin: 0 0 5px; font-size: 16px; font-weight: 900; letter-spacing: 0.12em; }
+.r-shop p { margin: 2px 0; font-size: 12px; letter-spacing: 0.06em; }
+.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 7px 0; font-size: 14px; }
 .r-meta span:last-child { text-align: right; }
-.r-rule { border: 0; border-top: 1px dashed #000; margin: 6px 0; }
-.r-item { margin: 0 0 6px; }
-.r-item strong { display: block; font-size: 13px; letter-spacing: 0.06em; }
-.r-row { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; }
-.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 3px 6px; font-size: 12px; }
+.r-rule { border: 0; border-top: 1px dashed #000; margin: 7px 0; }
+.r-item { margin: 0 0 7px; }
+.r-item strong { display: block; font-size: 14px; letter-spacing: 0.07em; }
+.r-row { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
+.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: 14px; }
 .r-totals > * { min-width: 0; }
 .r-totals strong { text-align: right; white-space: nowrap; }
-.r-grand-wrap { text-align: center; margin: 8px 0 4px; }
-.r-grand-label { display: block; font-size: 14px; font-weight: 900; letter-spacing: 0.08em; }
-.r-grand { display: block; font-size: 20px; font-weight: 900; letter-spacing: 0.1em; margin-top: 4px; }
-.r-thanks, .r-site { text-align: center; margin: 5px 0 0; font-size: 11px; font-weight: 700; }
+.r-grand-wrap { text-align: center; margin: 10px 0 6px; }
+.r-grand-label { display: block; font-size: 15px; font-weight: 900; letter-spacing: 0.1em; }
+.r-grand { display: block; font-size: 24px; font-weight: 900; letter-spacing: 0.12em; margin-top: 5px; }
+.r-thanks, .r-site { text-align: center; margin: 6px 0 0; font-size: 13px; font-weight: 700; }
 `.trim();
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
@@ -661,19 +666,28 @@ html, body {
 <style>${css}</style></head><body>
 <main class="receipt">
   <div class="r-shop">
-    <h1>ASFIX &amp; GEAR</h1>
-    <p>${escapeHtml(SHOP.addressLine1)}</p>
+    <h1>AS FIX &amp; GEAR</h1>
+    <p class="r-bill">BILL</p>
+    <p>Mobile Repair</p>
     <p>${escapeHtml(SHOP.addressLine2)}</p>
-    <p>Tel: ${escapeHtml(SHOP.phone)}</p>
+    <p>${escapeHtml(SHOP.phone)}</p>
   </div>
   <hr class="r-rule" />
   <div class="r-meta">
-    <span>Bill No</span><span>${escapeHtml(receiptNumber(order))}</span>
-    <span>Date</span><span>${escapeHtml(order?.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-')}</span>
-    <span>Staff</span><span>${escapeHtml(order?.created_by_staff_name || 'Counter')}</span>
-    <span>Payment</span><span>${escapeHtml(paymentLabel(order?.payment_mode))}${paymentNote ? ` (${escapeHtml(paymentNote)})` : ''}</span>
-    <span>Customer</span><span>${escapeHtml(order?.customer_name || 'Walk-in')}</span>
-    ${order?.phone ? `<span>Phone</span><span>${escapeHtml(order.phone)}</span>` : ''}
+    <span>Bill</span><span>${escapeHtml(receiptNumber(order))}</span>
+    <span>Date</span><span>${escapeHtml(order?.created_at ? (() => {
+      const d = new Date(order.created_at);
+      const dd = String(d.getDate()).padStart(2, '0');
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const yy = String(d.getFullYear()).slice(-2);
+      const hh = String(d.getHours()).padStart(2, '0');
+      const mi = String(d.getMinutes()).padStart(2, '0');
+      return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+    })() : '-')}</span>
+    <span>Staff</span><span>${escapeHtml((order?.created_by_staff_name || 'Counter').slice(0, 12))}</span>
+    <span>Pay</span><span>${escapeHtml(paymentLabel(order?.payment_mode))}${paymentNote ? ` (${escapeHtml(paymentNote)})` : ''}</span>
+    <span>Cust</span><span>${escapeHtml((order?.customer_name || 'Walk-in').slice(0, 12))}</span>
+    ${order?.phone ? `<span>Phone</span><span>${escapeHtml(String(order.phone).slice(0, 12))}</span>` : ''}
   </div>
   <hr class="r-rule" />
   ${items || '<div class="r-item">No items</div>'}
@@ -688,7 +702,7 @@ html, body {
     <strong class="r-grand">${escapeHtml(thermalAmountText(grandTotal))}</strong>
   </div>
   <hr class="r-rule" />
-  <p class="r-thanks">Thank you for shopping!</p>
+  <p class="r-thanks">Thank You</p>
   <p class="r-site">${escapeHtml(RECEIPT_SITE)}</p>
 </main>
 </body></html>`;
