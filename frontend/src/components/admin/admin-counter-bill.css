@@ -976,22 +976,43 @@
 }
 
 @media print {
-  body * {
-    visibility: hidden !important;
+  html,
+  body {
+    height: auto !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    background: #fff !important;
   }
 
-  .counter-bill-print--active,
-  .counter-bill-print--active * {
-    visibility: visible !important;
+  body.counter-receipt-printing > :not(.counter-print-root) {
+    display: none !important;
   }
 
-  .counter-bill-print--active {
-    position: absolute;
-    left: 0;
-    top: 0;
+  .counter-print-root {
+    display: block !important;
+    width: var(--thermal-receipt-width, 58mm);
+    min-height: 0 !important;
+    height: auto !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: visible !important;
+    background: #fff !important;
+  }
+
+  .counter-print-root .counter-bill-print:not(.counter-bill-print--active),
+  body.counter-receipt-printing .counter-bill-print:not(.counter-bill-print--active) {
+    display: none !important;
+  }
+
+  .counter-print-root .counter-bill-print--active {
+    display: block !important;
+    position: static !important;
     max-width: none;
     width: var(--thermal-receipt-width, 58mm);
-    min-height: auto;
+    min-height: 0;
+    height: auto;
     padding: 0;
     margin: 0;
     box-shadow: none;

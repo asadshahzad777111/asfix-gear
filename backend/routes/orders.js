@@ -327,6 +327,27 @@ router.get('/counter-sales', requireAuth, requireRole(...COUNTER_SELLERS), (req,
   res.json(orders);
 });
 
+router.get('/counter-sales/:id', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
+  const key = String(req.params.id || '').trim().toUpperCase();
+  const order = store.getOrders().find((candidate) => {
+    const orderRef = String(candidate.order_id || '').trim().toUpperCase();
+    return (
+      (candidate.source || 'online') === 'counter_sale'
+      && (String(candidate.id) === key || orderRef === key)
+    );
+  });
+
+  if (!order) return res.status(404).json({ error: 'Counter sale not found' });
+  if (
+    req.auth.user.role === 'counter'
+    && String(order.created_by_staff_id || '') !== String(req.auth.user.id)
+  ) {
+    return res.status(404).json({ error: 'Counter sale not found' });
+  }
+
+  res.json(order);
+});
+
 router.post('/:id/payment-proof', requireAuth, (req, res, next) => {
   proofUpload.single('image')(req, res, (err) => {
     if (err) {

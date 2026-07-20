@@ -17,6 +17,7 @@ const PAYMENT_OPTIONS = [
 const THERMAL_WIDTH_OPTIONS = ['58mm', '80mm'];
 const RECEIPT_SITE = 'asfixgear.com';
 const THERMAL_PAGE_STYLE_ID = 'thermal-page-size';
+const PRINT_ROOT_ID = 'counter-receipt-print-root';
 
 export function readThermalReceiptWidth() {
   if (typeof window === 'undefined') return '58mm';
@@ -360,6 +361,27 @@ function setThermalPageSize(thermalWidth) {
   };
 }
 
+function mountReceiptPrintRoot(receipt) {
+  document.getElementById(PRINT_ROOT_ID)?.remove();
+
+  const root = document.createElement('div');
+  root.id = PRINT_ROOT_ID;
+  root.className = 'counter-print-root';
+  root.setAttribute('aria-hidden', 'true');
+  root.style.setProperty(
+    '--thermal-receipt-width',
+    receipt.style.getPropertyValue('--thermal-receipt-width') || '58mm'
+  );
+  root.appendChild(receipt.cloneNode(true));
+  document.body.appendChild(root);
+  document.body.classList.add('counter-receipt-printing');
+
+  return () => {
+    root.remove();
+    document.body.classList.remove('counter-receipt-printing');
+  };
+}
+
 export async function printActiveCounterReceipt({ thermalWidth = '58mm', inFlightRef } = {}) {
   if (typeof window === 'undefined' || typeof document === 'undefined') return false;
   if (inFlightRef?.current) return false;
@@ -379,10 +401,12 @@ export async function printActiveCounterReceipt({ thermalWidth = '58mm', inFligh
     }
 
     const cleanupPageSize = setThermalPageSize(thermalWidth);
+    const cleanupPrintRoot = mountReceiptPrintRoot(receipt);
     let cleanedUp = false;
     const cleanup = () => {
       if (cleanedUp) return;
       cleanedUp = true;
+      cleanupPrintRoot();
       cleanupPageSize();
       window.removeEventListener('afterprint', cleanup);
       if (inFlightRef) inFlightRef.current = false;

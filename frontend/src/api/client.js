@@ -518,6 +518,7 @@ export const api = {
   placeOrder: (body) => request('/orders', { method: 'POST', body: JSON.stringify(body) }),
   createCounterSale: (body) =>
     request('/orders/counter-sale', { method: 'POST', body: JSON.stringify(body) }),
+  getCounterSale: (id) => request(`/orders/counter-sales/${encodeURIComponent(id)}`),
   getCounterSales: (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return request(`/orders/counter-sales${query ? `?${query}` : ''}`);

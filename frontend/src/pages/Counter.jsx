@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../api/client';
 import AdminCounterBill, {
   CounterBillReceipt,
@@ -12,6 +12,16 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import '../components/admin/admin-wp.css';
 import '../components/admin/admin-counter-bill.css';
+
+function saleHasReceiptItems(sale) {
+  return Array.isArray(sale?.items) && sale.items.length > 0;
+}
+
+function counterSaleDate(sale, fallbackDate) {
+  if (!sale?.created_at) return fallbackDate;
+  const timestamp = new Date(sale.created_at);
+  return Number.isNaN(timestamp.getTime()) ? fallbackDate : timestamp.toISOString().slice(0, 10);
+}
 
 export default function Counter() {
   const { user, logout } = useAuth();
@@ -60,9 +70,39 @@ export default function Counter() {
 
   const total = sales.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
 
-  const printCounterSale = (sale) => {
-    setPrintJob({ order: sale, requestedAt: Date.now() });
-  };
+  const resolvePrintableCounterSale = useCallback(async (sale) => {
+    if (saleHasReceiptItems(sale)) return sale;
+
+    const saleKey = String(sale?.id ?? sale?.order_id ?? '').trim();
+    if (!saleKey) return null;
+
+    try {
+      const freshSale = await api.getCounterSale(saleKey);
+      if (saleHasReceiptItems(freshSale)) return freshSale;
+    } catch {
+      // Fall back to the day list below; older deployments may not expose the detail route yet.
+    }
+
+    const saleDate = counterSaleDate(sale, today);
+    const daySales = await api.getCounterSales({ date: saleDate });
+    return daySales.find((order) =>
+      String(order.id) === saleKey || String(order.order_id || '').trim() === saleKey
+    ) || null;
+  }, [today]);
+
+  const printCounterSale = useCallback(async (sale) => {
+    let order = null;
+    try {
+      order = await resolvePrintableCounterSale(sale);
+    } catch {
+      order = null;
+    }
+    if (!saleHasReceiptItems(order)) {
+      window.alert?.('Receipt details are still loading. Refresh sales and try Print Receipt again.');
+      return;
+    }
+    setPrintJob({ order, requestedAt: Date.now() });
+  }, [resolvePrintableCounterSale]);
 
   const shareCounterSale = async (sale) => {
     try {
