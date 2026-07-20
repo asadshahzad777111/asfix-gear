@@ -178,14 +178,15 @@ function amountText(amount) {
   return `Rs. ${Number(amount || 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })}`;
 }
 
-/** Compact amount for 58mm thermal — no commas/extra spaces so TOTAL stays on paper. */
+/** Compact amount for 58mm thermal — short, but with a space after Rs for clarity. */
 function thermalAmountText(amount) {
-  return `Rs.${Math.round(Number(amount || 0))}`;
+  return `Rs. ${Math.round(Number(amount || 0))}`;
 }
 
 function buildThermalReceiptText(order) {
   if (!order) return '';
-  return `${buildReceiptLines(order, 32).map((line) => line.value).join('\n')}\n\n`;
+  /* Fewer chars/line → larger glyphs + letter-spacing on PNG */
+  return `${buildReceiptLines(order, 28).map((line) => line.value).join('\n')}\n\n`;
 }
 
 /** Mate Technologies "Bluetooth Thermal Printer" (Thermer) — package mate.bluetoothprint */
@@ -248,8 +249,10 @@ function approximatePdfTextWidth(value, size) {
   return String(value ?? '').length * size * 0.56;
 }
 
-/** Shared receipt lines for PDF / PNG / Mate thermal — 32 chars fills BT800S 58mm. */
-function buildReceiptLines(order, maxChars = 32) {
+/** Shared receipt lines for PDF / PNG / Mate thermal.
+ * 28 chars on 58mm leaves room for larger glyphs + letter-spacing (words don't merge).
+ */
+function buildReceiptLines(order, maxChars = 28) {
   const { subtotal, discount, grandTotal } = receiptTotals(order);
   const rows = order?.items || [];
   const lines = [];
@@ -301,7 +304,7 @@ function buildReceiptLines(order, maxChars = 32) {
       let left = `${qty} x ${thermalAmountText(unit)}`;
       let right = thermalAmountText(unit * qty);
       if (left.length + 1 + right.length > maxChars) {
-        left = `${qty}x${Math.round(unit)}`;
+        left = `${qty} x ${Math.round(unit)}`;
         right = String(Math.round(unit * qty));
       }
       if (left.length + 1 + right.length > maxChars) {
@@ -327,42 +330,62 @@ function buildReceiptLines(order, maxChars = 32) {
 
 /**
  * High-DPI receipt PNG for Mate Bluetooth Thermal Printer / BT800S.
- * Renders at 2× (768px for 58mm) with bold stroked text so thin thermal heads stay readable.
+ * Larger bold glyphs + per-character tracking so letters don't melt together on thermal.
  */
 export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
   const baseWidth = pageWidth === '80mm' ? 576 : 384;
-  const scale = 2;
+  const scale = 3;
   const widthPx = baseWidth * scale;
-  const maxChars = pageWidth === '80mm' ? 42 : 32;
-  const padX = 10 * scale;
-  const padY = 8 * scale;
+  const maxChars = pageWidth === '80mm' ? 36 : 28;
+  const padX = 14 * scale;
+  const padY = 10 * scale;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas unavailable');
 
   const usable = widthPx - padX * 2;
-  let fontSize = (pageWidth === '80mm' ? 30 : 26) * scale;
-  const minFont = 14 * scale;
-  const setFont = (size, weight = 'normal') => {
-    const bold = weight === 'bold' || weight === '900';
-    ctx.font = `${bold ? 'bold ' : ''}${size}px "Courier New", Courier, monospace`;
+  /* Tracking needs room — start large, shrink only if a line won't fit */
+  let fontSize = (pageWidth === '80mm' ? 22 : 20) * scale;
+  const minFont = 13 * scale;
+  const fontStack = '"Arial Black", "Arial Bold", Arial, Helvetica, sans-serif';
+
+  const setFont = (size) => {
+    ctx.font = `bold ${size}px ${fontStack}`;
   };
+
+  /** Extra gap between letters — stops words merging on faint thermal heads. */
+  const letterGapFor = (size) => Math.max(2, Math.round(size * 0.1));
+
+  const measureSpaced = (text, size, letterGap) => {
+    setFont(size);
+    const chars = Array.from(String(text ?? ''));
+    if (!chars.length) return 0;
+    let width = 0;
+    chars.forEach((ch, index) => {
+      width += ctx.measureText(ch).width;
+      if (index < chars.length - 1) width += letterGap;
+    });
+    return width;
+  };
+
   const lineSize = (line, base) => {
-    if (line.title) return base + 4 * scale;
-    if (line.small) return Math.max(minFont, base - 2 * scale);
+    if (line.title) return base + 5 * scale;
+    if (line.small) return Math.max(minFont, base - 3 * scale);
     return base;
   };
+
   const measureLineWidth = (line, base) => {
     const size = lineSize(line, base);
+    const gap = letterGapFor(size);
     if (line.columns) {
-      setFont(size, line.weight === 'bold' || line.title ? 'bold' : 'normal');
-      const gap = 8 * scale;
-      return ctx.measureText(line.columns.left).width + gap + ctx.measureText(line.columns.right).width;
+      const colGap = 12 * scale;
+      return measureSpaced(line.columns.left, size, gap)
+        + colGap
+        + measureSpaced(line.columns.right, size, gap);
     }
-    setFont(size, line.weight === 'bold' || line.title ? 'bold' : line.weight);
-    return ctx.measureText(line.value).width;
+    return measureSpaced(line.value, size, gap);
   };
 
   while (fontSize > minFont) {
@@ -371,8 +394,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     fontSize -= scale;
   }
 
-  const lineH = Math.ceil(fontSize * 1.35);
-  const heightPx = padY * 2 + lines.length * lineH + 8 * scale;
+  const lineH = Math.ceil(fontSize * 1.62);
+  const heightPx = padY * 2 + lines.length * lineH + 12 * scale;
   canvas.width = widthPx;
   canvas.height = heightPx;
 
@@ -381,50 +404,65 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   ctx.fillStyle = '#000000';
   ctx.strokeStyle = '#000000';
   ctx.textBaseline = 'top';
+  ctx.textAlign = 'left';
   ctx.imageSmoothingEnabled = false;
 
-  const drawThickText = (text, x, y, size, weight) => {
-    setFont(size, weight);
-    /* Stroke + fill = thicker (“mota”) glyphs on faint thermal paper */
-    ctx.lineWidth = Math.max(1, Math.round(scale * 0.9));
+  /**
+   * Draw text with letter-spacing + heavy stroke so glyphs stay separate and thick.
+   * `anchorX` is left / center / right of the whole spaced string.
+   */
+  const drawSpacedText = (text, anchorX, y, size, align = 'left') => {
+    setFont(size);
+    const letterGap = letterGapFor(size);
+    const chars = Array.from(String(text ?? ''));
+    const widths = chars.map((ch) => ctx.measureText(ch).width);
+    const totalW = widths.reduce((sum, w, i) => sum + w + (i < widths.length - 1 ? letterGap : 0), 0);
+
+    let x = anchorX;
+    if (align === 'center') x = anchorX - totalW / 2;
+    if (align === 'right') x = anchorX - totalW;
+
+    if (x < padX) x = padX;
+    if (x + totalW > widthPx - padX) x = Math.max(padX, widthPx - padX - totalW);
+
+    ctx.lineWidth = Math.max(2, Math.round(scale * 1.15));
     ctx.lineJoin = 'round';
-    ctx.strokeText(text, x, y);
-    ctx.fillText(text, x, y);
+    ctx.miterLimit = 2;
+
+    let cursor = x;
+    chars.forEach((ch, index) => {
+      ctx.strokeText(ch, cursor, y);
+      ctx.fillText(ch, cursor, y);
+      cursor += widths[index] + letterGap;
+    });
+    return totalW;
   };
 
   let y = padY;
   lines.forEach((line) => {
     const size = lineSize(line, fontSize);
-    const weight = line.weight === 'bold' || line.title ? 'bold' : 'normal';
 
     if (line.columns) {
       let rightSize = size;
-      setFont(size, weight);
-      const leftW = ctx.measureText(line.columns.left).width;
-      const gap = 8 * scale;
-      setFont(rightSize, weight);
-      let rightW = ctx.measureText(line.columns.right).width;
-      while (leftW + gap + rightW > usable && rightSize > minFont) {
+      const colGap = 12 * scale;
+      const leftW = measureSpaced(line.columns.left, size, letterGapFor(size));
+      let rightW = measureSpaced(line.columns.right, rightSize, letterGapFor(rightSize));
+      while (leftW + colGap + rightW > usable && rightSize > minFont) {
         rightSize -= scale;
-        setFont(rightSize, weight);
-        rightW = ctx.measureText(line.columns.right).width;
+        rightW = measureSpaced(line.columns.right, rightSize, letterGapFor(rightSize));
       }
-      /* Left label + right-aligned amount — amount never crosses padX edge */
-      drawThickText(line.columns.left, padX, y, size, weight);
-      ctx.textAlign = 'right';
-      drawThickText(line.columns.right, widthPx - padX, y, rightSize, weight);
-      ctx.textAlign = 'left';
+      drawSpacedText(line.columns.left, padX, y, size, 'left');
+      drawSpacedText(line.columns.right, widthPx - padX, y, rightSize, 'right');
     } else {
-      setFont(size, weight);
-      const textW = ctx.measureText(line.value).width;
-      let x = padX;
-      if (line.align === 'center') x = Math.max(padX, (widthPx - textW) / 2);
-      if (line.align === 'right') x = Math.max(padX, widthPx - padX - textW);
-      /* Clamp so nothing paints past the right safe margin */
-      if (x + textW > widthPx - padX) x = Math.max(padX, widthPx - padX - textW);
-      drawThickText(line.value, x, y, size, weight);
+      const align = line.align === 'center' ? 'center' : line.align === 'right' ? 'right' : 'left';
+      const anchor = align === 'center'
+        ? widthPx / 2
+        : align === 'right'
+          ? widthPx - padX
+          : padX;
+      drawSpacedText(line.value, anchor, y, size, align);
     }
-    y += line.title ? lineH + 2 * scale : lineH;
+    y += line.title ? lineH + 4 * scale : lineH;
   });
 
   return new Promise((resolve, reject) => {
@@ -444,9 +482,9 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const marginX = pdfPointsFromMillimeters(0.8);
   const marginTop = pdfPointsFromMillimeters(1.2);
   const marginBottom = pdfPointsFromMillimeters(1.2);
-  const maxChars = pageWidth === '80mm' ? 42 : 32;
-  const bodySize = pageWidth === '80mm' ? 9.5 : 8.5;
-  const bodyLeading = pageWidth === '80mm' ? 11.5 : 10.5;
+  const maxChars = pageWidth === '80mm' ? 36 : 28;
+  const bodySize = pageWidth === '80mm' ? 10 : 9;
+  const bodyLeading = pageWidth === '80mm' ? 13 : 12;
   const receiptLines = buildReceiptLines(order, maxChars).map((line) => ({
     value: line.value,
     size: line.title ? bodySize + 3 : line.small ? bodySize - 0.5 : bodySize,
@@ -565,19 +603,21 @@ html, body {
   width: ${widthMm}mm !important;
   max-width: ${widthMm}mm !important;
   margin: 0 !important;
-  padding: 2mm 1.5mm !important;
-  font-family: "Courier New", Courier, monospace !important;
-  font-size: 11px !important;
-  line-height: 1.25 !important;
+  padding: 2.5mm 2mm !important;
+  font-family: Arial, Helvetica, sans-serif !important;
+  font-size: 12px !important;
+  font-weight: 700 !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0.04em !important;
 }
-.r-shop { text-align: center; margin-bottom: 4px; }
-.r-shop h1 { margin: 0 0 2px; font-size: 14px; font-weight: 900; font-family: Arial, sans-serif; }
-.r-shop p { margin: 1px 0; font-size: 9px; }
-.r-meta { display: grid; gap: 1px; margin: 4px 0; font-size: 10px; }
-.r-rule { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
-.r-item { margin: 0 0 4px; }
-.r-item strong { display: block; font-size: 11px; }
-.r-row { display: flex; justify-content: space-between; gap: 4px; font-size: 10px; }
+.r-shop { text-align: center; margin-bottom: 5px; }
+.r-shop h1 { margin: 0 0 3px; font-size: 15px; font-weight: 900; letter-spacing: 0.06em; }
+.r-shop p { margin: 2px 0; font-size: 10px; letter-spacing: 0.03em; }
+.r-meta { display: grid; gap: 2px; margin: 5px 0; font-size: 11px; }
+.r-rule { border: 0; border-top: 1px dashed #000; margin: 5px 0; }
+.r-item { margin: 0 0 5px; }
+.r-item strong { display: block; font-size: 12px; letter-spacing: 0.05em; }
+.r-row { display: flex; justify-content: space-between; gap: 6px; font-size: 11px; }
 .r-totals { display: grid; grid-template-columns: 1fr auto; gap: 2px 4px; font-size: 11px; }
 .r-totals > * { min-width: 0; }
 .r-totals strong { text-align: right; white-space: nowrap; }
