@@ -181,37 +181,65 @@ function amountText(amount) {
 function buildThermalReceiptText(order) {
   if (!order) return '';
   const { subtotal, discount, grandTotal } = receiptTotals(order);
-  const line = '-'.repeat(32);
+  const W = 32; /* BT800S 58mm standard char width */
+  const line = '-'.repeat(W);
+  const wrap = (text) => {
+    const words = String(text || '').split(/\s+/).filter(Boolean);
+    const out = [];
+    let cur = '';
+    words.forEach((word) => {
+      const next = cur ? `${cur} ${word}` : word;
+      if (next.length > W && cur) {
+        out.push(cur);
+        cur = word;
+      } else {
+        cur = next;
+      }
+    });
+    if (cur) out.push(cur);
+    return out.length ? out : [''];
+  };
+  const moneyRow = (label, value) => {
+    const right = amountText(value);
+    const left = String(label);
+    const gap = Math.max(1, W - left.length - right.length);
+    return `${left}${' '.repeat(gap)}${right}`;
+  };
   const itemLines = (order.items || []).flatMap((item) => {
     const qty = Number(item.qty) || 1;
     const unit = Number(item.price) || 0;
     const total = unit * qty;
-    const name = String(item.name || 'Item').slice(0, 30);
+    const qtyLine = `${qty} x ${amountText(unit)}`;
+    const totalText = amountText(total);
+    const gap = Math.max(1, W - qtyLine.length - totalText.length);
     return [
-      name,
-      `  ${qty} x ${amountText(unit)} = ${amountText(total)}`,
+      ...wrap(item.name || 'Item'),
+      `${qtyLine}${' '.repeat(gap)}${totalText}`,
     ];
   });
   return [
     'ASFIX & GEAR',
-    SHOP.addressLine1,
-    `${SHOP.addressLine2} | ${SHOP.phone}`,
+    ...wrap(SHOP.addressLine1),
+    ...wrap(`${SHOP.addressLine2} | ${SHOP.phone}`),
     line,
-    `Bill: ${receiptNumber(order)}`,
-    `Date: ${order.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`,
-    `Staff: ${order.created_by_staff_name || 'Counter staff'}`,
+    ...wrap(`Bill: ${receiptNumber(order)}`),
+    ...wrap(`Date: ${order.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`),
+    ...wrap(`Staff: ${order.created_by_staff_name || 'Counter staff'}`),
+    ...wrap(`Payment: ${paymentLabel(order.payment_mode)}`),
+    ...wrap(`Customer: ${order.customer_name || 'Walk-in Customer'}`),
     line,
     ...itemLines,
     line,
-    `Subtotal: ${amountText(subtotal)}`,
-    ...(discount ? [`Discount: ${amountText(discount)}`] : []),
-    `TOTAL: ${amountText(grandTotal)}`,
-    `Payment: ${paymentLabel(order.payment_mode)}`,
-    counterPaymentNote(order) ? `Note: ${counterPaymentNote(order)}` : '',
+    moneyRow('Subtotal', subtotal),
+    ...(discount ? [moneyRow('Discount', discount)] : []),
+    moneyRow('TOTAL', grandTotal),
+    ...(counterPaymentNote(order) ? wrap(`Note: ${counterPaymentNote(order)}`) : []),
     line,
     'Thank you for shopping!',
     RECEIPT_SITE,
-  ].filter(Boolean).join('\n');
+    '',
+    '',
+  ].join('\n');
 }
 
 function rawBtHref(order) {
@@ -260,25 +288,36 @@ function approximatePdfTextWidth(value, size) {
 export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const { subtotal, discount, grandTotal } = receiptTotals(order);
   const pageWidth = normalizeThermalWidth(thermalWidth);
-  const width = pdfPointsFromMillimeters(pageWidth === '80mm' ? 80 : 58);
-  const marginX = pdfPointsFromMillimeters(3);
-  const marginTop = pdfPointsFromMillimeters(4);
-  const marginBottom = pdfPointsFromMillimeters(4);
+  const widthMm = pageWidth === '80mm' ? 80 : 58;
+  const width = pdfPointsFromMillimeters(widthMm);
+  /* BT800S 58mm — tiny side margins so text runs edge to edge */
+  const marginX = pdfPointsFromMillimeters(1.5);
+  const marginTop = pdfPointsFromMillimeters(2);
+  const marginBottom = pdfPointsFromMillimeters(2);
   const rows = order?.items || [];
-  const maxChars = pageWidth === '80mm' ? 36 : 26;
+  const maxChars = pageWidth === '80mm' ? 42 : 32;
+  const bodySize = pageWidth === '80mm' ? 9 : 8;
+  const bodyLeading = pageWidth === '80mm' ? 11 : 10;
   const receiptLines = [];
 
   const addLine = (value = '', options = {}) => {
-    receiptLines.push({ value, size: 9.5, leading: 12, align: 'left', font: 'F1', ...options });
+    receiptLines.push({
+      value,
+      size: bodySize,
+      leading: bodyLeading,
+      align: 'left',
+      font: 'F1',
+      ...options,
+    });
   };
   const addWrapped = (value, options = {}) => {
     wrapPdfText(value, options.maxChars || maxChars).forEach((line) => addLine(line, options));
   };
-  const addRule = () => addLine('-'.repeat(maxChars), { size: 8, leading: 10, align: 'center' });
+  const addRule = () => addLine('-'.repeat(maxChars), { size: bodySize - 0.5, leading: bodyLeading - 1, align: 'center' });
 
-  addLine('ASFIX & GEAR', { size: 13, leading: 16, align: 'center', font: 'F2' });
-  addWrapped(SHOP.addressLine1, { size: 8, leading: 10, align: 'center' });
-  addWrapped(`${SHOP.addressLine2} | ${SHOP.phone}`, { size: 8, leading: 10, align: 'center' });
+  addLine('ASFIX & GEAR', { size: bodySize + 4, leading: bodyLeading + 4, align: 'center', font: 'F2' });
+  addWrapped(SHOP.addressLine1, { size: bodySize - 0.5, leading: bodyLeading - 1, align: 'center' });
+  addWrapped(`${SHOP.addressLine2} | ${SHOP.phone}`, { size: bodySize - 0.5, leading: bodyLeading - 1, align: 'center' });
   addRule();
   addLine(`Bill: ${receiptNumber(order)}`);
   addLine(`Date: ${order?.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`);
@@ -295,25 +334,26 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
       const qty = Number(item.qty) || 1;
       const unit = Number(item.price) || 0;
       addWrapped(item.name || 'Item', { font: 'F2' });
-      addLine(`${qty} x ${amountText(unit)}`, { size: 9, leading: 11 });
-      addLine(amountText(unit * qty), { font: 'F2', align: 'right', leading: 11 });
+      const qtyPrice = `${qty} x ${amountText(unit)}`;
+      const total = amountText(unit * qty);
+      const pad = Math.max(1, maxChars - qtyPrice.length - total.length);
+      addLine(`${qtyPrice}${' '.repeat(pad)}${total}`, { size: bodySize, leading: bodyLeading });
     });
   }
 
   addRule();
   addLine(`Subtotal: ${amountText(subtotal)}`);
   if (discount) addLine(`Discount: ${amountText(discount)}`);
-  addLine(`TOTAL: ${amountText(grandTotal)}`, { size: 12, leading: 15, font: 'F2' });
+  addLine(`TOTAL: ${amountText(grandTotal)}`, { size: bodySize + 2, leading: bodyLeading + 3, font: 'F2' });
   const note = counterPaymentNote(order);
-  if (note) addWrapped(`Note: ${note}`, { size: 8, leading: 10 });
+  if (note) addWrapped(`Note: ${note}`, { size: bodySize - 0.5, leading: bodyLeading - 1 });
   addRule();
   addLine('Thank you for shopping!', { align: 'center', font: 'F2' });
   addLine(RECEIPT_SITE, { align: 'center', font: 'F2' });
 
-  /* Keep height content-driven so few/many items both print full-width thermal pages */
-  const height = Math.max(
-    pdfPointsFromMillimeters(70),
-    Math.ceil(marginTop + marginBottom + receiptLines.reduce((sum, line) => sum + line.leading, 0) + 8)
+  /* Page height = content only — no tall blank PDF canvas */
+  const height = Math.ceil(
+    marginTop + marginBottom + receiptLines.reduce((sum, line) => sum + line.leading, 0) + 2
   );
   const commands = [];
 
@@ -389,127 +429,86 @@ function escapeHtml(value) {
     .replace(/"/g, '&quot;');
 }
 
-/** Full-width receipt CSS — phones force A4; fill the sheet so thermal fit-to-width is readable. */
-function phoneFillReceiptPrintCss() {
-  return `
-@page { size: A4 portrait; margin: 10mm; }
-html, body {
-  margin: 0 !important;
-  padding: 0 !important;
-  width: 100% !important;
-  background: #fff !important;
-  color: #000 !important;
-}
-* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-body { font-family: Arial, Helvetica, sans-serif; }
-.receipt {
-  width: 100%;
-  max-width: 100%;
-  margin: 0 auto;
-  padding: 0;
-}
-.receipt__shop { text-align: center; margin-bottom: 10px; }
-.receipt__shop h1 {
-  margin: 0 0 6px;
-  font-size: 28px;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-}
-.receipt__shop p { margin: 2px 0; font-size: 14px; }
-.receipt__meta {
-  display: grid;
-  gap: 4px;
-  margin: 10px 0;
-  font-size: 14px;
-}
-.receipt__rule {
-  border: 0;
-  border-top: 2px dashed #111;
-  margin: 10px 0;
-}
-.receipt__item { margin: 0 0 10px; font-size: 15px; }
-.receipt__item strong { display: block; font-size: 16px; margin-bottom: 2px; }
-.receipt__item-row {
-  display: flex;
-  justify-content: space-between;
-  gap: 12px;
-  font-size: 15px;
-}
-.receipt__totals {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 6px 16px;
-  font-size: 16px;
-  margin-top: 4px;
-}
-.receipt__grand {
-  font-size: 22px;
-  font-weight: 900;
-}
-.receipt__thanks, .receipt__site {
-  text-align: center;
-  margin: 8px 0 0;
-  font-size: 15px;
-  font-weight: 700;
-}
-`.trim();
+function isAndroidDevice() {
+  return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
 }
 
-function buildPhoneFillReceiptHtml(order) {
+/** True 58/80mm receipt document — NEVER A4 (A4→thermal scales to a tiny center strip). */
+function buildThermalReceiptHtml(order, thermalWidth = '58mm') {
+  const widthMm = thermalWidth === '80mm' ? 80 : 58;
   const { subtotal, discount, grandTotal } = receiptTotals(order);
   const paymentNote = counterPaymentNote(order);
   const items = (order?.items || []).map((item) => {
     const qty = Number(item.qty) || 1;
     const unit = Number(item.price) || 0;
-    return `<div class="receipt__item">
+    return `<div class="r-item">
       <strong>${escapeHtml(item.name || 'Item')}</strong>
-      <div class="receipt__item-row">
-        <span>${qty} x ${escapeHtml(amountText(unit))}</span>
-        <b>${escapeHtml(amountText(unit * qty))}</b>
-      </div>
+      <div class="r-row"><span>${qty} x ${escapeHtml(amountText(unit))}</span><b>${escapeHtml(amountText(unit * qty))}</b></div>
     </div>`;
   }).join('');
 
+  const css = `
+@page { size: ${widthMm}mm auto; margin: 0; }
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: ${widthMm}mm !important;
+  max-width: ${widthMm}mm !important;
+  background: #fff !important;
+  color: #000 !important;
+}
+* { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+.receipt {
+  width: ${widthMm}mm !important;
+  max-width: ${widthMm}mm !important;
+  margin: 0 !important;
+  padding: 2mm 1.5mm !important;
+  font-family: "Courier New", Courier, monospace !important;
+  font-size: 11px !important;
+  line-height: 1.25 !important;
+}
+.r-shop { text-align: center; margin-bottom: 4px; }
+.r-shop h1 { margin: 0 0 2px; font-size: 14px; font-weight: 900; font-family: Arial, sans-serif; }
+.r-shop p { margin: 1px 0; font-size: 9px; }
+.r-meta { display: grid; gap: 1px; margin: 4px 0; font-size: 10px; }
+.r-rule { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
+.r-item { margin: 0 0 4px; }
+.r-item strong { display: block; font-size: 11px; }
+.r-row { display: flex; justify-content: space-between; gap: 4px; font-size: 10px; }
+.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 2px 6px; font-size: 11px; }
+.r-grand { font-size: 13px; font-weight: 900; }
+.r-thanks, .r-site { text-align: center; margin: 4px 0 0; font-size: 10px; font-weight: 700; }
+`.trim();
+
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>AsFix Receipt ${escapeHtml(receiptNumber(order))}</title>
-<style>${phoneFillReceiptPrintCss()}</style>
-</head><body>
+<meta name="viewport" content="width=${widthMm}, initial-scale=1" />
+<title>AsFix ${escapeHtml(receiptNumber(order))}</title>
+<style>${css}</style></head><body>
 <main class="receipt">
-  <div class="receipt__shop">
+  <div class="r-shop">
     <h1>ASFIX &amp; GEAR</h1>
     <p>${escapeHtml(SHOP.addressLine1)}</p>
     <p>${escapeHtml(SHOP.addressLine2)} | ${escapeHtml(SHOP.phone)}</p>
   </div>
-  <div class="receipt__meta">
-    <div>Bill #: ${escapeHtml(receiptNumber(order))}</div>
+  <div class="r-meta">
+    <div>Bill: ${escapeHtml(receiptNumber(order))}</div>
     <div>Date: ${escapeHtml(order?.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-')}</div>
     <div>Staff: ${escapeHtml(order?.created_by_staff_name || 'Counter staff')}</div>
     <div>Payment: ${escapeHtml(paymentLabel(order?.payment_mode))}${paymentNote ? ` (${escapeHtml(paymentNote)})` : ''}</div>
     <div>Customer: ${escapeHtml(order?.customer_name || 'Walk-in Customer')}</div>
     ${order?.phone ? `<div>Phone: ${escapeHtml(order.phone)}</div>` : ''}
   </div>
-  <hr class="receipt__rule" />
-  ${items || '<div class="receipt__item">No items</div>'}
-  <hr class="receipt__rule" />
-  <div class="receipt__totals">
+  <hr class="r-rule" />
+  ${items || '<div class="r-item">No items</div>'}
+  <hr class="r-rule" />
+  <div class="r-totals">
     <span>Subtotal</span><strong>${escapeHtml(amountText(subtotal))}</strong>
     ${discount ? `<span>Discount</span><strong>${escapeHtml(amountText(discount))}</strong>` : ''}
-    <span class="receipt__grand">TOTAL</span><strong class="receipt__grand">${escapeHtml(amountText(grandTotal))}</strong>
+    <span class="r-grand">TOTAL</span><strong class="r-grand">${escapeHtml(amountText(grandTotal))}</strong>
   </div>
-  <p class="receipt__thanks">Thank you for shopping!</p>
-  <p class="receipt__site">${escapeHtml(RECEIPT_SITE)}</p>
+  <p class="r-thanks">Thank you for shopping!</p>
+  <p class="r-site">${escapeHtml(RECEIPT_SITE)}</p>
 </main>
-<script>
-window.addEventListener('load', function () {
-  setTimeout(function () {
-    try { window.focus(); window.print(); } catch (e) {}
-  }, 250);
-});
-window.addEventListener('afterprint', function () {
-  setTimeout(function () { window.close(); }, 300);
-});
-</script>
 </body></html>`;
 }
 
@@ -520,32 +519,56 @@ function finishPrintJob(inFlightRef) {
   if (inFlightRef) inFlightRef.current = false;
 }
 
-/**
- * Open a real window with ONLY the receipt.
- * iOS Safari's hidden-iframe print() prints the parent POS page (many tiny A4 pages) — never use that.
- */
-function printReceiptInNewWindow(html, inFlightRef) {
-  const win = window.open('', '_blank', 'noopener,noreferrer,width=480,height=860');
+/** Same-origin iframe print — no popup, no PDF download. */
+function printViaIframe(html, inFlightRef) {
+  document.getElementById(PRINT_ROOT_ID)?.remove();
+  const iframe = document.createElement('iframe');
+  iframe.id = PRINT_ROOT_ID;
+  iframe.title = 'AsFix 58mm receipt';
+  iframe.setAttribute('aria-hidden', 'true');
+  iframe.style.cssText = 'position:fixed;width:0;height:0;border:0;left:-9999px;top:0;opacity:0;';
+  document.body.appendChild(iframe);
+
+  const doc = iframe.contentDocument;
+  if (!doc) {
+    finishPrintJob(inFlightRef);
+    return false;
+  }
+  doc.open();
+  doc.write(html);
+  doc.close();
+
+  const win = iframe.contentWindow;
   if (!win) {
     finishPrintJob(inFlightRef);
     return false;
   }
 
-  win.document.open();
-  win.document.write(html);
-  win.document.close();
-
-  const cleanup = () => finishPrintJob(inFlightRef);
+  let done = false;
+  const cleanup = () => {
+    if (done) return;
+    done = true;
+    try { iframe.remove(); } catch { /* ignore */ }
+    finishPrintJob(inFlightRef);
+  };
   win.addEventListener('afterprint', cleanup, { once: true });
-  /* Popup blockers / iOS: release lock even if afterprint never fires */
-  window.setTimeout(cleanup, 120_000);
+  window.setTimeout(cleanup, 90_000);
+
+  window.setTimeout(() => {
+    try {
+      win.focus();
+      win.print();
+    } catch {
+      cleanup();
+    }
+  }, 200);
   return true;
 }
 
 /**
- * Print only the receipt (never the POS UI).
- * Mobile (iPhone/Android): full-width A4 fill layout in a new window — fixes tiny 6-page POS captures.
- * Desktop: same isolated window path for consistency.
+ * Print for BT800S 58mm thermal:
+ * - Android → RawBT text (full paper width) — never A4, never auto PDF download
+ * - Other → isolated 58mm HTML iframe print
  */
 export async function printActiveCounterReceipt({
   thermalWidth = '58mm',
@@ -557,31 +580,42 @@ export async function printActiveCounterReceipt({
 
   if (inFlightRef) inFlightRef.current = true;
   try {
-    await waitForNextPaint();
-
     if (!order) {
       finishPrintJob(inFlightRef);
       return false;
     }
 
-    const html = buildPhoneFillReceiptHtml(order);
-    const ok = printReceiptInNewWindow(html, inFlightRef);
-    if (!ok) {
-      /* Popup blocked — still give staff a thermal PDF (true 58/80mm). */
-      try {
-        downloadCounterInvoicePdf(order, thermalWidth || readThermalReceiptWidth());
-        finishPrintJob(inFlightRef);
-        return true;
-      } catch {
-        finishPrintJob(inFlightRef);
-        return false;
-      }
+    /* BT800S / Android Bluetooth — RawBT prints full 58mm width as text */
+    if (isAndroidDevice()) {
+      const anchor = document.createElement('a');
+      anchor.href = rawBtHref(order);
+      anchor.style.display = 'none';
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      finishPrintJob(inFlightRef);
+      return true;
     }
-    return ok;
+
+    const width = normalizeThermalWidth(thermalWidth);
+    const html = buildThermalReceiptHtml(order, width);
+    return printViaIframe(html, inFlightRef);
   } catch {
     finishPrintJob(inFlightRef);
     return false;
   }
+}
+
+/** Open RawBT from a click handler (Android BT800S). */
+export function openRawBtReceipt(order) {
+  if (!order || typeof window === 'undefined') return false;
+  const anchor = document.createElement('a');
+  anchor.href = rawBtHref(order);
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  return true;
 }
 
 export function downloadCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
