@@ -381,6 +381,7 @@
   body.nav-open .chat-sideboard,
   body.nav-open .chat-assistant-panel,
   body.nav-open .floating-repair-btn,
+  body.cart-open .floating-repair-btn,
   body.nav-open .staff-access,
   body.nav-open .fab-add,
   body.nav-open .mobile-bottom-nav {

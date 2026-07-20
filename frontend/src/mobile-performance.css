@@ -218,7 +218,7 @@
     top: auto !important;
     left: auto !important;
     right: var(--float-dock-right, 1rem) !important;
-    bottom: var(--float-stack-0, max(1.25rem, calc(env(safe-area-inset-bottom, 0px) + 1rem))) !important;
+    bottom: var(--float-stack-0, calc(var(--bottom-nav-total, 4.5rem) + 0.85rem)) !important;
     display: grid !important;
     place-items: center !important;
     flex: 0 0 auto !important;
@@ -232,6 +232,7 @@
     border-radius: 50% !important;
     line-height: 1 !important;
     overflow: hidden !important;
+    z-index: 1162 !important;
     transform: none !important;
   }
 

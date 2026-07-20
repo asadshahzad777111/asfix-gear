@@ -28,6 +28,16 @@
   );
 }
 
+@media (max-width: 1024px) {
+  :root {
+    --float-dock-bottom: calc(var(--bottom-nav-total, 4.5rem) + 0.85rem);
+    --float-dock-row: calc(
+      var(--bottom-nav-total, 4.5rem) + (var(--float-dock-size) * 2) + var(--float-dock-gap) + 1.6rem
+    );
+    --float-bottom: var(--float-dock-row);
+  }
+}
+
 /* Floating WhatsApp removed from app — hide if ever mounted elsewhere */
 .whatsapp-float {
   display: none !important;
@@ -182,7 +192,7 @@
     height: var(--float-dock-size);
     padding: 0;
     border-radius: 50%;
-    z-index: 199;
+    z-index: 1162;
     transform: translateZ(0);
     border-color: color-mix(in srgb, var(--hdr-accent, #ff6a2b) 45%, var(--hdr-border, rgba(255, 255, 255, 0.08)));
     background: color-mix(in srgb, var(--hdr-accent, #ff6a2b) 12%, var(--hdr-bg-elevated, #16161c));
