@@ -31,7 +31,7 @@ export default function SectionScrollStrap() {
       const slimOn = !!(slim && slim.classList.contains('is-visible'));
       setUnderSlim(slimOn);
 
-      const header = document.querySelector('.site-header');
+      const header = document.querySelector('header.navbar.navbar--dx');
       const headerH = slimOn
         ? 0
         : Math.round(header?.getBoundingClientRect().height || 72);
@@ -44,7 +44,7 @@ export default function SectionScrollStrap() {
     measure();
     const mo = new MutationObserver(measure);
     const slim = document.querySelector('.dx-slimline');
-    const header = document.querySelector('.site-header');
+    const header = document.querySelector('header.navbar.navbar--dx');
     if (slim) mo.observe(slim, { attributes: true, attributeFilter: ['class'] });
     if (header) mo.observe(header, { attributes: true, attributeFilter: ['class'] });
     window.addEventListener('resize', measure, { passive: true });
@@ -66,7 +66,7 @@ export default function SectionScrollStrap() {
 
       const slim = document.querySelector('.dx-slimline');
       const slimOn = !!(slim && slim.classList.contains('is-visible'));
-      const header = document.querySelector('.site-header');
+      const header = document.querySelector('header.navbar.navbar--dx');
       const stickyBottom = slimOn
         ? (slim?.getBoundingClientRect().bottom || 36)
         : (header?.getBoundingClientRect().bottom || 72);

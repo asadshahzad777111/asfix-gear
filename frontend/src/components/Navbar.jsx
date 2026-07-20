@@ -221,7 +221,7 @@ export default function Navbar() {
 
   return (
     <>
-      {/* Slim brand rail — stays when full header tucks away on scroll down */}
+      {/* Slim brand rail — logo + ember line drop from top as one unit when header tucks */}
       <div
         className={`dx-slimline${showSlimline ? ' is-visible' : ''}`}
         aria-hidden={!showSlimline}
