@@ -205,99 +205,99 @@ function wrapPdfText(text, maxChars) {
   return lines.length ? lines : [''];
 }
 
-export function createCounterInvoicePdfBlob(order) {
+function pdfPointsFromMillimeters(mm) {
+  return (Number(mm) || 58) * 72 / 25.4;
+}
+
+function normalizeThermalWidth(thermalWidth) {
+  return thermalWidth === '80mm' ? '80mm' : '58mm';
+}
+
+function approximatePdfTextWidth(value, size) {
+  return String(value ?? '').length * size * 0.56;
+}
+
+export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const { subtotal, discount, grandTotal } = receiptTotals(order);
-  const width = 595.28;
-  const height = 841.89;
-  const left = 42;
-  const right = width - 42;
+  const pageWidth = normalizeThermalWidth(thermalWidth);
+  const width = pdfPointsFromMillimeters(pageWidth === '80mm' ? 80 : 58);
+  const marginX = pdfPointsFromMillimeters(3);
+  const marginTop = pdfPointsFromMillimeters(4);
+  const marginBottom = pdfPointsFromMillimeters(4);
   const rows = order?.items || [];
-  const commands = [];
+  const maxChars = pageWidth === '80mm' ? 36 : 26;
+  const receiptLines = [];
 
-  const color = (r, g, b) => `${r} ${g} ${b} rg`;
-  const text = (value, x, y, size = 10, font = 'F1', fill = '0.08 0.08 0.08 rg') => {
-    commands.push(`BT /${font} ${size} Tf ${fill} ${x} ${y} Td (${escapePdfText(value)}) Tj ET`);
+  const addLine = (value = '', options = {}) => {
+    receiptLines.push({ value, size: 8, leading: 10, align: 'left', font: 'F1', ...options });
   };
-  const rect = (x, y, w, h, fill) => {
-    commands.push(`${fill} ${x} ${y} ${w} ${h} re f`);
+  const addWrapped = (value, options = {}) => {
+    wrapPdfText(value, options.maxChars || maxChars).forEach((line) => addLine(line, options));
   };
-  const strokeRect = (x, y, w, h, stroke = '0.78 0.62 0.15 RG') => {
-    commands.push(`${stroke} ${x} ${y} ${w} ${h} re S`);
-  };
-  const line = (x1, y1, x2, y2, stroke = '0.82 0.82 0.82 RG') => {
-    commands.push(`${stroke} ${x1} ${y1} m ${x2} ${y2} l S`);
-  };
+  const addRule = () => addLine('-'.repeat(maxChars), { size: 7, leading: 8, align: 'center' });
 
-  rect(0, 764, width, 78, color(0.04, 0.04, 0.04));
-  rect(0, 758, width, 6, color(0.79, 0.64, 0.15));
-  text('ASFIX & GEAR', left, 807, 22, 'F2', color(1, 0.94, 0.72));
-  text(SHOP.tagline || 'Mobile Repair & Accessories', left, 786, 10, 'F1', color(1, 1, 1));
-  text(SHOP.fullAddress, 310, 808, 9, 'F1', color(1, 1, 1));
-  text(`Phone: ${SHOP.phone}`, 310, 790, 9, 'F1', color(1, 1, 1));
-  text(RECEIPT_SITE, 310, 772, 9, 'F1', color(1, 0.94, 0.72));
+  addLine('ASFIX & GEAR', { size: 12, leading: 14, align: 'center', font: 'F2' });
+  addWrapped(SHOP.addressLine1, { size: 7, leading: 8, align: 'center' });
+  addWrapped(`${SHOP.addressLine2} | ${SHOP.phone}`, { size: 7, leading: 8, align: 'center' });
+  addRule();
+  addLine(`Bill: ${receiptNumber(order)}`);
+  addLine(`Date: ${order?.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`);
+  addLine(`Staff: ${order?.created_by_staff_name || 'Counter staff'}`);
+  addLine(`Payment: ${paymentLabel(order?.payment_mode)}`);
+  addLine(`Customer: ${order?.customer_name || 'Walk-in Customer'}`);
+  if (order?.phone) addLine(`Phone: ${order.phone}`);
+  addRule();
 
-  text('INVOICE / RECEIPT', left, 724, 18, 'F2', color(0.05, 0.05, 0.05));
-  text(`Receipt #: ${receiptNumber(order)}`, left, 700, 10);
-  text(`Date: ${order?.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`, left, 684, 10);
-  text(`Customer: ${order?.customer_name || 'Walk-in Customer'}`, 325, 700, 10);
-  text(`Phone: ${order?.phone || '-'}`, 325, 684, 10);
-  text(`Staff: ${order?.created_by_staff_name || 'Counter staff'}`, 325, 668, 10);
-
-  const tableTop = 632;
-  const rowHeight = 28;
-  rect(left, tableTop, right - left, 28, color(0.04, 0.04, 0.04));
-  text('Item', left + 10, tableTop + 10, 10, 'F2', color(1, 0.94, 0.72));
-  text('Qty', 330, tableTop + 10, 10, 'F2', color(1, 0.94, 0.72));
-  text('Rate', 385, tableTop + 10, 10, 'F2', color(1, 0.94, 0.72));
-  text('Amount', 470, tableTop + 10, 10, 'F2', color(1, 0.94, 0.72));
-  strokeRect(left, tableTop - Math.max(1, rows.length) * rowHeight, right - left, 28 + Math.max(1, rows.length) * rowHeight);
-
-  let y = tableTop - rowHeight;
   if (!rows.length) {
-    text('No items', left + 10, y + 10, 10);
-    line(left, y, right, y);
+    addLine('No items');
   } else {
     rows.forEach((item) => {
       const qty = Number(item.qty) || 1;
       const unit = Number(item.price) || 0;
-      const itemLines = wrapPdfText(item.name || 'Item', 36).slice(0, 2);
-      text(itemLines[0], left + 10, y + 12, 9);
-      if (itemLines[1]) text(itemLines[1], left + 10, y + 2, 8, 'F1', color(0.35, 0.35, 0.35));
-      text(String(qty), 336, y + 10, 10);
-      text(amountText(unit), 385, y + 10, 10);
-      text(amountText(unit * qty), 470, y + 10, 10, 'F2');
-      line(left, y, right, y);
-      y -= rowHeight;
+      addWrapped(item.name || 'Item', { font: 'F2' });
+      addLine(`${qty} x ${amountText(unit)}`, { size: 7.5, leading: 9 });
+      addLine(amountText(unit * qty), { font: 'F2', align: 'right', leading: 9 });
     });
   }
 
-  const totalsY = Math.max(150, y - 36);
-  text('Subtotal', 360, totalsY + 54, 11);
-  text(amountText(subtotal), 470, totalsY + 54, 11, 'F2');
-  if (discount) {
-    text('Discount', 360, totalsY + 34, 11);
-    text(amountText(discount), 470, totalsY + 34, 11, 'F2');
-  }
-  rect(350, totalsY - 2, 188, 30, color(0.98, 0.92, 0.73));
-  text('Grand Total', 360, totalsY + 8, 13, 'F2', color(0.04, 0.04, 0.04));
-  text(amountText(grandTotal), 470, totalsY + 8, 13, 'F2', color(0.04, 0.04, 0.04));
-
-  text(`Payment: ${paymentLabel(order?.payment_mode)}`, left, totalsY + 26, 11, 'F2');
+  addRule();
+  addLine(`Subtotal: ${amountText(subtotal)}`);
+  if (discount) addLine(`Discount: ${amountText(discount)}`);
+  addLine(`TOTAL: ${amountText(grandTotal)}`, { size: 10, leading: 12, font: 'F2' });
   const note = counterPaymentNote(order);
-  if (note) text(`Payment note: ${note}`, left, totalsY + 8, 9);
+  if (note) addWrapped(`Note: ${note}`, { size: 7, leading: 8 });
+  addRule();
+  addLine('Thank you for shopping!', { align: 'center', font: 'F2' });
+  addLine(RECEIPT_SITE, { align: 'center', font: 'F2' });
 
-  rect(0, 0, width, 70, color(0.04, 0.04, 0.04));
-  text('Thank you for shopping at AsFix & Gear.', left, 42, 12, 'F2', color(1, 0.94, 0.72));
-  text('Repairs, accessories, and mobile care with honest service.', left, 24, 9, 'F1', color(1, 1, 1));
-  text(`${SHOP.phone} | ${RECEIPT_SITE}`, 365, 33, 9, 'F1', color(1, 1, 1));
+  const height = Math.ceil(
+    marginTop + marginBottom + receiptLines.reduce((sum, line) => sum + line.leading, 0)
+  );
+  const commands = [];
+
+  const text = (value, x, y, size = 10, font = 'F1', fill = '0.08 0.08 0.08 rg') => {
+    commands.push(`BT /${font} ${size} Tf ${fill} ${x} ${y} Td (${escapePdfText(value)}) Tj ET`);
+  };
+
+  let y = height - marginTop;
+  receiptLines.forEach((line) => {
+    y -= line.leading;
+    const lineWidth = approximatePdfTextWidth(line.value, line.size);
+    const x = line.align === 'center'
+      ? Math.max(marginX, (width - lineWidth) / 2)
+      : line.align === 'right'
+        ? Math.max(marginX, width - marginX - lineWidth)
+        : marginX;
+    text(line.value, x.toFixed(2), y.toFixed(2), line.size, line.font, '0 0 0 rg');
+  });
 
   const stream = commands.join('\n');
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
     `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`,
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
-    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>',
     `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
   ];
   let pdf = '%PDF-1.4\n';
@@ -422,14 +422,14 @@ export async function printActiveCounterReceipt({ thermalWidth = '58mm', inFligh
   }
 }
 
-export function downloadCounterInvoicePdf(order) {
+export function downloadCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order) return;
-  downloadBlob(createCounterInvoicePdfBlob(order), receiptFilename(order));
+  downloadBlob(createCounterInvoicePdfBlob(order, thermalWidth), receiptFilename(order));
 }
 
-export async function shareCounterInvoicePdf(order) {
+export async function shareCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order) return false;
-  const blob = createCounterInvoicePdfBlob(order);
+  const blob = createCounterInvoicePdfBlob(order, thermalWidth);
   const file = new File([blob], receiptFilename(order), { type: 'application/pdf' });
   if (navigator.canShare?.({ files: [file] })) {
     await navigator.share({
@@ -721,13 +721,13 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
 
   const downloadInvoice = (order = receiptOrder) => {
     if (!order) return;
-    downloadCounterInvoicePdf(order);
+    downloadCounterInvoicePdf(order, thermalWidth);
   };
 
   const shareInvoice = async (order = receiptOrder) => {
     if (!order) return;
     try {
-      const shared = await shareCounterInvoicePdf(order);
+      const shared = await shareCounterInvoicePdf(order, thermalWidth);
       if (!shared) {
         setFeedback({ type: 'success', text: t('admin.counterBillPdfDownloaded') });
       }

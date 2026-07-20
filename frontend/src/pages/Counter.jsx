@@ -106,10 +106,10 @@ export default function Counter() {
 
   const shareCounterSale = async (sale) => {
     try {
-      await shareCounterInvoicePdf(sale);
+      await shareCounterInvoicePdf(sale, thermalWidth);
     } catch (err) {
       if (err?.name !== 'AbortError') {
-        downloadCounterInvoicePdf(sale);
+        downloadCounterInvoicePdf(sale, thermalWidth);
       }
     }
   };
@@ -197,7 +197,7 @@ export default function Counter() {
                           <button
                             type="button"
                             className="wp-button wp-button--secondary counter-sales__print"
-                            onClick={() => downloadCounterInvoicePdf(sale)}
+                            onClick={() => downloadCounterInvoicePdf(sale, thermalWidth)}
                           >
                             {t('admin.counterBillDownloadPdf')}
                           </button>

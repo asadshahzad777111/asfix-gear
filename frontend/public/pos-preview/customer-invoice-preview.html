@@ -3,177 +3,142 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>AsFix & Gear Customer Invoice Preview</title>
+    <title>AsFix & Gear Thermal Receipt PDF Preview</title>
     <style>
+      :root {
+        --receipt-width: 58mm;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
       body {
         margin: 0;
         min-height: 100vh;
-        background: #171717;
-        color: #121212;
-        font-family: Arial, sans-serif;
         padding: 24px;
+        background: #171717;
+        color: #111;
+        font-family: Arial, sans-serif;
       }
 
-      .page {
-        width: min(100%, 794px);
-        min-height: 1123px;
-        margin: 0 auto;
+      .preview-shell {
+        display: grid;
+        gap: 18px;
+        justify-items: center;
+      }
+
+      .preview-note {
+        width: min(100%, 620px);
+        padding: 14px 16px;
+        border: 1px solid #c9a227;
+        border-radius: 14px;
+        background: #fffaf0;
+        color: #241d10;
+        font-size: 14px;
+        line-height: 1.45;
+      }
+
+      .receipt {
+        width: var(--receipt-width);
+        max-width: 100%;
+        padding: 4mm 3mm;
         background: #fff;
+        color: #000;
+        font-family: "Courier New", Courier, monospace;
+        font-size: 11px;
+        line-height: 1.25;
         box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
       }
 
-      .header {
-        display: flex;
-        justify-content: space-between;
-        gap: 24px;
-        padding: 30px 42px 24px;
-        background: #0b0b0d;
-        color: #fff7df;
-        border-bottom: 8px solid #c9a227;
+      .receipt--80 {
+        --receipt-width: 80mm;
       }
 
-      .brand {
-        display: flex;
-        gap: 14px;
-        align-items: center;
-      }
-
-      .brand img {
-        width: 58px;
-        height: 58px;
-        border-radius: 16px;
-        background: #fff;
+      .shop,
+      .thanks,
+      .site {
+        text-align: center;
       }
 
       h1,
-      h2,
       p {
         margin: 0;
       }
 
       h1 {
-        color: #f5d56f;
-        font-size: 30px;
+        margin-bottom: 0.15rem;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
         letter-spacing: 0.02em;
       }
 
-      .tagline {
-        margin-top: 4px;
-        color: #f7edd0;
-      }
-
-      .shop-meta {
-        display: grid;
-        gap: 5px;
-        color: #f7edd0;
-        font-size: 13px;
-        text-align: right;
-      }
-
-      .content {
-        padding: 36px 42px;
-      }
-
-      .invoice-title {
-        display: flex;
-        justify-content: space-between;
-        gap: 20px;
-        margin-bottom: 28px;
-      }
-
-      h2 {
-        font-size: 28px;
-        color: #17130a;
+      .shop p,
+      .thanks,
+      .site {
+        margin: 0.1rem 0;
+        font-size: 10px;
       }
 
       .meta {
         display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px 32px;
-        margin-bottom: 30px;
-        padding: 18px;
-        border: 1px solid #ead99e;
-        background: #fffaf0;
+        gap: 0.12rem;
+        margin: 0.35rem 0;
+        font-size: 10px;
       }
 
-      .meta span {
-        color: #6b5b27;
-        font-size: 12px;
-        text-transform: uppercase;
-        letter-spacing: 0.05em;
+      .rule {
+        border-top: 1px dashed #111;
+        margin: 0.35rem 0;
       }
 
-      .meta strong {
-        display: block;
-        margin-top: 3px;
-        color: #111;
-        font-size: 15px;
+      .items {
+        display: grid;
+        gap: 0.25rem;
       }
 
-      table {
-        width: 100%;
-        border-collapse: collapse;
-        margin-bottom: 28px;
+      .item {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.08rem 0.45rem;
       }
 
-      th {
-        background: #0b0b0d;
-        color: #f5d56f;
-        text-align: left;
-        padding: 12px;
-        font-size: 13px;
+      .item strong {
+        grid-column: 1 / -1;
+        overflow-wrap: anywhere;
       }
 
-      td {
-        border: 1px solid #e5ddc1;
-        padding: 12px;
-        font-size: 14px;
-      }
-
-      th:nth-child(n + 2),
-      td:nth-child(n + 2) {
+      .item b {
         text-align: right;
       }
 
       .totals {
         display: grid;
-        grid-template-columns: 1fr 190px;
-        gap: 8px 18px;
-        width: 330px;
-        margin-left: auto;
-        font-size: 15px;
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: 0.15rem 0.6rem;
       }
 
       .totals strong {
         text-align: right;
       }
 
-      .grand,
-      .grand-value {
-        margin-top: 8px;
-        padding: 12px;
-        background: #f5d56f;
-        color: #15100a;
-        font-size: 18px;
+      .grand-label,
+      .grand {
+        margin-top: 0.12rem;
+        padding-top: 0.18rem;
+        border-top: 1px solid #111;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
         font-weight: 900;
       }
 
-      .payment {
-        margin-top: 34px;
-        padding: 16px;
-        border-left: 5px solid #c9a227;
-        background: #fbf7eb;
+      .thanks {
+        margin-top: 0.45rem;
       }
 
-      .footer {
-        margin-top: 60px;
-        padding-top: 18px;
-        border-top: 1px solid #e5ddc1;
-        color: #5f563d;
-        display: flex;
-        justify-content: space-between;
-        gap: 16px;
-        font-size: 13px;
+      .site {
+        margin-top: 0.1rem;
+        font-weight: 900;
       }
 
       @media print {
@@ -182,99 +147,76 @@
           background: #fff;
         }
 
-        .page {
-          width: auto;
-          min-height: auto;
+        .preview-note {
+          display: none;
+        }
+
+        .receipt {
           box-shadow: none;
         }
 
-        * {
-          print-color-adjust: exact;
-          -webkit-print-color-adjust: exact;
-        }
-
         @page {
-          size: A4;
+          size: 58mm auto;
           margin: 0;
         }
       }
     </style>
   </head>
   <body>
-    <main class="page">
-      <header class="header">
-        <div class="brand">
-          <img src="/logo.png" alt="" />
-          <div>
-            <h1>ASFIX &amp; GEAR</h1>
-            <p class="tagline">Fix - Shop - Care</p>
-          </div>
-        </div>
-        <div class="shop-meta">
-          <span>AsFix &amp; Gear - Mobile Repair &amp; Accessories</span>
-          <span>Lahore, Pakistan</span>
-          <span>03039227000</span>
-          <span>asfixgear.com</span>
-        </div>
-      </header>
-      <section class="content">
-        <div class="invoice-title">
-          <h2>INVOICE / RECEIPT</h2>
-          <strong>ASF-1024</strong>
-        </div>
+    <main class="preview-shell">
+      <section class="preview-note">
+        <strong>POS PDF preview:</strong> Download PDF and Share PDF now use the same compact receipt style
+        as thermal print. Width follows the POS thermal width setting (58mm by default, 80mm when selected)
+        and height grows only to the receipt content.
+      </section>
+
+      <article class="receipt" aria-label="58mm compact receipt PDF preview">
+        <header class="shop">
+          <h1>ASFIX &amp; GEAR</h1>
+          <p>AsFix &amp; Gear - Mobile Repair &amp; Accessories</p>
+          <p>Lahore, Pakistan | 03039227000</p>
+        </header>
+
         <section class="meta">
-          <p><span>Date</span><strong>19/07/2026, 11:03 PM</strong></p>
-          <p><span>Payment</span><strong>Cash</strong></p>
-          <p><span>Customer</span><strong>Walk-in Customer</strong></p>
-          <p><span>Staff</span><strong>Counter Staff</strong></p>
+          <span>Bill: ASF-1024</span>
+          <span>Date: 19/07/2026, 11:03 PM</span>
+          <span>Staff: Counter Staff</span>
+          <span>Payment: Cash</span>
+          <span>Customer: Walk-in Customer</span>
         </section>
-        <table>
-          <thead>
-            <tr>
-              <th>Item</th>
-              <th>Qty</th>
-              <th>Rate</th>
-              <th>Amount</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td>iPhone 15 Pro Tempered Glass</td>
-              <td>2</td>
-              <td>Rs. 900</td>
-              <td>Rs. 1,800</td>
-            </tr>
-            <tr>
-              <td>Samsung USB-C Fast Cable</td>
-              <td>1</td>
-              <td>Rs. 1,200</td>
-              <td>Rs. 1,200</td>
-            </tr>
-            <tr>
-              <td>Mobile Repair Service Advance</td>
-              <td>1</td>
-              <td>Rs. 2,000</td>
-              <td>Rs. 2,000</td>
-            </tr>
-          </tbody>
-        </table>
+
+        <div class="rule"></div>
+
+        <section class="items">
+          <div class="item">
+            <strong>iPhone 15 Pro Tempered Glass</strong>
+            <span>2 x Rs. 900</span>
+            <b>Rs. 1,800</b>
+          </div>
+          <div class="item">
+            <strong>Samsung USB-C Fast Cable</strong>
+            <span>1 x Rs. 1,200</span>
+            <b>Rs. 1,200</b>
+          </div>
+          <div class="item">
+            <strong>Mobile Repair Service Advance</strong>
+            <span>1 x Rs. 2,000</span>
+            <b>Rs. 2,000</b>
+          </div>
+        </section>
+
+        <div class="rule"></div>
+
         <section class="totals">
           <span>Subtotal</span>
           <strong>Rs. 5,000</strong>
-          <span>Discount</span>
-          <strong>Rs. 0</strong>
-          <span class="grand">Grand Total</span>
-          <strong class="grand-value">Rs. 5,000</strong>
+          <span class="grand-label">Grand Total</span>
+          <strong class="grand">Rs. 5,000</strong>
         </section>
-        <section class="payment">
-          <strong>Payment Method: Cash</strong>
-          <p>Thank you for shopping at AsFix &amp; Gear.</p>
-        </section>
-        <footer class="footer">
-          <span>Repairs, accessories, and mobile care with honest service.</span>
-          <strong>asfixgear.com</strong>
-        </footer>
-      </section>
+
+        <p class="thanks">Thank you for shopping!</p>
+        <p class="site">asfixgear.com</p>
+      </article>
     </main>
   </body>
 </html>
