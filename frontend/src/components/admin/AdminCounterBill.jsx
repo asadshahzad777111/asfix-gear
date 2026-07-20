@@ -180,66 +180,7 @@ function amountText(amount) {
 
 function buildThermalReceiptText(order) {
   if (!order) return '';
-  const { subtotal, discount, grandTotal } = receiptTotals(order);
-  const W = 32; /* BT800S 58mm standard char width */
-  const line = '-'.repeat(W);
-  const wrap = (text) => {
-    const words = String(text || '').split(/\s+/).filter(Boolean);
-    const out = [];
-    let cur = '';
-    words.forEach((word) => {
-      const next = cur ? `${cur} ${word}` : word;
-      if (next.length > W && cur) {
-        out.push(cur);
-        cur = word;
-      } else {
-        cur = next;
-      }
-    });
-    if (cur) out.push(cur);
-    return out.length ? out : [''];
-  };
-  const moneyRow = (label, value) => {
-    const right = amountText(value);
-    const left = String(label);
-    const gap = Math.max(1, W - left.length - right.length);
-    return `${left}${' '.repeat(gap)}${right}`;
-  };
-  const itemLines = (order.items || []).flatMap((item) => {
-    const qty = Number(item.qty) || 1;
-    const unit = Number(item.price) || 0;
-    const total = unit * qty;
-    const qtyLine = `${qty} x ${amountText(unit)}`;
-    const totalText = amountText(total);
-    const gap = Math.max(1, W - qtyLine.length - totalText.length);
-    return [
-      ...wrap(item.name || 'Item'),
-      `${qtyLine}${' '.repeat(gap)}${totalText}`,
-    ];
-  });
-  return [
-    'ASFIX & GEAR',
-    ...wrap(SHOP.addressLine1),
-    ...wrap(`${SHOP.addressLine2} | ${SHOP.phone}`),
-    line,
-    ...wrap(`Bill: ${receiptNumber(order)}`),
-    ...wrap(`Date: ${order.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`),
-    ...wrap(`Staff: ${order.created_by_staff_name || 'Counter staff'}`),
-    ...wrap(`Payment: ${paymentLabel(order.payment_mode)}`),
-    ...wrap(`Customer: ${order.customer_name || 'Walk-in Customer'}`),
-    line,
-    ...itemLines,
-    line,
-    moneyRow('Subtotal', subtotal),
-    ...(discount ? [moneyRow('Discount', discount)] : []),
-    moneyRow('TOTAL', grandTotal),
-    ...(counterPaymentNote(order) ? wrap(`Note: ${counterPaymentNote(order)}`) : []),
-    line,
-    'Thank you for shopping!',
-    RECEIPT_SITE,
-    '',
-    '',
-  ].join('\n');
+  return `${buildReceiptLines(order, 32).map((line) => line.value).join('\n')}\n\n`;
 }
 
 function rawBtHref(order) {
@@ -285,75 +226,153 @@ function approximatePdfTextWidth(value, size) {
   return String(value ?? '').length * size * 0.56;
 }
 
-export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
+/** Shared receipt lines for PDF / PNG / RawBT — 32 chars fills BT800S 58mm. */
+function buildReceiptLines(order, maxChars = 32) {
   const { subtotal, discount, grandTotal } = receiptTotals(order);
-  const pageWidth = normalizeThermalWidth(thermalWidth);
-  const widthMm = pageWidth === '80mm' ? 80 : 58;
-  const width = pdfPointsFromMillimeters(widthMm);
-  /* BT800S 58mm — tiny side margins so text runs edge to edge */
-  const marginX = pdfPointsFromMillimeters(1.5);
-  const marginTop = pdfPointsFromMillimeters(2);
-  const marginBottom = pdfPointsFromMillimeters(2);
   const rows = order?.items || [];
-  const maxChars = pageWidth === '80mm' ? 42 : 32;
-  const bodySize = pageWidth === '80mm' ? 9 : 8;
-  const bodyLeading = pageWidth === '80mm' ? 11 : 10;
-  const receiptLines = [];
-
-  const addLine = (value = '', options = {}) => {
-    receiptLines.push({
-      value,
-      size: bodySize,
-      leading: bodyLeading,
+  const lines = [];
+  const push = (value = '', options = {}) => {
+    lines.push({
+      value: String(value ?? ''),
       align: 'left',
-      font: 'F1',
+      weight: 'normal',
       ...options,
     });
   };
-  const addWrapped = (value, options = {}) => {
-    wrapPdfText(value, options.maxChars || maxChars).forEach((line) => addLine(line, options));
+  const wrap = (value, options = {}) => {
+    wrapPdfText(value, options.maxChars || maxChars).forEach((line) => push(line, options));
   };
-  const addRule = () => addLine('-'.repeat(maxChars), { size: bodySize - 0.5, leading: bodyLeading - 1, align: 'center' });
+  const rule = () => push('-'.repeat(maxChars), { align: 'center' });
+  const money = (label, value, options = {}) => {
+    const right = amountText(value);
+    const left = String(label);
+    const gap = Math.max(1, maxChars - left.length - right.length);
+    push(`${left}${' '.repeat(gap)}${right}`, options);
+  };
 
-  addLine('ASFIX & GEAR', { size: bodySize + 4, leading: bodyLeading + 4, align: 'center', font: 'F2' });
-  addWrapped(SHOP.addressLine1, { size: bodySize - 0.5, leading: bodyLeading - 1, align: 'center' });
-  addWrapped(`${SHOP.addressLine2} | ${SHOP.phone}`, { size: bodySize - 0.5, leading: bodyLeading - 1, align: 'center' });
-  addRule();
-  addLine(`Bill: ${receiptNumber(order)}`);
-  addLine(`Date: ${order?.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`);
-  addLine(`Staff: ${order?.created_by_staff_name || 'Counter staff'}`);
-  addLine(`Payment: ${paymentLabel(order?.payment_mode)}`);
-  addLine(`Customer: ${order?.customer_name || 'Walk-in Customer'}`);
-  if (order?.phone) addLine(`Phone: ${order.phone}`);
-  addRule();
+  push('ASFIX & GEAR', { align: 'center', weight: 'bold', title: true });
+  wrap(SHOP.addressLine1, { align: 'center', small: true });
+  wrap(`${SHOP.addressLine2} | ${SHOP.phone}`, { align: 'center', small: true });
+  rule();
+  push(`Bill: ${receiptNumber(order)}`);
+  push(`Date: ${order?.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`);
+  push(`Staff: ${order?.created_by_staff_name || 'Counter staff'}`);
+  push(`Payment: ${paymentLabel(order?.payment_mode)}`);
+  push(`Customer: ${order?.customer_name || 'Walk-in Customer'}`);
+  if (order?.phone) push(`Phone: ${order.phone}`);
+  rule();
 
   if (!rows.length) {
-    addLine('No items');
+    push('No items');
   } else {
     rows.forEach((item) => {
       const qty = Number(item.qty) || 1;
       const unit = Number(item.price) || 0;
-      addWrapped(item.name || 'Item', { font: 'F2' });
+      wrap(item.name || 'Item', { weight: 'bold' });
       const qtyPrice = `${qty} x ${amountText(unit)}`;
       const total = amountText(unit * qty);
-      const pad = Math.max(1, maxChars - qtyPrice.length - total.length);
-      addLine(`${qtyPrice}${' '.repeat(pad)}${total}`, { size: bodySize, leading: bodyLeading });
+      const gap = Math.max(1, maxChars - qtyPrice.length - total.length);
+      push(`${qtyPrice}${' '.repeat(gap)}${total}`);
     });
   }
 
-  addRule();
-  addLine(`Subtotal: ${amountText(subtotal)}`);
-  if (discount) addLine(`Discount: ${amountText(discount)}`);
-  addLine(`TOTAL: ${amountText(grandTotal)}`, { size: bodySize + 2, leading: bodyLeading + 3, font: 'F2' });
+  rule();
+  money('Subtotal', subtotal);
+  if (discount) money('Discount', discount);
+  money('TOTAL', grandTotal, { weight: 'bold', title: true });
   const note = counterPaymentNote(order);
-  if (note) addWrapped(`Note: ${note}`, { size: bodySize - 0.5, leading: bodyLeading - 1 });
-  addRule();
-  addLine('Thank you for shopping!', { align: 'center', font: 'F2' });
-  addLine(RECEIPT_SITE, { align: 'center', font: 'F2' });
+  if (note) wrap(`Note: ${note}`, { small: true });
+  rule();
+  push('Thank you for shopping!', { align: 'center', weight: 'bold' });
+  push(RECEIPT_SITE, { align: 'center', weight: 'bold' });
+  return lines;
+}
 
-  /* Page height = content only — no tall blank PDF canvas */
+/**
+ * BT800S native bitmap: 384 dots wide (58mm). Full-bleed — no side margins.
+ * RawBT "Image" mode prints this edge-to-edge (PDF letterboxes and looks narrow).
+ */
+export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
+  const pageWidth = normalizeThermalWidth(thermalWidth);
+  const widthPx = pageWidth === '80mm' ? 576 : 384;
+  const maxChars = pageWidth === '80mm' ? 42 : 32;
+  const padX = 2;
+  const padY = 6;
+  const lines = buildReceiptLines(order, maxChars);
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Canvas unavailable');
+
+  const usable = widthPx - padX * 2;
+  let fontSize = pageWidth === '80mm' ? 28 : 24;
+  const measure = (size, weight = 'normal') => {
+    ctx.font = `${weight === 'bold' ? 'bold ' : ''}${size}px "Courier New", Courier, monospace`;
+  };
+  while (fontSize > 12) {
+    measure(fontSize, 'bold');
+    const widest = Math.max(
+      ...lines.map((line) => {
+        measure(line.small ? fontSize - 2 : fontSize, line.weight);
+        return ctx.measureText(line.value).width;
+      }),
+      0
+    );
+    if (widest <= usable) break;
+    fontSize -= 1;
+  }
+
+  const lineH = Math.ceil(fontSize * 1.28);
+  const heightPx = padY * 2 + lines.length * lineH + 4;
+  canvas.width = widthPx;
+  canvas.height = heightPx;
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, widthPx, heightPx);
+  ctx.fillStyle = '#000000';
+  ctx.textBaseline = 'top';
+
+  let y = padY;
+  lines.forEach((line) => {
+    const size = line.title ? fontSize + 4 : line.small ? fontSize - 2 : fontSize;
+    measure(size, line.weight);
+    const textW = ctx.measureText(line.value).width;
+    let x = padX;
+    if (line.align === 'center') x = Math.max(padX, (widthPx - textW) / 2);
+    if (line.align === 'right') x = Math.max(padX, widthPx - padX - textW);
+    ctx.fillText(line.value, x, y);
+    y += line.title ? lineH + 2 : lineH;
+  });
+
+  return new Promise((resolve, reject) => {
+    canvas.toBlob(
+      (blob) => (blob ? resolve(blob) : reject(new Error('PNG encode failed'))),
+      'image/png',
+      1
+    );
+  });
+}
+
+export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
+  const pageWidth = normalizeThermalWidth(thermalWidth);
+  const widthMm = pageWidth === '80mm' ? 80 : 58;
+  const width = pdfPointsFromMillimeters(widthMm);
+  /* Near-zero margins — content must span the full MediaBox */
+  const marginX = pdfPointsFromMillimeters(0.8);
+  const marginTop = pdfPointsFromMillimeters(1.2);
+  const marginBottom = pdfPointsFromMillimeters(1.2);
+  const maxChars = pageWidth === '80mm' ? 42 : 32;
+  const bodySize = pageWidth === '80mm' ? 9.5 : 8.5;
+  const bodyLeading = pageWidth === '80mm' ? 11.5 : 10.5;
+  const receiptLines = buildReceiptLines(order, maxChars).map((line) => ({
+    value: line.value,
+    size: line.title ? bodySize + 3 : line.small ? bodySize - 0.5 : bodySize,
+    leading: line.title ? bodyLeading + 3 : bodyLeading,
+    align: line.align || 'left',
+    font: line.weight === 'bold' || line.title ? 'F2' : 'F1',
+  }));
+
   const height = Math.ceil(
-    marginTop + marginBottom + receiptLines.reduce((sum, line) => sum + line.leading, 0) + 2
+    marginTop + marginBottom + receiptLines.reduce((sum, line) => sum + line.leading, 0)
   );
   const commands = [];
 
@@ -377,7 +396,7 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`,
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /CropBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`,
     '<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>',
     `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
@@ -565,9 +584,28 @@ function printViaIframe(html, inFlightRef) {
   return true;
 }
 
+const PRINT_COOLDOWN_MS = 5000;
+let lastPrintKey = '';
+let lastPrintAt = 0;
+
+function claimPrintSlot(order) {
+  const key = receiptNumber(order);
+  const now = Date.now();
+  if (key && key === lastPrintKey && now - lastPrintAt < PRINT_COOLDOWN_MS) {
+    return false;
+  }
+  lastPrintKey = key;
+  lastPrintAt = now;
+  return true;
+}
+
+function receiptPngFilename(order) {
+  return `asfix-receipt-${receiptNumber(order)}.png`;
+}
+
 /**
  * Print for BT800S 58mm thermal:
- * - Android → RawBT text (full paper width) — never A4, never auto PDF download
+ * - Android → RawBT once (debounced) — never multi-fire 3–4 pages
  * - Other → isolated 58mm HTML iframe print
  */
 export async function printActiveCounterReceipt({
@@ -577,15 +615,12 @@ export async function printActiveCounterReceipt({
 } = {}) {
   if (typeof window === 'undefined' || typeof document === 'undefined') return false;
   if (inFlightRef?.current) return false;
+  if (!order) return false;
+  if (!claimPrintSlot(order)) return false;
 
   if (inFlightRef) inFlightRef.current = true;
   try {
-    if (!order) {
-      finishPrintJob(inFlightRef);
-      return false;
-    }
-
-    /* BT800S / Android Bluetooth — RawBT prints full 58mm width as text */
+    /* BT800S / Android — RawBT text, single shot */
     if (isAndroidDevice()) {
       const anchor = document.createElement('a');
       anchor.href = rawBtHref(order);
@@ -609,6 +644,7 @@ export async function printActiveCounterReceipt({
 /** Open RawBT from a click handler (Android BT800S). */
 export function openRawBtReceipt(order) {
   if (!order || typeof window === 'undefined') return false;
+  if (!claimPrintSlot(order)) return false;
   const anchor = document.createElement('a');
   anchor.href = rawBtHref(order);
   anchor.style.display = 'none';
@@ -620,11 +656,36 @@ export function openRawBtReceipt(order) {
 
 export function downloadCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order) return;
+  /* Android RawBT Image: PNG at 384px fills paper; PDF letterboxes with side gaps */
+  if (isAndroidDevice()) {
+    createCounterReceiptPngBlob(order, thermalWidth)
+      .then((blob) => downloadBlob(blob, receiptPngFilename(order)))
+      .catch(() => {
+        downloadBlob(createCounterInvoicePdfBlob(order, thermalWidth), receiptFilename(order));
+      });
+    return;
+  }
   downloadBlob(createCounterInvoicePdfBlob(order, thermalWidth), receiptFilename(order));
 }
 
 export async function shareCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order) return false;
+
+  if (isAndroidDevice()) {
+    const blob = await createCounterReceiptPngBlob(order, thermalWidth);
+    const file = new File([blob], receiptPngFilename(order), { type: 'image/png' });
+    if (navigator.canShare?.({ files: [file] })) {
+      await navigator.share({
+        title: `${SHOP.name} ${receiptNumber(order)}`,
+        text: `${SHOP.name} receipt ${receiptNumber(order)}`,
+        files: [file],
+      });
+      return true;
+    }
+    downloadBlob(blob, file.name);
+    return false;
+  }
+
   const blob = createCounterInvoicePdfBlob(order, thermalWidth);
   const file = new File([blob], receiptFilename(order), { type: 'application/pdf' });
   if (navigator.canShare?.({ files: [file] })) {
@@ -1081,7 +1142,6 @@ export default function AdminCounterBill({
       await loadServerDrafts();
       setFeedback({ type: 'success', text: t('admin.counterBillDraftConfirmed') });
       onBillCreated?.(result.order);
-      if (onPrintOrder) onPrintOrder(result.order);
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || t('admin.counterBillFailed') });
     } finally {
@@ -1112,14 +1172,7 @@ export default function AdminCounterBill({
     });
   }, [onPrintOrder, receiptOrder, thermalWidth]);
 
-  useEffect(() => {
-    if (!receiptOrder || onPrintOrder) return;
-    const orderNumber = receiptNumber(receiptOrder);
-    if (autoPrintedOrderRef.current === orderNumber) return;
-    autoPrintedOrderRef.current = orderNumber;
-    void printReceipt(receiptOrder);
-  }, [onPrintOrder, printReceipt, receiptOrder]);
-
+  /* No auto-print — confirm + Print was firing multiple RawBT jobs (3–4 slips). */
   const confirmBill = async () => {
     if (!lines.length) {
       setFeedback({ type: 'error', text: t('admin.counterBillEmpty') });
@@ -1174,9 +1227,7 @@ export default function AdminCounterBill({
       setDiscountValue('');
       setCashReceived('');
       onBillCreated?.(result.order);
-      if (onPrintOrder) {
-        onPrintOrder(result.order);
-      }
+      /* Print only when staff taps Print — auto-print caused 3–4 duplicate slips */
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || t('admin.counterBillFailed') });
     } finally {
