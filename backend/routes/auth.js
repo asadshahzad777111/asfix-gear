@@ -7,6 +7,7 @@ import { verifyGoogleIdToken, isGoogleAuthConfigured } from '../services/googleA
 import { rateLimit } from '../middleware/rateLimit.js';
 const router = Router();
 const SUPER_ADMIN = ['super_admin'];
+const TEAM_MANAGERS = ['super_admin', 'admin'];
 
 // Each auth action gets its own rate-limit bucket (own `rateLimit()` call =
 // own limiterId), scoped to exactly one route. This intentionally avoids
@@ -152,6 +153,16 @@ function validateStaffPayload(body, requirePassword = true) {
     password,
     role,
   };
+}
+
+function canManageStaffTarget(actor, target) {
+  if (actor?.role === 'super_admin') return true;
+  return actor?.role === 'admin' && target?.role === 'counter';
+}
+
+function canCreateStaffRole(actor, role) {
+  if (actor?.role === 'super_admin') return true;
+  return actor?.role === 'admin' && role === 'counter';
 }
 
 router.post('/google', googleSignInLimiter, async (req, res) => {
@@ -699,21 +710,24 @@ router.get('/me', requireAuth, (req, res) => {
   res.json({ user: req.auth.user });
 });
 
-router.get('/users', requireAuth, requireRole(...SUPER_ADMIN), (_req, res) => {
+router.get('/users', requireAuth, requireRole(...TEAM_MANAGERS), (_req, res) => {
   res.json(store.listStaffUsers().map((u) => sanitizeUser(u)));
 });
 
-router.get('/customers', requireAuth, requireRole(...SUPER_ADMIN), (_req, res) => {
+router.get('/customers', requireAuth, requireRole(...TEAM_MANAGERS), (_req, res) => {
   res.json(store.listCustomerUsers().map((u) => sanitizeUser(u)));
 });
 
-router.get('/admins', requireAuth, requireRole(...SUPER_ADMIN), (_req, res) => {
+router.get('/admins', requireAuth, requireRole(...TEAM_MANAGERS), (_req, res) => {
   res.json(store.listStaffUsers().map((u) => sanitizeUser(u)));
 });
 
-router.post('/users', requireAuth, requireRole(...SUPER_ADMIN), (req, res) => {
+router.post('/users', requireAuth, requireRole(...TEAM_MANAGERS), (req, res) => {
   const parsed = validateStaffPayload(req.body);
   if (parsed.error) return res.status(400).json({ error: parsed.error });
+  if (!canCreateStaffRole(req.auth.user, parsed.role)) {
+    return res.status(403).json({ error: 'Admins can create POS Staff accounts only' });
+  }
 
   try {
     const user = store.createUser({
@@ -730,9 +744,12 @@ router.post('/users', requireAuth, requireRole(...SUPER_ADMIN), (req, res) => {
   }
 });
 
-router.post('/admins', requireAuth, requireRole(...SUPER_ADMIN), (req, res) => {
+router.post('/admins', requireAuth, requireRole(...TEAM_MANAGERS), (req, res) => {
   const parsed = validateStaffPayload(req.body);
   if (parsed.error) return res.status(400).json({ error: parsed.error });
+  if (!canCreateStaffRole(req.auth.user, parsed.role)) {
+    return res.status(403).json({ error: 'Admins can create POS Staff accounts only' });
+  }
 
   try {
     const user = store.createUser({
@@ -749,7 +766,7 @@ router.post('/admins', requireAuth, requireRole(...SUPER_ADMIN), (req, res) => {
   }
 });
 
-router.patch('/users/:id/block', requireAuth, requireRole(...SUPER_ADMIN), (req, res) => {
+router.patch('/users/:id/block', requireAuth, requireRole(...TEAM_MANAGERS), (req, res) => {
   const numId = Number(req.params.id);
   const target = store.getUserById(numId);
   if (!target) return res.status(404).json({ error: 'User not found' });
@@ -759,18 +776,24 @@ router.patch('/users/:id/block', requireAuth, requireRole(...SUPER_ADMIN), (req,
   if (numId === req.auth.user.id) {
     return res.status(403).json({ error: 'Cannot block your own account' });
   }
+  if (!canManageStaffTarget(req.auth.user, target)) {
+    return res.status(403).json({ error: 'Admins can manage POS Staff accounts only' });
+  }
 
   const blocked = req.body.blocked != null ? Boolean(req.body.blocked) : !target.blocked;
   const updated = store.toggleUserBlock(numId, blocked);
   res.json(sanitizeUser(updated));
 });
 
-router.patch('/users/:id/reset-password', requireAuth, requireRole(...SUPER_ADMIN), (req, res) => {
+router.patch('/users/:id/reset-password', requireAuth, requireRole(...TEAM_MANAGERS), (req, res) => {
   const numId = Number(req.params.id);
   const target = store.getUserById(numId);
   if (!target) return res.status(404).json({ error: 'User not found' });
   if (target.role === 'super_admin') {
     return res.status(403).json({ error: 'Cannot reset super admin password here' });
+  }
+  if (!canManageStaffTarget(req.auth.user, target)) {
+    return res.status(403).json({ error: 'Admins can manage POS Staff accounts only' });
   }
 
   const { password } = req.body;
@@ -785,12 +808,15 @@ router.patch('/users/:id/reset-password', requireAuth, requireRole(...SUPER_ADMI
   });
 });
 
-router.patch('/admins/:id', requireAuth, requireRole(...SUPER_ADMIN), (req, res) => {
+router.patch('/admins/:id', requireAuth, requireRole(...TEAM_MANAGERS), (req, res) => {
   const numId = Number(req.params.id);
   const target = store.getUserById(numId);
   if (!target) return res.status(404).json({ error: 'User not found' });
   if (target.role === 'super_admin') {
     return res.status(403).json({ error: 'Cannot modify super admin account' });
+  }
+  if (!canManageStaffTarget(req.auth.user, target)) {
+    return res.status(403).json({ error: 'Admins can manage POS Staff accounts only' });
   }
 
   const { role, active, blocked, name } = req.body;
@@ -799,6 +825,9 @@ router.patch('/admins/:id', requireAuth, requireRole(...SUPER_ADMIN), (req, res)
   }
   if (role === 'customer' && !['admin', 'editor', 'counter'].includes(target.role)) {
     return res.status(400).json({ error: 'Only staff accounts can be changed to client' });
+  }
+  if (req.auth.user.role === 'admin' && role && role !== 'counter') {
+    return res.status(403).json({ error: 'Admins cannot change POS Staff into another role' });
   }
 
   if (blocked != null) {
@@ -812,7 +841,7 @@ router.patch('/admins/:id', requireAuth, requireRole(...SUPER_ADMIN), (req, res)
   res.json(sanitizeUser(updated));
 });
 
-router.delete('/users/:id', requireAuth, requireRole(...SUPER_ADMIN), (req, res) => {
+router.delete('/users/:id', requireAuth, requireRole(...TEAM_MANAGERS), (req, res) => {
   const numId = Number(req.params.id);
   const target = store.getUserById(numId);
   if (!target) return res.status(404).json({ error: 'User not found' });
@@ -821,13 +850,16 @@ router.delete('/users/:id', requireAuth, requireRole(...SUPER_ADMIN), (req, res)
   }
   if (numId === req.auth.user.id) {
     return res.status(403).json({ error: 'Cannot remove your own account' });
+  }
+  if (!canManageStaffTarget(req.auth.user, target)) {
+    return res.status(403).json({ error: 'Admins can manage POS Staff accounts only' });
   }
 
   store.deleteUser(numId);
   res.json({ message: 'Staff member removed' });
 });
 
-router.delete('/admins/:id', requireAuth, requireRole(...SUPER_ADMIN), (req, res) => {
+router.delete('/admins/:id', requireAuth, requireRole(...TEAM_MANAGERS), (req, res) => {
   const numId = Number(req.params.id);
   const target = store.getUserById(numId);
   if (!target) return res.status(404).json({ error: 'User not found' });
@@ -836,6 +868,9 @@ router.delete('/admins/:id', requireAuth, requireRole(...SUPER_ADMIN), (req, res
   }
   if (numId === req.auth.user.id) {
     return res.status(403).json({ error: 'Cannot remove your own account' });
+  }
+  if (!canManageStaffTarget(req.auth.user, target)) {
+    return res.status(403).json({ error: 'Admins can manage POS Staff accounts only' });
   }
 
   store.deleteUser(numId);

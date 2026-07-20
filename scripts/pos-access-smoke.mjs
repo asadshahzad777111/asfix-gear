@@ -148,6 +148,31 @@ async function main() {
     if (adminLogin.data.user.role !== 'admin') throw new Error('Admin login did not return admin role');
     const adminToken = adminLogin.data.token;
 
+    await request('/api/auth/users', {
+      token: adminToken,
+      method: 'POST',
+      expected: 201,
+      body: JSON.stringify({
+        name: 'Admin Created POS',
+        email: 'admin.created.pos@gmail.com',
+        password: 'AdminCreatedPos2026!',
+        confirmPassword: 'AdminCreatedPos2026!',
+        role: 'counter',
+      }),
+    });
+    await request('/api/auth/users', {
+      token: adminToken,
+      method: 'POST',
+      expected: 403,
+      body: JSON.stringify({
+        name: 'Blocked Editor',
+        email: 'admin.created.editor@gmail.com',
+        password: 'AdminCreatedEditor2026!',
+        confirmPassword: 'AdminCreatedEditor2026!',
+        role: 'editor',
+      }),
+    });
+
     const sale = await request('/api/orders/counter-sale', {
       token: posToken,
       method: 'POST',
@@ -181,6 +206,8 @@ async function main() {
       sale_order_id: sale.data.order.order_id,
       checks: [
         'pos_login',
+        'admin_created_pos_staff',
+        'admin_editor_create_403',
         'pos_sale_created',
         'receipt_data_returned',
         'pos_sales_history',

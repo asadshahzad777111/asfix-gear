@@ -30,7 +30,7 @@ export function canViewSalesReport(user) {
 }
 
 export function canManageTeam(user) {
-  return isSuperAdmin(user);
+  return Boolean(user?.active && !user?.blocked && ['super_admin', 'admin'].includes(user.role));
 }
 
 export function canManageProducts(user) {

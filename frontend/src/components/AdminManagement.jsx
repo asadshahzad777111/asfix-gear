@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
-import { roleLabel, isValidStaffGmail } from '../config/permissions';
+import { roleLabel, isSuperAdmin, isValidStaffGmail } from '../config/permissions';
+import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import PasswordRevealModal from './PasswordRevealModal';
 import PasswordField from './auth/PasswordField';
@@ -10,7 +11,7 @@ const INITIAL_FORM = {
   email: '',
   password: '',
   confirmPassword: '',
-  role: 'editor',
+  role: 'counter',
 };
 
 function formatLastLogin(iso, t) {
@@ -26,6 +27,8 @@ function formatLastLogin(iso, t) {
 
 export default function AdminManagement({ compact = false }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
+  const superAdmin = isSuperAdmin(user);
   const [staff, setStaff] = useState([]);
   const [clients, setClients] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -137,7 +140,7 @@ export default function AdminManagement({ compact = false }) {
   };
 
   const removeStaff = async (member) => {
-    if (member.role === 'super_admin') return;
+    if (member.role === 'super_admin' || (!superAdmin && member.role !== 'counter')) return;
     if (!window.confirm(t('team.removeConfirm', { name: member.name }))) return;
     try {
       await api.removeTeamMember(member.id);
@@ -148,7 +151,7 @@ export default function AdminManagement({ compact = false }) {
   };
 
   const changeRole = async (member, role) => {
-    if (member.role === 'super_admin') return;
+    if (member.role === 'super_admin' || (!superAdmin && member.role !== 'counter')) return;
     try {
       const updated = await api.updateTeamMember(member.id, { role });
       setStaff((prev) => prev.map((s) => (s.id === updated.id ? updated : s)));
@@ -158,7 +161,7 @@ export default function AdminManagement({ compact = false }) {
   };
 
   const makeClient = async (member) => {
-    if (member.role === 'super_admin') return;
+    if (!superAdmin || member.role === 'super_admin') return;
     if (!window.confirm(t('team.makeClientConfirm', { name: member.name }))) return;
     try {
       const updated = await api.updateTeamMember(member.id, { role: 'customer' });
@@ -231,8 +234,8 @@ export default function AdminManagement({ compact = false }) {
             <label>{t('team.role')} *</label>
             <select value={form.role} onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}>
               <option value="counter">{t('team.roleCounter')}</option>
-              <option value="editor">{t('team.roleStaff')}</option>
-              <option value="admin">{t('team.roleAdmin')}</option>
+              {superAdmin && <option value="editor">{t('team.roleStaff')}</option>}
+              {superAdmin && <option value="admin">{t('team.roleAdmin')}</option>}
             </select>
           </div>
 
@@ -268,7 +271,7 @@ export default function AdminManagement({ compact = false }) {
                       <td><strong>{member.name}</strong></td>
                       <td><small>{member.email}</small></td>
                       <td>
-                        {member.role === 'super_admin' ? (
+                        {member.role === 'super_admin' || (!superAdmin && member.role !== 'counter') ? (
                           <span className="role-badge role-super">{roleLabel(member.role)}</span>
                         ) : (
                           <select
@@ -276,8 +279,8 @@ export default function AdminManagement({ compact = false }) {
                             value={member.role}
                             onChange={(e) => changeRole(member, e.target.value)}
                           >
-                            <option value="admin">{t('team.roleAdmin')}</option>
-                            <option value="editor">{t('team.roleStaff')}</option>
+                            {superAdmin && <option value="admin">{t('team.roleAdmin')}</option>}
+                            {superAdmin && <option value="editor">{t('team.roleStaff')}</option>}
                             <option value="counter">{t('team.roleCounter')}</option>
                           </select>
                         )}
@@ -289,7 +292,7 @@ export default function AdminManagement({ compact = false }) {
                       </td>
                       <td><small>{formatLastLogin(member.last_login, t)}</small></td>
                       <td>
-                        {member.role !== 'super_admin' && (
+                        {member.role !== 'super_admin' && (superAdmin || member.role === 'counter') && (
                           <div className="team-actions">
                             <button
                               type="button"
@@ -308,13 +311,15 @@ export default function AdminManagement({ compact = false }) {
                             >
                               {t('team.resetPw')}
                             </button>
-                            <button
-                              type="button"
-                              className="btn btn-outline btn-sm"
-                              onClick={() => makeClient(member)}
-                            >
-                              {t('team.makeClient')}
-                            </button>
+                            {superAdmin && (
+                              <button
+                                type="button"
+                                className="btn btn-outline btn-sm"
+                                onClick={() => makeClient(member)}
+                              >
+                                {t('team.makeClient')}
+                              </button>
+                            )}
                             <button
                               type="button"
                               className="btn btn-outline btn-sm team-btn-remove"
@@ -362,7 +367,7 @@ export default function AdminManagement({ compact = false }) {
                         </span>
                       </td>
                       <td>
-                        {member.role !== 'super_admin' && (
+                        {member.role !== 'super_admin' && (superAdmin || member.role === 'counter') && (
                           <div className="team-actions">
                             <button type="button" className="btn btn-outline btn-sm" onClick={() => toggleBlock(member)}>
                               {member.blocked ? t('team.unblock') : t('team.block')}
