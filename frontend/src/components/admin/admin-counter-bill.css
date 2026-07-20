@@ -14,11 +14,12 @@
   border: 1px solid rgba(201, 162, 39, 0.45);
   border-radius: 24px;
   box-sizing: border-box;
-  color: #191712;
+  color: #fff8e5;
   background:
-    radial-gradient(circle at 8% 0%, rgba(201, 162, 39, 0.22), transparent 30%),
-    linear-gradient(135deg, #070707 0%, #141414 34%, #f8f0dd 34.2%, #fffaf0 100%);
-  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.16);
+    radial-gradient(circle at 8% 0%, rgba(201, 162, 39, 0.24), transparent 32%),
+    radial-gradient(circle at 92% 10%, rgba(245, 213, 111, 0.12), transparent 26%),
+    linear-gradient(135deg, #050505 0%, #101010 48%, #19140b 100%);
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.34);
 }
 
 .counter-bill *,
@@ -302,12 +303,18 @@
   border: 1px solid rgba(201, 162, 39, 0.28);
   border-radius: 22px;
   padding: 1rem;
-  background: rgba(255, 252, 244, 0.94);
-  box-shadow: 0 16px 42px rgba(30, 22, 5, 0.12);
+  background: linear-gradient(180deg, #121212 0%, #1d1a14 100%);
+  box-shadow: 0 18px 45px rgba(0, 0, 0, 0.28);
 }
 
 .counter-bill__panel--products {
-  background: rgba(255, 250, 240, 0.96);
+  position: relative;
+  z-index: 4;
+  overflow: visible;
+  color: #fff8e5;
+  background:
+    radial-gradient(circle at 10% 0%, rgba(201, 162, 39, 0.14), transparent 35%),
+    linear-gradient(180deg, #111 0%, #1d1a14 100%);
 }
 
 .counter-bill__panel--cart {
@@ -338,17 +345,22 @@
 
 .counter-bill__panel-head h4 {
   margin: 0;
+  color: #fff8e5;
   font-size: 1.05rem;
   letter-spacing: -0.01em;
 }
 
 .counter-bill__panel-head span {
-  color: var(--counter-muted);
+  color: #d7c693;
   font-size: 0.8rem;
   font-weight: 700;
 }
 
 .counter-bill__panel--cart .counter-bill__panel-head span {
+  color: #d7c693;
+}
+
+.counter-bill__panel--products .counter-bill__empty {
   color: #d7c693;
 }
 
@@ -380,8 +392,8 @@
   border: 1px solid rgba(201, 162, 39, 0.35);
   border-radius: 999px;
   padding: 0.4rem 0.8rem;
-  background: #fff;
-  color: #312913;
+  background: rgba(255, 255, 255, 0.06);
+  color: #f8e4a0;
   cursor: pointer;
   font: inherit;
   font-size: 0.86rem;
@@ -407,12 +419,17 @@
   font-weight: 800;
 }
 
+.counter-bill__search-wrap {
+  position: relative;
+  z-index: 20;
+}
+
 .counter-bill__search {
-  color: #1d1a14;
+  color: #f8e4a0;
 }
 
 .counter-bill__search small {
-  color: #7a735f;
+  color: #d7c693;
   font-weight: 500;
 }
 
@@ -423,13 +440,20 @@
 .counter-bill__qty-stepper input {
   width: 100%;
   min-height: 42px;
-  border: 1px solid rgba(68, 55, 16, 0.28);
+  border: 1px solid rgba(245, 213, 111, 0.35);
   border-radius: 13px;
   padding: 0.45rem 0.65rem;
   font: inherit;
-  background: #fff;
-  color: #15120c;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff8e5;
   outline: none;
+}
+
+.counter-bill__search input::placeholder,
+.counter-bill__customer input::placeholder,
+.counter-bill__cash-box input::placeholder,
+.counter-bill__note input::placeholder {
+  color: rgba(255, 248, 229, 0.52);
 }
 
 .counter-bill__search input:focus,
@@ -439,6 +463,84 @@
 .counter-bill__qty-stepper input:focus {
   border-color: var(--counter-gold);
   box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.18);
+}
+
+.counter-bill__search-results {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  z-index: 30;
+  display: grid;
+  max-height: min(360px, 52vh);
+  overflow-y: auto;
+  border: 1px solid rgba(245, 213, 111, 0.46);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(17, 17, 17, 0.98), rgba(31, 26, 16, 0.98)),
+    #111;
+  box-shadow: 0 22px 48px rgba(0, 0, 0, 0.45);
+  -webkit-overflow-scrolling: touch;
+}
+
+.counter-bill__search-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.85rem;
+  width: 100%;
+  min-height: 58px;
+  border: 0;
+  border-bottom: 1px solid rgba(245, 213, 111, 0.12);
+  padding: 0.7rem 0.8rem;
+  background: transparent;
+  color: #fff8e5;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.counter-bill__search-option:last-child {
+  border-bottom: 0;
+}
+
+.counter-bill__search-option:hover,
+.counter-bill__search-option:focus-visible {
+  background: rgba(201, 162, 39, 0.16);
+  outline: none;
+}
+
+.counter-bill__search-option span {
+  display: grid;
+  min-width: 0;
+  gap: 0.15rem;
+}
+
+.counter-bill__search-option strong {
+  overflow: hidden;
+  color: #fff8e5;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.counter-bill__search-option small {
+  color: #d7c693;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.counter-bill__search-option b {
+  flex: 0 0 auto;
+  color: var(--counter-gold-light);
+}
+
+.counter-bill__search-empty {
+  margin: 0;
+  padding: 0.9rem;
+  color: #d7c693;
+  font-size: 0.9rem;
+  font-weight: 800;
+  text-align: center;
 }
 
 .counter-bill__products {
@@ -461,18 +563,20 @@
   border: 1px solid rgba(201, 162, 39, 0.24);
   border-radius: 18px;
   padding: 0.65rem;
-  background: linear-gradient(180deg, #fffdf6, #f7efd9);
-  color: #17130a;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.035)),
+    #14110b;
+  color: #fff8e5;
   text-align: left;
   cursor: pointer;
-  box-shadow: 0 8px 20px rgba(34, 24, 4, 0.08);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.24);
   transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
 .counter-bill__product-tile:hover {
   transform: translateY(-2px);
   border-color: var(--counter-gold);
-  box-shadow: 0 14px 30px rgba(83, 59, 9, 0.2);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.34), 0 0 0 3px rgba(201, 162, 39, 0.12);
 }
 
 .counter-bill__product-media {
@@ -500,6 +604,7 @@
 .counter-bill__product-info strong {
   display: -webkit-box;
   overflow: hidden;
+  color: #fff8e5;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   font-size: 0.92rem;
@@ -509,13 +614,13 @@
 .counter-bill__product-info small,
 .counter-bill__product-price small,
 .counter-bill__cart-row small {
-  color: #766b50;
+  color: #d7c693;
   font-size: 0.76rem;
   font-weight: 600;
 }
 
 .counter-bill__product-price strong {
-  color: #8b6b0b;
+  color: var(--counter-gold-light);
   font-size: 1rem;
 }
 
@@ -743,12 +848,12 @@
 .counter-bill__discount-input input {
   width: 100%;
   min-height: 42px;
-  border: 1px solid rgba(68, 55, 16, 0.28);
+  border: 1px solid rgba(245, 213, 111, 0.35);
   border-radius: 13px;
   padding: 0.45rem 0.65rem;
   font: inherit;
-  background: #fff;
-  color: #15120c;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff8e5;
   outline: none;
 }
 
@@ -776,9 +881,12 @@
 
 .counter-bill__pay {
   min-height: 48px;
-  border: 2px solid transparent;
+  border: 1px solid rgba(245, 213, 111, 0.35);
   border-radius: 15px;
-  color: #fff;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    #16130c;
+  color: #f8e4a0;
   cursor: pointer;
   font: inherit;
   font-weight: 900;
@@ -787,23 +895,33 @@
 }
 
 .counter-bill__pay--cash {
-  background: linear-gradient(135deg, #15803d, #22c55e);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    #16130c;
 }
 
 .counter-bill__pay--card {
-  background: linear-gradient(135deg, #1d4ed8, #38bdf8);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    #16130c;
 }
 
 .counter-bill__pay--easypaisa {
-  background: linear-gradient(135deg, #7c2d12, #f97316 46%, #6d28d9);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    #16130c;
 }
 
 .counter-bill__pay--jazzcash {
-  background: linear-gradient(135deg, #991b1b, #ef4444);
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), rgba(255, 255, 255, 0.02)),
+    #16130c;
 }
 
 .counter-bill__pay--active {
   border-color: var(--counter-gold-light);
+  background: linear-gradient(135deg, #8f6f12, #c9a227 52%, #ffe18a);
+  color: #15100a;
   box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.22), inset 0 -10px 18px rgba(0, 0, 0, 0.12);
 }
 

@@ -90,7 +90,8 @@ function matchesQuery(product, query) {
   return [
     product.name,
     product.brand,
-    product.category,
+    product.model,
+    product.model_name,
     product.compatible_models,
     String(product.id),
   ]
@@ -531,6 +532,7 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
   const [draftSeed] = useState(() => readCounterBillDraft());
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const [query, setQuery] = useState('');
+  const [searchFocused, setSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES);
   const [lines, setLines] = useState(() => draftSeed?.lines || []);
   const [customerName, setCustomerName] = useState(() => draftSeed?.customerName || '');
@@ -571,6 +573,13 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
       return inCategory && inSearch;
     });
   }, [availableProducts, query, selectedCategory]);
+
+  const autocompleteProducts = useMemo(() => {
+    if (!query.trim()) return [];
+    return availableProducts.filter((product) => matchesQuery(product, query));
+  }, [availableProducts, query]);
+
+  const showSearchDropdown = searchFocused && query.trim().length > 0;
 
   const subtotal = lines.reduce((sum, line) => sum + salePrice(line.product) * line.qty, 0);
   const discountAmount = clampDiscountAmount({ subtotal, type: discountType, value: discountValue });
@@ -654,13 +663,14 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
       return [...prev, { product, qty: 1 }];
     });
     setQuery('');
+    setSearchFocused(false);
     window.setTimeout(() => searchRef.current?.focus(), 0);
   };
 
   const handleSearchKeyDown = (e) => {
-    if (e.key !== 'Enter' || !query.trim() || !filteredProducts[0]) return;
+    if (e.key !== 'Enter' || !query.trim() || !autocompleteProducts[0]) return;
     e.preventDefault();
-    addProduct(filteredProducts[0]);
+    addProduct(autocompleteProducts[0]);
   };
 
   const adjustQty = (productId, delta) => {
@@ -861,19 +871,52 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
             </div>
           ) : null}
 
-          <label className="counter-bill__search">
-            <span>{t('admin.counterBillSearch')}</span>
-            <input
-              ref={searchRef}
-              type="search"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyDown={handleSearchKeyDown}
-              placeholder={t('admin.counterBillSearchPh')}
-              autoComplete="off"
-            />
-            <small>{t('admin.counterBillSearchHint')}</small>
-          </label>
+          <div className="counter-bill__search-wrap">
+            <label className="counter-bill__search">
+              <span>{t('admin.counterBillSearch')}</span>
+              <input
+                ref={searchRef}
+                type="search"
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                onFocus={() => setSearchFocused(true)}
+                onBlur={() => setSearchFocused(false)}
+                onKeyDown={handleSearchKeyDown}
+                placeholder={t('admin.counterBillSearchPh')}
+                autoComplete="off"
+                aria-autocomplete="list"
+                aria-expanded={showSearchDropdown}
+                aria-controls="counter-bill-search-results"
+              />
+              <small>{t('admin.counterBillSearchHint')}</small>
+            </label>
+            {showSearchDropdown ? (
+              <div className="counter-bill__search-results" id="counter-bill-search-results" role="listbox">
+                {autocompleteProducts.length === 0 ? (
+                  <p className="counter-bill__search-empty">{t('admin.counterBillNoProductsFound')}</p>
+                ) : (
+                  autocompleteProducts.map((product) => (
+                    <button
+                      key={product.id}
+                      type="button"
+                      className="counter-bill__search-option"
+                      onPointerDown={(e) => {
+                        e.preventDefault();
+                        addProduct(product);
+                      }}
+                      role="option"
+                    >
+                      <span>
+                        <strong>{product.name}</strong>
+                        <small>{product.category || product.brand || `#${product.id}`}</small>
+                      </span>
+                      <b>{formatPrice(salePrice(product))}</b>
+                    </button>
+                  ))
+                )}
+              </div>
+            ) : null}
+          </div>
 
           {!productPanelCollapsed ? (
             <div className="counter-bill__products">
