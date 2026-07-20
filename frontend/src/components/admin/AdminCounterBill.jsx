@@ -178,15 +178,37 @@ function amountText(amount) {
   return `Rs. ${Number(amount || 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })}`;
 }
 
+/** Compact amount for 58mm thermal — no commas/extra spaces so TOTAL stays on paper. */
+function thermalAmountText(amount) {
+  return `Rs.${Math.round(Number(amount || 0))}`;
+}
+
 function buildThermalReceiptText(order) {
   if (!order) return '';
   return `${buildReceiptLines(order, 32).map((line) => line.value).join('\n')}\n\n`;
 }
 
-function rawBtHref(order) {
+/** Mate Technologies "Bluetooth Thermal Printer" (Thermer) — package mate.bluetoothprint */
+const MATE_THERMAL_PACKAGE = 'mate.bluetoothprint';
+
+function mateThermalTextHref(order) {
   const text = buildThermalReceiptText(order);
-  const encoded = encodeURIComponent(text);
-  return `intent:${encoded}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end`;
+  return (
+    `intent:#Intent;action=android.intent.action.SEND;type=text/plain;`
+    + `package=${MATE_THERMAL_PACKAGE};`
+    + `S.android.intent.extra.TEXT=${encodeURIComponent(text)};end`
+  );
+}
+
+function openMateThermalText(order) {
+  if (!order || typeof window === 'undefined' || typeof document === 'undefined') return false;
+  const anchor = document.createElement('a');
+  anchor.href = mateThermalTextHref(order);
+  anchor.style.display = 'none';
+  document.body.appendChild(anchor);
+  anchor.click();
+  anchor.remove();
+  return true;
 }
 
 function escapePdfText(value) {
@@ -226,7 +248,7 @@ function approximatePdfTextWidth(value, size) {
   return String(value ?? '').length * size * 0.56;
 }
 
-/** Shared receipt lines for PDF / PNG / RawBT — 32 chars fills BT800S 58mm. */
+/** Shared receipt lines for PDF / PNG / Mate thermal — 32 chars fills BT800S 58mm. */
 function buildReceiptLines(order, maxChars = 32) {
   const { subtotal, discount, grandTotal } = receiptTotals(order);
   const rows = order?.items || [];
@@ -244,10 +266,17 @@ function buildReceiptLines(order, maxChars = 32) {
   };
   const rule = () => push('-'.repeat(maxChars), { align: 'center' });
   const money = (label, value, options = {}) => {
-    const right = amountText(value);
+    let right = thermalAmountText(value);
     const left = String(label);
+    /* Never let left+right exceed maxChars — that clips TOTAL on the printer. */
+    if (left.length + 1 + right.length > maxChars) {
+      right = String(Math.round(Number(value || 0)));
+    }
     const gap = Math.max(1, maxChars - left.length - right.length);
-    push(`${left}${' '.repeat(gap)}${right}`, options);
+    push(`${left}${' '.repeat(gap)}${right}`, {
+      ...options,
+      columns: { left, right },
+    });
   };
 
   push('ASFIX & GEAR', { align: 'center', weight: 'bold', title: true });
@@ -269,10 +298,18 @@ function buildReceiptLines(order, maxChars = 32) {
       const qty = Number(item.qty) || 1;
       const unit = Number(item.price) || 0;
       wrap(item.name || 'Item', { weight: 'bold' });
-      const qtyPrice = `${qty} x ${amountText(unit)}`;
-      const total = amountText(unit * qty);
-      const gap = Math.max(1, maxChars - qtyPrice.length - total.length);
-      push(`${qtyPrice}${' '.repeat(gap)}${total}`);
+      let left = `${qty} x ${thermalAmountText(unit)}`;
+      let right = thermalAmountText(unit * qty);
+      if (left.length + 1 + right.length > maxChars) {
+        left = `${qty}x${Math.round(unit)}`;
+        right = String(Math.round(unit * qty));
+      }
+      if (left.length + 1 + right.length > maxChars) {
+        left = `${qty}x`;
+        right = String(Math.round(unit * qty));
+      }
+      const gap = Math.max(1, maxChars - left.length - right.length);
+      push(`${left}${' '.repeat(gap)}${right}`, { columns: { left, right } });
     });
   }
 
@@ -289,58 +326,105 @@ function buildReceiptLines(order, maxChars = 32) {
 }
 
 /**
- * BT800S native bitmap: 384 dots wide (58mm). Full-bleed — no side margins.
- * RawBT "Image" mode prints this edge-to-edge (PDF letterboxes and looks narrow).
+ * High-DPI receipt PNG for Mate Bluetooth Thermal Printer / BT800S.
+ * Renders at 2× (768px for 58mm) with bold stroked text so thin thermal heads stay readable.
  */
 export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
-  const widthPx = pageWidth === '80mm' ? 576 : 384;
+  const baseWidth = pageWidth === '80mm' ? 576 : 384;
+  const scale = 2;
+  const widthPx = baseWidth * scale;
   const maxChars = pageWidth === '80mm' ? 42 : 32;
-  const padX = 2;
-  const padY = 6;
+  const padX = 10 * scale;
+  const padY = 8 * scale;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas unavailable');
 
   const usable = widthPx - padX * 2;
-  let fontSize = pageWidth === '80mm' ? 28 : 24;
-  const measure = (size, weight = 'normal') => {
-    ctx.font = `${weight === 'bold' ? 'bold ' : ''}${size}px "Courier New", Courier, monospace`;
+  let fontSize = (pageWidth === '80mm' ? 30 : 26) * scale;
+  const minFont = 14 * scale;
+  const setFont = (size, weight = 'normal') => {
+    const bold = weight === 'bold' || weight === '900';
+    ctx.font = `${bold ? 'bold ' : ''}${size}px "Courier New", Courier, monospace`;
   };
-  while (fontSize > 12) {
-    measure(fontSize, 'bold');
-    const widest = Math.max(
-      ...lines.map((line) => {
-        measure(line.small ? fontSize - 2 : fontSize, line.weight);
-        return ctx.measureText(line.value).width;
-      }),
-      0
-    );
+  const lineSize = (line, base) => {
+    if (line.title) return base + 4 * scale;
+    if (line.small) return Math.max(minFont, base - 2 * scale);
+    return base;
+  };
+  const measureLineWidth = (line, base) => {
+    const size = lineSize(line, base);
+    if (line.columns) {
+      setFont(size, line.weight === 'bold' || line.title ? 'bold' : 'normal');
+      const gap = 8 * scale;
+      return ctx.measureText(line.columns.left).width + gap + ctx.measureText(line.columns.right).width;
+    }
+    setFont(size, line.weight === 'bold' || line.title ? 'bold' : line.weight);
+    return ctx.measureText(line.value).width;
+  };
+
+  while (fontSize > minFont) {
+    const widest = Math.max(...lines.map((line) => measureLineWidth(line, fontSize)), 0);
     if (widest <= usable) break;
-    fontSize -= 1;
+    fontSize -= scale;
   }
 
-  const lineH = Math.ceil(fontSize * 1.28);
-  const heightPx = padY * 2 + lines.length * lineH + 4;
+  const lineH = Math.ceil(fontSize * 1.35);
+  const heightPx = padY * 2 + lines.length * lineH + 8 * scale;
   canvas.width = widthPx;
   canvas.height = heightPx;
 
   ctx.fillStyle = '#ffffff';
   ctx.fillRect(0, 0, widthPx, heightPx);
   ctx.fillStyle = '#000000';
+  ctx.strokeStyle = '#000000';
   ctx.textBaseline = 'top';
+  ctx.imageSmoothingEnabled = false;
+
+  const drawThickText = (text, x, y, size, weight) => {
+    setFont(size, weight);
+    /* Stroke + fill = thicker (“mota”) glyphs on faint thermal paper */
+    ctx.lineWidth = Math.max(1, Math.round(scale * 0.9));
+    ctx.lineJoin = 'round';
+    ctx.strokeText(text, x, y);
+    ctx.fillText(text, x, y);
+  };
 
   let y = padY;
   lines.forEach((line) => {
-    const size = line.title ? fontSize + 4 : line.small ? fontSize - 2 : fontSize;
-    measure(size, line.weight);
-    const textW = ctx.measureText(line.value).width;
-    let x = padX;
-    if (line.align === 'center') x = Math.max(padX, (widthPx - textW) / 2);
-    if (line.align === 'right') x = Math.max(padX, widthPx - padX - textW);
-    ctx.fillText(line.value, x, y);
-    y += line.title ? lineH + 2 : lineH;
+    const size = lineSize(line, fontSize);
+    const weight = line.weight === 'bold' || line.title ? 'bold' : 'normal';
+
+    if (line.columns) {
+      let rightSize = size;
+      setFont(size, weight);
+      const leftW = ctx.measureText(line.columns.left).width;
+      const gap = 8 * scale;
+      setFont(rightSize, weight);
+      let rightW = ctx.measureText(line.columns.right).width;
+      while (leftW + gap + rightW > usable && rightSize > minFont) {
+        rightSize -= scale;
+        setFont(rightSize, weight);
+        rightW = ctx.measureText(line.columns.right).width;
+      }
+      /* Left label + right-aligned amount — amount never crosses padX edge */
+      drawThickText(line.columns.left, padX, y, size, weight);
+      ctx.textAlign = 'right';
+      drawThickText(line.columns.right, widthPx - padX, y, rightSize, weight);
+      ctx.textAlign = 'left';
+    } else {
+      setFont(size, weight);
+      const textW = ctx.measureText(line.value).width;
+      let x = padX;
+      if (line.align === 'center') x = Math.max(padX, (widthPx - textW) / 2);
+      if (line.align === 'right') x = Math.max(padX, widthPx - padX - textW);
+      /* Clamp so nothing paints past the right safe margin */
+      if (x + textW > widthPx - padX) x = Math.max(padX, widthPx - padX - textW);
+      drawThickText(line.value, x, y, size, weight);
+    }
+    y += line.title ? lineH + 2 * scale : lineH;
   });
 
   return new Promise((resolve, reject) => {
@@ -462,7 +546,7 @@ function buildThermalReceiptHtml(order, thermalWidth = '58mm') {
     const unit = Number(item.price) || 0;
     return `<div class="r-item">
       <strong>${escapeHtml(item.name || 'Item')}</strong>
-      <div class="r-row"><span>${qty} x ${escapeHtml(amountText(unit))}</span><b>${escapeHtml(amountText(unit * qty))}</b></div>
+      <div class="r-row"><span>${qty} x ${escapeHtml(thermalAmountText(unit))}</span><b>${escapeHtml(thermalAmountText(unit * qty))}</b></div>
     </div>`;
   }).join('');
 
@@ -494,7 +578,9 @@ html, body {
 .r-item { margin: 0 0 4px; }
 .r-item strong { display: block; font-size: 11px; }
 .r-row { display: flex; justify-content: space-between; gap: 4px; font-size: 10px; }
-.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 2px 6px; font-size: 11px; }
+.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 2px 4px; font-size: 11px; }
+.r-totals > * { min-width: 0; }
+.r-totals strong { text-align: right; white-space: nowrap; }
 .r-grand { font-size: 13px; font-weight: 900; }
 .r-thanks, .r-site { text-align: center; margin: 4px 0 0; font-size: 10px; font-weight: 700; }
 `.trim();
@@ -521,9 +607,9 @@ html, body {
   ${items || '<div class="r-item">No items</div>'}
   <hr class="r-rule" />
   <div class="r-totals">
-    <span>Subtotal</span><strong>${escapeHtml(amountText(subtotal))}</strong>
-    ${discount ? `<span>Discount</span><strong>${escapeHtml(amountText(discount))}</strong>` : ''}
-    <span class="r-grand">TOTAL</span><strong class="r-grand">${escapeHtml(amountText(grandTotal))}</strong>
+    <span>Subtotal</span><strong>${escapeHtml(thermalAmountText(subtotal))}</strong>
+    ${discount ? `<span>Discount</span><strong>${escapeHtml(thermalAmountText(discount))}</strong>` : ''}
+    <span class="r-grand">TOTAL</span><strong class="r-grand">${escapeHtml(thermalAmountText(grandTotal))}</strong>
   </div>
   <p class="r-thanks">Thank you for shopping!</p>
   <p class="r-site">${escapeHtml(RECEIPT_SITE)}</p>
@@ -605,7 +691,7 @@ function receiptPngFilename(order) {
 
 /**
  * Print for BT800S 58mm thermal:
- * - Android → RawBT once (debounced) — never multi-fire 3–4 pages
+ * - Android → Mate "Bluetooth Thermal Printer" (PNG share, then text intent)
  * - Other → isolated 58mm HTML iframe print
  */
 export async function printActiveCounterReceipt({
@@ -620,14 +706,29 @@ export async function printActiveCounterReceipt({
 
   if (inFlightRef) inFlightRef.current = true;
   try {
-    /* BT800S / Android — RawBT text, single shot */
+    /* Android → Mate Technologies Bluetooth Thermal Printer (not RawBT) */
     if (isAndroidDevice()) {
-      const anchor = document.createElement('a');
-      anchor.href = rawBtHref(order);
-      anchor.style.display = 'none';
-      document.body.appendChild(anchor);
-      anchor.click();
-      anchor.remove();
+      try {
+        const blob = await createCounterReceiptPngBlob(order, thermalWidth);
+        const file = new File([blob], receiptPngFilename(order), { type: 'image/png' });
+        if (navigator.canShare?.({ files: [file] })) {
+          await navigator.share({
+            title: `${SHOP.name} ${receiptNumber(order)}`,
+            text: `${SHOP.name} receipt — open in Bluetooth Thermal Printer`,
+            files: [file],
+          });
+          finishPrintJob(inFlightRef);
+          return true;
+        }
+        downloadBlob(blob, file.name);
+      } catch (err) {
+        if (err?.name !== 'AbortError') {
+          openMateThermalText(order);
+        }
+        finishPrintJob(inFlightRef);
+        return err?.name === 'AbortError';
+      }
+      openMateThermalText(order);
       finishPrintJob(inFlightRef);
       return true;
     }
@@ -641,22 +742,16 @@ export async function printActiveCounterReceipt({
   }
 }
 
-/** Open RawBT from a click handler (Android BT800S). */
-export function openRawBtReceipt(order) {
+/** Open Mate Bluetooth Thermal Printer with receipt text (Android). */
+export function openMateThermalReceipt(order) {
   if (!order || typeof window === 'undefined') return false;
   if (!claimPrintSlot(order)) return false;
-  const anchor = document.createElement('a');
-  anchor.href = rawBtHref(order);
-  anchor.style.display = 'none';
-  document.body.appendChild(anchor);
-  anchor.click();
-  anchor.remove();
-  return true;
+  return openMateThermalText(order);
 }
 
 export function downloadCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order) return;
-  /* Android RawBT Image: PNG at 384px fills paper; PDF letterboxes with side gaps */
+  /* Android: thick high-DPI PNG for Mate Image print; PDF letterboxes on 58mm */
   if (isAndroidDevice()) {
     createCounterReceiptPngBlob(order, thermalWidth)
       .then((blob) => downloadBlob(blob, receiptPngFilename(order)))
@@ -677,12 +772,13 @@ export async function shareCounterInvoicePdf(order, thermalWidth = readThermalRe
     if (navigator.canShare?.({ files: [file] })) {
       await navigator.share({
         title: `${SHOP.name} ${receiptNumber(order)}`,
-        text: `${SHOP.name} receipt ${receiptNumber(order)}`,
+        text: `${SHOP.name} receipt — choose Bluetooth Thermal Printer`,
         files: [file],
       });
       return true;
     }
     downloadBlob(blob, file.name);
+    openMateThermalText(order);
     return false;
   }
 
@@ -802,7 +898,7 @@ export default function AdminCounterBill({
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [receiptOrder, setReceiptOrder] = useState(null);
-  const showRawBtLink = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+  const showMateThermalLink = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
 
   const availableProducts = useMemo(() => {
     return products
@@ -1172,7 +1268,7 @@ export default function AdminCounterBill({
     });
   }, [onPrintOrder, receiptOrder, thermalWidth]);
 
-  /* No auto-print — confirm + Print was firing multiple RawBT jobs (3–4 slips). */
+  /* No auto-print — confirm + Print was firing multiple thermal jobs (3–4 slips). */
   const confirmBill = async () => {
     if (!lines.length) {
       setFeedback({ type: 'error', text: t('admin.counterBillEmpty') });
@@ -1677,7 +1773,7 @@ export default function AdminCounterBill({
               {receiptOrder ? (
                 <>
                   <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
-                    {showRawBtLink ? t('admin.counterBillPrintRawBt') : t('admin.counterBillPrintNow')}
+                    {showMateThermalLink ? t('admin.counterBillPrintMate') : t('admin.counterBillPrintNow')}
                   </button>
                   <button type="button" className="wp-button counter-bill__pdf-cta" onClick={() => downloadInvoice()}>
                     {t('admin.counterBillDownloadPdf')}
@@ -1698,7 +1794,7 @@ export default function AdminCounterBill({
             <strong>{t('admin.counterBillSavedReady')}</strong>
             <div className="counter-bill__receipt-actions">
               <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
-                {showRawBtLink ? t('admin.counterBillPrintRawBt') : t('admin.counterBillPrintNow')}
+                {showMateThermalLink ? t('admin.counterBillPrintMate') : t('admin.counterBillPrintNow')}
               </button>
               <button type="button" className="wp-button counter-bill__pdf-cta" onClick={() => downloadInvoice()}>
                 {t('admin.counterBillDownloadPdf')}
@@ -1706,9 +1802,9 @@ export default function AdminCounterBill({
               <button type="button" className="wp-button counter-bill__share-cta" onClick={() => shareInvoice()}>
                 {t('admin.counterBillSharePdf')}
               </button>
-              {showRawBtLink ? (
-                <a className="wp-button counter-bill__rawbt-cta" href={rawBtHref(receiptOrder)}>
-                  {t('admin.counterBillOpenRawBt')}
+              {showMateThermalLink ? (
+                <a className="wp-button counter-bill__mate-cta" href={mateThermalTextHref(receiptOrder)}>
+                  {t('admin.counterBillOpenMate')}
                 </a>
               ) : null}
             </div>
