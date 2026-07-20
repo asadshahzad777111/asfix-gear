@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../api/client';
 import AdminCounterBill, {
-  CounterBillReceipt,
   downloadCounterInvoicePdf,
   printActiveCounterReceipt,
   readThermalReceiptWidth,
@@ -42,7 +41,6 @@ export default function Counter() {
   const [returnReason, setReturnReason] = useState('');
   const [returnFeedback, setReturnFeedback] = useState('');
   const [returnSubmitting, setReturnSubmitting] = useState(false);
-  const [printJob, setPrintJob] = useState(null);
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const [bootstrapping, setBootstrapping] = useState(true);
   const [salesOpen, setSalesOpen] = useState(false);
@@ -79,26 +77,6 @@ export default function Counter() {
   useEffect(() => {
     loadCounterData({ silent: false });
   }, []);
-
-  useEffect(() => {
-    if (!printJob?.order) return undefined;
-
-    let cancelled = false;
-    (async () => {
-      await printActiveCounterReceipt({
-        thermalWidth,
-        inFlightRef: printInFlightRef,
-        order: printJob.order,
-      });
-      if (!cancelled) {
-        setPrintJob(null);
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [printJob, thermalWidth]);
 
   const jumpToSales = () => {
     setSalesOpen(true);
@@ -215,8 +193,13 @@ export default function Counter() {
       window.alert?.('Receipt details are still loading. Refresh sales and try Print Receipt again.');
       return;
     }
-    setPrintJob({ order, requestedAt: Date.now() });
-  }, [resolvePrintableCounterSale]);
+    /* Direct print — no delayed useEffect (that blocked popups and auto-downloaded PDF). */
+    await printActiveCounterReceipt({
+      thermalWidth,
+      inFlightRef: printInFlightRef,
+      order,
+    });
+  }, [resolvePrintableCounterSale, thermalWidth]);
 
   const shareCounterSale = async (sale) => {
     try {
@@ -362,10 +345,6 @@ export default function Counter() {
             )
           ) : null}
         </section>
-
-        <div className="counter-print-stage" aria-hidden="true">
-          <CounterBillReceipt order={printJob?.order} printable thermalWidth={thermalWidth} />
-        </div>
 
         {returnSale ? (
           <div className="counter-return-modal" role="dialog" aria-modal="true" aria-label="Process return">
