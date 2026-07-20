@@ -85,7 +85,11 @@ export default function Counter() {
 
     let cancelled = false;
     (async () => {
-      await printActiveCounterReceipt({ thermalWidth, inFlightRef: printInFlightRef });
+      await printActiveCounterReceipt({
+        thermalWidth,
+        inFlightRef: printInFlightRef,
+        order: printJob.order,
+      });
       if (!cancelled) {
         setPrintJob(null);
       }

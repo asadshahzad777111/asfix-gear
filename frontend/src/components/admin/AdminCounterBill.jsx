@@ -269,16 +269,16 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const receiptLines = [];
 
   const addLine = (value = '', options = {}) => {
-    receiptLines.push({ value, size: 8, leading: 10, align: 'left', font: 'F1', ...options });
+    receiptLines.push({ value, size: 9.5, leading: 12, align: 'left', font: 'F1', ...options });
   };
   const addWrapped = (value, options = {}) => {
     wrapPdfText(value, options.maxChars || maxChars).forEach((line) => addLine(line, options));
   };
-  const addRule = () => addLine('-'.repeat(maxChars), { size: 7, leading: 8, align: 'center' });
+  const addRule = () => addLine('-'.repeat(maxChars), { size: 8, leading: 10, align: 'center' });
 
-  addLine('ASFIX & GEAR', { size: 12, leading: 14, align: 'center', font: 'F2' });
-  addWrapped(SHOP.addressLine1, { size: 7, leading: 8, align: 'center' });
-  addWrapped(`${SHOP.addressLine2} | ${SHOP.phone}`, { size: 7, leading: 8, align: 'center' });
+  addLine('ASFIX & GEAR', { size: 13, leading: 16, align: 'center', font: 'F2' });
+  addWrapped(SHOP.addressLine1, { size: 8, leading: 10, align: 'center' });
+  addWrapped(`${SHOP.addressLine2} | ${SHOP.phone}`, { size: 8, leading: 10, align: 'center' });
   addRule();
   addLine(`Bill: ${receiptNumber(order)}`);
   addLine(`Date: ${order?.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`);
@@ -295,23 +295,25 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
       const qty = Number(item.qty) || 1;
       const unit = Number(item.price) || 0;
       addWrapped(item.name || 'Item', { font: 'F2' });
-      addLine(`${qty} x ${amountText(unit)}`, { size: 7.5, leading: 9 });
-      addLine(amountText(unit * qty), { font: 'F2', align: 'right', leading: 9 });
+      addLine(`${qty} x ${amountText(unit)}`, { size: 9, leading: 11 });
+      addLine(amountText(unit * qty), { font: 'F2', align: 'right', leading: 11 });
     });
   }
 
   addRule();
   addLine(`Subtotal: ${amountText(subtotal)}`);
   if (discount) addLine(`Discount: ${amountText(discount)}`);
-  addLine(`TOTAL: ${amountText(grandTotal)}`, { size: 10, leading: 12, font: 'F2' });
+  addLine(`TOTAL: ${amountText(grandTotal)}`, { size: 12, leading: 15, font: 'F2' });
   const note = counterPaymentNote(order);
-  if (note) addWrapped(`Note: ${note}`, { size: 7, leading: 8 });
+  if (note) addWrapped(`Note: ${note}`, { size: 8, leading: 10 });
   addRule();
   addLine('Thank you for shopping!', { align: 'center', font: 'F2' });
   addLine(RECEIPT_SITE, { align: 'center', font: 'F2' });
 
-  const height = Math.ceil(
-    marginTop + marginBottom + receiptLines.reduce((sum, line) => sum + line.leading, 0)
+  /* Keep height content-driven so few/many items both print full-width thermal pages */
+  const height = Math.max(
+    pdfPointsFromMillimeters(70),
+    Math.ceil(marginTop + marginBottom + receiptLines.reduce((sum, line) => sum + line.leading, 0) + 8)
   );
   const commands = [];
 
@@ -383,46 +385,223 @@ function waitForNextPaint() {
   });
 }
 
-function setThermalPageSize(thermalWidth) {
-  if (typeof document === 'undefined') return () => {};
+function isAndroidDevice() {
+  return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
+}
 
-  const pageWidth = thermalWidth === '80mm' ? '80mm' : '58mm';
+function pxToMm(px) {
+  return (Number(px) || 0) * 25.4 / 96;
+}
+
+function thermalReceiptPrintCss(widthMm, heightMm) {
+  return `
+@page { size: ${widthMm}mm ${heightMm}mm; margin: 0; }
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: ${widthMm}mm !important;
+  min-height: ${heightMm}mm !important;
+  background: #fff !important;
+  overflow: visible !important;
+}
+* {
+  box-sizing: border-box;
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+body > *:not(.counter-bill-print) { display: none !important; }
+.counter-bill-print,
+.counter-bill-print--active {
+  display: block !important;
+  position: static !important;
+  width: ${widthMm}mm !important;
+  max-width: ${widthMm}mm !important;
+  min-height: 0 !important;
+  margin: 0 !important;
+  padding: 3mm 2.5mm !important;
+  color: #000 !important;
+  background: #fff !important;
+  font-family: "Courier New", Courier, monospace !important;
+  font-size: 12px !important;
+  line-height: 1.3 !important;
+  box-shadow: none !important;
+  border: 0 !important;
+}
+.counter-bill-print__shop { text-align: center; margin-bottom: 0.35rem; }
+.counter-bill-print__shop h2 {
+  margin: 0 0 0.15rem;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+}
+.counter-bill-print__shop p,
+.counter-bill-print__thanks,
+.counter-bill-print__site {
+  margin: 0.1rem 0;
+  font-size: 10px;
+}
+.counter-bill-print__meta {
+  display: grid;
+  gap: 0.12rem;
+  margin: 0.35rem 0;
+  font-size: 10.5px;
+}
+.counter-bill-print__rule {
+  border-top: 1px dashed #222;
+  margin: 0.35rem 0;
+}
+.counter-bill-print__items { display: grid; gap: 0.35rem; }
+.counter-bill-print__item {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.1rem 0.4rem;
+  font-size: 11px;
+}
+.counter-bill-print__item strong {
+  grid-column: 1 / -1;
+  font-size: 11.5px;
+}
+.counter-bill-print__item span { color: #222; }
+.counter-bill-print__item b { text-align: right; }
+.counter-bill-print__totals {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 0.15rem 0.5rem;
+  font-size: 11px;
+}
+.counter-bill-print__grand-label,
+.counter-bill-print__grand {
+  font-size: 13px;
+  font-weight: 800;
+}
+.counter-bill-print__thanks,
+.counter-bill-print__site { text-align: center; }
+`.trim();
+}
+
+function cleanupPrintFrame(frame, blobUrl, inFlightRef) {
+  try {
+    frame?.remove();
+  } catch {
+    /* ignore */
+  }
+  if (blobUrl) {
+    window.setTimeout(() => URL.revokeObjectURL(blobUrl), 1500);
+  }
   document.getElementById(THERMAL_PAGE_STYLE_ID)?.remove();
-
-  const style = document.createElement('style');
-  style.id = THERMAL_PAGE_STYLE_ID;
-  style.textContent = `@media print { @page { size: ${pageWidth} auto; margin: 0; } }`;
-  document.head.appendChild(style);
-  document.body.classList.toggle('receipt-thermal-80mm', pageWidth === '80mm');
-
-  return () => {
-    style.remove();
-    document.body.classList.remove('receipt-thermal-80mm');
-  };
-}
-
-function mountReceiptPrintRoot(receipt) {
   document.getElementById(PRINT_ROOT_ID)?.remove();
-
-  const root = document.createElement('div');
-  root.id = PRINT_ROOT_ID;
-  root.className = 'counter-print-root';
-  root.setAttribute('aria-hidden', 'true');
-  root.style.setProperty(
-    '--thermal-receipt-width',
-    receipt.style.getPropertyValue('--thermal-receipt-width') || '58mm'
-  );
-  root.appendChild(receipt.cloneNode(true));
-  document.body.appendChild(root);
-  document.body.classList.add('counter-receipt-printing');
-
-  return () => {
-    root.remove();
-    document.body.classList.remove('counter-receipt-printing');
-  };
+  document.body.classList.remove('counter-receipt-printing', 'receipt-thermal-80mm');
+  if (inFlightRef) inFlightRef.current = false;
 }
 
-export async function printActiveCounterReceipt({ thermalWidth = '58mm', inFlightRef } = {}) {
+function attachPrintCleanup(win, cleanup) {
+  let done = false;
+  const run = () => {
+    if (done) return;
+    done = true;
+    win?.removeEventListener?.('afterprint', run);
+    document.removeEventListener('visibilitychange', onVis);
+    window.clearTimeout(fallbackTimer);
+    cleanup();
+  };
+  const onVis = () => {
+    if (document.visibilityState === 'visible') run();
+  };
+  win?.addEventListener?.('afterprint', run, { once: true });
+  document.addEventListener('visibilitychange', onVis);
+  /* Android print is async — never tear down at 1s (that captured the whole POS UI). */
+  const fallbackTimer = window.setTimeout(run, 90_000);
+  return run;
+}
+
+/** Print a thermal-sized PDF (correct MediaBox) — best path on Android. */
+async function printThermalPdf(order, thermalWidth, inFlightRef) {
+  const blob = createCounterInvoicePdfBlob(order, thermalWidth);
+  const blobUrl = URL.createObjectURL(blob);
+  const frame = document.createElement('iframe');
+  frame.title = 'AsFix thermal receipt';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none;left:-9999px;top:0;';
+  document.body.appendChild(frame);
+
+  await new Promise((resolve, reject) => {
+    const timer = window.setTimeout(() => reject(new Error('PDF print frame timed out')), 8000);
+    frame.onload = () => {
+      window.clearTimeout(timer);
+      resolve();
+    };
+    frame.onerror = () => {
+      window.clearTimeout(timer);
+      reject(new Error('PDF print frame failed'));
+    };
+    frame.src = blobUrl;
+  });
+
+  await waitForNextPaint();
+  const win = frame.contentWindow;
+  if (!win) {
+    cleanupPrintFrame(frame, blobUrl, inFlightRef);
+    return false;
+  }
+
+  attachPrintCleanup(win, () => cleanupPrintFrame(frame, blobUrl, inFlightRef));
+  win.focus();
+  win.print();
+  return true;
+}
+
+/** Isolated HTML receipt iframe — never prints the live POS product grid. */
+async function printThermalHtmlReceipt(receipt, thermalWidth, inFlightRef) {
+  const widthMm = thermalWidth === '80mm' ? 80 : 58;
+  const measuredMm = Math.ceil(pxToMm(receipt.scrollHeight || receipt.getBoundingClientRect().height));
+  const heightMm = Math.max(80, measuredMm + 10);
+  const markup = receipt.outerHTML;
+  const docHtml = `<!DOCTYPE html><html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=${widthMm}, initial-scale=1" />
+<title>AsFix Receipt</title>
+<style>${thermalReceiptPrintCss(widthMm, heightMm)}</style>
+</head><body>${markup}</body></html>`;
+
+  const frame = document.createElement('iframe');
+  frame.title = 'AsFix thermal receipt';
+  frame.setAttribute('aria-hidden', 'true');
+  frame.style.cssText = 'position:fixed;width:0;height:0;border:0;opacity:0;pointer-events:none;left:-9999px;top:0;';
+  document.body.appendChild(frame);
+
+  const doc = frame.contentDocument;
+  if (!doc) {
+    cleanupPrintFrame(frame, null, inFlightRef);
+    return false;
+  }
+  doc.open();
+  doc.write(docHtml);
+  doc.close();
+
+  await waitForNextPaint();
+  await waitForNextPaint();
+
+  const win = frame.contentWindow;
+  if (!win) {
+    cleanupPrintFrame(frame, null, inFlightRef);
+    return false;
+  }
+
+  attachPrintCleanup(win, () => cleanupPrintFrame(frame, null, inFlightRef));
+  win.focus();
+  win.print();
+  return true;
+}
+
+/**
+ * Print only the thermal receipt (never the POS UI).
+ * Android prefers the compact thermal PDF; others use an isolated HTML iframe.
+ */
+export async function printActiveCounterReceipt({
+  thermalWidth = '58mm',
+  inFlightRef,
+  order = null,
+} = {}) {
   if (typeof window === 'undefined' || typeof document === 'undefined') return false;
   if (inFlightRef?.current) return false;
 
@@ -430,32 +609,30 @@ export async function printActiveCounterReceipt({ thermalWidth = '58mm', inFligh
   try {
     await waitForNextPaint();
 
+    /* Android browser print defaults to A4 and used to capture the whole POS SPA.
+       Thermal PDF MediaBox is already 58/80mm × content height — use that first. */
+    if (order && isAndroidDevice()) {
+      try {
+        return await printThermalPdf(order, thermalWidth, inFlightRef);
+      } catch {
+        /* fall through to HTML iframe */
+      }
+    }
+
     let receipt = document.querySelector('.counter-bill-print--active');
     if (!receiptHasPrintableContent(receipt)) {
       await waitForNextPaint();
       receipt = document.querySelector('.counter-bill-print--active');
     }
     if (!receiptHasPrintableContent(receipt)) {
+      if (order) {
+        return await printThermalPdf(order, thermalWidth, inFlightRef);
+      }
       if (inFlightRef) inFlightRef.current = false;
       return false;
     }
 
-    const cleanupPageSize = setThermalPageSize(thermalWidth);
-    const cleanupPrintRoot = mountReceiptPrintRoot(receipt);
-    let cleanedUp = false;
-    const cleanup = () => {
-      if (cleanedUp) return;
-      cleanedUp = true;
-      cleanupPrintRoot();
-      cleanupPageSize();
-      window.removeEventListener('afterprint', cleanup);
-      if (inFlightRef) inFlightRef.current = false;
-    };
-
-    window.addEventListener('afterprint', cleanup, { once: true });
-    window.print();
-    window.setTimeout(cleanup, 1000);
-    return true;
+    return await printThermalHtmlReceipt(receipt, thermalWidth, inFlightRef);
   } catch {
     if (inFlightRef) inFlightRef.current = false;
     return false;
@@ -949,7 +1126,11 @@ export default function AdminCounterBill({
       onPrintOrder(order);
       return;
     }
-    await printActiveCounterReceipt({ thermalWidth, inFlightRef: printInFlightRef });
+    await printActiveCounterReceipt({
+      thermalWidth,
+      inFlightRef: printInFlightRef,
+      order,
+    });
   }, [onPrintOrder, receiptOrder, thermalWidth]);
 
   useEffect(() => {
