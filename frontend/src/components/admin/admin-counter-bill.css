@@ -1,12 +1,24 @@
+:root {
+  --counter-gold: #c9a227;
+  --counter-gold-light: #f5d56f;
+  --counter-ink: #0b0b0d;
+  --counter-panel: #151515;
+  --counter-cream: #fbf7eb;
+  --counter-muted: #7d7768;
+}
+
 .counter-bill {
-  background: #f0f0f1;
-  border: 1px solid #1d2327;
-  border-radius: 4px;
-  padding: 1rem;
-  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
   max-width: 100%;
   min-width: 0;
+  padding: clamp(0.85rem, 2vw, 1.35rem);
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  border-radius: 24px;
   box-sizing: border-box;
+  color: #191712;
+  background:
+    radial-gradient(circle at 8% 0%, rgba(201, 162, 39, 0.22), transparent 30%),
+    linear-gradient(135deg, #070707 0%, #141414 34%, #f8f0dd 34.2%, #fffaf0 100%);
+  box-shadow: 0 22px 60px rgba(0, 0, 0, 0.16);
 }
 
 .counter-bill *,
@@ -26,7 +38,7 @@
 }
 
 .counter-content {
-  width: min(100%, 1280px);
+  width: min(100%, 1440px);
   max-width: 100%;
   margin: 0 auto;
   padding-left: max(1rem, env(safe-area-inset-left));
@@ -52,21 +64,24 @@
   display: grid;
   gap: 0.15rem;
   min-width: 180px;
-  padding: 0.75rem 0.9rem;
-  border: 1px solid #c3c4c7;
-  border-radius: 4px;
-  background: #fff;
+  padding: 0.85rem 1rem;
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  border-radius: 16px;
+  background: linear-gradient(145deg, #101010, #252018);
+  color: #fff7df;
   text-align: right;
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.16);
 }
 
 .counter-today-card span,
 .counter-today-card small {
-  color: #646970;
+  color: #d8cda8;
   font-size: 0.8rem;
 }
 
 .counter-today-card strong {
-  font-size: 1.25rem;
+  color: var(--counter-gold-light);
+  font-size: 1.35rem;
 }
 
 .counter-sales {
@@ -106,28 +121,33 @@
   gap: 1rem;
   flex-wrap: wrap;
   margin-bottom: 1rem;
-  padding: 0.85rem;
-  border-radius: 4px;
-  background: #1d2327;
-  color: #fff;
+  padding: 1rem;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 20px;
+  background:
+    linear-gradient(90deg, rgba(201, 162, 39, 0.18), transparent 45%),
+    rgba(5, 5, 5, 0.92);
+  color: #fff9e8;
 }
 
 .counter-bill__head h3 {
   margin: 0 0 0.35rem;
-  font-size: 1.15rem;
+  color: var(--counter-gold-light);
+  font-size: clamp(1.25rem, 2vw, 1.65rem);
+  letter-spacing: -0.02em;
 }
 
 .counter-bill__head p,
 .counter-bill__shop span,
 .counter-bill__empty {
   margin: 0;
-  color: #646970;
+  color: #7a735f;
   font-size: 0.88rem;
 }
 
 .counter-bill__head p,
 .counter-bill__head .counter-bill__shop span {
-  color: #c3c4c7;
+  color: #d6ceb7;
 }
 
 .counter-bill__shop {
@@ -136,222 +156,497 @@
   text-align: right;
 }
 
+.counter-bill__shop strong {
+  color: #fff;
+}
+
 .counter-bill__feedback {
   margin-bottom: 0.75rem;
-  padding: 0.55rem 0.7rem;
-  border-radius: 3px;
-  font-size: 0.85rem;
+  padding: 0.75rem 0.9rem;
+  border-radius: 14px;
+  font-size: 0.9rem;
+  font-weight: 700;
 }
 
 .counter-bill__feedback--success {
-  background: #edfaef;
+  background: #e7f8eb;
   border: 1px solid #68de7c;
-  color: #1e4620;
+  color: #143f1c;
 }
 
 .counter-bill__feedback--error {
-  background: #fcf0f1;
+  background: #fff0f1;
   border: 1px solid #d63638;
   color: #8a2424;
 }
 
 .counter-bill__grid {
   display: grid;
-  grid-template-columns: minmax(0, 0.75fr) minmax(0, 1.25fr);
-  gap: 0.85rem;
+  grid-template-columns: minmax(0, 1.35fr) minmax(360px, 0.85fr);
+  gap: 1rem;
+  align-items: start;
   min-width: 0;
 }
 
 .counter-bill__panel {
-  border: 1px solid #dcdcde;
-  border-radius: 4px;
-  padding: 0.75rem;
-  background: #f6f7f7;
   min-width: 0;
+  border: 1px solid rgba(201, 162, 39, 0.28);
+  border-radius: 22px;
+  padding: 1rem;
+  background: rgba(255, 252, 244, 0.94);
+  box-shadow: 0 16px 42px rgba(30, 22, 5, 0.12);
 }
 
-.counter-bill__panel h4 {
-  margin: 0 0 0.75rem;
-  font-size: 0.95rem;
+.counter-bill__panel--products {
+  background: rgba(255, 250, 240, 0.96);
+}
+
+.counter-bill__panel--cart {
+  position: sticky;
+  top: calc(64px + env(safe-area-inset-top));
+  background: linear-gradient(180deg, #121212 0%, #1d1a14 100%);
+  color: #fff8e5;
+}
+
+.counter-bill__panel--flash {
+  animation: counter-cart-flash 450ms ease;
+}
+
+.counter-bill__panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.counter-bill__panel-head h4 {
+  margin: 0;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+}
+
+.counter-bill__panel-head span {
+  color: var(--counter-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.counter-bill__panel--cart .counter-bill__panel-head span {
+  color: #d7c693;
+}
+
+.counter-bill__categories {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+  padding-bottom: 0.15rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.counter-bill__category {
+  flex: 0 0 auto;
+  min-height: 38px;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 999px;
+  padding: 0.4rem 0.8rem;
+  background: #fff;
+  color: #312913;
+  cursor: pointer;
+  font: inherit;
+  font-size: 0.86rem;
+  font-weight: 800;
+}
+
+.counter-bill__category--active,
+.counter-bill__category:hover {
+  border-color: #9f7d14;
+  background: linear-gradient(135deg, #17130a, #c9a227);
+  color: #fff8dc;
+  box-shadow: 0 8px 18px rgba(201, 162, 39, 0.25);
 }
 
 .counter-bill__search,
-.counter-bill__customer label {
+.counter-bill__customer label,
+.counter-bill__cash-box label,
+.counter-bill__note,
+.counter-bill__payment {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.35rem;
   font-size: 0.82rem;
-  font-weight: 600;
-  color: #1d2327;
+  font-weight: 800;
+}
+
+.counter-bill__search {
+  color: #1d1a14;
 }
 
 .counter-bill__search small {
-  color: #646970;
-  font-weight: 400;
+  color: #7a735f;
+  font-weight: 500;
 }
 
 .counter-bill__search input,
 .counter-bill__customer input,
-.counter-bill__customer select,
-.counter-bill__sheet input {
+.counter-bill__cash-box input,
+.counter-bill__note input,
+.counter-bill__qty-stepper input {
   width: 100%;
-  min-height: 34px;
-  border: 1px solid #8c8f94;
-  border-radius: 3px;
-  padding: 0.35rem 0.5rem;
+  min-height: 42px;
+  border: 1px solid rgba(68, 55, 16, 0.28);
+  border-radius: 13px;
+  padding: 0.45rem 0.65rem;
   font: inherit;
   background: #fff;
+  color: #15120c;
+  outline: none;
 }
 
-.counter-bill__results,
-.counter-bill__lines {
+.counter-bill__search input:focus,
+.counter-bill__customer input:focus,
+.counter-bill__cash-box input:focus,
+.counter-bill__note input:focus,
+.counter-bill__qty-stepper input:focus {
+  border-color: var(--counter-gold);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.18);
+}
+
+.counter-bill__products {
   display: grid;
-  margin-top: 0.75rem;
-}
-
-.counter-bill__result {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.6rem;
-  align-items: center;
-  padding: 0.6rem;
-  border: 1px solid #dcdcde;
-  border-radius: 4px;
-  background: #fff;
-}
-
-.counter-bill__result {
-  width: 100%;
-  max-width: 100%;
-  text-align: left;
-  cursor: pointer;
-}
-
-.counter-bill__result:hover {
-  border-color: #2271b1;
-  box-shadow: 0 0 0 1px #2271b1;
-}
-
-.counter-bill__result small,
-.counter-bill__sheet small {
-  display: block;
-  margin-top: 0.15rem;
-  color: #646970;
-  font-size: 0.76rem;
-  font-weight: 400;
-}
-
-.counter-bill__sheet {
-  overflow-x: auto;
-  max-width: 100%;
-  border: 1px solid #c3c4c7;
-  background: #fff;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 0.75rem;
+  margin-top: 0.9rem;
+  max-height: min(68vh, 760px);
+  overflow-y: auto;
+  padding-right: 0.2rem;
   -webkit-overflow-scrolling: touch;
 }
 
-.counter-bill__sheet table {
+.counter-bill__product-tile {
+  display: grid;
+  grid-template-rows: 112px 1fr auto;
+  gap: 0.55rem;
+  min-height: 238px;
   width: 100%;
-  min-width: 680px;
-  border-collapse: collapse;
-  font-size: 0.86rem;
-}
-
-.counter-bill__sheet th,
-.counter-bill__sheet td {
-  border: 1px solid #dcdcde;
-  padding: 0.38rem 0.45rem;
+  border: 1px solid rgba(201, 162, 39, 0.24);
+  border-radius: 18px;
+  padding: 0.65rem;
+  background: linear-gradient(180deg, #fffdf6, #f7efd9);
+  color: #17130a;
   text-align: left;
-  vertical-align: middle;
+  cursor: pointer;
+  box-shadow: 0 8px 20px rgba(34, 24, 4, 0.08);
+  transition: transform 160ms ease, border-color 160ms ease, box-shadow 160ms ease;
 }
 
-.counter-bill__sheet th {
-  position: sticky;
-  top: 0;
-  z-index: 1;
-  background: #1d2327;
-  color: #fff;
-  font-size: 0.74rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
+.counter-bill__product-tile:hover {
+  transform: translateY(-2px);
+  border-color: var(--counter-gold);
+  box-shadow: 0 14px 30px rgba(83, 59, 9, 0.2);
 }
 
-.counter-bill__sheet th:nth-child(1),
-.counter-bill__sheet td:nth-child(1),
-.counter-bill__sheet th:nth-child(3),
-.counter-bill__sheet td:nth-child(3) {
+.counter-bill__product-media {
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 14px;
+  background:
+    linear-gradient(135deg, rgba(0, 0, 0, 0.78), rgba(31, 26, 13, 0.8)),
+    radial-gradient(circle at 50% 0%, rgba(201, 162, 39, 0.35), transparent 55%);
+}
+
+.counter-bill__product-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.counter-bill__product-info,
+.counter-bill__product-price {
+  display: grid;
+  gap: 0.2rem;
+}
+
+.counter-bill__product-info strong {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  font-size: 0.92rem;
+  line-height: 1.2;
+}
+
+.counter-bill__product-info small,
+.counter-bill__product-price small,
+.counter-bill__cart-row small {
+  color: #766b50;
+  font-size: 0.76rem;
+  font-weight: 600;
+}
+
+.counter-bill__product-price strong {
+  color: #8b6b0b;
+  font-size: 1rem;
+}
+
+.counter-bill__cart-lines {
+  display: grid;
+  gap: 0.65rem;
+  max-height: 36vh;
+  overflow-y: auto;
+  padding-right: 0.15rem;
+  -webkit-overflow-scrolling: touch;
+}
+
+.counter-bill__cart-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.7rem;
+  border: 1px solid rgba(201, 162, 39, 0.22);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.counter-bill__cart-index {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  background: rgba(201, 162, 39, 0.18);
+  color: var(--counter-gold-light);
+  font-weight: 900;
+}
+
+.counter-bill__cart-item {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.counter-bill__cart-item strong {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.counter-bill__qty-stepper {
+  display: grid;
+  grid-template-columns: 34px 52px 34px;
+  grid-column: 2 / 4;
+  gap: 0.25rem;
+  align-items: center;
+}
+
+.counter-bill__qty-stepper button {
+  min-height: 38px;
+  border: 1px solid rgba(201, 162, 39, 0.45);
+  border-radius: 11px;
+  background: #2b2414;
+  color: #ffeaa7;
+  cursor: pointer;
+  font: inherit;
+  font-size: 1.15rem;
+  font-weight: 900;
+}
+
+.counter-bill__qty-stepper button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.counter-bill__qty-stepper input {
+  min-height: 38px;
+  padding: 0.25rem;
   text-align: center;
 }
 
-.counter-bill__sheet th:nth-child(4),
-.counter-bill__sheet th:nth-child(5),
-.counter-bill__sheet td:nth-child(4),
-.counter-bill__sheet td:nth-child(5) {
+.counter-bill__cart-line-total {
+  color: var(--counter-gold-light);
+  font-size: 1.02rem;
   text-align: right;
 }
 
-.counter-bill__sheet td:nth-child(3) {
-  width: 5rem;
-}
-
-.counter-bill__sheet input {
-  min-height: 30px;
-  text-align: center;
-}
-
-.counter-bill__sheet button {
+.counter-bill__remove {
+  grid-column: 1 / -1;
+  justify-self: end;
   border: none;
   background: transparent;
-  color: #b32d2e;
+  color: #ff8c8c;
   cursor: pointer;
   font: inherit;
   font-size: 0.82rem;
+  font-weight: 800;
 }
 
-.counter-bill__empty-cell {
-  color: #646970;
-  text-align: center !important;
+.counter-bill__empty--cart {
+  padding: 1.5rem 1rem;
+  border: 1px dashed rgba(201, 162, 39, 0.35);
+  border-radius: 16px;
+  color: #d9cfae;
+  text-align: center;
+}
+
+.counter-bill__customer-toggle {
+  margin-top: 0.9rem;
+}
+
+.counter-bill__customer-toggle button {
+  border: none;
+  background: transparent;
+  color: var(--counter-gold-light);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
 }
 
 .counter-bill__customer {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.65rem;
-  margin-top: 1rem;
+  margin-top: 0.75rem;
 }
 
-.counter-bill__note {
-  grid-column: 1 / -1;
+.counter-bill__payment,
+.counter-bill__note,
+.counter-bill__cash-box {
+  margin-top: 0.9rem;
+}
+
+.counter-bill__payment-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem;
+}
+
+.counter-bill__pay {
+  min-height: 48px;
+  border: 2px solid transparent;
+  border-radius: 15px;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+  letter-spacing: 0.01em;
+  box-shadow: inset 0 -10px 18px rgba(0, 0, 0, 0.16);
+}
+
+.counter-bill__pay--cash {
+  background: linear-gradient(135deg, #15803d, #22c55e);
+}
+
+.counter-bill__pay--card {
+  background: linear-gradient(135deg, #1d4ed8, #38bdf8);
+}
+
+.counter-bill__pay--easypaisa {
+  background: linear-gradient(135deg, #7c2d12, #f97316 46%, #6d28d9);
+}
+
+.counter-bill__pay--jazzcash {
+  background: linear-gradient(135deg, #991b1b, #ef4444);
+}
+
+.counter-bill__pay--active {
+  border-color: var(--counter-gold-light);
+  box-shadow: 0 0 0 3px rgba(201, 162, 39, 0.22), inset 0 -10px 18px rgba(0, 0, 0, 0.12);
+}
+
+.counter-bill__cash-box {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+.counter-bill__change {
+  min-width: 170px;
+  padding: 0.75rem;
+  border: 1px solid rgba(201, 162, 39, 0.35);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.counter-bill__change span,
+.counter-bill__total span,
+.counter-bill__payment > span,
+.counter-bill__cash-box span,
+.counter-bill__note span,
+.counter-bill__customer span {
+  color: #d7c693;
+}
+
+.counter-bill__change strong {
+  display: block;
+  margin-top: 0.15rem;
+  color: #fff;
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
 }
 
 .counter-bill__footer {
   position: sticky;
   bottom: env(safe-area-inset-bottom);
   z-index: 3;
-  margin: 1rem -0.75rem -0.75rem;
-  padding: 0.75rem;
-  padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-  border-top: 1px solid #c3c4c7;
-  background: #fff;
-  box-shadow: 0 -8px 18px rgba(0, 0, 0, 0.08);
+  margin: 1rem -1rem -1rem;
+  padding: 0.9rem 1rem;
+  padding-bottom: calc(0.9rem + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(201, 162, 39, 0.28);
+  border-radius: 0 0 22px 22px;
+  background: rgba(10, 10, 10, 0.96);
+  box-shadow: 0 -10px 28px rgba(0, 0, 0, 0.28);
 }
 
 .counter-bill__total {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 1.1rem;
+  gap: 1rem;
+}
+
+.counter-bill__total strong {
+  color: var(--counter-gold-light);
+  font-size: clamp(2rem, 4vw, 2.35rem);
+  line-height: 1;
 }
 
 .counter-bill__actions {
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
-  gap: 0.5rem;
+  gap: 0.55rem;
   margin-top: 0.85rem;
 }
 
+.counter-bill__button,
 .counter-bill__actions .wp-button {
-  min-height: 38px;
-  font-weight: 700;
+  min-height: 44px;
+  border-radius: 14px;
+  padding: 0.55rem 1rem;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 900;
+}
+
+.counter-bill__button--primary {
+  border: 1px solid #f0d36b;
+  background: linear-gradient(135deg, #8f6f12, #c9a227 52%, #ffe18a);
+  color: #161005;
+  box-shadow: 0 12px 24px rgba(201, 162, 39, 0.28);
+}
+
+.counter-bill__button--primary:disabled {
+  cursor: not-allowed;
+  filter: grayscale(0.55);
+  opacity: 0.55;
+}
+
+.counter-bill__button--secondary {
+  border: 1px solid rgba(245, 213, 111, 0.7);
+  background: transparent;
+  color: #f9e7a2;
 }
 
 .counter-bill__print-cta {
@@ -363,10 +658,10 @@
 
 .counter-bill__receipt {
   margin-top: 1rem;
-  border: 1px dashed #8c8f94;
-  border-radius: 4px;
+  border: 1px dashed rgba(201, 162, 39, 0.65);
+  border-radius: 18px;
   padding: 1rem;
-  background: #fff;
+  background: #fffaf0;
 }
 
 .counter-bill__receipt-head {
@@ -376,6 +671,20 @@
   gap: 0.75rem;
   margin-bottom: 0.85rem;
   flex-wrap: wrap;
+}
+
+@keyframes counter-cart-flash {
+  0% {
+    box-shadow: 0 0 0 rgba(201, 162, 39, 0);
+  }
+
+  35% {
+    box-shadow: 0 0 0 6px rgba(201, 162, 39, 0.28), 0 18px 45px rgba(201, 162, 39, 0.22);
+  }
+
+  100% {
+    box-shadow: 0 16px 42px rgba(30, 22, 5, 0.12);
+  }
 }
 
 .counter-bill-print {
@@ -455,8 +764,13 @@
 
 @media (max-width: 900px) {
   .counter-bill__grid,
-  .counter-bill__customer {
+  .counter-bill__customer,
+  .counter-bill__cash-box {
     grid-template-columns: 1fr;
+  }
+
+  .counter-bill__panel--cart {
+    position: static;
   }
 
   .counter-bill__shop {
@@ -482,26 +796,41 @@
     align-items: stretch;
   }
 
-  .counter-bill__result {
-    grid-template-columns: 1fr;
+  .counter-bill__products {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
   }
 
-  .counter-bill__sheet table {
-    min-width: 560px;
+  .counter-bill__product-tile {
+    min-height: 218px;
+    grid-template-rows: 96px 1fr auto;
   }
 
   .counter-bill__search input,
   .counter-bill__customer input,
-  .counter-bill__customer select,
-  .counter-bill__sheet input,
+  .counter-bill__cash-box input,
+  .counter-bill__note input,
+  .counter-bill__qty-stepper input,
+  .counter-bill__qty-stepper button,
+  .counter-bill__pay,
+  .counter-bill__button,
   .counter-bill__actions .wp-button,
   .counter-bill__print-cta {
     min-height: 44px;
   }
 
-  .counter-bill__sheet button {
-    min-height: 44px;
-    padding: 0.25rem 0.35rem;
+  .counter-bill__cart-row {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  .counter-bill__qty-stepper,
+  .counter-bill__cart-line-total,
+  .counter-bill__remove {
+    grid-column: 1 / -1;
+  }
+
+  .counter-bill__cart-line-total {
+    text-align: left;
   }
 
   .counter-bill__actions,
@@ -509,6 +838,7 @@
     justify-content: stretch;
   }
 
+  .counter-bill__button,
   .counter-bill__actions .wp-button,
   .counter-sales__head .wp-button {
     width: 100%;
@@ -517,6 +847,13 @@
   .counter-today-card {
     width: 100%;
     text-align: left;
+  }
+}
+
+@media (max-width: 420px) {
+  .counter-bill__products,
+  .counter-bill__payment-grid {
+    grid-template-columns: 1fr;
   }
 }
 
