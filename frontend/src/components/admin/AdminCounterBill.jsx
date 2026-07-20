@@ -249,7 +249,7 @@ function approximatePdfTextWidth(value, size) {
   return String(value ?? '').length * size * 0.56;
 }
 
-/** Shared receipt lines — big POS size matching AS FIX & GEAR BILL sample. */
+/** Shared receipt lines — locked LARGE size (sample Mate Image preview). Height may grow. */
 function shortReceiptDate(order) {
   if (!order?.created_at) return '-';
   const d = new Date(order.created_at);
@@ -303,7 +303,6 @@ function buildReceiptLines(order, maxChars = 20) {
     });
   };
 
-  /* Sample style header — short lines so glyphs stay LARGE */
   push('AS FIX & GEAR', { align: 'center', weight: 'bold', title: true });
   push('BILL', { align: 'center', weight: 'bold', title: true });
   wrap('Mobile Repair', { align: 'center', small: true });
@@ -351,17 +350,16 @@ function buildReceiptLines(order, maxChars = 20) {
 }
 
 /**
- * BIG thermal PNG — glyph size fills ~20 columns like the sample AS FIX bill.
- * Does NOT shrink the whole slip for one long line (wrap/truncate instead).
+ * Locked LARGE thermal PNG (Mate Image sample size).
+ * Width = printer dots (384/576). Height grows as needed — never shrink body font.
  */
 export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
-  const baseWidth = pageWidth === '80mm' ? 576 : 384;
-  const scale = 4;
-  const widthPx = baseWidth * scale;
+  /* Exact BT800S / 80mm dot width — Mate prints 1:1, text stays sample-large */
+  const widthPx = pageWidth === '80mm' ? 576 : 384;
   const maxChars = pageWidth === '80mm' ? 28 : 20;
-  const padX = Math.round(widthPx * 0.07);
-  const padY = Math.round(18 * scale);
+  const padX = Math.round(widthPx * 0.06);
+  const padY = 14;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -374,7 +372,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     ctx.font = `bold ${size}px ${fontStack}`;
   };
 
-  const letterGapFor = (size) => Math.max(4, Math.round(size * 0.1));
+  const letterGapFor = (size) => Math.max(1, Math.round(size * 0.08));
 
   const measureSpaced = (text, size) => {
     setFont(size);
@@ -389,42 +387,64 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return width;
   };
 
-  /* Size so maxChars columns fill the paper — this is the sample “bara size”. */
-  let fontSize = Math.floor(usable / (maxChars * 0.62));
-  const minFont = Math.round(usable / (maxChars * 0.78));
-  while (fontSize > minFont && measureSpaced('M'.repeat(maxChars), fontSize) > usable) {
+  /*
+   * LOCK body size to fill ~maxChars across the paper.
+   * Never shrink this for long content — wrap/extra height instead.
+   */
+  let fontSize = Math.floor(usable / (maxChars * 0.58));
+  while (measureSpaced('M'.repeat(maxChars), fontSize) > usable && fontSize > 16) {
     fontSize -= 1;
   }
-  /* Prefer filling width: bump up if still loose */
   while (measureSpaced('M'.repeat(maxChars), fontSize + 1) <= usable) {
     fontSize += 1;
   }
+  /* Hard floor — must stay near sample Mate preview size */
+  const lockedBody = Math.max(fontSize, pageWidth === '80mm' ? 22 : 18);
+  fontSize = lockedBody;
 
-  const lineSize = (line, base) => {
-    if (line.grand) return Math.round(base * 1.7);
-    if (line.totalLabel) return Math.round(base * 1.15);
-    if (line.title) return Math.round(base * 1.2);
-    if (line.small) return Math.max(minFont, Math.round(base * 0.82));
-    if (line.rule) return Math.max(minFont, Math.round(base * 0.9));
-    return base;
+  const lineSize = (line) => {
+    if (line.grand) return Math.round(fontSize * 1.75);
+    if (line.totalLabel) return Math.round(fontSize * 1.12);
+    if (line.title) return Math.round(fontSize * 1.15);
+    if (line.small) return Math.max(15, Math.round(fontSize * 0.88));
+    if (line.rule) return Math.max(15, Math.round(fontSize * 0.95));
+    return fontSize;
   };
 
-  const fitSize = (text, preferred) => {
-    let size = preferred;
-    const floor = Math.max(10 * scale, Math.round(preferred * 0.7));
-    while (size > floor && measureSpaced(text, size) > usable) size -= 1;
-    return size;
+  /** Split text into chunks that fit at FULL size — grow height, don't shrink glyphs. */
+  const chunkAtSize = (text, size) => {
+    const chars = Array.from(String(text ?? ''));
+    if (!chars.length) return [''];
+    const chunks = [];
+    let current = '';
+    chars.forEach((ch) => {
+      const next = current + ch;
+      if (current && measureSpaced(next, size) > usable) {
+        chunks.push(current);
+        current = ch;
+      } else {
+        current = next;
+      }
+    });
+    if (current) chunks.push(current);
+    return chunks;
   };
 
-  const lineH = Math.ceil(fontSize * 1.85);
-  let heightPx = padY * 2 + 10 * scale;
+  const lineHFor = (size) => Math.ceil(size * 1.9);
+
+  let heightPx = padY * 2 + 8;
   lines.forEach((line) => {
-    const size = lineSize(line, fontSize);
-    if (line.grand) heightPx += Math.ceil(size * 1.4) + 8 * scale;
-    else if (line.totalLabel) heightPx += Math.ceil(lineH * 1.05) + 4 * scale;
-    else if (line.title) heightPx += lineH + 4 * scale;
-    else if (line.rule) heightPx += Math.ceil(lineH * 0.7);
-    else heightPx += lineH;
+    const size = lineSize(line);
+    const lh = lineHFor(size);
+    if (line.columns) {
+      heightPx += lh;
+    } else if (line.rule) {
+      heightPx += Math.ceil(lh * 0.75);
+    } else {
+      const chunks = chunkAtSize(line.value, size);
+      heightPx += chunks.length * lh;
+      if (line.grand || line.title || line.totalLabel) heightPx += 6;
+    }
   });
 
   canvas.width = widthPx;
@@ -439,9 +459,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   ctx.imageSmoothingEnabled = false;
 
   const drawSpacedText = (text, anchorX, y, size, align = 'left') => {
-    const fitted = fitSize(text, size);
-    setFont(fitted);
-    const letterGap = letterGapFor(fitted);
+    setFont(size);
+    const letterGap = letterGapFor(size);
     const chars = Array.from(String(text ?? ''));
     const widths = chars.map((ch) => ctx.measureText(ch).width);
     const totalW = widths.reduce((sum, w, i) => sum + w + (i < widths.length - 1 ? letterGap : 0), 0);
@@ -452,7 +471,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     if (x < padX) x = padX;
     if (x + totalW > widthPx - padX) x = Math.max(padX, widthPx - padX - totalW);
 
-    ctx.lineWidth = Math.max(3, Math.round(scale * 1.4));
+    ctx.lineWidth = size >= fontSize * 1.4 ? 2.5 : 1.75;
     ctx.lineJoin = 'round';
 
     let cursor = x;
@@ -461,25 +480,25 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       ctx.fillText(ch, cursor, y);
       cursor += widths[index] + letterGap;
     });
-    return fitted;
   };
 
   let y = padY;
   lines.forEach((line) => {
-    const size = lineSize(line, fontSize);
+    const size = lineSize(line);
+    const lh = lineHFor(size);
 
     if (line.columns) {
-      let rightSize = size;
-      const colGap = 14 * scale;
-      const leftW = measureSpaced(line.columns.left, size);
-      let rightW = measureSpaced(line.columns.right, rightSize);
-      while (leftW + colGap + rightW > usable && rightSize > minFont) {
-        rightSize -= 2;
-        rightW = measureSpaced(line.columns.right, rightSize);
+      /* Keep both columns at locked body size — truncate right if needed */
+      let right = line.columns.right;
+      while (
+        measureSpaced(line.columns.left, size) + 10 + measureSpaced(right, size) > usable
+        && right.length > 2
+      ) {
+        right = right.slice(0, -1);
       }
       drawSpacedText(line.columns.left, padX, y, size, 'left');
-      drawSpacedText(line.columns.right, widthPx - padX, y, rightSize, 'right');
-      y += lineH;
+      drawSpacedText(right, widthPx - padX, y, size, 'right');
+      y += lh;
     } else {
       const align = line.align === 'center' ? 'center' : line.align === 'right' ? 'right' : 'left';
       const anchor = align === 'center'
@@ -487,12 +506,12 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
         : align === 'right'
           ? widthPx - padX
           : padX;
-      drawSpacedText(line.value, anchor, y, size, align);
-      if (line.grand) y += Math.ceil(size * 1.4) + 8 * scale;
-      else if (line.totalLabel) y += Math.ceil(lineH * 1.05) + 4 * scale;
-      else if (line.title) y += lineH + 4 * scale;
-      else if (line.rule) y += Math.ceil(lineH * 0.7);
-      else y += lineH;
+      const chunks = chunkAtSize(line.value, size);
+      chunks.forEach((chunk) => {
+        drawSpacedText(chunk, anchor, y, size, align);
+        y += line.rule ? Math.ceil(lh * 0.75) : lh;
+      });
+      if (line.grand || line.title || line.totalLabel) y += 4;
     }
   });
 
@@ -518,10 +537,22 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const bodyLeading = pageWidth === '80mm' ? 16 : 15;
   const receiptLines = buildReceiptLines(order, maxChars).map((line) => ({
     value: line.value,
-    size: line.title ? bodySize + 3 : line.small ? bodySize - 0.5 : bodySize,
-    leading: line.title ? bodyLeading + 3 : bodyLeading,
+    size: line.grand
+      ? bodySize + 8
+      : line.totalLabel
+        ? bodySize + 2
+        : line.title
+          ? bodySize + 3
+          : line.small
+            ? bodySize - 0.5
+            : bodySize,
+    leading: line.grand
+      ? bodyLeading + 10
+      : line.totalLabel || line.title
+        ? bodyLeading + 3
+        : bodyLeading,
     align: line.align || 'left',
-    font: line.weight === 'bold' || line.title ? 'F2' : 'F1',
+    font: line.weight === 'bold' || line.title || line.grand || line.totalLabel ? 'F2' : 'F1',
   }));
 
   const height = Math.ceil(
