@@ -1286,7 +1286,8 @@
   color: #fff !important;
 }
 
-.counter-bill__rawbt-cta {
+.counter-bill__rawbt-cta,
+.counter-bill__mate-cta {
   background: #5b21b6 !important;
   border-color: #7c3aed !important;
   color: #fff !important;
