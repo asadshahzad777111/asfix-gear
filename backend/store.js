@@ -873,6 +873,42 @@ function orderItemsSubtotal(items) {
   return items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 1), 0);
 }
 
+function currentSalePrice(product) {
+  const price = Number(product.price);
+  if (!Number.isFinite(price) || price < 0) return 0;
+  const discount = Math.min(90, Math.max(0, Number(product.discount_percent) || 0));
+  return Math.round(price * (1 - discount / 100));
+}
+
+function prepareCounterDraftItems(rawItems, products) {
+  const normalized = [];
+  for (const item of rawItems) {
+    const productId = Number(item?.product_id);
+    const qty = Number(item?.qty);
+    if (!Number.isInteger(productId) || productId <= 0) {
+      throw new StockError('Invalid product in draft');
+    }
+    if (!Number.isInteger(qty) || qty < 1 || qty > 99) {
+      throw new StockError('Quantity must be between 1 and 99');
+    }
+    const product = products.find((p) => p.id === productId);
+    if (!product) {
+      throw new StockError(`Product not found: ${productId}`);
+    }
+    if (!isPublishedProduct(product)) {
+      throw new StockError(`"${product.name}" is no longer available`);
+    }
+    normalized.push({
+      product_id: productId,
+      name: String(product.name || item.name || 'Item').trim(),
+      qty,
+      price: currentSalePrice(product),
+      cost_price: Math.max(0, Number(product.cost_price) || 0),
+    });
+  }
+  return normalized;
+}
+
 function normalizeOrderDiscount(input = {}, subtotal = 0) {
   const type = String(input.discount_type || 'fixed').trim().toLowerCase() === 'percent' ? 'percent' : 'fixed';
   let percent = Number(input.discount_percent);
@@ -899,6 +935,10 @@ function normalizeOrderDiscount(input = {}, subtotal = 0) {
 
 function isReturnOrder(order) {
   return order?.source === 'counter_return' || order?.transaction_type === 'return';
+}
+
+function isCounterOrder(order) {
+  return order?.source === 'counter_sale' || order?.source === 'counter_return';
 }
 
 function startOfDay(date) {
@@ -1557,6 +1597,115 @@ export function getRepairChatsSummaryForStaff() {
       };
     })
     .sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+}
+
+export function getCounterTodayStats({ user = null, date = new Date() } = {}) {
+  const dayStart = startOfDay(date);
+  const dayEnd = endOfDay(date);
+  const orders = (readData().orders || []).filter((order) => {
+    if (!isCounterOrder(order) || order.shipping_status === 'cancelled') return false;
+    if (
+      user?.role === 'counter'
+      && String(order.created_by_staff_id || '') !== String(user.id)
+    ) {
+      return false;
+    }
+    const created = new Date(order.created_at);
+    return created >= dayStart && created <= dayEnd;
+  });
+
+  return orders.reduce((stats, order) => {
+    const isReturn = isReturnOrder(order);
+    if (order.source === 'counter_sale') stats.bills_today += 1;
+    stats.today_sales += Number(order.total_amount || 0);
+    for (const item of order.items || []) {
+      const qty = Number(item.qty) || 0;
+      stats.items_sold_today += isReturn ? -qty : qty;
+    }
+    return stats;
+  }, {
+    today_sales: 0,
+    bills_today: 0,
+    items_sold_today: 0,
+  });
+}
+
+export function listCounterDrafts({ user = null } = {}) {
+  let drafts = [...(readData().counter_drafts || [])].filter((draft) => draft.status !== 'converted');
+  if (user?.role === 'counter') {
+    drafts = drafts.filter((draft) => String(draft.created_by_staff_id || '') === String(user.id));
+  }
+  return drafts.sort((a, b) => String(b.updated_at).localeCompare(String(a.updated_at)));
+}
+
+export function getCounterDraft(id, { user = null } = {}) {
+  const draft = (readData().counter_drafts || []).find((entry) => Number(entry.id) === Number(id));
+  if (!draft || draft.status === 'converted') return null;
+  if (user?.role === 'counter' && String(draft.created_by_staff_id || '') !== String(user.id)) return null;
+  return draft;
+}
+
+export function createCounterDraft(input = {}) {
+  return withData((data) => {
+    if (!Array.isArray(data.counter_drafts)) data.counter_drafts = [];
+    if (!data.meta.nextCounterDraftId) data.meta.nextCounterDraftId = 1;
+
+    const items = prepareCounterDraftItems(Array.isArray(input.items) ? input.items : [], data.products);
+    if (!items.length || items.length > 20) {
+      throw new StockError('Draft must include 1-20 items');
+    }
+
+    const subtotal = orderItemsSubtotal(items);
+    const discount = normalizeOrderDiscount(input, subtotal);
+    const total = Math.max(0, subtotal - discount.discount_amount);
+    const staffActor = staffAuditUser(input.staff_user || {});
+    const id = data.meta.nextCounterDraftId++;
+    const createdAt = now();
+    const draft = {
+      id,
+      draft_id: `DRAFT-${1000 + Number(id)}`,
+      customer_name: String(input.customer_name || '').trim().slice(0, 120) || 'Walk-in Customer',
+      phone: String(input.phone || '').trim().slice(0, 30),
+      payment_mode: String(input.payment_mode || 'cash').trim().toLowerCase(),
+      payment_note: String(input.payment_note || '').trim().slice(0, 500),
+      items,
+      subtotal,
+      discount_amount: discount.discount_amount,
+      discount_type: discount.discount_type,
+      discount_percent: discount.discount_percent,
+      grand_total: total,
+      total_amount: total,
+      status: 'open',
+      created_by_staff_id: staffActor.id ?? input.staff_user_id ?? null,
+      created_by_staff_name: staffActor.name || '',
+      updated_at: createdAt,
+      created_at: createdAt,
+    };
+    data.counter_drafts.unshift(draft);
+    data.counter_drafts = data.counter_drafts.slice(0, 100);
+    return draft;
+  });
+}
+
+export function deleteCounterDraft(id, { user = null, convertedOrderId = null } = {}) {
+  return withData((data) => {
+    if (!Array.isArray(data.counter_drafts)) data.counter_drafts = [];
+    const index = data.counter_drafts.findIndex((entry) => Number(entry.id) === Number(id));
+    if (index === -1) return null;
+    const draft = data.counter_drafts[index];
+    if (user?.role === 'counter' && String(draft.created_by_staff_id || '') !== String(user.id)) return null;
+    if (convertedOrderId != null) {
+      data.counter_drafts[index] = {
+        ...draft,
+        status: 'converted',
+        converted_order_id: Number(convertedOrderId),
+        updated_at: now(),
+      };
+      return data.counter_drafts[index];
+    }
+    data.counter_drafts.splice(index, 1);
+    return draft;
+  });
 }
 
 export function createOrder(input) {

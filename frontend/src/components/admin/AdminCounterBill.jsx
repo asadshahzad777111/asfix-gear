@@ -7,6 +7,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import './admin-counter-bill.css';
 
 const COUNTER_BILL_DRAFT_KEY = 'asfix_counter_bill_draft_v1';
+const HELD_BILLS_KEY = 'asfix_counter_held_bills_v1';
 export const THERMAL_RECEIPT_WIDTH_KEY = 'asfix_counter_thermal_width_v1';
 const ALL_CATEGORIES = 'all';
 const PAYMENT_OPTIONS = [
@@ -24,6 +25,7 @@ const DEFAULT_POS_SETTINGS = {
   posDiscountMaxPercentWithoutPin: 10,
   posDiscountMaxAmountWithoutPin: 500,
 };
+const MAX_HELD_BILLS = 5;
 
 export function readThermalReceiptWidth() {
   if (typeof window === 'undefined') return '58mm';
@@ -74,6 +76,26 @@ function clearCounterBillDraft() {
     window.sessionStorage.removeItem(COUNTER_BILL_DRAFT_KEY);
   } catch {
     // Ignore storage cleanup failures.
+  }
+}
+
+function readHeldBills() {
+  if (typeof window === 'undefined') return [];
+  try {
+    const raw = window.sessionStorage.getItem(HELD_BILLS_KEY);
+    const held = raw ? JSON.parse(raw) : [];
+    return Array.isArray(held) ? held.filter((entry) => Array.isArray(entry.lines)) : [];
+  } catch {
+    return [];
+  }
+}
+
+function writeHeldBills(heldBills) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.setItem(HELD_BILLS_KEY, JSON.stringify(heldBills.slice(0, MAX_HELD_BILLS)));
+  } catch {
+    // Held bills are a session convenience only.
   }
 }
 
@@ -523,10 +545,18 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
   );
 }
 
-export default function AdminCounterBill({ products, onBillCreated, onPrintOrder, onThermalWidthChange }) {
+export default function AdminCounterBill({
+  products,
+  onBillCreated,
+  onPrintOrder,
+  onThermalWidthChange,
+  onJumpToSales,
+  onOpenReturnFlow,
+}) {
   const { t } = useTranslation();
   const { user } = useAuth();
   const searchRef = useRef(null);
+  const noteRef = useRef(null);
   const printInFlightRef = useRef(false);
   const autoPrintedOrderRef = useRef(null);
   const [draftSeed] = useState(() => readCounterBillDraft());
@@ -545,6 +575,10 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
   const [productPanelCollapsed, setProductPanelCollapsed] = useState(false);
   const [discountType, setDiscountType] = useState(() => draftSeed?.discountType || 'fixed');
   const [discountValue, setDiscountValue] = useState(() => draftSeed?.discountValue || '');
+  const [heldBills, setHeldBills] = useState(() => readHeldBills());
+  const [serverDrafts, setServerDrafts] = useState([]);
+  const [draftLoading, setDraftLoading] = useState(false);
+  const [draftSubmitting, setDraftSubmitting] = useState(false);
   const [posSettings, setPosSettings] = useState(DEFAULT_POS_SETTINGS);
   const [cashReceived, setCashReceived] = useState('');
   const [cartFlashKey, setCartFlashKey] = useState(0);
@@ -591,12 +625,71 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
     || effectiveDiscountPercent > Number(posSettings.posDiscountMaxPercentWithoutPin || 0);
   const cashReceivedValue = Number(cashReceived);
   const changeDue = paymentMode === 'cash' && Number.isFinite(cashReceivedValue) ? Math.max(0, cashReceivedValue - total) : 0;
+  const hasActiveBill = Boolean(lines.length || customerName || customerPhone || paymentNote || discountValue);
+
+  const billSnapshot = useCallback(() => ({
+    lines: lines.map((line) => ({
+      product: line.product,
+      qty: line.qty,
+    })),
+    customerName,
+    customerPhone,
+    paymentMode,
+    paymentNote,
+    discountType,
+    discountValue,
+  }), [customerName, customerPhone, discountType, discountValue, lines, paymentMode, paymentNote]);
+
+  const applyBillSnapshot = useCallback((snapshot = {}) => {
+    const nextLines = Array.isArray(snapshot.lines) ? snapshot.lines : [];
+    setLines(nextLines);
+    setCustomerName(snapshot.customerName || '');
+    setCustomerPhone(snapshot.customerPhone || '');
+    setPaymentMode(PAYMENT_OPTIONS.some((option) => option.id === snapshot.paymentMode) ? snapshot.paymentMode : 'cash');
+    setPaymentNote(snapshot.paymentNote || '');
+    setDiscountType(snapshot.discountType === 'percent' ? 'percent' : 'fixed');
+    setDiscountValue(snapshot.discountValue || '');
+    setShowCustomerDetails(Boolean(snapshot.customerName || snapshot.customerPhone));
+    setCashReceived('');
+    setReceiptOrder(null);
+    setFeedback(null);
+  }, []);
+
+  const clearBillFields = useCallback(() => {
+    clearCounterBillDraft();
+    setLines([]);
+    setCustomerName('');
+    setCustomerPhone('');
+    setShowCustomerDetails(false);
+    setPaymentMode('cash');
+    setPaymentNote('');
+    setDiscountType('fixed');
+    setDiscountValue('');
+    setCashReceived('');
+    setReceiptOrder(null);
+  }, []);
 
   useEffect(() => {
     api.getPosSettings()
       .then((settings) => setPosSettings({ ...DEFAULT_POS_SETTINGS, ...(settings || {}) }))
       .catch(() => setPosSettings(DEFAULT_POS_SETTINGS));
   }, []);
+
+  const loadServerDrafts = useCallback(async () => {
+    setDraftLoading(true);
+    try {
+      const drafts = await api.getCounterDrafts();
+      setServerDrafts(Array.isArray(drafts) ? drafts : []);
+    } catch {
+      setServerDrafts([]);
+    } finally {
+      setDraftLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadServerDrafts();
+  }, [loadServerDrafts]);
 
   useEffect(() => {
     if (!lines.length) return;
@@ -698,18 +791,156 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
   };
 
   const resetBill = () => {
-    clearCounterBillDraft();
-    setLines([]);
-    setCustomerName('');
-    setCustomerPhone('');
-    setShowCustomerDetails(false);
-    setPaymentMode('cash');
-    setPaymentNote('');
-    setDiscountType('fixed');
-    setDiscountValue('');
-    setCashReceived('');
+    clearBillFields();
     setFeedback(null);
-    setReceiptOrder(null);
+  };
+
+  const cancelSale = () => {
+    if (!hasActiveBill) return;
+    const confirmed = window.confirm?.(t('admin.counterBillCancelConfirm')) ?? false;
+    if (!confirmed) return;
+    clearBillFields();
+    setFeedback({ type: 'success', text: t('admin.counterBillCancelled') });
+  };
+
+  const holdBill = () => {
+    if (!lines.length) {
+      setFeedback({ type: 'error', text: t('admin.counterBillEmpty') });
+      return;
+    }
+    const snapshot = {
+      id: Date.now(),
+      label: `${customerName || t('admin.counterBillWalkIn')} · ${amountText(total)}`,
+      createdAt: new Date().toISOString(),
+      ...billSnapshot(),
+    };
+    setHeldBills((prev) => {
+      const next = [snapshot, ...prev].slice(0, MAX_HELD_BILLS);
+      writeHeldBills(next);
+      return next;
+    });
+    clearBillFields();
+    setFeedback({ type: 'success', text: t('admin.counterBillHeld') });
+  };
+
+  const restoreHeldBill = (heldBill) => {
+    if (hasActiveBill && !(window.confirm?.(t('admin.counterBillReplaceConfirm')) ?? false)) return;
+    applyBillSnapshot(heldBill);
+    setHeldBills((prev) => {
+      const next = prev.filter((entry) => entry.id !== heldBill.id);
+      writeHeldBills(next);
+      return next;
+    });
+    setFeedback({ type: 'success', text: t('admin.counterBillRestored') });
+  };
+
+  const removeHeldBill = (id) => {
+    setHeldBills((prev) => {
+      const next = prev.filter((entry) => entry.id !== id);
+      writeHeldBills(next);
+      return next;
+    });
+  };
+
+  const saveServerDraft = async () => {
+    if (!lines.length) {
+      setFeedback({ type: 'error', text: t('admin.counterBillEmpty') });
+      return;
+    }
+    setDraftSubmitting(true);
+    setFeedback(null);
+    try {
+      await api.saveCounterDraft({
+        customer_name: customerName,
+        phone: customerPhone,
+        payment_mode: paymentMode,
+        payment_note: paymentNote,
+        discount_type: discountType,
+        discount_amount: discountAmount,
+        discount_percent: discountType === 'percent' ? Number(discountValue) || 0 : null,
+        items: lines.map((line) => ({
+          product_id: line.product.id,
+          qty: line.qty,
+          price: salePrice(line.product),
+        })),
+      });
+      clearBillFields();
+      await loadServerDrafts();
+      setFeedback({ type: 'success', text: t('admin.counterBillDraftSaved') });
+    } catch (err) {
+      setFeedback({ type: 'error', text: err.message || t('admin.counterBillDraftFailed') });
+    } finally {
+      setDraftSubmitting(false);
+    }
+  };
+
+  const draftSnapshot = (draft) => ({
+    lines: (draft.items || []).map((item) => {
+      const latestProduct = products.find((product) => Number(product.id) === Number(item.product_id));
+      return latestProduct ? { product: latestProduct, qty: Number(item.qty) || 1 } : null;
+    }).filter(Boolean),
+    customerName: draft.customer_name === 'Walk-in Customer' ? '' : draft.customer_name || '',
+    customerPhone: draft.phone || '',
+    paymentMode: draft.payment_mode || 'cash',
+    paymentNote: draft.payment_note || '',
+    discountType: draft.discount_type || 'fixed',
+    discountValue: draft.discount_type === 'percent'
+      ? String(draft.discount_percent || '')
+      : String(draft.discount_amount || ''),
+  });
+
+  const restoreServerDraft = (draft) => {
+    if (hasActiveBill && !(window.confirm?.(t('admin.counterBillReplaceConfirm')) ?? false)) return;
+    applyBillSnapshot(draftSnapshot(draft));
+    setFeedback({ type: 'success', text: t('admin.counterBillDraftLoaded') });
+  };
+
+  const confirmServerDraft = async (draft) => {
+    if (hasActiveBill && !(window.confirm?.(t('admin.counterBillReplaceConfirm')) ?? false)) return;
+    setDraftSubmitting(true);
+    setFeedback(null);
+    try {
+      let managerApproval = {};
+      const draftDiscount = Number(draft.discount_amount) || 0;
+      const draftSubtotal = Number(draft.subtotal) || 0;
+      const draftDiscountPercent = draftSubtotal > 0 ? Number(((draftDiscount / draftSubtotal) * 100).toFixed(2)) : 0;
+      const draftNeedsOverride = draftDiscount > Number(posSettings.posDiscountMaxAmountWithoutPin || 0)
+        || draftDiscountPercent > Number(posSettings.posDiscountMaxPercentWithoutPin || 0);
+      if (draftNeedsOverride && !['super_admin', 'admin'].includes(user?.role)) {
+        const managerLogin = window.prompt?.('Manager approval required. Enter admin username/email:') || '';
+        const managerPassword = managerLogin ? window.prompt?.('Enter manager password/PIN:') || '' : '';
+        if (!managerLogin.trim() || !managerPassword) {
+          setFeedback({ type: 'error', text: 'Manager approval is required for this discount.' });
+          setDraftSubmitting(false);
+          return;
+        }
+        managerApproval = {
+          manager_login: managerLogin,
+          manager_password: managerPassword,
+        };
+      }
+      const result = await api.confirmCounterDraft(draft.id, managerApproval);
+      clearBillFields();
+      setReceiptOrder(result.order);
+      await loadServerDrafts();
+      setFeedback({ type: 'success', text: t('admin.counterBillDraftConfirmed') });
+      onBillCreated?.(result.order);
+      if (onPrintOrder) onPrintOrder(result.order);
+    } catch (err) {
+      setFeedback({ type: 'error', text: err.message || t('admin.counterBillFailed') });
+    } finally {
+      setDraftSubmitting(false);
+    }
+  };
+
+  const deleteServerDraft = async (draft) => {
+    try {
+      await api.deleteCounterDraft(draft.id);
+      await loadServerDrafts();
+      setFeedback({ type: 'success', text: t('admin.counterBillDraftDeleted') });
+    } catch (err) {
+      setFeedback({ type: 'error', text: err.message || t('admin.counterBillDraftFailed') });
+    }
   };
 
   const printReceipt = useCallback(async (order = receiptOrder) => {
@@ -973,6 +1204,29 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
             </div>
           </div>
 
+          <div className="counter-bill__quick-actions" aria-label={t('admin.counterBillQuickActions')}>
+            <button type="button" onClick={() => document.getElementById('counter-bill-discount')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+              <span aria-hidden="true">%</span>
+              {t('admin.counterBillToolbarDiscount')}
+            </button>
+            <button type="button" onClick={() => setShowCustomerDetails(true)}>
+              <span aria-hidden="true">+</span>
+              {t('admin.counterBillToolbarCustomer')}
+            </button>
+            <button type="button" onClick={onOpenReturnFlow}>
+              <span aria-hidden="true">R</span>
+              {t('admin.counterBillToolbarRefund')}
+            </button>
+            <button type="button" onClick={onJumpToSales}>
+              <span aria-hidden="true">#</span>
+              {t('admin.counterBillToolbarHistory')}
+            </button>
+            <button type="button" onClick={() => noteRef.current?.focus()}>
+              <span aria-hidden="true">N</span>
+              {t('admin.counterBillToolbarNotes')}
+            </button>
+          </div>
+
           <div className="counter-bill__cart-lines">
             {lines.length === 0 ? (
               <p className="counter-bill__empty counter-bill__empty--cart">{t('admin.counterBillEmptyState')}</p>
@@ -1014,7 +1268,7 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
             )}
           </div>
 
-          <div className="counter-bill__discount-box">
+          <div className="counter-bill__discount-box" id="counter-bill-discount">
             <div className="counter-bill__discount-head">
               <span>Discount</span>
               <div className="counter-bill__discount-toggle" role="group" aria-label="Discount type">
@@ -1052,14 +1306,6 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
                 Manager approval required above {posSettings.posDiscountMaxPercentWithoutPin}% or Rs. {posSettings.posDiscountMaxAmountWithoutPin}.
               </p>
             ) : null}
-            <div className="counter-bill__discount-summary">
-              <span>Subtotal</span>
-              <strong>{formatPrice(subtotal)}</strong>
-              <span>Discount</span>
-              <strong>{formatPrice(discountAmount)}</strong>
-              <span>Net total</span>
-              <strong>{formatPrice(total)}</strong>
-            </div>
           </div>
 
           <div className="counter-bill__customer-toggle">
@@ -1131,6 +1377,7 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
           <label className="counter-bill__note">
             <span>{t('admin.counterBillPaymentNote')}</span>
             <input
+              ref={noteRef}
               value={paymentNote}
               onChange={(e) => setPaymentNote(e.target.value)}
               placeholder={t('admin.counterBillPaymentNotePh')}
@@ -1138,15 +1385,80 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
             />
           </label>
 
+          {(heldBills.length || serverDrafts.length || draftLoading) ? (
+            <div className="counter-bill__saved-bills">
+              {heldBills.length ? (
+                <section>
+                  <h5>{t('admin.counterBillHeldBills')}</h5>
+                  {heldBills.map((heldBill) => (
+                    <div className="counter-bill__saved-row" key={heldBill.id}>
+                      <button type="button" onClick={() => restoreHeldBill(heldBill)}>
+                        <strong>{heldBill.label}</strong>
+                        <small>{new Date(heldBill.createdAt).toLocaleTimeString()}</small>
+                      </button>
+                      <button type="button" aria-label={t('admin.counterBillRemove')} onClick={() => removeHeldBill(heldBill.id)}>
+                        x
+                      </button>
+                    </div>
+                  ))}
+                </section>
+              ) : null}
+              <section>
+                <h5>{t('admin.counterBillSavedDrafts')}</h5>
+                {draftLoading ? <p>{t('common.loading')}</p> : null}
+                {!draftLoading && serverDrafts.length === 0 ? <p>{t('admin.counterBillNoDrafts')}</p> : null}
+                {serverDrafts.map((draft) => (
+                  <div className="counter-bill__saved-row" key={draft.id}>
+                    <button type="button" onClick={() => restoreServerDraft(draft)}>
+                      <strong>{draft.draft_id || `#${draft.id}`} · {formatPrice(draft.total_amount)}</strong>
+                      <small>{draft.customer_name || t('admin.counterBillWalkIn')}</small>
+                    </button>
+                    <button type="button" onClick={() => confirmServerDraft(draft)} disabled={draftSubmitting}>
+                      {t('admin.counterBillDraftConfirm')}
+                    </button>
+                    <button type="button" aria-label={t('admin.counterBillRemove')} onClick={() => deleteServerDraft(draft)}>
+                      x
+                    </button>
+                  </div>
+                ))}
+              </section>
+            </div>
+          ) : null}
+
           <div className="counter-bill__footer">
-            <div className="counter-bill__total">
-              <span>{t('admin.counterBillTotal')}</span>
-              <strong>{formatPrice(total)}</strong>
+            <div className="counter-bill__summary-card" aria-label={t('admin.counterBillSummary')}>
+              <div>
+                <span>{t('admin.counterBillSubtotal')}</span>
+                <strong>{formatPrice(subtotal)}</strong>
+              </div>
+              <div>
+                <span>{t('admin.counterBillDiscount')}</span>
+                {discountAmount > 0 ? (
+                  <button type="button" className="counter-bill__discount-chip" onClick={() => setDiscountValue('')}>
+                    {t('admin.counterBillDiscountApplied')} x
+                  </button>
+                ) : (
+                  <strong>{formatPrice(0)}</strong>
+                )}
+              </div>
+              <div className="counter-bill__summary-total">
+                <span>{t('admin.counterBillGrandTotal')}</span>
+                <strong>{formatPrice(total)}</strong>
+              </div>
             </div>
 
             <div className="counter-bill__actions">
               <button type="button" className="counter-bill__button counter-bill__button--secondary" onClick={resetBill}>
                 {t('admin.counterBillReset')}
+              </button>
+              <button type="button" className="counter-bill__button counter-bill__button--secondary" onClick={holdBill} disabled={!lines.length}>
+                {t('admin.counterBillHold')}
+              </button>
+              <button type="button" className="counter-bill__button counter-bill__button--secondary" onClick={saveServerDraft} disabled={draftSubmitting || !lines.length}>
+                {draftSubmitting ? t('common.saving') : t('admin.counterBillSaveDraft')}
+              </button>
+              <button type="button" className="counter-bill__button counter-bill__button--danger" onClick={cancelSale} disabled={!hasActiveBill}>
+                {t('admin.counterBillCancelSale')}
               </button>
               <button type="button" className="counter-bill__button counter-bill__button--primary" onClick={confirmBill} disabled={submitting || !lines.length}>
                 {submitting ? t('common.saving') : t('admin.counterBillConfirm')}

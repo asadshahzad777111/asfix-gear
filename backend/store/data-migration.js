@@ -19,6 +19,7 @@ export const DEFAULT_DATA = {
     nextAddressId: 1,
     nextRepairMessageId: 1,
     nextAuditId: 1,
+    nextCounterDraftId: 1,
   },
   users: [],
   sessions: [],
@@ -30,6 +31,7 @@ export const DEFAULT_DATA = {
   repair_messages: [],
   contact_messages: [],
   orders: [],
+  counter_drafts: [],
   audit_logs: [],
   verification_codes: [],
   settings: {
@@ -75,6 +77,7 @@ export function migrateData(data) {
   data.repair_messages = data.repair_messages || [];
   data.contact_messages = data.contact_messages || [];
   data.orders = data.orders || [];
+  data.counter_drafts = Array.isArray(data.counter_drafts) ? data.counter_drafts : [];
   data.audit_logs = Array.isArray(data.audit_logs) ? data.audit_logs : [];
   data.verification_codes = data.verification_codes || [];
   data.settings = data.settings || {};
@@ -100,6 +103,10 @@ export function migrateData(data) {
   if (!data.meta.nextAuditId) {
     const maxAuditId = data.audit_logs.reduce((max, log) => Math.max(max, Number(log.id) || 0), 0);
     data.meta.nextAuditId = maxAuditId + 1;
+  }
+  if (!data.meta.nextCounterDraftId) {
+    const maxDraftId = data.counter_drafts.reduce((max, draft) => Math.max(max, Number(draft.id) || 0), 0);
+    data.meta.nextCounterDraftId = maxDraftId + 1;
   }
 
   if (!Array.isArray(data.settings.product_categories)) {
@@ -174,6 +181,18 @@ export function migrateData(data) {
     if (order.created_by_staff_name == null) order.created_by_staff_name = '';
     if (!order.updated_at) order.updated_at = order.created_at || nowIso;
     if (order.shipping_status === 'confirmed') order.shipping_status = 'payment_verified';
+  }
+
+  for (const draft of data.counter_drafts) {
+    if (!draft.created_at) draft.created_at = nowIso;
+    if (!draft.updated_at) draft.updated_at = draft.created_at;
+    if (draft.created_by_staff_id == null) draft.created_by_staff_id = null;
+    if (draft.created_by_staff_name == null) draft.created_by_staff_name = '';
+    if (!Array.isArray(draft.items)) draft.items = [];
+    if (draft.discount_type == null) draft.discount_type = 'fixed';
+    if (draft.discount_amount == null) draft.discount_amount = 0;
+    if (draft.discount_percent == null) draft.discount_percent = null;
+    if (draft.status == null) draft.status = 'open';
   }
 
   for (const booking of data.repair_bookings) {

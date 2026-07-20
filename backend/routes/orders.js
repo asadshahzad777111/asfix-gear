@@ -122,6 +122,111 @@ function buildPickupAddress({ name, phone }) {
   };
 }
 
+function createCounterSaleFromPayload({ user, body }) {
+  const {
+    customer_name,
+    phone,
+    payment_mode,
+    payment_note,
+    items,
+    discount_type,
+    discount_amount,
+    discount_percent,
+    manager_login,
+    manager_password,
+  } = body || {};
+
+  const name = String(customer_name || '').trim().slice(0, MAX_NAME) || 'Walk-in Customer';
+  const phoneText = String(phone || '').trim().slice(0, MAX_PHONE);
+  const note = String(payment_note || '').trim().slice(0, MAX_NOTES);
+  const mode = String(payment_mode || 'cash').trim().toLowerCase();
+
+  if (!VALID_COUNTER_PAYMENT_MODES.includes(mode)) {
+    const error = new Error('Invalid counter payment method');
+    error.status = 400;
+    throw error;
+  }
+  if (customer_name && String(customer_name).trim().length > MAX_NAME) {
+    const error = new Error('Customer name is too long');
+    error.status = 400;
+    throw error;
+  }
+  if (phone && String(phone).trim().length > MAX_PHONE) {
+    const error = new Error('Phone is too long');
+    error.status = 400;
+    throw error;
+  }
+  if (!Array.isArray(items) || items.length === 0 || items.length > MAX_ITEMS) {
+    const error = new Error('Bill must include 1-20 items');
+    error.status = 400;
+    throw error;
+  }
+
+  const orderItems = items.map((item) => {
+    const productId = Number(item?.product_id);
+    const qty = Number(item?.qty);
+    if (!Number.isInteger(productId) || productId <= 0) {
+      throw new store.StockError('Invalid product in bill');
+    }
+    if (!Number.isInteger(qty) || qty < 1 || qty > 99) {
+      throw new store.StockError('Quantity must be between 1 and 99');
+    }
+    const product = store.getProductById(productId);
+    if (!product) {
+      throw new store.StockError(`Product not found: ${productId}`);
+    }
+    return {
+      product_id: productId,
+      qty,
+      price: salePrice(product),
+    };
+  });
+  const subtotal = orderItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);
+  const discount = discountFromRequest({ discount_type, discount_amount, discount_percent }, subtotal);
+  const settings = store.getPosSettings();
+  const discountNeedsOverride = discount.discount_amount > settings.posDiscountMaxAmountWithoutPin
+    || discount.effective_percent > settings.posDiscountMaxPercentWithoutPin;
+  let discountOverrideUser = null;
+  if (discountNeedsOverride && !isManagerRole(user)) {
+    discountOverrideUser = resolveManagerOverride({ login: manager_login, password: manager_password });
+    if (!discountOverrideUser) {
+      const error = new Error('Manager approval required for this discount');
+      error.status = 403;
+      throw error;
+    }
+  }
+
+  return store.createOrder({
+    customer_name: name,
+    phone: phoneText,
+    city: 'Lahore',
+    payment_mode: mode,
+    fulfillment_method: 'pickup',
+    items: orderItems,
+    discount_type: discount.discount_type,
+    discount_amount: discount.discount_amount,
+    discount_percent: discount.discount_percent,
+    notes: note ? `Counter sale payment note: ${note}` : 'Counter sale',
+    shipping_address: buildPickupAddress({ name, phone: phoneText }),
+    source: 'counter_sale',
+    payment_status: 'paid',
+    shipping_status: 'delivered',
+    delivery_status: 'delivered',
+    activity_message: `Counter bill created by Staff: ${user.username || user.name || 'staff'}`,
+    staff_user_id: user.id,
+    staff_user: user,
+    discount_override_required: discountNeedsOverride,
+    discount_override_user: discountOverrideUser || (discountNeedsOverride ? user : null),
+  });
+}
+
+function sendCounterSaleError(res, err) {
+  if (err instanceof store.StockError) {
+    return res.status(409).json({ error: err.message, details: err.details });
+  }
+  return res.status(err.status || 400).json({ error: err.message || 'Could not create counter bill' });
+}
+
 router.post('/feedback', (req, res) => {
   const { orderId, phone, rating, comment, product_id } = req.body;
   if (!orderId?.trim() || !phone?.trim()) {
@@ -269,101 +374,93 @@ router.post('/', requireAuth, (req, res) => {
 });
 
 router.post('/counter-sale', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
-  const {
-    customer_name,
-    phone,
-    payment_mode,
-    payment_note,
-    items,
-    discount_type,
-    discount_amount,
-    discount_percent,
-    manager_login,
-    manager_password,
-  } = req.body || {};
-
-  const name = String(customer_name || '').trim().slice(0, MAX_NAME) || 'Walk-in Customer';
-  const phoneText = String(phone || '').trim().slice(0, MAX_PHONE);
-  const note = String(payment_note || '').trim().slice(0, MAX_NOTES);
-  const mode = String(payment_mode || 'cash').trim().toLowerCase();
-
-  if (!VALID_COUNTER_PAYMENT_MODES.includes(mode)) {
-    return res.status(400).json({ error: 'Invalid counter payment method' });
-  }
-  if (customer_name && String(customer_name).trim().length > MAX_NAME) {
-    return res.status(400).json({ error: 'Customer name is too long' });
-  }
-  if (phone && String(phone).trim().length > MAX_PHONE) {
-    return res.status(400).json({ error: 'Phone is too long' });
-  }
-  if (!Array.isArray(items) || items.length === 0 || items.length > MAX_ITEMS) {
-    return res.status(400).json({ error: 'Bill must include 1–20 items' });
-  }
-
   try {
-    const orderItems = items.map((item) => {
-      const productId = Number(item?.product_id);
-      const qty = Number(item?.qty);
-      if (!Number.isInteger(productId) || productId <= 0) {
-        throw new store.StockError('Invalid product in bill');
-      }
-      if (!Number.isInteger(qty) || qty < 1 || qty > 99) {
-        throw new store.StockError('Quantity must be between 1 and 99');
-      }
-      const product = store.getProductById(productId);
-      if (!product) {
-        throw new store.StockError(`Product not found: ${productId}`);
-      }
-      return {
-        product_id: productId,
-        qty,
-        price: salePrice(product),
-      };
-    });
-    const subtotal = orderItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);
-    const discount = discountFromRequest({ discount_type, discount_amount, discount_percent }, subtotal);
-    const settings = store.getPosSettings();
-    const discountNeedsOverride = discount.discount_amount > settings.posDiscountMaxAmountWithoutPin
-      || discount.effective_percent > settings.posDiscountMaxPercentWithoutPin;
-    let discountOverrideUser = null;
-    if (discountNeedsOverride && !isManagerRole(req.auth.user)) {
-      discountOverrideUser = resolveManagerOverride({ login: manager_login, password: manager_password });
-      if (!discountOverrideUser) {
-        return res.status(403).json({ error: 'Manager approval required for this discount' });
-      }
-    }
-
-    const order = store.createOrder({
-      customer_name: name,
-      phone: phoneText,
-      city: 'Lahore',
-      payment_mode: mode,
-      fulfillment_method: 'pickup',
-      items: orderItems,
-      discount_type: discount.discount_type,
-      discount_amount: discount.discount_amount,
-      discount_percent: discount.discount_percent,
-      notes: note ? `Counter sale payment note: ${note}` : 'Counter sale',
-      shipping_address: buildPickupAddress({ name, phone: phoneText }),
-      source: 'counter_sale',
-      payment_status: 'paid',
-      shipping_status: 'delivered',
-      delivery_status: 'delivered',
-      activity_message: `Counter bill created by Staff: ${req.auth.user.username || req.auth.user.name || 'staff'}`,
-      staff_user_id: req.auth.user.id,
-      staff_user: req.auth.user,
-      discount_override_required: discountNeedsOverride,
-      discount_override_user: discountOverrideUser || (discountNeedsOverride ? req.auth.user : null),
+    const order = createCounterSaleFromPayload({
+      user: req.auth.user,
+      body: req.body,
     });
 
     publishOrderEvent('order_created', order);
     res.status(201).json({ message: 'Counter bill created', order });
   } catch (err) {
+    sendCounterSaleError(res, err);
+  }
+});
+
+router.get('/counter-sales/stats', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
+  const date = /^\d{4}-\d{2}-\d{2}$/.test(String(req.query.date || ''))
+    ? new Date(`${req.query.date}T12:00:00`)
+    : new Date();
+  res.json(store.getCounterTodayStats({ user: req.auth.user, date }));
+});
+
+router.get('/counter-drafts', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
+  res.json(store.listCounterDrafts({ user: req.auth.user }));
+});
+
+router.post('/counter-drafts', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const mode = String(body.payment_mode || 'cash').trim().toLowerCase();
+  if (!VALID_COUNTER_PAYMENT_MODES.includes(mode)) {
+    return res.status(400).json({ error: 'Invalid counter payment method' });
+  }
+  if (!Array.isArray(body.items) || body.items.length === 0 || body.items.length > MAX_ITEMS) {
+    return res.status(400).json({ error: 'Draft must include 1-20 items' });
+  }
+
+  try {
+    const draft = store.createCounterDraft({
+      customer_name: body.customer_name,
+      phone: body.phone,
+      payment_mode: mode,
+      payment_note: body.payment_note,
+      discount_type: body.discount_type,
+      discount_amount: body.discount_amount,
+      discount_percent: body.discount_percent,
+      items: body.items,
+      staff_user_id: req.auth.user.id,
+      staff_user: req.auth.user,
+    });
+    res.status(201).json({ message: 'Counter draft saved', draft });
+  } catch (err) {
     if (err instanceof store.StockError) {
       return res.status(409).json({ error: err.message, details: err.details });
     }
-    res.status(400).json({ error: err.message || 'Could not create counter bill' });
+    res.status(400).json({ error: err.message || 'Could not save draft' });
   }
+});
+
+router.post('/counter-drafts/:id/confirm', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
+  const draft = store.getCounterDraft(req.params.id, { user: req.auth.user });
+  if (!draft) return res.status(404).json({ error: 'Draft not found' });
+
+  try {
+    const order = createCounterSaleFromPayload({
+      user: req.auth.user,
+      body: {
+        ...req.body,
+        customer_name: draft.customer_name,
+        phone: draft.phone,
+        payment_mode: draft.payment_mode,
+        payment_note: draft.payment_note,
+        discount_type: draft.discount_type,
+        discount_amount: draft.discount_amount,
+        discount_percent: draft.discount_percent,
+        items: draft.items,
+      },
+    });
+    store.deleteCounterDraft(draft.id, { user: req.auth.user, convertedOrderId: order.id });
+    publishOrderEvent('order_created', order);
+    res.status(201).json({ message: 'Draft converted to counter bill', order });
+  } catch (err) {
+    sendCounterSaleError(res, err);
+  }
+});
+
+router.delete('/counter-drafts/:id', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
+  const draft = store.deleteCounterDraft(req.params.id, { user: req.auth.user });
+  if (!draft) return res.status(404).json({ error: 'Draft not found' });
+  res.json({ ok: true });
 });
 
 router.get('/counter-sales', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {

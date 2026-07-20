@@ -34,6 +34,7 @@ export default function Counter() {
   const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState([]);
+  const [stats, setStats] = useState({ today_sales: 0, bills_today: 0, items_sold_today: 0 });
   const [posSettings, setPosSettings] = useState(DEFAULT_POS_SETTINGS);
   const [returnSale, setReturnSale] = useState(null);
   const [returnQty, setReturnQty] = useState({});
@@ -45,17 +46,27 @@ export default function Counter() {
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const [loading, setLoading] = useState(true);
   const printInFlightRef = useRef(false);
+  const salesSectionRef = useRef(null);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const loadCounterData = async ({ showLoading = true } = {}) => {
     if (showLoading) setLoading(true);
     try {
-      const [productData, salesData] = await Promise.all([
+      const [productData, salesData, statsData] = await Promise.all([
         api.getProducts(),
         api.getCounterSales({ date: today }),
+        api.getCounterStats({ date: today }).catch(() => null),
       ]);
       setProducts(productData);
       setSales(salesData);
+      setStats(statsData || {
+        today_sales: salesData.reduce((sum, order) => sum + Number(order.total_amount || 0), 0),
+        bills_today: salesData.filter((order) => order.source !== 'counter_return').length,
+        items_sold_today: salesData.reduce((sum, order) => {
+          const sign = order.source === 'counter_return' || order.transaction_type === 'return' ? -1 : 1;
+          return sum + sign * (order.items || []).reduce((itemSum, item) => itemSum + (Number(item.qty) || 0), 0);
+        }, 0),
+      });
       api.getPosSettings()
         .then((settings) => setPosSettings({ ...DEFAULT_POS_SETTINGS, ...(settings || {}) }))
         .catch(() => setPosSettings(DEFAULT_POS_SETTINGS));
@@ -84,7 +95,9 @@ export default function Counter() {
     };
   }, [printJob, thermalWidth]);
 
-  const total = sales.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
+  const jumpToSales = () => {
+    salesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const openReturnModal = async (sale) => {
     setReturnFeedback('');
@@ -230,10 +243,22 @@ export default function Counter() {
             <h1 className="wp-admin-page-title">{t('counter.title')}</h1>
             <p>{t('counter.subtitle')}</p>
           </div>
-          <div className="counter-today-card">
-            <span>{t('counter.todaySales')}</span>
-            <strong>{formatPrice(total)}</strong>
-            <small>{sales.length} {t('counter.billsToday')}</small>
+          <div className="counter-stats-bar" aria-label={t('counter.quickStats')}>
+            <div className="counter-today-card">
+              <span>{t('counter.todaySales')}</span>
+              <strong>{formatPrice(stats.today_sales)}</strong>
+              <small>{t('counter.shopToday')}</small>
+            </div>
+            <div className="counter-today-card">
+              <span>{t('counter.billsToday')}</span>
+              <strong>{Number(stats.bills_today || 0).toLocaleString('en-PK')}</strong>
+              <small>{t('counter.counterBills')}</small>
+            </div>
+            <div className="counter-today-card">
+              <span>{t('counter.itemsSoldToday')}</span>
+              <strong>{Number(stats.items_sold_today || 0).toLocaleString('en-PK')}</strong>
+              <small>{t('counter.netAfterReturns')}</small>
+            </div>
           </div>
         </div>
 
@@ -245,10 +270,12 @@ export default function Counter() {
             onBillCreated={() => loadCounterData({ showLoading: false })}
             onPrintOrder={printCounterSale}
             onThermalWidthChange={setThermalWidth}
+            onJumpToSales={jumpToSales}
+            onOpenReturnFlow={jumpToSales}
           />
         )}
 
-        <section className="counter-sales glass-card">
+        <section className="counter-sales glass-card" ref={salesSectionRef}>
           <div className="counter-sales__head">
             <h3>{t('counter.mySalesToday')}</h3>
             <button type="button" className="wp-button wp-button--secondary" onClick={() => loadCounterData({ showLoading: false })}>

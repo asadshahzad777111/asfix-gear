@@ -519,6 +519,20 @@ export const api = {
   createCounterSale: (body) =>
     request('/orders/counter-sale', { method: 'POST', body: JSON.stringify(body) }),
   getCounterSale: (id) => request(`/orders/counter-sales/${encodeURIComponent(id)}`),
+  getCounterStats: (params = {}) => {
+    const query = new URLSearchParams(params).toString();
+    return request(`/orders/counter-sales/stats${query ? `?${query}` : ''}`);
+  },
+  getCounterDrafts: () => request('/orders/counter-drafts'),
+  saveCounterDraft: (body) =>
+    request('/orders/counter-drafts', { method: 'POST', body: JSON.stringify(body) }),
+  confirmCounterDraft: (id, body = {}) =>
+    request(`/orders/counter-drafts/${encodeURIComponent(id)}/confirm`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  deleteCounterDraft: (id) =>
+    request(`/orders/counter-drafts/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   processCounterReturn: (id, body) =>
     request(`/orders/counter-sales/${encodeURIComponent(id)}/return`, {
       method: 'POST',

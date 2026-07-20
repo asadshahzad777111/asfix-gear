@@ -12,6 +12,7 @@ const COLLECTIONS = [
   'repair_messages',
   'contact_messages',
   'orders',
+  'counter_drafts',
   'verification_codes',
 ];
 
@@ -96,6 +97,7 @@ async function readDataAsync() {
     repair_messages: await loadCollection(db, 'repair_messages'),
     contact_messages: await loadCollection(db, 'contact_messages'),
     orders: await loadCollection(db, 'orders'),
+    counter_drafts: await loadCollection(db, 'counter_drafts'),
     verification_codes: await loadCollection(db, 'verification_codes'),
   };
   return migrateData(data);
