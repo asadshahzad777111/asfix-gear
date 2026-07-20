@@ -1626,7 +1626,7 @@ export default function AdminCounterBill({
               {receiptOrder ? (
                 <>
                   <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
-                    {t('admin.counterBillPrintNow')}
+                    {showRawBtLink ? t('admin.counterBillPrintRawBt') : t('admin.counterBillPrintNow')}
                   </button>
                   <button type="button" className="wp-button counter-bill__pdf-cta" onClick={() => downloadInvoice()}>
                     {t('admin.counterBillDownloadPdf')}
@@ -1634,7 +1634,7 @@ export default function AdminCounterBill({
                   <button type="button" className="wp-button counter-bill__share-cta" onClick={() => shareInvoice()}>
                     {t('admin.counterBillSharePdf')}
                   </button>
-                </>
+              </>
               ) : null}
             </div>
           </div>
@@ -1647,7 +1647,7 @@ export default function AdminCounterBill({
             <strong>{t('admin.counterBillSavedReady')}</strong>
             <div className="counter-bill__receipt-actions">
               <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
-                {t('admin.counterBillPrintNow')}
+                {showRawBtLink ? t('admin.counterBillPrintRawBt') : t('admin.counterBillPrintNow')}
               </button>
               <button type="button" className="wp-button counter-bill__pdf-cta" onClick={() => downloadInvoice()}>
                 {t('admin.counterBillDownloadPdf')}
