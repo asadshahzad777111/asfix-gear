@@ -56,6 +56,7 @@ const MAX_PROOF_BYTES = 5 * 1024 * 1024;
 const VALID_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 const VALID_PAYMENT_MODES = ['jazzcash', 'easypaisa', 'bank', 'cod'];
 const VALID_COUNTER_PAYMENT_MODES = ['cash', 'card', 'jazzcash', 'easypaisa', 'bank', 'cod', 'other'];
+const VALID_REFUND_METHODS = ['cash', 'store_credit'];
 const SHOP_PICKUP_COORDS = { lat: 31.59375, lng: 74.46745 };
 
 function salePrice(product) {
@@ -63,6 +64,39 @@ function salePrice(product) {
   if (!Number.isFinite(price) || price < 0) return 0;
   const discount = Math.min(90, Math.max(0, Number(product.discount_percent) || 0));
   return Math.round(price * (1 - discount / 100));
+}
+
+function isManagerRole(user) {
+  return ['super_admin', 'admin'].includes(user?.role);
+}
+
+function resolveManagerOverride({ login, password }) {
+  if (!String(login || '').trim() || !String(password || '')) return null;
+  const result = store.authenticateUser(login, password);
+  if (!result.ok || !isManagerRole(result.user)) return null;
+  return result.user;
+}
+
+function discountFromRequest(body, subtotal) {
+  const type = String(body?.discount_type || 'fixed').trim().toLowerCase() === 'percent' ? 'percent' : 'fixed';
+  const rawAmount = Number(body?.discount_amount);
+  const rawPercent = Number(body?.discount_percent);
+  let percent = type === 'percent' && Number.isFinite(rawPercent)
+    ? Math.max(0, Math.min(100, rawPercent))
+    : 0;
+  let amount = type === 'percent'
+    ? Math.round((subtotal * percent) / 100)
+    : Number.isFinite(rawAmount)
+      ? Math.round(rawAmount)
+      : 0;
+  amount = Math.max(0, Math.min(amount, Math.round(subtotal)));
+  percent = subtotal > 0 && amount > 0 ? Number(((amount / subtotal) * 100).toFixed(2)) : 0;
+  return {
+    discount_type: amount > 0 ? type : 'fixed',
+    discount_amount: amount,
+    discount_percent: type === 'percent' && amount > 0 ? percent : null,
+    effective_percent: percent,
+  };
 }
 
 const proofUpload = multer({
@@ -241,6 +275,11 @@ router.post('/counter-sale', requireAuth, requireRole(...COUNTER_SELLERS), (req,
     payment_mode,
     payment_note,
     items,
+    discount_type,
+    discount_amount,
+    discount_percent,
+    manager_login,
+    manager_password,
   } = req.body || {};
 
   const name = String(customer_name || '').trim().slice(0, MAX_NAME) || 'Walk-in Customer';
@@ -281,6 +320,18 @@ router.post('/counter-sale', requireAuth, requireRole(...COUNTER_SELLERS), (req,
         price: salePrice(product),
       };
     });
+    const subtotal = orderItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);
+    const discount = discountFromRequest({ discount_type, discount_amount, discount_percent }, subtotal);
+    const settings = store.getPosSettings();
+    const discountNeedsOverride = discount.discount_amount > settings.posDiscountMaxAmountWithoutPin
+      || discount.effective_percent > settings.posDiscountMaxPercentWithoutPin;
+    let discountOverrideUser = null;
+    if (discountNeedsOverride && !isManagerRole(req.auth.user)) {
+      discountOverrideUser = resolveManagerOverride({ login: manager_login, password: manager_password });
+      if (!discountOverrideUser) {
+        return res.status(403).json({ error: 'Manager approval required for this discount' });
+      }
+    }
 
     const order = store.createOrder({
       customer_name: name,
@@ -289,6 +340,9 @@ router.post('/counter-sale', requireAuth, requireRole(...COUNTER_SELLERS), (req,
       payment_mode: mode,
       fulfillment_method: 'pickup',
       items: orderItems,
+      discount_type: discount.discount_type,
+      discount_amount: discount.discount_amount,
+      discount_percent: discount.discount_percent,
       notes: note ? `Counter sale payment note: ${note}` : 'Counter sale',
       shipping_address: buildPickupAddress({ name, phone: phoneText }),
       source: 'counter_sale',
@@ -298,6 +352,8 @@ router.post('/counter-sale', requireAuth, requireRole(...COUNTER_SELLERS), (req,
       activity_message: `Counter bill created by Staff: ${req.auth.user.username || req.auth.user.name || 'staff'}`,
       staff_user_id: req.auth.user.id,
       staff_user: req.auth.user,
+      discount_override_required: discountNeedsOverride,
+      discount_override_user: discountOverrideUser || (discountNeedsOverride ? req.auth.user : null),
     });
 
     publishOrderEvent('order_created', order);
@@ -346,6 +402,70 @@ router.get('/counter-sales/:id', requireAuth, requireRole(...COUNTER_SELLERS), (
   }
 
   res.json(order);
+});
+
+router.post('/counter-sales/:id/return', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
+  const key = String(req.params.id || '').trim().toUpperCase();
+  const original = store.getOrders().find((candidate) => {
+    const orderRef = String(candidate.order_id || '').trim().toUpperCase();
+    return (
+      (candidate.source || 'online') === 'counter_sale'
+      && (String(candidate.id) === key || orderRef === key)
+    );
+  });
+
+  if (!original) return res.status(404).json({ error: 'Counter sale not found' });
+  if (
+    req.auth.user.role === 'counter'
+    && String(original.created_by_staff_id || '') !== String(req.auth.user.id)
+  ) {
+    return res.status(404).json({ error: 'Counter sale not found' });
+  }
+
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  const refundMethod = String(body.refund_method || 'cash').trim().toLowerCase();
+  if (!VALID_REFUND_METHODS.includes(refundMethod)) {
+    return res.status(400).json({ error: 'Invalid refund method' });
+  }
+  if (!Array.isArray(body.items) || !body.items.length || body.items.length > MAX_ITEMS) {
+    return res.status(400).json({ error: 'Select at least one item to return' });
+  }
+
+  const settings = store.getPosSettings();
+  const createdAt = new Date(original.created_at);
+  const ageMs = Date.now() - createdAt.getTime();
+  const windowMs = Math.max(0, Number(settings.posReturnWindowHours) || 0) * 60 * 60 * 1000;
+  const withinWindow = Number.isFinite(ageMs) && ageMs >= 0 && ageMs <= windowMs;
+  let overrideUser = null;
+
+  if (!withinWindow && !isManagerRole(req.auth.user)) {
+    overrideUser = resolveManagerOverride({
+      login: body.manager_login,
+      password: body.manager_password,
+    });
+    if (!overrideUser) {
+      return res.status(403).json({ error: 'Manager approval required outside return window' });
+    }
+  }
+
+  try {
+    const returnOrder = store.createCounterReturn({
+      original_order_id: original.id,
+      items: body.items,
+      refund_method: refundMethod,
+      reason: String(body.reason || '').slice(0, MAX_NOTES),
+      staff_user_id: req.auth.user.id,
+      staff_user: req.auth.user,
+      override_user: overrideUser || (!withinWindow && isManagerRole(req.auth.user) ? req.auth.user : null),
+    });
+    publishOrderEvent('order_created', returnOrder);
+    res.status(201).json({ message: 'Return processed', order: returnOrder });
+  } catch (err) {
+    if (err instanceof store.StockError) {
+      return res.status(409).json({ error: err.message, details: err.details });
+    }
+    res.status(400).json({ error: err.message || 'Could not process return' });
+  }
 });
 
 router.post('/:id/payment-proof', requireAuth, (req, res, next) => {

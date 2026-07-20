@@ -103,6 +103,19 @@ router.patch('/address-settings', requireAuth, requireRole(...SHOP_MANAGERS), (r
   }
 });
 
+router.get('/pos-settings', requireAuth, requireRole('super_admin', 'admin', 'editor', 'counter'), (_req, res) => {
+  res.json(store.getPosSettings());
+});
+
+router.patch('/pos-settings', requireAuth, requireRole(...SHOP_MANAGERS), (req, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    res.json(store.setPosSettings(body, req.auth.user.id));
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Invalid POS settings' });
+  }
+});
+
 router.get('/storefront-images', (_req, res) => {
   res.json(store.getStorefrontImages());
 });

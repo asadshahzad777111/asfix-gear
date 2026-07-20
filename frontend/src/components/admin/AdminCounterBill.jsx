@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../../api/client';
 import { SHOP } from '../../config/shop';
+import { useAuth } from '../../context/AuthContext';
 import { getDefaultImage } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
 import './admin-counter-bill.css';
@@ -18,6 +19,11 @@ const THERMAL_WIDTH_OPTIONS = ['58mm', '80mm'];
 const RECEIPT_SITE = 'asfixgear.com';
 const THERMAL_PAGE_STYLE_ID = 'thermal-page-size';
 const PRINT_ROOT_ID = 'counter-receipt-print-root';
+const DEFAULT_POS_SETTINGS = {
+  posReturnWindowHours: 24,
+  posDiscountMaxPercentWithoutPin: 10,
+  posDiscountMaxAmountWithoutPin: 500,
+};
 
 export function readThermalReceiptWidth() {
   if (typeof window === 'undefined') return '58mm';
@@ -118,12 +124,23 @@ function receiptTotals(order) {
     (sum, item) => sum + Number(item.price || 0) * (Number(item.qty) || 1),
     0
   );
-  const grandTotal = Number(order?.total_amount ?? subtotal) || 0;
+  const savedSubtotal = Number(order?.subtotal);
+  const savedDiscount = Number(order?.discount_amount);
+  const grandTotal = Number(order?.grand_total ?? order?.total_amount ?? subtotal) || 0;
   return {
-    subtotal,
+    subtotal: Number.isFinite(savedSubtotal) ? savedSubtotal : subtotal,
     grandTotal,
-    discount: Math.max(0, subtotal - grandTotal),
+    discount: Number.isFinite(savedDiscount) ? Math.max(0, savedDiscount) : Math.max(0, subtotal - grandTotal),
   };
+}
+
+function clampDiscountAmount({ subtotal, type, value }) {
+  const raw = Number(value);
+  if (!Number.isFinite(raw) || raw <= 0 || subtotal <= 0) return 0;
+  if (type === 'percent') {
+    return Math.min(subtotal, Math.round((subtotal * Math.min(100, raw)) / 100));
+  }
+  return Math.min(subtotal, Math.round(raw));
 }
 
 function receiptNumber(order) {
@@ -507,6 +524,7 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
 
 export default function AdminCounterBill({ products, onBillCreated, onPrintOrder, onThermalWidthChange }) {
   const { t } = useTranslation();
+  const { user } = useAuth();
   const searchRef = useRef(null);
   const printInFlightRef = useRef(false);
   const autoPrintedOrderRef = useRef(null);
@@ -522,6 +540,10 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
     PAYMENT_OPTIONS.some((option) => option.id === draftSeed?.paymentMode) ? draftSeed.paymentMode : 'cash'
   );
   const [paymentNote, setPaymentNote] = useState(() => draftSeed?.paymentNote || '');
+  const [productPanelCollapsed, setProductPanelCollapsed] = useState(false);
+  const [discountType, setDiscountType] = useState(() => draftSeed?.discountType || 'fixed');
+  const [discountValue, setDiscountValue] = useState(() => draftSeed?.discountValue || '');
+  const [posSettings, setPosSettings] = useState(DEFAULT_POS_SETTINGS);
   const [cashReceived, setCashReceived] = useState('');
   const [cartFlashKey, setCartFlashKey] = useState(0);
   const [submitting, setSubmitting] = useState(false);
@@ -550,9 +572,22 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
     });
   }, [availableProducts, query, selectedCategory]);
 
-  const total = lines.reduce((sum, line) => sum + salePrice(line.product) * line.qty, 0);
+  const subtotal = lines.reduce((sum, line) => sum + salePrice(line.product) * line.qty, 0);
+  const discountAmount = clampDiscountAmount({ subtotal, type: discountType, value: discountValue });
+  const effectiveDiscountPercent = subtotal > 0 && discountAmount > 0
+    ? Number(((discountAmount / subtotal) * 100).toFixed(2))
+    : 0;
+  const total = Math.max(0, subtotal - discountAmount);
+  const discountNeedsOverride = discountAmount > Number(posSettings.posDiscountMaxAmountWithoutPin || 0)
+    || effectiveDiscountPercent > Number(posSettings.posDiscountMaxPercentWithoutPin || 0);
   const cashReceivedValue = Number(cashReceived);
   const changeDue = paymentMode === 'cash' && Number.isFinite(cashReceivedValue) ? Math.max(0, cashReceivedValue - total) : 0;
+
+  useEffect(() => {
+    api.getPosSettings()
+      .then((settings) => setPosSettings({ ...DEFAULT_POS_SETTINGS, ...(settings || {}) }))
+      .catch(() => setPosSettings(DEFAULT_POS_SETTINGS));
+  }, []);
 
   useEffect(() => {
     if (!lines.length) return;
@@ -582,7 +617,7 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
   }, [cartFlashKey]);
 
   useEffect(() => {
-    const hasDraft = lines.length || customerName || customerPhone || paymentMode !== 'cash' || paymentNote;
+    const hasDraft = lines.length || customerName || customerPhone || paymentMode !== 'cash' || paymentNote || discountValue;
     if (!hasDraft) {
       clearCounterBillDraft();
       return;
@@ -597,9 +632,11 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
       customerPhone,
       paymentMode,
       paymentNote,
+      discountType,
+      discountValue,
       updatedAt: new Date().toISOString(),
     });
-  }, [lines, customerName, customerPhone, paymentMode, paymentNote]);
+  }, [lines, customerName, customerPhone, paymentMode, paymentNote, discountType, discountValue]);
 
   const addProduct = (product) => {
     setReceiptOrder(null);
@@ -658,6 +695,8 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
     setShowCustomerDetails(false);
     setPaymentMode('cash');
     setPaymentNote('');
+    setDiscountType('fixed');
+    setDiscountValue('');
     setCashReceived('');
     setFeedback(null);
     setReceiptOrder(null);
@@ -688,11 +727,34 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
     setSubmitting(true);
     setFeedback(null);
     try {
+      let managerApproval = {};
+      if (discountNeedsOverride && !['super_admin', 'admin'].includes(user?.role)) {
+        const managerLogin = window.prompt?.('Manager approval required. Enter admin username/email:') || '';
+        if (!managerLogin.trim()) {
+          setFeedback({ type: 'error', text: 'Manager approval is required for this discount.' });
+          setSubmitting(false);
+          return;
+        }
+        const managerPassword = window.prompt?.('Enter manager password/PIN:') || '';
+        if (!managerPassword) {
+          setFeedback({ type: 'error', text: 'Manager password/PIN is required.' });
+          setSubmitting(false);
+          return;
+        }
+        managerApproval = {
+          manager_login: managerLogin,
+          manager_password: managerPassword,
+        };
+      }
       const result = await api.createCounterSale({
         customer_name: customerName,
         phone: customerPhone,
         payment_mode: paymentMode,
         payment_note: paymentNote,
+        discount_type: discountType,
+        discount_amount: discountAmount,
+        discount_percent: discountType === 'percent' ? Number(discountValue) || 0 : null,
+        ...managerApproval,
         items: lines.map((line) => ({
           product_id: line.product.id,
           qty: line.qty,
@@ -707,6 +769,8 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
       setShowCustomerDetails(false);
       setPaymentMode('cash');
       setPaymentNote('');
+      setDiscountType('fixed');
+      setDiscountValue('');
       setCashReceived('');
       onBillCreated?.(result.order);
       if (onPrintOrder) {
@@ -758,32 +822,44 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
         </div>
       ) : null}
 
-      <div className="counter-bill__grid">
+      <div className={`counter-bill__grid${productPanelCollapsed ? ' counter-bill__grid--products-collapsed' : ''}`}>
         <section className="counter-bill__panel counter-bill__panel--products">
           <div className="counter-bill__panel-head">
-            <h4>{t('admin.counterBillProducts')}</h4>
-            <span>{filteredProducts.length} / {availableProducts.length}</span>
-          </div>
-
-          <div className="counter-bill__categories" role="tablist" aria-label="Product categories">
+            <div>
+              <h4>{t('admin.counterBillProducts')}</h4>
+              <span>{filteredProducts.length} / {availableProducts.length}</span>
+            </div>
             <button
               type="button"
-              className={`counter-bill__category${selectedCategory === ALL_CATEGORIES ? ' counter-bill__category--active' : ''}`}
-              onClick={() => setSelectedCategory(ALL_CATEGORIES)}
+              className="counter-bill__browse-toggle"
+              onClick={() => setProductPanelCollapsed((value) => !value)}
+              aria-expanded={!productPanelCollapsed}
             >
-              {t('admin.counterBillAllCategories')}
+              {productPanelCollapsed ? '☰ Browse Products' : 'Collapse ▲'}
             </button>
-            {categories.map((category) => (
-              <button
-                key={category}
-                type="button"
-                className={`counter-bill__category${selectedCategory === category ? ' counter-bill__category--active' : ''}`}
-                onClick={() => setSelectedCategory(category)}
-              >
-                {category}
-              </button>
-            ))}
           </div>
+
+          {!productPanelCollapsed ? (
+            <div className="counter-bill__categories" role="tablist" aria-label="Product categories">
+              <button
+                type="button"
+                className={`counter-bill__category${selectedCategory === ALL_CATEGORIES ? ' counter-bill__category--active' : ''}`}
+                onClick={() => setSelectedCategory(ALL_CATEGORIES)}
+              >
+                {t('admin.counterBillAllCategories')}
+              </button>
+              {categories.map((category) => (
+                <button
+                  key={category}
+                  type="button"
+                  className={`counter-bill__category${selectedCategory === category ? ' counter-bill__category--active' : ''}`}
+                  onClick={() => setSelectedCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          ) : null}
 
           <label className="counter-bill__search">
             <span>{t('admin.counterBillSearch')}</span>
@@ -799,35 +875,37 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
             <small>{t('admin.counterBillSearchHint')}</small>
           </label>
 
-          <div className="counter-bill__products">
-            {filteredProducts.length === 0 ? (
-              <p className="counter-bill__empty">{t('admin.counterBillNoMatch')}</p>
-            ) : null}
-            {filteredProducts.map((product) => (
-              <button
-                key={product.id}
-                type="button"
-                className="counter-bill__product-tile"
-                onClick={() => addProduct(product)}
-              >
-                <span className="counter-bill__product-media">
-                  {product.image ? (
-                    <img src={product.image} alt="" loading="lazy" />
-                  ) : (
-                    <img src={getDefaultImage(product.category)} alt="" loading="lazy" />
-                  )}
-                </span>
-                <span className="counter-bill__product-info">
-                  <strong>{product.name}</strong>
-                  <small>{product.category || product.brand || `#${product.id}`}</small>
-                </span>
-                <span className="counter-bill__product-price">
-                  <strong>{formatPrice(salePrice(product))}</strong>
-                  <small>{t('admin.stockLabel', { count: Number(product.stock) || 0 })}</small>
-                </span>
-              </button>
-            ))}
-          </div>
+          {!productPanelCollapsed ? (
+            <div className="counter-bill__products">
+              {filteredProducts.length === 0 ? (
+                <p className="counter-bill__empty">{t('admin.counterBillNoMatch')}</p>
+              ) : null}
+              {filteredProducts.map((product) => (
+                <button
+                  key={product.id}
+                  type="button"
+                  className="counter-bill__product-tile"
+                  onClick={() => addProduct(product)}
+                >
+                  <span className="counter-bill__product-media">
+                    {product.image ? (
+                      <img src={product.image} alt="" loading="lazy" />
+                    ) : (
+                      <img src={getDefaultImage(product.category)} alt="" loading="lazy" />
+                    )}
+                  </span>
+                  <span className="counter-bill__product-info">
+                    <strong>{product.name}</strong>
+                    <small>{product.category || product.brand || `#${product.id}`}</small>
+                  </span>
+                  <span className="counter-bill__product-price">
+                    <strong>{formatPrice(salePrice(product))}</strong>
+                    <small>{t('admin.stockLabel', { count: Number(product.stock) || 0 })}</small>
+                  </span>
+                </button>
+              ))}
+            </div>
+          ) : null}
         </section>
 
         <section className={`counter-bill__panel counter-bill__panel--cart${cartFlashKey ? ' counter-bill__panel--flash' : ''}`}>
@@ -891,6 +969,54 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
                 );
               })
             )}
+          </div>
+
+          <div className="counter-bill__discount-box">
+            <div className="counter-bill__discount-head">
+              <span>Discount</span>
+              <div className="counter-bill__discount-toggle" role="group" aria-label="Discount type">
+                <button
+                  type="button"
+                  className={discountType === 'fixed' ? 'counter-bill__discount-active' : ''}
+                  onClick={() => setDiscountType('fixed')}
+                >
+                  Fixed Rs
+                </button>
+                <button
+                  type="button"
+                  className={discountType === 'percent' ? 'counter-bill__discount-active' : ''}
+                  onClick={() => setDiscountType('percent')}
+                >
+                  %
+                </button>
+              </div>
+            </div>
+            <label className="counter-bill__discount-input">
+              <span>{discountType === 'percent' ? 'Discount percent' : 'Discount amount'}</span>
+              <input
+                type="number"
+                min="0"
+                max={discountType === 'percent' ? 100 : subtotal}
+                step={discountType === 'percent' ? '0.01' : '1'}
+                inputMode="decimal"
+                value={discountValue}
+                onChange={(e) => setDiscountValue(e.target.value)}
+                placeholder="0"
+              />
+            </label>
+            {discountNeedsOverride ? (
+              <p className="counter-bill__discount-warning">
+                Manager approval required above {posSettings.posDiscountMaxPercentWithoutPin}% or Rs. {posSettings.posDiscountMaxAmountWithoutPin}.
+              </p>
+            ) : null}
+            <div className="counter-bill__discount-summary">
+              <span>Subtotal</span>
+              <strong>{formatPrice(subtotal)}</strong>
+              <span>Discount</span>
+              <strong>{formatPrice(discountAmount)}</strong>
+              <span>Net total</span>
+              <strong>{formatPrice(total)}</strong>
+            </div>
           </div>
 
           <div className="counter-bill__customer-toggle">

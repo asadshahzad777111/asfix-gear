@@ -20,28 +20,39 @@ const FIELD_LABELS = {
   branch: 'Branch',
 };
 
+const DEFAULT_POS_SETTINGS = {
+  posReturnWindowHours: 24,
+  posDiscountMaxPercentWithoutPin: 10,
+  posDiscountMaxAmountWithoutPin: 500,
+};
+
 export default function AdminPayments() {
   const [form, setForm] = useState(mergePaymentSettings());
   const [delivery, setDelivery] = useState(mergeDeliverySettings());
   const [addressSettings, setAddressSettings] = useState(mergeAddressSettings());
+  const [posSettings, setPosSettings] = useState(DEFAULT_POS_SETTINGS);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [savingDelivery, setSavingDelivery] = useState(false);
   const [savingAddress, setSavingAddress] = useState(false);
+  const [savingPos, setSavingPos] = useState(false);
   const [msg, setMsg] = useState('');
   const [deliveryMsg, setDeliveryMsg] = useState('');
   const [addressMsg, setAddressMsg] = useState('');
+  const [posMsg, setPosMsg] = useState('');
 
   useEffect(() => {
     Promise.all([
       api.getPaymentSettings().catch(() => null),
       api.getDeliverySettings().catch(() => null),
       api.getAddressSettings().catch(() => null),
+      api.getPosSettings().catch(() => null),
     ])
-      .then(([pay, del, address]) => {
+      .then(([pay, del, address, pos]) => {
         setForm(mergePaymentSettings(pay));
         setDelivery(mergeDeliverySettings(del));
         setAddressSettings(mergeAddressSettings(address));
+        setPosSettings({ ...DEFAULT_POS_SETTINGS, ...(pos || {}) });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -99,6 +110,20 @@ export default function AdminPayments() {
       setAddressMsg(err.message || 'Save failed');
     } finally {
       setSavingAddress(false);
+    }
+  };
+
+  const savePosSettings = async () => {
+    setSavingPos(true);
+    setPosMsg('');
+    try {
+      const saved = await api.setPosSettings(posSettings);
+      setPosSettings({ ...DEFAULT_POS_SETTINGS, ...(saved || {}) });
+      setPosMsg('POS settings saved.');
+    } catch (err) {
+      setPosMsg(err.message || 'Save failed');
+    } finally {
+      setSavingPos(false);
     }
   };
 
@@ -192,6 +217,63 @@ export default function AdminPayments() {
             </button>
           </div>
           {deliveryMsg ? <p className="wp-payments-msg">{deliveryMsg}</p> : null}
+        </div>
+      </div>
+
+      <div className="wp-postbox" style={{ marginTop: '1.5rem' }}>
+        <div className="wp-postbox-head">POS billing controls</div>
+        <div className="wp-postbox-body">
+          <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
+            Controls return timing and when POS discounts need manager approval. Defaults: 24 hours, 10%, Rs. 500.
+          </p>
+          <div className="wp-payments-grid">
+            <label className="wp-payments-field">
+              <span>Return window (hours)</span>
+              <input
+                type="number"
+                min={0}
+                max={720}
+                step={1}
+                value={posSettings.posReturnWindowHours}
+                onChange={(e) => setPosSettings((p) => ({ ...p, posReturnWindowHours: e.target.value }))}
+              />
+            </label>
+            <label className="wp-payments-field">
+              <span>Max discount percent without PIN</span>
+              <input
+                type="number"
+                min={0}
+                max={100}
+                step="0.01"
+                value={posSettings.posDiscountMaxPercentWithoutPin}
+                onChange={(e) => setPosSettings((p) => ({ ...p, posDiscountMaxPercentWithoutPin: e.target.value }))}
+              />
+            </label>
+            <label className="wp-payments-field">
+              <span>Max discount amount without PIN (PKR)</span>
+              <input
+                type="number"
+                min={0}
+                max={1000000}
+                step={1}
+                value={posSettings.posDiscountMaxAmountWithoutPin}
+                onChange={(e) => setPosSettings((p) => ({ ...p, posDiscountMaxAmountWithoutPin: e.target.value }))}
+              />
+            </label>
+          </div>
+          <div className="wp-payments-actions" style={{ marginTop: '1rem' }}>
+            <button type="button" className="wp-button" onClick={savePosSettings} disabled={savingPos}>
+              {savingPos ? 'Saving…' : 'Save POS settings'}
+            </button>
+            <button
+              type="button"
+              className="wp-button wp-button--secondary"
+              onClick={() => setPosSettings(DEFAULT_POS_SETTINGS)}
+            >
+              Reset POS defaults
+            </button>
+          </div>
+          {posMsg ? <p className="wp-payments-msg">{posMsg}</p> : null}
         </div>
       </div>
 

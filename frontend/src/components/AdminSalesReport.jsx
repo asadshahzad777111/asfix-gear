@@ -38,9 +38,12 @@ function downloadSalesCsv(report, period) {
     'Sale',
     'Cost (Asal)',
     'Profit',
-    'Order Sale',
+    'Order Subtotal',
+    'Order Discount',
+    'Order Net Total',
     'Order Cost',
     'Order Profit',
+    'Type',
     'Status',
   ];
 
@@ -61,9 +64,12 @@ function downloadSalesCsv(report, period) {
           item.sale_line,
           item.cost_line,
           lineProfit,
-          idx === 0 ? row.sale_total : '',
+          idx === 0 ? row.subtotal : '',
+          idx === 0 ? row.discount_amount : '',
+          idx === 0 ? row.net_total ?? row.sale_total : '',
           idx === 0 ? row.cost_total : '',
           idx === 0 ? row.profit : '',
+          idx === 0 ? row.transaction_type : '',
           idx === 0 ? row.shipping_status : '',
         ]
           .map(csvEscape)
@@ -84,9 +90,12 @@ function downloadSalesCsv(report, period) {
         '',
         '',
         '',
-        report.summary.sale_total,
+        report.summary.subtotal,
+        report.summary.discount_amount,
+        report.summary.net_total ?? report.summary.sale_total,
         report.summary.cost_total,
         report.summary.profit,
+        '',
         `${report.summary.order_count} orders`,
       ]
         .map(csvEscape)
@@ -198,7 +207,11 @@ export default function AdminSalesReport({ compact = false }) {
           </div>
           <div className="sales-summary-card glass-card">
             <span className="sales-summary-label">{t('sales.totalSales')}</span>
-            <strong className="sales-summary-value sales-summary-value--sale">{formatPrice(summary.sale_total)}</strong>
+            <strong className="sales-summary-value sales-summary-value--sale">{formatPrice(summary.net_total ?? summary.sale_total)}</strong>
+          </div>
+          <div className="sales-summary-card glass-card">
+            <span className="sales-summary-label">{t('sales.totalDiscounts')}</span>
+            <strong className="sales-summary-value sales-summary-value--cost">{formatPrice(summary.discount_amount || 0)}</strong>
           </div>
           <div className="sales-summary-card glass-card">
             <span className="sales-summary-label">{t('sales.totalCost')}</span>
@@ -288,7 +301,9 @@ export default function AdminSalesReport({ compact = false }) {
                 <th>{t('sales.colDate')}</th>
                 <th>{t('sales.colCustomer')}</th>
                 <th>{t('sales.colItems')}</th>
-                <th className="sales-num">{t('sales.colSale')}</th>
+                <th className="sales-num">{t('sales.colSubtotal')}</th>
+                <th className="sales-num">{t('sales.colDiscount')}</th>
+                <th className="sales-num">{t('sales.colNetTotal')}</th>
                 <th className="sales-num">{t('sales.colCost')}</th>
                 <th className="sales-num">{t('sales.colProfit')}</th>
                 <th>{t('sales.colStatus')}</th>
@@ -316,7 +331,9 @@ export default function AdminSalesReport({ compact = false }) {
                       ))}
                     </ul>
                   </td>
-                  <td className="sales-num">{formatPrice(row.sale_total)}</td>
+                  <td className="sales-num">{formatPrice(row.subtotal)}</td>
+                  <td className="sales-num">{formatPrice(row.discount_amount || 0)}</td>
+                  <td className="sales-num">{formatPrice(row.net_total ?? row.sale_total)}</td>
                   <td className="sales-num">{formatPrice(row.cost_total)}</td>
                   <td className={`sales-num ${row.profit >= 0 ? 'sales-profit-pos' : 'sales-profit-neg'}`}>
                     {formatPrice(row.profit)}
@@ -329,7 +346,9 @@ export default function AdminSalesReport({ compact = false }) {
               <tfoot>
                 <tr className="sales-report-total-row">
                   <td colSpan={4}><strong>{t('sales.totals')}</strong></td>
-                  <td className="sales-num"><strong>{formatPrice(summary.sale_total)}</strong></td>
+                  <td className="sales-num"><strong>{formatPrice(summary.subtotal)}</strong></td>
+                  <td className="sales-num"><strong>{formatPrice(summary.discount_amount || 0)}</strong></td>
+                  <td className="sales-num"><strong>{formatPrice(summary.net_total ?? summary.sale_total)}</strong></td>
                   <td className="sales-num"><strong>{formatPrice(summary.cost_total)}</strong></td>
                   <td className={`sales-num ${summary.profit >= 0 ? 'sales-profit-pos' : 'sales-profit-neg'}`}>
                     <strong>{formatPrice(summary.profit)}</strong>

@@ -519,6 +519,11 @@ export const api = {
   createCounterSale: (body) =>
     request('/orders/counter-sale', { method: 'POST', body: JSON.stringify(body) }),
   getCounterSale: (id) => request(`/orders/counter-sales/${encodeURIComponent(id)}`),
+  processCounterReturn: (id, body) =>
+    request(`/orders/counter-sales/${encodeURIComponent(id)}/return`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   getCounterSales: (params = {}) => {
     const query = new URLSearchParams(params).toString();
     return request(`/orders/counter-sales${query ? `?${query}` : ''}`);
@@ -596,6 +601,9 @@ export const api = {
   getAddressSettings: () => request('/shop/address-settings'),
   setAddressSettings: (body) =>
     request('/shop/address-settings', { method: 'PATCH', body: JSON.stringify(body) }),
+  getPosSettings: () => request('/shop/pos-settings'),
+  setPosSettings: (body) =>
+    request('/shop/pos-settings', { method: 'PATCH', body: JSON.stringify(body) }),
   getStorefrontImages: () =>
     request('/shop/storefront-images', { timeoutMs: COLD_START_TIMEOUT_MS }),
   updateStorefrontImages: (body) =>

@@ -38,6 +38,13 @@ export const DEFAULT_DATA = {
       updated_at: null,
       updated_by: null,
     },
+    pos: {
+      posReturnWindowHours: 24,
+      posDiscountMaxPercentWithoutPin: 10,
+      posDiscountMaxAmountWithoutPin: 500,
+      updated_at: null,
+      updated_by: null,
+    },
     product_categories: [],
     storefront_images: {
       category_images: {},
@@ -75,6 +82,12 @@ export function migrateData(data) {
     manual_override: null,
     updated_at: null,
     updated_by: null,
+  };
+  data.settings.pos = {
+    posReturnWindowHours: 24,
+    posDiscountMaxPercentWithoutPin: 10,
+    posDiscountMaxAmountWithoutPin: 500,
+    ...(data.settings.pos && typeof data.settings.pos === 'object' ? data.settings.pos : {}),
   };
   if (!data.meta.nextUserId) data.meta.nextUserId = 1;
   if (!data.meta.nextOrderId) data.meta.nextOrderId = 1;
@@ -227,6 +240,19 @@ export function migrateData(data) {
       for (const item of order.items) {
         if (item.cost_price == null) item.cost_price = 0;
       }
+    }
+    const itemSubtotal = Array.isArray(order.items)
+      ? order.items.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0)
+      : 0;
+    if (order.subtotal == null) order.subtotal = itemSubtotal;
+    if (order.discount_amount == null) {
+      order.discount_amount = Math.max(0, Number(order.subtotal || 0) - Number(order.total_amount || 0));
+    }
+    if (order.discount_type == null) order.discount_type = 'fixed';
+    if (order.discount_percent == null) order.discount_percent = null;
+    if (order.grand_total == null) order.grand_total = Number(order.total_amount || 0);
+    if (order.transaction_type == null) {
+      order.transaction_type = order.source === 'counter_return' ? 'return' : 'sale';
     }
   }
 

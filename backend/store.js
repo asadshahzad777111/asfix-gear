@@ -36,6 +36,11 @@ export { getStorageBackend, initStorage, isStorageReady };
 export { formatOrderId, formatBookingRef };
 
 export const LOW_STOCK_THRESHOLD = 5;
+const DEFAULT_POS_SETTINGS = {
+  posReturnWindowHours: 24,
+  posDiscountMaxPercentWithoutPin: 10,
+  posDiscountMaxAmountWithoutPin: 500,
+};
 
 /** Salable units only — low stock (>0) remains orderable until stock hits 0. */
 export function normalizeProductStock(stock) {
@@ -864,6 +869,38 @@ function deductOrderStock(products, items) {
   }
 }
 
+function orderItemsSubtotal(items) {
+  return items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 1), 0);
+}
+
+function normalizeOrderDiscount(input = {}, subtotal = 0) {
+  const type = String(input.discount_type || 'fixed').trim().toLowerCase() === 'percent' ? 'percent' : 'fixed';
+  let percent = Number(input.discount_percent);
+  let amount = Number(input.discount_amount);
+
+  if (type === 'percent') {
+    percent = Number.isFinite(percent) ? Math.max(0, Math.min(100, percent)) : 0;
+    amount = Math.round((subtotal * percent) / 100);
+  } else {
+    percent = subtotal > 0 && Number.isFinite(amount) ? (amount / subtotal) * 100 : 0;
+  }
+
+  amount = Number.isFinite(amount) ? Math.max(0, Math.min(Math.round(amount), Math.round(subtotal))) : 0;
+  percent = amount > 0 && subtotal > 0
+    ? Number(((amount / subtotal) * 100).toFixed(2))
+    : 0;
+
+  return {
+    discount_type: amount > 0 ? type : 'fixed',
+    discount_amount: amount,
+    discount_percent: type === 'percent' ? percent : null,
+  };
+}
+
+function isReturnOrder(order) {
+  return order?.source === 'counter_return' || order?.transaction_type === 'return';
+}
+
 function startOfDay(date) {
   const d = new Date(date);
   d.setHours(0, 0, 0, 0);
@@ -899,9 +936,17 @@ function getReportDateRange(period, fromStr, toStr) {
   return { start: startOfDay(now), end: endOfDay(now), label: 'today' };
 }
 
-function summarizeOrderFinancials(items) {
-  const sale_total = items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 1), 0);
-  const cost_total = items.reduce((sum, i) => sum + Number(i.cost_price || 0) * Number(i.qty || 1), 0);
+function summarizeOrderFinancials(order) {
+  const items = Array.isArray(order?.items) ? order.items : [];
+  const sign = isReturnOrder(order) ? -1 : 1;
+  const gross = orderItemsSubtotal(items);
+  const sale_total = Number.isFinite(Number(order?.total_amount))
+    ? Number(order.total_amount)
+    : gross * sign;
+  const cost_total = items.reduce(
+    (sum, i) => sum + Number(i.cost_price || 0) * Number(i.qty || 1),
+    0
+  ) * sign;
   return { sale_total, cost_total, profit: sale_total - cost_total };
 }
 
@@ -919,7 +964,12 @@ export function getSalesReport({ period = 'day', from, to } = {}) {
 
   const rows = orders.map((order) => {
     const items = Array.isArray(order.items) ? order.items : [];
-    const totals = summarizeOrderFinancials(items);
+    const totals = summarizeOrderFinancials(order);
+    const sign = isReturnOrder(order) ? -1 : 1;
+    const gross = orderItemsSubtotal(items);
+    const net = Number(totals.sale_total) || 0;
+    const lineScale = gross > 0 ? net / gross : sign;
+    const discountAmount = Math.max(0, Number(order.discount_amount) || 0);
     return {
       id: order.id,
       order_id: order.order_id,
@@ -927,13 +977,23 @@ export function getSalesReport({ period = 'day', from, to } = {}) {
       phone: order.phone,
       created_at: order.created_at,
       shipping_status: order.shipping_status,
+      source: order.source || 'online',
+      transaction_type: order.transaction_type || (isReturnOrder(order) ? 'return' : 'sale'),
+      original_order_id: order.original_order_id ?? null,
+      original_order_ref: order.original_order_ref || '',
+      refund_method: order.refund_method || '',
+      subtotal: Number.isFinite(Number(order.subtotal)) ? Number(order.subtotal) : gross * sign,
+      discount_amount: discountAmount,
+      discount_type: order.discount_type || 'fixed',
+      discount_percent: order.discount_percent ?? null,
+      net_total: net,
       items: items.map((i) => ({
         name: i.name,
         qty: Number(i.qty) || 1,
         price: Number(i.price) || 0,
         cost_price: Number(i.cost_price) || 0,
-        sale_line: Number(i.price || 0) * Number(i.qty || 1),
-        cost_line: Number(i.cost_price || 0) * Number(i.qty || 1),
+        sale_line: Math.round(Number(i.price || 0) * Number(i.qty || 1) * lineScale),
+        cost_line: Number(i.cost_price || 0) * Number(i.qty || 1) * sign,
       })),
       ...totals,
     };
@@ -942,11 +1002,14 @@ export function getSalesReport({ period = 'day', from, to } = {}) {
   const summary = rows.reduce(
     (acc, row) => ({
       order_count: acc.order_count + 1,
+      subtotal: acc.subtotal + (Number(row.subtotal) || 0),
+      discount_amount: acc.discount_amount + (Number(row.discount_amount) || 0),
       sale_total: acc.sale_total + row.sale_total,
+      net_total: acc.net_total + row.net_total,
       cost_total: acc.cost_total + row.cost_total,
       profit: acc.profit + row.profit,
     }),
-    { order_count: 0, sale_total: 0, cost_total: 0, profit: 0 }
+    { order_count: 0, subtotal: 0, discount_amount: 0, sale_total: 0, net_total: 0, cost_total: 0, profit: 0 }
   );
 
   const topProductsMap = new Map();
@@ -970,7 +1033,7 @@ export function getSalesReport({ period = 'day', from, to } = {}) {
     for (const item of row.items || []) {
       const key = String(item.name || 'Unknown').trim();
       const lineSale = Number(item.sale_line) || 0;
-      const lineQty = Number(item.qty) || 1;
+      const lineQty = (Number(item.qty) || 1) * (row.transaction_type === 'return' ? -1 : 1);
       const existing = topProductsMap.get(key) || {
         name: key,
         qty: 0,
@@ -1503,7 +1566,9 @@ export function createOrder(input) {
     deductOrderStock(data.products, items);
 
     const id = data.meta.nextOrderId++;
-    const total = items.reduce((sum, i) => sum + Number(i.price || 0) * Number(i.qty || 1), 0);
+    const subtotal = orderItemsSubtotal(items);
+    const discount = normalizeOrderDiscount(input, subtotal);
+    const total = Math.max(0, subtotal - discount.discount_amount);
     const createdAt = now();
     const shippingStatus = input.shipping_status || 'pending';
     const paymentStatus = input.payment_status || 'pending_payment';
@@ -1525,6 +1590,11 @@ export function createOrder(input) {
       payment_mode: input.payment_mode || 'jazzcash',
       fulfillment_method: input.fulfillment_method === 'pickup' ? 'pickup' : 'delivery',
       items,
+      subtotal,
+      discount_amount: discount.discount_amount,
+      discount_type: discount.discount_type,
+      discount_percent: discount.discount_percent,
+      grand_total: total,
       total_amount: total,
       shipping_status: shippingStatus,
       payment_status: paymentStatus,
@@ -1537,6 +1607,7 @@ export function createOrder(input) {
       notes: input.notes || '',
       customer_user_id: input.customer_user_id ?? null,
       source: input.source || 'online',
+      transaction_type: input.transaction_type || 'sale',
       created_by_staff_id: staffActor.id ?? input.staff_user_id ?? null,
       created_by_staff_name: staffActor.name || '',
       stock_deducted: true,
@@ -1556,6 +1627,10 @@ export function createOrder(input) {
           order_id: order.id,
           order_ref: order.order_id,
           total_amount: order.total_amount,
+          subtotal: order.subtotal,
+          discount_amount: order.discount_amount,
+          discount_type: order.discount_type,
+          discount_percent: order.discount_percent,
           payment_mode: order.payment_mode,
           customer_name: order.customer_name,
           items: order.items.map((item) => ({
@@ -1566,7 +1641,168 @@ export function createOrder(input) {
           })),
         },
       });
+      if (order.discount_amount > 0 && input.discount_override_required) {
+        appendAuditLog(data, 'large_discount', {
+          actor: input.discount_override_user || input.staff_user,
+          entity_type: 'order',
+          entity_id: order.id,
+          summary: `Large POS discount ${order.discount_amount} approved for ${order.order_id}`,
+          details: {
+            order_id: order.id,
+            order_ref: order.order_id,
+            subtotal: order.subtotal,
+            discount_amount: order.discount_amount,
+            discount_type: order.discount_type,
+            discount_percent: order.discount_percent,
+            created_by: staffAuditUser(input.staff_user || {}),
+          },
+        });
+      }
     }
+    return order;
+  });
+}
+
+export function createCounterReturn(input) {
+  return withData((data) => {
+    const key = String(input.original_order_id || '').trim().toUpperCase();
+    const original = data.orders.find((order) => (
+      (order.source || 'online') === 'counter_sale'
+      && (String(order.id) === key || String(order.order_id || '').trim().toUpperCase() === key)
+    ));
+    if (!original) {
+      throw new StockError('Original counter sale not found');
+    }
+
+    const alreadyReturned = new Map();
+    for (const order of data.orders) {
+      if (!isReturnOrder(order) || Number(order.original_order_id) !== Number(original.id)) continue;
+      for (const item of order.items || []) {
+        const productId = Number(item.product_id);
+        alreadyReturned.set(productId, (alreadyReturned.get(productId) || 0) + (Number(item.qty) || 0));
+      }
+    }
+
+    const requested = Array.isArray(input.items) ? input.items : [];
+    if (!requested.length || requested.length > 20) {
+      throw new StockError('Return must include at least one item');
+    }
+
+    const returnItems = [];
+    for (const raw of requested) {
+      const productId = Number(raw?.product_id);
+      const qty = Number(raw?.qty);
+      if (!Number.isInteger(productId) || productId <= 0 || !Number.isInteger(qty) || qty <= 0 || qty > 99) {
+        throw new StockError('Invalid return item quantity');
+      }
+      const sold = (original.items || []).find((item) => Number(item.product_id) === productId);
+      if (!sold) throw new StockError('Return item was not on the original bill');
+      const soldQty = Number(sold.qty) || 0;
+      const remaining = soldQty - (alreadyReturned.get(productId) || 0);
+      if (qty > remaining) {
+        throw new StockError(`Cannot return more than remaining quantity for "${sold.name}"`, {
+          product_id: productId,
+          sold: soldQty,
+          already_returned: alreadyReturned.get(productId) || 0,
+          remaining,
+          requested: qty,
+        });
+      }
+      returnItems.push({
+        product_id: productId,
+        name: String(sold.name || 'Item').trim(),
+        qty,
+        price: Number(sold.price) || 0,
+        cost_price: Math.max(0, Number(sold.cost_price) || 0),
+      });
+    }
+
+    for (const item of returnItems) {
+      const index = data.products.findIndex((product) => Number(product.id) === Number(item.product_id));
+      if (index >= 0) {
+        data.products[index].stock = Math.max(0, Number(data.products[index].stock || 0) + item.qty);
+        data.products[index].sale_count = Math.max(0, Number(data.products[index].sale_count || 0) - item.qty);
+      }
+    }
+
+    const id = data.meta.nextOrderId++;
+    const createdAt = now();
+    const staffActor = staffAuditUser(input.staff_user || {});
+    const overrideActor = input.override_user ? staffAuditUser(input.override_user) : null;
+    const subtotal = orderItemsSubtotal(returnItems);
+    const refundMethod = ['cash', 'store_credit'].includes(String(input.refund_method || '').trim().toLowerCase())
+      ? String(input.refund_method).trim().toLowerCase()
+      : 'cash';
+    const reason = String(input.reason || '').trim().slice(0, 500);
+    const order = {
+      id,
+      order_id: formatOrderId(id),
+      customer_name: original.customer_name || 'Walk-in Customer',
+      phone: original.phone || '',
+      city: original.city || '',
+      payment_mode: refundMethod,
+      fulfillment_method: original.fulfillment_method || 'pickup',
+      items: returnItems,
+      subtotal: -subtotal,
+      discount_amount: 0,
+      discount_type: 'fixed',
+      discount_percent: null,
+      grand_total: -subtotal,
+      total_amount: -subtotal,
+      return_amount: subtotal,
+      refund_method: refundMethod,
+      return_reason: reason,
+      original_order_id: original.id,
+      original_order_ref: original.order_id,
+      transaction_type: 'return',
+      shipping_status: 'returned',
+      payment_status: 'refunded',
+      delivery_status: 'returned',
+      rider_phone: '',
+      delivery_charge: 0,
+      shipping_address: original.shipping_address || null,
+      payment_proof_url: null,
+      gmail: '',
+      notes: reason ? `POS return: ${reason}` : 'POS return',
+      customer_user_id: original.customer_user_id ?? null,
+      source: 'counter_return',
+      created_by_staff_id: staffActor.id ?? input.staff_user_id ?? null,
+      created_by_staff_name: staffActor.name || '',
+      stock_deducted: false,
+      status_history: [{ status: 'returned', at: createdAt, by: staffActor.id ?? input.staff_user_id ?? null }],
+      activity_log: [{
+        at: createdAt,
+        message: `POS return for ${original.order_id}${overrideActor ? ` approved by ${overrideActor.name}` : ''}`,
+        by: staffActor.id ?? input.staff_user_id ?? null,
+      }],
+      updated_at: createdAt,
+      created_at: createdAt,
+    };
+
+    data.orders.push(order);
+    appendAuditLog(data, 'bill_return', {
+      actor: input.staff_user,
+      entity_type: 'order',
+      entity_id: order.id,
+      summary: `POS return ${order.order_id} linked to ${original.order_id} for ${subtotal}`,
+      details: {
+        return_order_id: order.id,
+        return_order_ref: order.order_id,
+        original_order_id: original.id,
+        original_order_ref: original.order_id,
+        refund_method: refundMethod,
+        reason,
+        return_amount: subtotal,
+        override: overrideActor,
+        items: returnItems.map((item) => ({
+          product_id: item.product_id,
+          name: item.name,
+          qty: item.qty,
+          price: item.price,
+        })),
+      },
+    });
+
     return order;
   });
 }
@@ -3010,6 +3246,26 @@ const DEFAULT_ADDRESS_SETTINGS = {
   addressMapPickerEnabled: true,
 };
 
+function normalizePosSettings(input = {}) {
+  const returnHours = Number(input.posReturnWindowHours);
+  const discountPercent = Number(input.posDiscountMaxPercentWithoutPin);
+  const discountAmount = Number(input.posDiscountMaxAmountWithoutPin);
+  return {
+    posReturnWindowHours:
+      Number.isFinite(returnHours) && returnHours >= 0 && returnHours <= 24 * 30
+        ? Math.round(returnHours)
+        : DEFAULT_POS_SETTINGS.posReturnWindowHours,
+    posDiscountMaxPercentWithoutPin:
+      Number.isFinite(discountPercent) && discountPercent >= 0 && discountPercent <= 100
+        ? Number(discountPercent.toFixed(2))
+        : DEFAULT_POS_SETTINGS.posDiscountMaxPercentWithoutPin,
+    posDiscountMaxAmountWithoutPin:
+      Number.isFinite(discountAmount) && discountAmount >= 0 && discountAmount <= 1000000
+        ? Math.round(discountAmount)
+        : DEFAULT_POS_SETTINGS.posDiscountMaxAmountWithoutPin,
+  };
+}
+
 export function getDeliverySettings() {
   const saved = readData().settings?.delivery || {};
   const fee = Number(saved.lahore_fee);
@@ -3062,6 +3318,32 @@ export function getAddressSettings() {
     updated_at: saved.updated_at ?? null,
     updated_by: saved.updated_by ?? null,
   };
+}
+
+export function getPosSettings() {
+  const saved = readData().settings?.pos || {};
+  return {
+    ...normalizePosSettings(saved),
+    updated_at: saved.updated_at ?? null,
+    updated_by: saved.updated_by ?? null,
+  };
+}
+
+export function setPosSettings(input, userId) {
+  return withData((data) => {
+    if (!data.settings) data.settings = {};
+    const next = normalizePosSettings({
+      ...getPosSettings(),
+      ...(input && typeof input === 'object' ? input : {}),
+    });
+    const payload = {
+      ...next,
+      updated_at: now(),
+      updated_by: userId ?? null,
+    };
+    data.settings.pos = payload;
+    return payload;
+  });
 }
 
 export function setAddressSettings(input, userId) {
