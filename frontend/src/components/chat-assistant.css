@@ -10,8 +10,8 @@
 }
 
 .chat-helper--fab:not(.is-open) {
-  right: max(0.85rem, env(safe-area-inset-right, 0px));
-  bottom: calc(var(--bottom-nav-total, 4.5rem) + 0.85rem);
+  right: var(--float-dock-right, max(0.85rem, env(safe-area-inset-right, 0px)));
+  bottom: var(--float-stack-1, calc(var(--bottom-nav-total, 4.5rem) + 4.85rem));
   left: auto;
   top: auto;
   display: flex;
@@ -23,8 +23,8 @@
 
 @media (min-width: 1025px) {
   .chat-helper--fab:not(.is-open) {
-    bottom: 1.35rem;
-    right: 1.35rem;
+    right: var(--float-desktop-edge, 1.5rem);
+    bottom: var(--float-chat-bottom, calc(1.5rem + 2.75rem + 0.85rem + env(safe-area-inset-bottom, 0px)));
   }
 }
 
