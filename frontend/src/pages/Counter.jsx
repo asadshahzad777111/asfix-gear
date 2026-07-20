@@ -1,8 +1,9 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../api/client';
 import AdminCounterBill, {
   CounterBillReceipt,
   downloadCounterInvoicePdf,
+  printActiveCounterReceipt,
   readThermalReceiptWidth,
   shareCounterInvoicePdf,
 } from '../components/admin/AdminCounterBill';
@@ -17,9 +18,10 @@ export default function Counter() {
   const { t } = useTranslation();
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState([]);
-  const [printOrder, setPrintOrder] = useState(null);
+  const [printJob, setPrintJob] = useState(null);
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const [loading, setLoading] = useState(true);
+  const printInFlightRef = useRef(false);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
   const loadCounterData = async ({ showLoading = true } = {}) => {
@@ -40,11 +42,26 @@ export default function Counter() {
     loadCounterData();
   }, []);
 
+  useEffect(() => {
+    if (!printJob?.order) return undefined;
+
+    let cancelled = false;
+    (async () => {
+      await printActiveCounterReceipt({ thermalWidth, inFlightRef: printInFlightRef });
+      if (!cancelled) {
+        setPrintJob(null);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [printJob, thermalWidth]);
+
   const total = sales.reduce((sum, order) => sum + Number(order.total_amount || 0), 0);
 
   const printCounterSale = (sale) => {
-    setPrintOrder(sale);
-    window.setTimeout(() => window.print(), 100);
+    setPrintJob({ order: sale, requestedAt: Date.now() });
   };
 
   const shareCounterSale = async (sale) => {
@@ -162,7 +179,7 @@ export default function Counter() {
         </section>
 
         <div className="counter-print-stage" aria-hidden="true">
-          <CounterBillReceipt order={printOrder} printable thermalWidth={thermalWidth} />
+          <CounterBillReceipt order={printJob?.order} printable thermalWidth={thermalWidth} />
         </div>
       </main>
     </div>

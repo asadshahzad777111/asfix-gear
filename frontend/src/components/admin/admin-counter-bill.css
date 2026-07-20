@@ -1002,7 +1002,7 @@
   }
 
   @page {
-    size: var(--thermal-receipt-width, 58mm) auto;
+    size: 58mm auto;
     margin: 0;
   }
 }

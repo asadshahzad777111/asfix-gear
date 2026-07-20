@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../../api/client';
 import { SHOP } from '../../config/shop';
 import { getDefaultImage } from '../../config/products';
@@ -16,6 +16,7 @@ const PAYMENT_OPTIONS = [
 ];
 const THERMAL_WIDTH_OPTIONS = ['58mm', '80mm'];
 const RECEIPT_SITE = 'asfixgear.com';
+const THERMAL_PAGE_STYLE_ID = 'thermal-page-size';
 
 export function readThermalReceiptWidth() {
   if (typeof window === 'undefined') return '58mm';
@@ -325,6 +326,78 @@ function downloadBlob(blob, filename) {
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
+function receiptHasPrintableContent(element) {
+  return Boolean(element?.children?.length && element.textContent?.trim());
+}
+
+function waitForNextPaint() {
+  if (typeof window === 'undefined' || typeof window.requestAnimationFrame !== 'function') {
+    return Promise.resolve();
+  }
+
+  return new Promise((resolve) => {
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(resolve);
+    });
+  });
+}
+
+function setThermalPageSize(thermalWidth) {
+  if (typeof document === 'undefined') return () => {};
+
+  const pageWidth = thermalWidth === '80mm' ? '80mm' : '58mm';
+  document.getElementById(THERMAL_PAGE_STYLE_ID)?.remove();
+
+  const style = document.createElement('style');
+  style.id = THERMAL_PAGE_STYLE_ID;
+  style.textContent = `@media print { @page { size: ${pageWidth} auto; margin: 0; } }`;
+  document.head.appendChild(style);
+  document.body.classList.toggle('receipt-thermal-80mm', pageWidth === '80mm');
+
+  return () => {
+    style.remove();
+    document.body.classList.remove('receipt-thermal-80mm');
+  };
+}
+
+export async function printActiveCounterReceipt({ thermalWidth = '58mm', inFlightRef } = {}) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') return false;
+  if (inFlightRef?.current) return false;
+
+  if (inFlightRef) inFlightRef.current = true;
+  try {
+    await waitForNextPaint();
+
+    let receipt = document.querySelector('.counter-bill-print--active');
+    if (!receiptHasPrintableContent(receipt)) {
+      await waitForNextPaint();
+      receipt = document.querySelector('.counter-bill-print--active');
+    }
+    if (!receiptHasPrintableContent(receipt)) {
+      if (inFlightRef) inFlightRef.current = false;
+      return false;
+    }
+
+    const cleanupPageSize = setThermalPageSize(thermalWidth);
+    let cleanedUp = false;
+    const cleanup = () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+      cleanupPageSize();
+      window.removeEventListener('afterprint', cleanup);
+      if (inFlightRef) inFlightRef.current = false;
+    };
+
+    window.addEventListener('afterprint', cleanup, { once: true });
+    window.print();
+    window.setTimeout(cleanup, 1000);
+    return true;
+  } catch {
+    if (inFlightRef) inFlightRef.current = false;
+    return false;
+  }
+}
+
 export function downloadCounterInvoicePdf(order) {
   if (!order) return;
   downloadBlob(createCounterInvoicePdfBlob(order), receiptFilename(order));
@@ -411,6 +484,8 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
 export default function AdminCounterBill({ products, onBillCreated, onPrintOrder, onThermalWidthChange }) {
   const { t } = useTranslation();
   const searchRef = useRef(null);
+  const printInFlightRef = useRef(false);
+  const autoPrintedOrderRef = useRef(null);
   const [draftSeed] = useState(() => readCounterBillDraft());
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const [query, setQuery] = useState('');
@@ -564,6 +639,23 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
     setReceiptOrder(null);
   };
 
+  const printReceipt = useCallback(async (order = receiptOrder) => {
+    if (!order) return;
+    if (onPrintOrder) {
+      onPrintOrder(order);
+      return;
+    }
+    await printActiveCounterReceipt({ thermalWidth, inFlightRef: printInFlightRef });
+  }, [onPrintOrder, receiptOrder, thermalWidth]);
+
+  useEffect(() => {
+    if (!receiptOrder || onPrintOrder) return;
+    const orderNumber = receiptNumber(receiptOrder);
+    if (autoPrintedOrderRef.current === orderNumber) return;
+    autoPrintedOrderRef.current = orderNumber;
+    void printReceipt(receiptOrder);
+  }, [onPrintOrder, printReceipt, receiptOrder]);
+
   const confirmBill = async () => {
     if (!lines.length) {
       setFeedback({ type: 'error', text: t('admin.counterBillEmpty') });
@@ -593,21 +685,14 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
       setPaymentNote('');
       setCashReceived('');
       onBillCreated?.(result.order);
-      window.setTimeout(() => printReceipt(result.order), 150);
+      if (onPrintOrder) {
+        onPrintOrder(result.order);
+      }
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || t('admin.counterBillFailed') });
     } finally {
       setSubmitting(false);
     }
-  };
-
-  const printReceipt = (order = receiptOrder) => {
-    if (!order) return;
-    if (onPrintOrder) {
-      onPrintOrder(order);
-      return;
-    }
-    window.print();
   };
 
   const downloadInvoice = (order = receiptOrder) => {
