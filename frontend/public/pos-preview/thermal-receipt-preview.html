@@ -1,0 +1,178 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>AsFix & Gear Thermal Receipt Preview</title>
+    <style>
+      :root {
+        --paper-width: 58mm;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        display: grid;
+        place-items: start center;
+        background: #1a1a1a;
+        color: #111;
+        font-family: Arial, sans-serif;
+        padding: 24px;
+      }
+
+      .preview-note {
+        width: min(100%, 520px);
+        margin: 0 0 18px;
+        color: #f7e5a6;
+        text-align: center;
+      }
+
+      .receipt {
+        width: var(--paper-width);
+        min-height: 210mm;
+        padding: 4mm 3mm;
+        background: #fff;
+        box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+        font-family: "Courier New", Courier, monospace;
+        font-size: 11px;
+        line-height: 1.25;
+      }
+
+      .shop {
+        text-align: center;
+      }
+
+      h1 {
+        margin: 0 0 2px;
+        font-family: Arial, sans-serif;
+        font-size: 16px;
+        font-weight: 900;
+      }
+
+      p {
+        margin: 2px 0;
+      }
+
+      .rule {
+        border-top: 1px dashed #111;
+        margin: 8px 0;
+      }
+
+      .meta,
+      .totals {
+        display: grid;
+        gap: 2px;
+      }
+
+      .item {
+        display: grid;
+        grid-template-columns: 1fr auto;
+        gap: 2px 8px;
+        margin-bottom: 7px;
+      }
+
+      .item strong {
+        grid-column: 1 / -1;
+      }
+
+      .item b,
+      .totals b {
+        text-align: right;
+      }
+
+      .totals {
+        grid-template-columns: 1fr auto;
+      }
+
+      .grand,
+      .grand-value {
+        border-top: 1px solid #111;
+        padding-top: 4px;
+        font-family: Arial, sans-serif;
+        font-size: 14px;
+        font-weight: 900;
+      }
+
+      .thanks,
+      .site {
+        text-align: center;
+      }
+
+      .site {
+        font-weight: 900;
+      }
+
+      @media print {
+        body {
+          display: block;
+          min-height: auto;
+          padding: 0;
+          background: #fff;
+        }
+
+        .preview-note {
+          display: none;
+        }
+
+        .receipt {
+          width: var(--paper-width);
+          min-height: auto;
+          padding: 0;
+          box-shadow: none;
+        }
+
+        @page {
+          size: 58mm auto;
+          margin: 0;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <p class="preview-note">Thermal receipt preview, default 58mm. Use browser print for paired Bluetooth thermal printers.</p>
+    <main class="receipt">
+      <section class="shop">
+        <h1>ASFIX &amp; GEAR</h1>
+        <p>AsFix &amp; Gear - Mobile Repair &amp; Accessories</p>
+        <p>Lahore, Pakistan | 03039227000</p>
+      </section>
+      <div class="rule"></div>
+      <section class="meta">
+        <span>Bill: ASF-1024</span>
+        <span>Date: 19/07/2026, 11:03 PM</span>
+        <span>Staff: Counter Staff</span>
+        <span>Payment: Cash</span>
+        <span>Customer: Walk-in Customer</span>
+      </section>
+      <div class="rule"></div>
+      <section>
+        <div class="item">
+          <strong>iPhone 15 Pro Tempered Glass</strong>
+          <span>2 x Rs. 900</span>
+          <b>Rs. 1,800</b>
+        </div>
+        <div class="item">
+          <strong>Samsung USB-C Fast Cable</strong>
+          <span>1 x Rs. 1,200</span>
+          <b>Rs. 1,200</b>
+        </div>
+        <div class="item">
+          <strong>Mobile Repair Service Advance</strong>
+          <span>1 x Rs. 2,000</span>
+          <b>Rs. 2,000</b>
+        </div>
+      </section>
+      <div class="rule"></div>
+      <section class="totals">
+        <span>Subtotal</span>
+        <b>Rs. 5,000</b>
+        <span>Discount</span>
+        <b>Rs. 0</b>
+        <span class="grand">Grand Total</span>
+        <b class="grand-value">Rs. 5,000</b>
+      </section>
+      <p class="thanks">Thank you for shopping at AsFix &amp; Gear.</p>
+      <p class="site">asfixgear.com</p>
+    </main>
+  </body>
+</html>

@@ -1,6 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api, formatPrice } from '../api/client';
-import AdminCounterBill, { CounterBillReceipt } from '../components/admin/AdminCounterBill';
+import AdminCounterBill, {
+  CounterBillReceipt,
+  downloadCounterInvoicePdf,
+  readThermalReceiptWidth,
+  shareCounterInvoicePdf,
+} from '../components/admin/AdminCounterBill';
 import { SHOP } from '../config/shop';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
@@ -13,6 +18,7 @@ export default function Counter() {
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState([]);
   const [printOrder, setPrintOrder] = useState(null);
+  const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const [loading, setLoading] = useState(true);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
@@ -39,6 +45,16 @@ export default function Counter() {
   const printCounterSale = (sale) => {
     setPrintOrder(sale);
     window.setTimeout(() => window.print(), 100);
+  };
+
+  const shareCounterSale = async (sale) => {
+    try {
+      await shareCounterInvoicePdf(sale);
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        downloadCounterInvoicePdf(sale);
+      }
+    }
   };
 
   return (
@@ -78,6 +94,7 @@ export default function Counter() {
             products={products}
             onBillCreated={() => loadCounterData({ showLoading: false })}
             onPrintOrder={printCounterSale}
+            onThermalWidthChange={setThermalWidth}
           />
         )}
 
@@ -100,7 +117,7 @@ export default function Counter() {
                     <th>{t('admin.counterBillCustomer')}</th>
                     <th>{t('admin.counterBillPayment')}</th>
                     <th>{t('admin.counterBillTotal')}</th>
-                    <th>{t('admin.counterBillPrint')}</th>
+                    <th>{t('admin.counterBillActions')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -112,13 +129,29 @@ export default function Counter() {
                       <td>{sale.payment_mode}</td>
                       <td>{formatPrice(sale.total_amount)}</td>
                       <td>
-                        <button
-                          type="button"
-                          className="wp-button wp-button--secondary counter-sales__print"
-                          onClick={() => printCounterSale(sale)}
-                        >
-                          {t('admin.counterBillReprint')}
-                        </button>
+                        <div className="counter-sales__actions">
+                          <button
+                            type="button"
+                            className="wp-button wp-button--secondary counter-sales__print"
+                            onClick={() => printCounterSale(sale)}
+                          >
+                            {t('admin.counterBillPrintNow')}
+                          </button>
+                          <button
+                            type="button"
+                            className="wp-button wp-button--secondary counter-sales__print"
+                            onClick={() => downloadCounterInvoicePdf(sale)}
+                          >
+                            {t('admin.counterBillDownloadPdf')}
+                          </button>
+                          <button
+                            type="button"
+                            className="wp-button wp-button--secondary counter-sales__print"
+                            onClick={() => shareCounterSale(sale)}
+                          >
+                            {t('admin.counterBillSharePdf')}
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -129,7 +162,7 @@ export default function Counter() {
         </section>
 
         <div className="counter-print-stage" aria-hidden="true">
-          <CounterBillReceipt order={printOrder} printable />
+          <CounterBillReceipt order={printOrder} printable thermalWidth={thermalWidth} />
         </div>
       </main>
     </div>

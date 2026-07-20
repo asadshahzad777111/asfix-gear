@@ -6,6 +6,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import './admin-counter-bill.css';
 
 const COUNTER_BILL_DRAFT_KEY = 'asfix_counter_bill_draft_v1';
+export const THERMAL_RECEIPT_WIDTH_KEY = 'asfix_counter_thermal_width_v1';
 const ALL_CATEGORIES = 'all';
 const PAYMENT_OPTIONS = [
   { id: 'cash', label: 'Cash' },
@@ -13,6 +14,27 @@ const PAYMENT_OPTIONS = [
   { id: 'easypaisa', label: 'EasyPaisa' },
   { id: 'jazzcash', label: 'JazzCash' },
 ];
+const THERMAL_WIDTH_OPTIONS = ['58mm', '80mm'];
+const RECEIPT_SITE = 'asfixgear.com';
+
+export function readThermalReceiptWidth() {
+  if (typeof window === 'undefined') return '58mm';
+  try {
+    const width = window.localStorage.getItem(THERMAL_RECEIPT_WIDTH_KEY);
+    return THERMAL_WIDTH_OPTIONS.includes(width) ? width : '58mm';
+  } catch {
+    return '58mm';
+  }
+}
+
+function writeThermalReceiptWidth(width) {
+  if (typeof window === 'undefined') return;
+  try {
+    window.localStorage.setItem(THERMAL_RECEIPT_WIDTH_KEY, width);
+  } catch {
+    // Local storage is a convenience only; the current React state still applies.
+  }
+}
 
 function readCounterBillDraft() {
   if (typeof window === 'undefined') return null;
@@ -83,27 +105,269 @@ function paymentLabel(mode) {
   return labels[mode] || mode;
 }
 
-export function CounterBillReceipt({ order, printable = false }) {
+function counterPaymentNote(order) {
+  return String(order?.notes || '').startsWith('Counter sale payment note:')
+    ? String(order.notes).replace('Counter sale payment note:', '').trim()
+    : '';
+}
+
+function receiptTotals(order) {
+  const subtotal = (order?.items || []).reduce(
+    (sum, item) => sum + Number(item.price || 0) * (Number(item.qty) || 1),
+    0
+  );
+  const grandTotal = Number(order?.total_amount ?? subtotal) || 0;
+  return {
+    subtotal,
+    grandTotal,
+    discount: Math.max(0, subtotal - grandTotal),
+  };
+}
+
+function receiptNumber(order) {
+  return order?.order_id || order?.id || 'DRAFT';
+}
+
+function receiptFilename(order) {
+  return `asfix-${String(receiptNumber(order)).replace(/[^a-z0-9-]+/gi, '-').toLowerCase()}-invoice.pdf`;
+}
+
+function amountText(amount) {
+  return `Rs. ${Number(amount || 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })}`;
+}
+
+function buildThermalReceiptText(order) {
+  if (!order) return '';
+  const { subtotal, discount, grandTotal } = receiptTotals(order);
+  const line = '-'.repeat(32);
+  const itemLines = (order.items || []).flatMap((item) => {
+    const qty = Number(item.qty) || 1;
+    const unit = Number(item.price) || 0;
+    const total = unit * qty;
+    const name = String(item.name || 'Item').slice(0, 30);
+    return [
+      name,
+      `  ${qty} x ${amountText(unit)} = ${amountText(total)}`,
+    ];
+  });
+  return [
+    'ASFIX & GEAR',
+    SHOP.addressLine1,
+    `${SHOP.addressLine2} | ${SHOP.phone}`,
+    line,
+    `Bill: ${receiptNumber(order)}`,
+    `Date: ${order.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`,
+    `Staff: ${order.created_by_staff_name || 'Counter staff'}`,
+    line,
+    ...itemLines,
+    line,
+    `Subtotal: ${amountText(subtotal)}`,
+    ...(discount ? [`Discount: ${amountText(discount)}`] : []),
+    `TOTAL: ${amountText(grandTotal)}`,
+    `Payment: ${paymentLabel(order.payment_mode)}`,
+    counterPaymentNote(order) ? `Note: ${counterPaymentNote(order)}` : '',
+    line,
+    'Thank you for shopping!',
+    RECEIPT_SITE,
+  ].filter(Boolean).join('\n');
+}
+
+function rawBtHref(order) {
+  const text = buildThermalReceiptText(order);
+  const encoded = encodeURIComponent(text);
+  return `intent:${encoded}#Intent;scheme=rawbt;package=ru.a402d.rawbtprinter;end`;
+}
+
+function escapePdfText(value) {
+  return String(value ?? '')
+    .replace(/[^\x09\x0a\x0d\x20-\x7e]/g, ' ')
+    .replace(/\\/g, '\\\\')
+    .replace(/\(/g, '\\(')
+    .replace(/\)/g, '\\)');
+}
+
+function wrapPdfText(text, maxChars) {
+  const words = String(text || '').split(/\s+/).filter(Boolean);
+  const lines = [];
+  let current = '';
+  for (const word of words) {
+    const next = current ? `${current} ${word}` : word;
+    if (next.length > maxChars && current) {
+      lines.push(current);
+      current = word;
+    } else {
+      current = next;
+    }
+  }
+  if (current) lines.push(current);
+  return lines.length ? lines : [''];
+}
+
+export function createCounterInvoicePdfBlob(order) {
+  const { subtotal, discount, grandTotal } = receiptTotals(order);
+  const width = 595.28;
+  const height = 841.89;
+  const left = 42;
+  const right = width - 42;
+  const rows = order?.items || [];
+  const commands = [];
+
+  const color = (r, g, b) => `${r} ${g} ${b} rg`;
+  const text = (value, x, y, size = 10, font = 'F1', fill = '0.08 0.08 0.08 rg') => {
+    commands.push(`BT /${font} ${size} Tf ${fill} ${x} ${y} Td (${escapePdfText(value)}) Tj ET`);
+  };
+  const rect = (x, y, w, h, fill) => {
+    commands.push(`${fill} ${x} ${y} ${w} ${h} re f`);
+  };
+  const strokeRect = (x, y, w, h, stroke = '0.78 0.62 0.15 RG') => {
+    commands.push(`${stroke} ${x} ${y} ${w} ${h} re S`);
+  };
+  const line = (x1, y1, x2, y2, stroke = '0.82 0.82 0.82 RG') => {
+    commands.push(`${stroke} ${x1} ${y1} m ${x2} ${y2} l S`);
+  };
+
+  rect(0, 764, width, 78, color(0.04, 0.04, 0.04));
+  rect(0, 758, width, 6, color(0.79, 0.64, 0.15));
+  text('ASFIX & GEAR', left, 807, 22, 'F2', color(1, 0.94, 0.72));
+  text(SHOP.tagline || 'Mobile Repair & Accessories', left, 786, 10, 'F1', color(1, 1, 1));
+  text(SHOP.fullAddress, 310, 808, 9, 'F1', color(1, 1, 1));
+  text(`Phone: ${SHOP.phone}`, 310, 790, 9, 'F1', color(1, 1, 1));
+  text(RECEIPT_SITE, 310, 772, 9, 'F1', color(1, 0.94, 0.72));
+
+  text('INVOICE / RECEIPT', left, 724, 18, 'F2', color(0.05, 0.05, 0.05));
+  text(`Receipt #: ${receiptNumber(order)}`, left, 700, 10);
+  text(`Date: ${order?.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '-'}`, left, 684, 10);
+  text(`Customer: ${order?.customer_name || 'Walk-in Customer'}`, 325, 700, 10);
+  text(`Phone: ${order?.phone || '-'}`, 325, 684, 10);
+  text(`Staff: ${order?.created_by_staff_name || 'Counter staff'}`, 325, 668, 10);
+
+  const tableTop = 632;
+  const rowHeight = 28;
+  rect(left, tableTop, right - left, 28, color(0.04, 0.04, 0.04));
+  text('Item', left + 10, tableTop + 10, 10, 'F2', color(1, 0.94, 0.72));
+  text('Qty', 330, tableTop + 10, 10, 'F2', color(1, 0.94, 0.72));
+  text('Rate', 385, tableTop + 10, 10, 'F2', color(1, 0.94, 0.72));
+  text('Amount', 470, tableTop + 10, 10, 'F2', color(1, 0.94, 0.72));
+  strokeRect(left, tableTop - Math.max(1, rows.length) * rowHeight, right - left, 28 + Math.max(1, rows.length) * rowHeight);
+
+  let y = tableTop - rowHeight;
+  if (!rows.length) {
+    text('No items', left + 10, y + 10, 10);
+    line(left, y, right, y);
+  } else {
+    rows.forEach((item) => {
+      const qty = Number(item.qty) || 1;
+      const unit = Number(item.price) || 0;
+      const itemLines = wrapPdfText(item.name || 'Item', 36).slice(0, 2);
+      text(itemLines[0], left + 10, y + 12, 9);
+      if (itemLines[1]) text(itemLines[1], left + 10, y + 2, 8, 'F1', color(0.35, 0.35, 0.35));
+      text(String(qty), 336, y + 10, 10);
+      text(amountText(unit), 385, y + 10, 10);
+      text(amountText(unit * qty), 470, y + 10, 10, 'F2');
+      line(left, y, right, y);
+      y -= rowHeight;
+    });
+  }
+
+  const totalsY = Math.max(150, y - 36);
+  text('Subtotal', 360, totalsY + 54, 11);
+  text(amountText(subtotal), 470, totalsY + 54, 11, 'F2');
+  if (discount) {
+    text('Discount', 360, totalsY + 34, 11);
+    text(amountText(discount), 470, totalsY + 34, 11, 'F2');
+  }
+  rect(350, totalsY - 2, 188, 30, color(0.98, 0.92, 0.73));
+  text('Grand Total', 360, totalsY + 8, 13, 'F2', color(0.04, 0.04, 0.04));
+  text(amountText(grandTotal), 470, totalsY + 8, 13, 'F2', color(0.04, 0.04, 0.04));
+
+  text(`Payment: ${paymentLabel(order?.payment_mode)}`, left, totalsY + 26, 11, 'F2');
+  const note = counterPaymentNote(order);
+  if (note) text(`Payment note: ${note}`, left, totalsY + 8, 9);
+
+  rect(0, 0, width, 70, color(0.04, 0.04, 0.04));
+  text('Thank you for shopping at AsFix & Gear.', left, 42, 12, 'F2', color(1, 0.94, 0.72));
+  text('Repairs, accessories, and mobile care with honest service.', left, 24, 9, 'F1', color(1, 1, 1));
+  text(`${SHOP.phone} | ${RECEIPT_SITE}`, 365, 33, 9, 'F1', color(1, 1, 1));
+
+  const stream = commands.join('\n');
+  const objects = [
+    '<< /Type /Catalog /Pages 2 0 R >>',
+    '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
+    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`,
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>',
+    '<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>',
+    `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
+  ];
+  let pdf = '%PDF-1.4\n';
+  const offsets = [0];
+  objects.forEach((object, index) => {
+    offsets.push(pdf.length);
+    pdf += `${index + 1} 0 obj\n${object}\nendobj\n`;
+  });
+  const xrefOffset = pdf.length;
+  pdf += `xref\n0 ${objects.length + 1}\n0000000000 65535 f \n`;
+  offsets.slice(1).forEach((offset) => {
+    pdf += `${String(offset).padStart(10, '0')} 00000 n \n`;
+  });
+  pdf += `trailer\n<< /Size ${objects.length + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF`;
+
+  return new Blob([pdf], { type: 'application/pdf' });
+}
+
+function downloadBlob(blob, filename) {
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+export function downloadCounterInvoicePdf(order) {
+  if (!order) return;
+  downloadBlob(createCounterInvoicePdfBlob(order), receiptFilename(order));
+}
+
+export async function shareCounterInvoicePdf(order) {
+  if (!order) return false;
+  const blob = createCounterInvoicePdfBlob(order);
+  const file = new File([blob], receiptFilename(order), { type: 'application/pdf' });
+  if (navigator.canShare?.({ files: [file] })) {
+    await navigator.share({
+      title: `${SHOP.name} ${receiptNumber(order)}`,
+      text: `${SHOP.name} receipt ${receiptNumber(order)}`,
+      files: [file],
+    });
+    return true;
+  }
+  downloadBlob(blob, file.name);
+  return false;
+}
+
+export function CounterBillReceipt({ order, printable = false, thermalWidth = '58mm' }) {
   const { t } = useTranslation();
   if (!order) return null;
 
-  const paymentNote = String(order.notes || '').startsWith('Counter sale payment note:')
-    ? String(order.notes).replace('Counter sale payment note:', '').trim()
-    : '';
+  const paymentNote = counterPaymentNote(order);
+  const { subtotal, discount, grandTotal } = receiptTotals(order);
 
   return (
     <div
       className={`counter-bill-print${printable ? ' counter-bill-print--active' : ''}`}
+      style={{ '--thermal-receipt-width': thermalWidth }}
       aria-label={t('admin.counterBillReceipt')}
     >
       <div className="counter-bill-print__shop">
-        <h2>{SHOP.name}</h2>
+        <h2>ASFIX &amp; GEAR</h2>
         <p>{SHOP.addressLine1}</p>
         <p>{SHOP.addressLine2} | {SHOP.phone}</p>
       </div>
       <div className="counter-bill-print__meta">
         <span>{t('admin.counterBillNo')}: {order.order_id || order.id}</span>
         <span>{t('admin.counterBillDate')}: {order.created_at ? new Date(order.created_at).toLocaleString() : '-'}</span>
+        <span>{t('admin.counterBillStaff')}: {order.created_by_staff_name || 'Counter staff'}</span>
         <span>
           {t('admin.counterBillPayment')}: {paymentLabel(order.payment_mode)}
           {paymentNote ? ` (${paymentNote})` : ''}
@@ -111,43 +375,44 @@ export function CounterBillReceipt({ order, printable = false }) {
         <span>{t('admin.counterBillCustomer')}: {order.customer_name || 'Walk-in Customer'}</span>
         {order.phone ? <span>{t('admin.counterBillPhone')}: {order.phone}</span> : null}
       </div>
-      <table>
-        <thead>
-          <tr>
-            <th>#</th>
-            <th>{t('admin.counterBillItem')}</th>
-            <th>{t('admin.counterBillQty')}</th>
-            <th>{t('admin.counterBillRate')}</th>
-            <th>{t('admin.counterBillAmount')}</th>
-          </tr>
-        </thead>
-        <tbody>
-          {(order.items || []).map((item, index) => (
-            <tr key={`${item.product_id}-${index}`}>
-              <td>{index + 1}</td>
-              <td>{item.name}</td>
-              <td>{item.qty}</td>
-              <td>{formatPrice(item.price)}</td>
-              <td>{formatPrice(Number(item.price) * Number(item.qty || 1))}</td>
-            </tr>
-          ))}
-        </tbody>
-        <tfoot>
-          <tr>
-            <td colSpan={4}>{t('admin.counterBillTotal')}</td>
-            <td>{formatPrice(order.total_amount)}</td>
-          </tr>
-        </tfoot>
-      </table>
+      <div className="counter-bill-print__rule" />
+      <div className="counter-bill-print__items">
+        {(order.items || []).map((item, index) => {
+          const qty = Number(item.qty) || 1;
+          const unit = Number(item.price) || 0;
+          return (
+            <div className="counter-bill-print__item" key={`${item.product_id}-${index}`}>
+              <strong>{item.name}</strong>
+              <span>{qty} x {formatPrice(unit)}</span>
+              <b>{formatPrice(unit * qty)}</b>
+            </div>
+          );
+        })}
+      </div>
+      <div className="counter-bill-print__rule" />
+      <div className="counter-bill-print__totals">
+        <span>{t('admin.counterBillSubtotal')}</span>
+        <strong>{formatPrice(subtotal)}</strong>
+        {discount ? (
+          <>
+            <span>{t('admin.counterBillDiscount')}</span>
+            <strong>{formatPrice(discount)}</strong>
+          </>
+        ) : null}
+        <span className="counter-bill-print__grand-label">{t('admin.counterBillGrandTotal')}</span>
+        <strong className="counter-bill-print__grand">{formatPrice(grandTotal)}</strong>
+      </div>
       <p className="counter-bill-print__thanks">{t('admin.counterBillThanks')}</p>
+      <p className="counter-bill-print__site">{RECEIPT_SITE}</p>
     </div>
   );
 }
 
-export default function AdminCounterBill({ products, onBillCreated, onPrintOrder }) {
+export default function AdminCounterBill({ products, onBillCreated, onPrintOrder, onThermalWidthChange }) {
   const { t } = useTranslation();
   const searchRef = useRef(null);
   const [draftSeed] = useState(() => readCounterBillDraft());
+  const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const [query, setQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES);
   const [lines, setLines] = useState(() => draftSeed?.lines || []);
@@ -163,6 +428,7 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [receiptOrder, setReceiptOrder] = useState(null);
+  const showRawBtLink = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
 
   const availableProducts = useMemo(() => {
     return products
@@ -204,6 +470,11 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
       })
     );
   }, [products]);
+
+  useEffect(() => {
+    writeThermalReceiptWidth(thermalWidth);
+    onThermalWidthChange?.(thermalWidth);
+  }, [thermalWidth, onThermalWidthChange]);
 
   useEffect(() => {
     if (!cartFlashKey) return undefined;
@@ -339,6 +610,25 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
     window.print();
   };
 
+  const downloadInvoice = (order = receiptOrder) => {
+    if (!order) return;
+    downloadCounterInvoicePdf(order);
+  };
+
+  const shareInvoice = async (order = receiptOrder) => {
+    if (!order) return;
+    try {
+      const shared = await shareCounterInvoicePdf(order);
+      if (!shared) {
+        setFeedback({ type: 'success', text: t('admin.counterBillPdfDownloaded') });
+      }
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        setFeedback({ type: 'error', text: err.message || t('admin.counterBillPdfFailed') });
+      }
+    }
+  };
+
   return (
     <div className="counter-bill">
       <div className="counter-bill__head">
@@ -435,6 +725,22 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
           <div className="counter-bill__panel-head">
             <h4>{t('admin.counterBillCart')}</h4>
             <span>{lines.length} {t('admin.counterBillCartItems')}</span>
+          </div>
+
+          <div className="counter-bill__thermal-setting">
+            <span>{t('admin.counterBillThermalWidth')}</span>
+            <div role="group" aria-label={t('admin.counterBillThermalWidth')}>
+              {THERMAL_WIDTH_OPTIONS.map((width) => (
+                <button
+                  key={width}
+                  type="button"
+                  className={thermalWidth === width ? 'counter-bill__thermal-active' : ''}
+                  onClick={() => setThermalWidth(width)}
+                >
+                  {width}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div className="counter-bill__cart-lines">
@@ -568,9 +874,17 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
                 {submitting ? t('common.saving') : t('admin.counterBillConfirm')}
               </button>
               {receiptOrder ? (
-                <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
-                  {t('admin.counterBillPrintNow')}
-                </button>
+                <>
+                  <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
+                    {t('admin.counterBillPrintNow')}
+                  </button>
+                  <button type="button" className="wp-button counter-bill__pdf-cta" onClick={() => downloadInvoice()}>
+                    {t('admin.counterBillDownloadPdf')}
+                  </button>
+                  <button type="button" className="wp-button counter-bill__share-cta" onClick={() => shareInvoice()}>
+                    {t('admin.counterBillSharePdf')}
+                  </button>
+                </>
               ) : null}
             </div>
           </div>
@@ -581,11 +895,25 @@ export default function AdminCounterBill({ products, onBillCreated, onPrintOrder
         <section className="counter-bill__receipt">
           <div className="counter-bill__receipt-head">
             <strong>{t('admin.counterBillSavedReady')}</strong>
-            <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
-              {t('admin.counterBillPrintNow')}
-            </button>
+            <div className="counter-bill__receipt-actions">
+              <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
+                {t('admin.counterBillPrintNow')}
+              </button>
+              <button type="button" className="wp-button counter-bill__pdf-cta" onClick={() => downloadInvoice()}>
+                {t('admin.counterBillDownloadPdf')}
+              </button>
+              <button type="button" className="wp-button counter-bill__share-cta" onClick={() => shareInvoice()}>
+                {t('admin.counterBillSharePdf')}
+              </button>
+              {showRawBtLink ? (
+                <a className="wp-button counter-bill__rawbt-cta" href={rawBtHref(receiptOrder)}>
+                  {t('admin.counterBillOpenRawBt')}
+                </a>
+              ) : null}
+            </div>
           </div>
-          <CounterBillReceipt order={receiptOrder} printable={!onPrintOrder} />
+          <p className="counter-bill__receipt-note">{t('admin.counterBillThermalHint')}</p>
+          <CounterBillReceipt order={receiptOrder} printable={!onPrintOrder} thermalWidth={thermalWidth} />
         </section>
       ) : null}
     </div>
