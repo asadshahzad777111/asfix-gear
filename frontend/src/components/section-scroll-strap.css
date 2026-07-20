@@ -6,7 +6,16 @@
   right: 0;
   z-index: 398;
   pointer-events: none;
-  transition: top 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+  /* Match slimline drop timing so strap rides under the logo+line unit */
+  transition:
+    top 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.34s ease,
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dx-section-strap.is-under-slim {
+  /* When slimline drops in, strap follows from the same top motion */
+  transform: translate3d(0, 0, 0);
 }
 
 body.nav-open .dx-section-strap,

@@ -569,7 +569,8 @@
   box-shadow: 0 4px 14px rgba(255, 106, 43, 0.28);
 }
 
-/* ── Slim brand rail (visible while full header is tucked) ── */
+/* ── Slim brand rail (visible while full header is tucked) ──
+   Logo + ember line are one chrome unit that drops from the top together. */
 .dx-slimline {
   position: fixed;
   top: 0;
@@ -591,14 +592,16 @@
     );
   backdrop-filter: blur(18px) saturate(1.4);
   -webkit-backdrop-filter: blur(18px) saturate(1.4);
-  border-bottom: 1px solid color-mix(in srgb, var(--hdr-accent, #ff6a2b) 28%, transparent);
+  /* Hairline stays with the rail — ember is the signature line that rides with the logo */
+  border-bottom: 1px solid color-mix(in srgb, var(--hdr-accent, #ff6a2b) 18%, transparent);
   box-shadow: 0 8px 22px rgba(0, 0, 0, 0.18);
-  transform: translate3d(0, -110%, 0);
+  transform: translate3d(0, calc(-100% - 12px), 0);
   opacity: 0;
   pointer-events: none;
+  will-change: transform, opacity;
   transition:
-    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
-    opacity 0.28s ease;
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.34s ease;
 }
 
 .dx-slimline.is-visible {
@@ -614,6 +617,9 @@
   text-decoration: none;
   color: var(--hdr-text, #f4f4f5);
   min-width: 0;
+  /* Stay glued to the rail — no separate fade/slide */
+  transform: none;
+  opacity: 1;
 }
 
 .dx-slimline-brand img {
@@ -637,10 +643,11 @@
   font-weight: 800;
 }
 
+/* Ember line rides with the slimline transform — never translate on its own during enter */
 .dx-slimline-ember {
   position: absolute;
-  left: 12%;
-  right: 12%;
+  left: 10%;
+  right: 10%;
   bottom: 0;
   height: 2px;
   border-radius: 999px;
@@ -652,12 +659,20 @@
     color-mix(in srgb, var(--hdr-accent, #ff6a2b) 55%, transparent) 78%,
     transparent 100%
   );
-  animation: dx-slimline-shimmer 2.8s ease-in-out infinite;
+  opacity: 0.9;
+  transform: none;
+  /* Soft glow pulse only — no scaleX so it doesn't detach from the drop */
+  animation: none;
+  pointer-events: none;
 }
 
-@keyframes dx-slimline-shimmer {
-  0%, 100% { opacity: 0.55; transform: scaleX(0.92); }
-  50% { opacity: 1; transform: scaleX(1); }
+.dx-slimline.is-visible .dx-slimline-ember {
+  animation: dx-slimline-glow 2.8s ease-in-out 0.48s infinite;
+}
+
+@keyframes dx-slimline-glow {
+  0%, 100% { opacity: 0.65; filter: brightness(0.95); }
+  50% { opacity: 1; filter: brightness(1.2); }
 }
 
 [data-theme='light'] .dx-slimline {
@@ -1624,7 +1639,7 @@
   transform: translate3d(0, -100%, 0);
   pointer-events: none;
   transition:
-    transform 0.34s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
     box-shadow var(--hdr-ease),
     background var(--hdr-ease) !important;
 }
@@ -1679,6 +1694,10 @@ body.nav-open .dx-slimline {
   .dx-slimline-ember {
     animation: none !important;
     transition: none !important;
+  }
+
+  .dx-slimline.is-visible .dx-slimline-ember {
+    animation: none !important;
   }
 }
 
