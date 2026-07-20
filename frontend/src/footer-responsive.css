@@ -37,6 +37,23 @@
   word-break: break-word;
 }
 
+.footer-contact-list {
+  gap: 0.75rem;
+}
+
+.footer-contact-value {
+  min-height: 1.65rem;
+  line-height: 1.35;
+}
+
+.footer-contact-actions {
+  gap: 0.4rem;
+}
+
+.footer-contact-chip {
+  min-height: 2rem;
+}
+
 .footer-bottom {
   line-height: 1.5;
   padding-bottom: 0.5rem;
@@ -157,16 +174,22 @@
     font-size: 0.58rem;
   }
 
-  .footer-brand > p {
+  .footer-brand > p,
+  .footer-tagline {
     font-size: 0.85rem;
     margin-top: 0.65rem;
     max-width: none;
   }
 
   .footer-meta {
-    margin-top: 0.85rem;
-    padding: 0.85rem;
+    margin-top: 0.9rem;
+    max-width: none;
     font-size: 0.8rem;
+  }
+
+  .footer-meta-hours {
+    margin-top: 0.45rem !important;
+    padding-top: 0.45rem;
   }
 
   .footer-nav-columns {
@@ -182,6 +205,27 @@
   .footer-links a {
     font-size: 0.82rem;
     min-height: 1.85rem;
+  }
+
+  .footer-contact-list {
+    gap: 0.7rem;
+  }
+
+  .footer-contact-label {
+    font-size: 0.68rem;
+  }
+
+  .footer-contact-value {
+    font-size: 0.9rem;
+  }
+
+  .footer-contact-value--email {
+    font-size: 0.8rem;
+  }
+
+  .footer-contact-chip {
+    font-size: 0.74rem;
+    padding: 0.3rem 0.6rem;
   }
 
   .footer-bottom {
@@ -252,7 +296,8 @@
     margin-bottom: 3rem;
   }
 
-  .footer-brand > p {
+  .footer-brand > p,
+  .footer-tagline {
     font-size: 0.95rem;
     max-width: 380px;
   }
@@ -263,6 +308,10 @@
 
   .footer-links a {
     font-size: 0.9rem;
+  }
+
+  .footer-contact-value {
+    font-size: 1rem;
   }
 
   .footer-bottom {

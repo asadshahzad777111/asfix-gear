@@ -12,6 +12,15 @@ export const SHOP = {
   openHour: 9,
   closeHour: 21,
 
+  /** Display form for local Pakistan mobiles (0303-9227000). */
+  get phoneDisplay() {
+    const digits = String(this.phone || '').replace(/\D/g, '');
+    if (digits.length === 11 && digits.startsWith('0')) {
+      return `${digits.slice(0, 4)}-${digits.slice(4)}`;
+    }
+    return this.phone;
+  },
+
   // Google Maps coordinates
   lat: 31.59375,
   lng: 74.46745,

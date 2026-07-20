@@ -749,8 +749,9 @@
   background: var(--bg);
 }
 
-.footer-brand p {
-  max-width: 28ch;
+.footer-brand p,
+.footer-tagline {
+  max-width: 32ch;
   color: var(--text-muted);
 }
 
@@ -767,8 +768,14 @@
   font-size: 0.95rem;
 }
 
+.footer-contact-chip {
+  border-radius: 2px;
+}
+
 @media (hover: hover) and (pointer: fine) {
-  .footer-links a:hover {
+  .footer-links a:hover,
+  .footer-contact-value:hover,
+  .footer-contact-link:hover {
     color: var(--primary);
   }
 }
