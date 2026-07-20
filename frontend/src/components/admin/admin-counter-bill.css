@@ -25,13 +25,17 @@
 .counter-bill {
   max-width: 100%;
   min-width: 0;
-  padding: clamp(0.75rem, 1.6vw, 1.1rem);
+  padding: clamp(0.65rem, 1.4vw, 0.95rem);
   border: 1px solid var(--pos-border);
-  border-radius: 16px;
+  border-radius: 14px;
   box-sizing: border-box;
   color: var(--pos-text);
   background: var(--pos-bg);
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  min-height: min(78dvh, 860px);
+  max-height: none;
 }
 
 .counter-bill *,
@@ -43,12 +47,23 @@
 .counter-shell {
   width: 100%;
   max-width: 100%;
+  min-height: 100dvh;
   overflow-x: clip;
   background: #0a0c10;
+  display: flex;
+  flex-direction: column;
+}
+
+.counter-shell.wp-admin-shell,
+.wp-admin-shell.counter-shell {
+  height: 100dvh;
+  max-height: 100dvh;
+  overflow: hidden;
 }
 
 .counter-shell .wp-admin-bar {
   position: sticky;
+  flex: 0 0 auto;
 }
 
 .counter-content {
@@ -57,37 +72,56 @@
   margin: 0 auto;
   padding-left: max(0.85rem, env(safe-area-inset-left));
   padding-right: max(0.85rem, env(safe-area-inset-right));
+  padding-bottom: 0.75rem;
   overflow-x: clip;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   box-sizing: border-box;
+  flex: 1 1 auto;
+  min-height: 0;
+  -webkit-overflow-scrolling: touch;
+}
+
+.counter-boot {
+  margin: 0 0 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--pos-border);
+  border-radius: var(--pos-radius-sm);
+  background: var(--pos-surface);
+  color: var(--pos-muted);
+  font-size: 0.86rem;
+  font-weight: 700;
 }
 
 .counter-head {
   display: flex;
   justify-content: space-between;
-  gap: 0.85rem;
+  gap: 0.75rem;
   flex-wrap: wrap;
   align-items: stretch;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.55rem;
+  flex: 0 0 auto;
 }
 
 .counter-stats-bar {
   display: grid;
-  grid-template-columns: repeat(3, minmax(120px, 1fr));
-  gap: 0.55rem;
-  min-width: min(100%, 520px);
+  grid-template-columns: repeat(3, minmax(100px, 1fr));
+  gap: 0.45rem;
+  min-width: min(100%, 480px);
 }
 
 .counter-head p {
-  margin: 0.25rem 0 0;
+  margin: 0.2rem 0 0;
   color: var(--pos-muted);
+  font-size: 0.84rem;
 }
 
 .counter-today-card {
   display: grid;
-  gap: 0.1rem;
-  padding: 0.7rem 0.85rem;
+  gap: 0.05rem;
+  padding: 0.55rem 0.7rem;
   border: 1px solid var(--pos-border);
-  border-radius: var(--pos-radius);
+  border-radius: var(--pos-radius-sm);
   background: var(--pos-surface);
   color: var(--pos-text);
   text-align: right;
@@ -96,7 +130,7 @@
 .counter-today-card span,
 .counter-today-card small {
   color: var(--pos-muted);
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.04em;
@@ -104,16 +138,43 @@
 
 .counter-today-card strong {
   color: var(--pos-text);
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-variant-numeric: tabular-nums;
 }
 
 .counter-sales {
-  margin-top: 1rem;
-  padding: 1rem;
+  margin-top: 0.75rem;
+  padding: 0.75rem;
   border: 1px solid var(--pos-border);
-  border-radius: 16px;
+  border-radius: 14px;
   background: var(--pos-surface);
+  flex: 0 0 auto;
+}
+
+.counter-sales__toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+  padding: 0;
+}
+
+.counter-sales__toggle h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+.counter-sales__toggle span {
+  color: var(--pos-muted);
+  font-size: 0.8rem;
+  font-weight: 700;
 }
 
 .counter-sales__print {
@@ -242,17 +303,16 @@
   pointer-events: none;
 }
 
-.counter-sales__head {
+  .counter-sales__head {
   display: flex;
   justify-content: space-between;
   gap: 0.75rem;
   align-items: center;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0.55rem;
 }
 
-.counter-sales__head h3 {
-  margin: 0;
-  color: var(--pos-text);
+.counter-sales__head > .wp-button {
+  flex: 0 0 auto;
 }
 
 .counter-bill__head {
@@ -318,8 +378,10 @@
   display: grid;
   grid-template-columns: minmax(0, 1.55fr) minmax(340px, 0.72fr);
   gap: 0.85rem;
-  align-items: start;
+  align-items: stretch;
   min-width: 0;
+  flex: 1 1 auto;
+  min-height: 0;
 }
 
 .counter-bill__grid--products-collapsed {
@@ -328,10 +390,13 @@
 
 .counter-bill__panel {
   min-width: 0;
+  min-height: 0;
   border: 1px solid var(--pos-border);
   border-radius: 14px;
   padding: 0.85rem;
   background: var(--pos-surface);
+  display: flex;
+  flex-direction: column;
 }
 
 .counter-bill__panel--products {
@@ -343,12 +408,13 @@
 
 .counter-bill__panel--cart {
   position: sticky;
-  top: calc(64px + env(safe-area-inset-top));
+  top: 0;
   color: var(--pos-text);
-  max-height: calc(100vh - 80px);
+  max-height: min(78dvh, 860px);
+  overflow-x: hidden;
   overflow-y: auto;
-  display: flex;
-  flex-direction: column;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .counter-bill__panel--flash {
@@ -571,10 +637,14 @@
   grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
   gap: 0.55rem;
   margin-top: 0.75rem;
-  max-height: min(66vh, 740px);
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding-right: 0.15rem;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .counter-bill__product-tile {
@@ -649,11 +719,11 @@
 .counter-bill__cart-lines {
   display: grid;
   gap: 0.5rem;
-  max-height: 32vh;
-  overflow-y: auto;
+  flex: 0 0 auto;
+  min-height: 0;
+  max-height: none;
+  overflow: visible;
   padding-right: 0.1rem;
-  -webkit-overflow-scrolling: touch;
-  flex: 1 1 auto;
 }
 
 .counter-bill__cart-row {
@@ -1027,16 +1097,16 @@
 }
 
 .counter-bill__footer {
-  position: sticky;
-  bottom: env(safe-area-inset-bottom);
+  position: static;
   z-index: 3;
-  margin: 0.85rem -0.85rem -0.85rem;
-  padding: 0.85rem;
-  padding-bottom: calc(0.85rem + env(safe-area-inset-bottom));
+  margin: 0.75rem 0 0;
+  padding: 0.75rem 0 0;
+  padding-bottom: 0;
   border-top: 1px solid var(--pos-border);
-  border-radius: 0 0 14px 14px;
-  background: rgba(14, 17, 22, 0.97);
-  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+  border-radius: 0;
+  background: transparent;
+  box-shadow: none;
+  flex: 0 0 auto;
 }
 
 .counter-bill__saved-bills {
@@ -1363,6 +1433,21 @@
 }
 
 @media (max-width: 900px) {
+  .wp-admin-shell.counter-shell,
+  .counter-shell.wp-admin-shell {
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .counter-content {
+    overflow: visible;
+  }
+
+  .counter-bill {
+    min-height: 0;
+  }
+
   .counter-bill__grid,
   .counter-bill__grid--products-collapsed,
   .counter-bill__customer,
@@ -1371,8 +1456,15 @@
     grid-template-columns: 1fr;
   }
 
+  .counter-bill__panel--products,
   .counter-bill__panel--cart {
     position: static;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .counter-bill__products,
+  .counter-bill__cart-lines {
     max-height: none;
     overflow: visible;
   }
@@ -1384,10 +1476,13 @@
   .counter-bill__footer {
     position: sticky;
     bottom: 0;
-  }
-
-  .counter-bill__cart-lines {
-    max-height: none;
+    z-index: 5;
+    margin: 0.75rem -0.85rem -0.85rem;
+    padding: 0.75rem;
+    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
+    border-radius: 0 0 14px 14px;
+    background: rgba(14, 17, 22, 0.97);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
   }
 }
 
@@ -1408,7 +1503,6 @@
 
   .counter-bill__products {
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    max-height: min(42vh, 420px);
   }
 
   .counter-bill__product-tile {

@@ -44,13 +44,14 @@ export default function Counter() {
   const [returnSubmitting, setReturnSubmitting] = useState(false);
   const [printJob, setPrintJob] = useState(null);
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
-  const [loading, setLoading] = useState(true);
+  const [bootstrapping, setBootstrapping] = useState(true);
+  const [salesOpen, setSalesOpen] = useState(false);
   const printInFlightRef = useRef(false);
   const salesSectionRef = useRef(null);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
-  const loadCounterData = async ({ showLoading = true } = {}) => {
-    if (showLoading) setLoading(true);
+  const loadCounterData = async ({ silent = false } = {}) => {
+    // Never tear down the bill UI after first paint — silent refresh only.
     try {
       const [productData, salesData, statsData] = await Promise.all([
         api.getProducts(),
@@ -71,12 +72,12 @@ export default function Counter() {
         .then((settings) => setPosSettings({ ...DEFAULT_POS_SETTINGS, ...(settings || {}) }))
         .catch(() => setPosSettings(DEFAULT_POS_SETTINGS));
     } finally {
-      if (showLoading) setLoading(false);
+      if (!silent) setBootstrapping(false);
     }
   };
 
   useEffect(() => {
-    loadCounterData();
+    loadCounterData({ silent: false });
   }, []);
 
   useEffect(() => {
@@ -96,7 +97,10 @@ export default function Counter() {
   }, [printJob, thermalWidth]);
 
   const jumpToSales = () => {
-    salesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setSalesOpen(true);
+    window.requestAnimationFrame(() => {
+      salesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
   };
 
   const openReturnModal = async (sale) => {
@@ -262,87 +266,97 @@ export default function Counter() {
           </div>
         </div>
 
-        {loading ? (
-          <div className="wp-loading">{t('common.loading')}</div>
-        ) : (
-          <AdminCounterBill
-            products={products}
-            onBillCreated={() => loadCounterData({ showLoading: false })}
-            onPrintOrder={printCounterSale}
-            onThermalWidthChange={setThermalWidth}
-            onJumpToSales={jumpToSales}
-            onOpenReturnFlow={jumpToSales}
-          />
-        )}
+        {bootstrapping && products.length === 0 ? (
+          <div className="counter-boot">{t('common.loading')}</div>
+        ) : null}
 
-        <section className="counter-sales glass-card" ref={salesSectionRef}>
+        <AdminCounterBill
+          products={products}
+          onBillCreated={() => loadCounterData({ silent: true })}
+          onPrintOrder={printCounterSale}
+          onThermalWidthChange={setThermalWidth}
+          onJumpToSales={jumpToSales}
+          onOpenReturnFlow={jumpToSales}
+        />
+
+        <section className="counter-sales" ref={salesSectionRef}>
           <div className="counter-sales__head">
-            <h3>{t('counter.mySalesToday')}</h3>
-            <button type="button" className="wp-button wp-button--secondary" onClick={() => loadCounterData({ showLoading: false })}>
+            <button
+              type="button"
+              className="counter-sales__toggle"
+              onClick={() => setSalesOpen((open) => !open)}
+              aria-expanded={salesOpen}
+            >
+              <h3>{t('counter.mySalesToday')}</h3>
+              <span>{salesOpen ? 'Hide' : `Show (${sales.length})`}</span>
+            </button>
+            <button type="button" className="wp-button wp-button--secondary" onClick={() => loadCounterData({ silent: true })}>
               {t('sales.refresh')}
             </button>
           </div>
-          {sales.length === 0 ? (
-            <p className="field-hint">{t('counter.noSales')}</p>
-          ) : (
-            <div className="wp-table-wrap">
-              <table className="wp-table">
-                <thead>
-                  <tr>
-                    <th>{t('admin.counterBillNo')}</th>
-                    <th>{t('admin.counterBillDate')}</th>
-                    <th>{t('admin.counterBillCustomer')}</th>
-                    <th>{t('admin.counterBillPayment')}</th>
-                    <th>{t('admin.counterBillTotal')}</th>
-                    <th>{t('admin.counterBillActions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sales.map((sale) => (
-                    <tr key={sale.id}>
-                      <td>{sale.order_id || sale.id}</td>
-                      <td>{sale.created_at ? new Date(sale.created_at).toLocaleTimeString() : '-'}</td>
-                      <td>{sale.customer_name || 'Walk-in Customer'}</td>
-                      <td>{sale.payment_mode}</td>
-                      <td>{formatPrice(sale.total_amount)}</td>
-                      <td>
-                        <div className="counter-sales__actions">
-                          <button
-                            type="button"
-                            className="wp-button wp-button--secondary counter-sales__print"
-                            onClick={() => printCounterSale(sale)}
-                          >
-                            {t('admin.counterBillPrintNow')}
-                          </button>
-                          <button
-                            type="button"
-                            className="wp-button wp-button--secondary counter-sales__print"
-                            onClick={() => downloadCounterInvoicePdf(sale, thermalWidth)}
-                          >
-                            {t('admin.counterBillDownloadPdf')}
-                          </button>
-                          <button
-                            type="button"
-                            className="wp-button wp-button--secondary counter-sales__print"
-                            onClick={() => shareCounterSale(sale)}
-                          >
-                            {t('admin.counterBillSharePdf')}
-                          </button>
-                          <button
-                            type="button"
-                            className="wp-button wp-button--secondary counter-sales__print counter-sales__return"
-                            onClick={() => openReturnModal(sale)}
-                          >
-                            Process Return
-                          </button>
-                        </div>
-                      </td>
+          {salesOpen ? (
+            sales.length === 0 ? (
+              <p className="field-hint">{t('counter.noSales')}</p>
+            ) : (
+              <div className="wp-table-wrap">
+                <table className="wp-table">
+                  <thead>
+                    <tr>
+                      <th>{t('admin.counterBillNo')}</th>
+                      <th>{t('admin.counterBillDate')}</th>
+                      <th>{t('admin.counterBillCustomer')}</th>
+                      <th>{t('admin.counterBillPayment')}</th>
+                      <th>{t('admin.counterBillTotal')}</th>
+                      <th>{t('admin.counterBillActions')}</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
+                  </thead>
+                  <tbody>
+                    {sales.map((sale) => (
+                      <tr key={sale.id}>
+                        <td>{sale.order_id || sale.id}</td>
+                        <td>{sale.created_at ? new Date(sale.created_at).toLocaleTimeString() : '-'}</td>
+                        <td>{sale.customer_name || 'Walk-in Customer'}</td>
+                        <td>{sale.payment_mode}</td>
+                        <td>{formatPrice(sale.total_amount)}</td>
+                        <td>
+                          <div className="counter-sales__actions">
+                            <button
+                              type="button"
+                              className="wp-button wp-button--secondary counter-sales__print"
+                              onClick={() => printCounterSale(sale)}
+                            >
+                              {t('admin.counterBillPrintNow')}
+                            </button>
+                            <button
+                              type="button"
+                              className="wp-button wp-button--secondary counter-sales__print"
+                              onClick={() => downloadCounterInvoicePdf(sale, thermalWidth)}
+                            >
+                              {t('admin.counterBillDownloadPdf')}
+                            </button>
+                            <button
+                              type="button"
+                              className="wp-button wp-button--secondary counter-sales__print"
+                              onClick={() => shareCounterSale(sale)}
+                            >
+                              {t('admin.counterBillSharePdf')}
+                            </button>
+                            <button
+                              type="button"
+                              className="wp-button wp-button--secondary counter-sales__print counter-sales__return"
+                              onClick={() => openReturnModal(sale)}
+                            >
+                              Process Return
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )
+          ) : null}
         </section>
 
         <div className="counter-print-stage" aria-hidden="true">
