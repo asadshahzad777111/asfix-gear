@@ -228,6 +228,12 @@ export default function AdminOrderCard({
   const customerStatus = getOrderCustomerStatus(o);
   const addr = o.shipping_address;
   const mapUrl = addr ? googleMapsUrl(addr.lat, addr.lng) : null;
+  const isCounter = o.source === 'counter_sale' || o.source === 'counter_return';
+  const isReturn = o.source === 'counter_return' || o.transaction_type === 'return';
+  const walkInName = !o.customer_name || /^walk-?in/i.test(String(o.customer_name).trim());
+  const customerLabel = walkInName
+    ? (o.phone ? `Walk-in · ${o.phone}` : 'Walk-in Customer')
+    : o.customer_name;
 
   const handleAssignRider = async (payload) => {
     await onAssignRider(o.id, payload);
@@ -237,22 +243,38 @@ export default function AdminOrderCard({
   return (
     <article className={className}>
       <div className="admin-float-card-head">
-        <strong>#{o.order_id || o.id} · {o.customer_name}</strong>
+        <strong>
+          #{o.order_id || o.id}
+          <span className={`admin-order-channel-pill ${isCounter ? 'is-pos' : 'is-online'}`}>
+            {isReturn ? t('admin.orderChannelReturn') : isCounter ? t('admin.orderChannelPos') : t('admin.orderChannelOnline')}
+          </span>
+        </strong>
         <span>{formatPrice(o.total_amount)}</span>
       </div>
-      {o.source === 'counter_sale' ? (
-        <p className="admin-float-sub">
-          Counter sale{ o.created_by_staff_name ? ` · Sold by ${o.created_by_staff_name}` : '' }
-        </p>
-      ) : null}
-      <p className="admin-float-meta">
-        {o.phone} · {o.city || 'No city'} ·{' '}
-        <span className={o.payment_mode === 'cod' ? 'admin-payment-cod' : undefined}>
-          {o.payment_mode === 'cod' ? 'COD (Cash on Delivery)' : o.payment_mode}
-        </span>
-        {o.fulfillment_method === 'pickup' ? ' · Pickup' : ''}
+
+      <p className="admin-order-customer-line">
+        <strong>{customerLabel}</strong>
+        {o.phone && !walkInName ? <span> · {o.phone}</span> : null}
       </p>
-      {o.payment_proof_url ? (
+
+      {isCounter ? (
+        <p className="admin-float-sub">
+          {isReturn ? t('admin.orderCounterReturnMeta') : t('admin.orderCounterSaleMeta')}
+          {o.created_by_staff_name ? ` · ${o.created_by_staff_name}` : ''}
+          {o.payment_mode ? ` · ${o.payment_mode}` : ''}
+          {o.created_at ? ` · ${new Date(o.created_at).toLocaleString()}` : ''}
+        </p>
+      ) : (
+        <p className="admin-float-meta">
+          {o.phone || 'No phone'} · {o.city || 'No city'} ·{' '}
+          <span className={o.payment_mode === 'cod' ? 'admin-payment-cod' : undefined}>
+            {o.payment_mode === 'cod' ? 'COD (Cash on Delivery)' : o.payment_mode}
+          </span>
+          {o.fulfillment_method === 'pickup' ? ' · Pickup' : ''}
+        </p>
+      )}
+
+      {!isCounter && o.payment_proof_url ? (
         <p className="admin-float-sub">
           Payment proof:{' '}
           <a href={o.payment_proof_url} target="_blank" rel="noopener noreferrer">
@@ -260,21 +282,26 @@ export default function AdminOrderCard({
           </a>
         </p>
       ) : null}
-      {addr && <DeliveryLocationBlock addr={addr} t={t} />}
-      {o.gmail && <p className="admin-float-sub">Gmail: {o.gmail}</p>}
-      <p className="admin-float-sub">
-        <span className={`order-status-pill status-${customerStatus}`}>
-          {t(`track.status_${customerStatus}`) || customerStatus}
-        </span>
-      </p>
-      {o.rider_phone && (
+      {!isCounter && addr ? <DeliveryLocationBlock addr={addr} t={t} /> : null}
+      {!isCounter && o.gmail ? <p className="admin-float-sub">Gmail: {o.gmail}</p> : null}
+
+      {!isCounter ? (
+        <p className="admin-float-sub">
+          <span className={`order-status-pill status-${customerStatus}`}>
+            {t(`track.status_${customerStatus}`) || customerStatus}
+          </span>
+        </p>
+      ) : null}
+
+      {!isCounter && o.rider_phone ? (
         <p className="admin-float-sub">
           {t('admin.riderPhone')}: {o.rider_phone}
           {Number(o.delivery_charge) > 0 && ` · ${t('admin.deliveryCharge')}: ${formatPrice(o.delivery_charge)}`}
         </p>
-      )}
+      ) : null}
+
       <ul className="admin-float-items">
-        {o.items.map((item, idx) => {
+        {(o.items || []).map((item, idx) => {
           const qty = Number(item.qty) || 1;
           const saleLine = Number(item.price) * qty;
           const costLine = Number(item.cost_price || 0) * qty;
@@ -295,6 +322,14 @@ export default function AdminOrderCard({
           );
         })}
       </ul>
+
+      {(Number(o.subtotal_amount) > 0 || Number(o.discount_amount) > 0) && (
+        <p className="admin-float-sub">
+          Subtotal {formatPrice(o.subtotal_amount || o.total_amount)}
+          {Number(o.discount_amount) > 0 ? ` · Discount ${formatPrice(o.discount_amount)}` : ''}
+          {` · Net ${formatPrice(o.total_amount)}`}
+        </p>
+      )}
 
       <div className="admin-float-receipt-actions">
         <a
@@ -318,33 +353,35 @@ export default function AdminOrderCard({
         </button>
       </div>
 
-      <div className="admin-order-actions admin-order-actions--delivery">
-        {o.payment_status === 'pending_payment' && onMarkPaid && (
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => onMarkPaid(o.id)}>
-            {o.payment_mode === 'cod' ? t('admin.confirmCod') : t('admin.markPaid')}
-          </button>
-        )}
-        {o.delivery_status === 'waiting_for_rider' && onAssignRider && !showRiderForm && (
-          <button type="button" className="btn btn-outline btn-sm" onClick={() => setShowRiderForm(true)}>
-            {t('admin.assignRider')}
-          </button>
-        )}
-        {showRiderForm && onAssignRider && (
-          <AssignRiderForm
-            t={t}
-            mapUrl={mapUrl}
-            onCancel={() => setShowRiderForm(false)}
-            onSubmit={handleAssignRider}
-          />
-        )}
-        {o.delivery_status === 'rider_assigned' && onMarkDelivered && (
-          <button type="button" className="btn btn-primary btn-sm" onClick={() => onMarkDelivered(o.id)}>
-            {t('admin.markDelivered')}
-          </button>
-        )}
-      </div>
+      {!isCounter ? (
+        <div className="admin-order-actions admin-order-actions--delivery">
+          {o.payment_status === 'pending_payment' && onMarkPaid && (
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => onMarkPaid(o.id)}>
+              {o.payment_mode === 'cod' ? t('admin.confirmCod') : t('admin.markPaid')}
+            </button>
+          )}
+          {o.delivery_status === 'waiting_for_rider' && onAssignRider && !showRiderForm && (
+            <button type="button" className="btn btn-outline btn-sm" onClick={() => setShowRiderForm(true)}>
+              {t('admin.assignRider')}
+            </button>
+          )}
+          {showRiderForm && onAssignRider && (
+            <AssignRiderForm
+              t={t}
+              mapUrl={mapUrl}
+              onCancel={() => setShowRiderForm(false)}
+              onSubmit={handleAssignRider}
+            />
+          )}
+          {o.delivery_status === 'rider_assigned' && onMarkDelivered && (
+            <button type="button" className="btn btn-primary btn-sm" onClick={() => onMarkDelivered(o.id)}>
+              {t('admin.markDelivered')}
+            </button>
+          )}
+        </div>
+      ) : null}
 
-      {onUpdateStatus && (
+      {!isCounter && onUpdateStatus ? (
         <>
           <div className="admin-order-actions admin-order-actions--legacy">
             {ORDER_QUICK_ACTIONS.map((action) => (
@@ -371,7 +408,7 @@ export default function AdminOrderCard({
             ))}
           </select>
         </>
-      )}
+      ) : null}
 
       {o.activity_log?.length > 0 && (
         <p className="admin-float-activity">{o.activity_log[o.activity_log.length - 1].message}</p>

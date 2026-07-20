@@ -225,9 +225,16 @@ export default function Admin() {
     return [...byId.entries()].map(([id, name]) => ({ id, name }));
   }, [orders]);
 
+  const orderChannel = (o) => {
+    const src = o?.source || 'online';
+    if (src === 'counter_sale' || src === 'counter_return' || src === 'counter_draft') return 'counter';
+    return 'online';
+  };
+
   const filteredOrders = orders.filter((o) => {
     if (orderStatusFilter !== 'all' && o.shipping_status !== orderStatusFilter) return false;
-    if (orderSourceFilter !== 'all' && (o.source || 'online') !== orderSourceFilter) return false;
+    if (orderSourceFilter === 'counter_sale' && orderChannel(o) !== 'counter') return false;
+    if (orderSourceFilter === 'online' && orderChannel(o) !== 'online') return false;
     if (orderStaffFilter !== 'all' && String(o.created_by_staff_id || '') !== orderStaffFilter) return false;
     if (orderDateFilter) {
       const date = o.created_at ? new Date(o.created_at).toISOString().slice(0, 10) : '';
@@ -235,6 +242,27 @@ export default function Admin() {
     }
     return true;
   });
+
+  const onlineOrders = filteredOrders.filter((o) => orderChannel(o) === 'online');
+  const counterOrders = filteredOrders.filter((o) => orderChannel(o) === 'counter');
+
+  const renderOrderCards = (list) =>
+    list
+      .slice()
+      .reverse()
+      .map((o) => (
+        <AdminOrderCard
+          key={o.id}
+          order={o}
+          onUpdateStatus={orderChannel(o) === 'online' ? updateOrderStatus : undefined}
+          onMarkPaid={orderChannel(o) === 'online' ? markOrderPaid : undefined}
+          onAssignRider={orderChannel(o) === 'online' ? assignOrderRider : undefined}
+          onMarkDelivered={orderChannel(o) === 'online' ? markOrderDelivered : undefined}
+          className={`admin-float-card admin-order-card-full glass-card${
+            orderChannel(o) === 'counter' ? ' admin-order-card--pos' : ' admin-order-card--online'
+          }`}
+        />
+      ));
 
   const navigateAdmin = (nextTab, filter = {}) => {
     if (filter.category) setProductCategory(filter.category);
@@ -611,21 +639,35 @@ export default function Admin() {
             <div className="admin-orders-list">
               {filteredOrders.length === 0 ? (
                 <div className="empty-state glass-card">Is filter mein koi order nahi.</div>
+              ) : orderSourceFilter === 'all' ? (
+                <>
+                  <section className="admin-orders-section" aria-label={t('admin.orderSourceOnline')}>
+                    <div className="admin-orders-section__head">
+                      <h3>{t('admin.orderSourceOnline')}</h3>
+                      <span>{onlineOrders.length}</span>
+                    </div>
+                    <p className="admin-orders-section__hint">{t('admin.orderOnlineHint')}</p>
+                    {onlineOrders.length === 0 ? (
+                      <div className="empty-state glass-card">{t('admin.orderOnlineEmpty')}</div>
+                    ) : (
+                      <div className="admin-orders-section__grid">{renderOrderCards(onlineOrders)}</div>
+                    )}
+                  </section>
+                  <section className="admin-orders-section admin-orders-section--pos" aria-label={t('admin.orderSourceCounter')}>
+                    <div className="admin-orders-section__head">
+                      <h3>{t('admin.orderSourceCounter')}</h3>
+                      <span>{counterOrders.length}</span>
+                    </div>
+                    <p className="admin-orders-section__hint">{t('admin.orderCounterHint')}</p>
+                    {counterOrders.length === 0 ? (
+                      <div className="empty-state glass-card">{t('admin.orderCounterEmpty')}</div>
+                    ) : (
+                      <div className="admin-orders-section__grid">{renderOrderCards(counterOrders)}</div>
+                    )}
+                  </section>
+                </>
               ) : (
-                filteredOrders
-                  .slice()
-                  .reverse()
-                  .map((o) => (
-                    <AdminOrderCard
-                      key={o.id}
-                      order={o}
-                      onUpdateStatus={updateOrderStatus}
-                      onMarkPaid={markOrderPaid}
-                      onAssignRider={assignOrderRider}
-                      onMarkDelivered={markOrderDelivered}
-                      className="admin-float-card admin-order-card-full glass-card"
-                    />
-                  ))
+                <div className="admin-orders-section__grid">{renderOrderCards(filteredOrders)}</div>
               )}
             </div>
             </>
