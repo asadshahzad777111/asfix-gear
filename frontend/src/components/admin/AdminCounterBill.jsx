@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import QRCode from 'qrcode';
 import { api, formatPrice } from '../../api/client';
 import { SHOP } from '../../config/shop';
 import { useAuth } from '../../context/AuthContext';
@@ -18,8 +19,18 @@ const PAYMENT_OPTIONS = [
 ];
 const THERMAL_WIDTH_OPTIONS = ['58mm', '80mm'];
 const RECEIPT_SITE = 'asfixgear.com';
+const RECEIPT_SITE_URL = `https://${RECEIPT_SITE}`;
 const THERMAL_PAGE_STYLE_ID = 'thermal-page-size';
 const PRINT_ROOT_ID = 'counter-receipt-print-root';
+
+async function buildWebsiteQrDataUrl(size = 320) {
+  return QRCode.toDataURL(RECEIPT_SITE_URL, {
+    width: size,
+    margin: 2,
+    errorCorrectionLevel: 'M',
+    color: { dark: '#000000', light: '#FFFFFF' },
+  });
+}
 const DEFAULT_POS_SETTINGS = {
   posReturnWindowHours: 24,
   posDiscountMaxPercentWithoutPin: 10,
@@ -346,6 +357,9 @@ function buildReceiptLines(order, maxChars = 18) {
   rule();
   push('Thank You', { align: 'center', weight: 'bold' });
   push(RECEIPT_SITE, { align: 'center', weight: 'bold', small: true });
+  rule();
+  push('Scan website', { align: 'center', weight: 'bold', small: true });
+  push(RECEIPT_SITE_URL, { align: 'center', qr: true });
   return lines;
 }
 
@@ -438,11 +452,17 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
 
   const lineHFor = (size, heavy) => Math.ceil(size * stretchFor(heavy) * (heavy ? 1.18 : 1.28));
   const ruleH = Math.ceil(fontSize * bodyStretch * 0.85);
+  /* Big website QR — ~82% of printable width (sample water-bill style) */
+  const qrSize = Math.round(usable * 0.82);
 
   let heightPx = padY * 2 + 16 * scale;
   lines.forEach((line) => {
     if (line.rule) {
       heightPx += ruleH + 6 * scale;
+      return;
+    }
+    if (line.qr) {
+      heightPx += qrSize + 18 * scale;
       return;
     }
     const heavy = isHeavy(line);
@@ -512,12 +532,27 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   };
 
   let y = padY;
-  lines.forEach((line) => {
+  for (const line of lines) {
     if (line.rule) {
       y += 3 * scale;
       drawRuleLine(y);
       y += ruleH + 3 * scale;
-      return;
+      continue;
+    }
+
+    if (line.qr) {
+      const qrCanvas = document.createElement('canvas');
+      await QRCode.toCanvas(qrCanvas, line.value || RECEIPT_SITE_URL, {
+        width: qrSize,
+        margin: 1,
+        errorCorrectionLevel: 'M',
+        color: { dark: '#000000', light: '#FFFFFF' },
+      });
+      const qrX = Math.round((widthPx - qrSize) / 2);
+      y += 6 * scale;
+      ctx.drawImage(qrCanvas, qrX, y, qrSize, qrSize);
+      y += qrSize + 12 * scale;
+      continue;
     }
 
     const heavy = isHeavy(line);
@@ -549,7 +584,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       });
       if (heavy) y += 4 * scale;
     }
-  });
+  }
 
   return new Promise((resolve, reject) => {
     canvas.toBlob(
@@ -571,25 +606,27 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const maxChars = pageWidth === '80mm' ? 26 : 18;
   const bodySize = pageWidth === '80mm' ? 13 : 12;
   const bodyLeading = pageWidth === '80mm' ? 18 : 17;
-  const receiptLines = buildReceiptLines(order, maxChars).map((line) => ({
-    value: line.value,
-    size: line.grand
-      ? bodySize + 8
-      : line.totalLabel
-        ? bodySize + 2
-        : line.title
-          ? bodySize + 3
-          : line.small
-            ? bodySize - 0.5
-            : bodySize,
-    leading: line.grand
-      ? bodyLeading + 10
-      : line.totalLabel || line.title
-        ? bodyLeading + 3
-        : bodyLeading,
-    align: line.align || 'left',
-    font: line.weight === 'bold' || line.title || line.grand || line.totalLabel ? 'F2' : 'F1',
-  }));
+  const receiptLines = buildReceiptLines(order, maxChars)
+    .filter((line) => !line.qr)
+    .map((line) => ({
+      value: line.value,
+      size: line.grand
+        ? bodySize + 8
+        : line.totalLabel
+          ? bodySize + 2
+          : line.title
+            ? bodySize + 3
+            : line.small
+              ? bodySize - 0.5
+              : bodySize,
+      leading: line.grand
+        ? bodyLeading + 10
+        : line.totalLabel || line.title
+          ? bodyLeading + 3
+          : bodyLeading,
+      align: line.align || 'left',
+      font: line.weight === 'bold' || line.title || line.grand || line.totalLabel ? 'F2' : 'F1',
+    }));
 
   const height = Math.ceil(
     marginTop + marginBottom + receiptLines.reduce((sum, line) => sum + line.leading, 0)
@@ -673,7 +710,7 @@ function isAndroidDevice() {
 }
 
 /** True 58/80mm receipt document — NEVER A4 (A4→thermal scales to a tiny center strip). */
-function buildThermalReceiptHtml(order, thermalWidth = '58mm') {
+function buildThermalReceiptHtml(order, thermalWidth = '58mm', qrDataUrl = '') {
   const widthMm = thermalWidth === '80mm' ? 80 : 58;
   const { subtotal, discount, grandTotal } = receiptTotals(order);
   const paymentNote = counterPaymentNote(order);
@@ -725,7 +762,15 @@ html, body {
 .r-grand-label { display: block; font-size: 15px; font-weight: 900; letter-spacing: 0.1em; }
 .r-grand { display: block; font-size: 24px; font-weight: 900; letter-spacing: 0.12em; margin-top: 5px; }
 .r-thanks, .r-site { text-align: center; margin: 6px 0 0; font-size: 13px; font-weight: 700; }
+.r-scan { text-align: center; margin: 8px 0 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; }
+.r-qr { display: block; width: 72%; max-width: 72%; height: auto; margin: 4px auto 8px; }
 `.trim();
+
+  const qrBlock = qrDataUrl
+    ? `<hr class="r-rule" />
+  <p class="r-scan">Scan website</p>
+  <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="220" height="220" />`
+    : '';
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
 <meta name="viewport" content="width=${widthMm}, initial-scale=1" />
@@ -771,6 +816,7 @@ html, body {
   <hr class="r-rule" />
   <p class="r-thanks">Thank You</p>
   <p class="r-site">${escapeHtml(RECEIPT_SITE)}</p>
+  ${qrBlock}
 </main>
 </body></html>`;
 }
@@ -892,7 +938,13 @@ export async function printActiveCounterReceipt({
     }
 
     const width = normalizeThermalWidth(thermalWidth);
-    const html = buildThermalReceiptHtml(order, width);
+    let qrDataUrl = '';
+    try {
+      qrDataUrl = await buildWebsiteQrDataUrl(280);
+    } catch {
+      qrDataUrl = '';
+    }
+    const html = buildThermalReceiptHtml(order, width, qrDataUrl);
     return printViaIframe(html, inFlightRef);
   } catch {
     finishPrintJob(inFlightRef);
