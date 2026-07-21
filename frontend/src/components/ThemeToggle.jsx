@@ -1,4 +1,5 @@
 import { useTheme } from '../context/ThemeContext';
+import { useTranslation } from '../context/LanguageContext';
 
 /**
  * iOS-style light/dark switch.
@@ -7,14 +8,15 @@ import { useTheme } from '../context/ThemeContext';
  */
 export default function ThemeToggle({ className = '' }) {
   const { mode, resolved, setMode } = useTheme();
+  const { t } = useTranslation();
   const isDark = resolved === 'dark';
 
   const onToggle = () => {
     setMode(isDark ? 'light' : 'dark');
   };
 
-  const label = isDark ? 'Dark mode' : 'Light mode';
-  const hint = mode === 'auto' ? `${label} (was auto)` : label;
+  const label = isDark ? t('common.themeDark') : t('common.themeLight');
+  const hint = mode === 'auto' ? `${label} (${t('common.themeWasAuto')})` : label;
 
   return (
     <button

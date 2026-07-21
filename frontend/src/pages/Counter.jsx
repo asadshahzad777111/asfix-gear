@@ -7,7 +7,9 @@ import AdminCounterBill, {
   shareCounterInvoicePdf,
 } from '../components/admin/AdminCounterBill';
 import { SHOP } from '../config/shop';
+import ThemeToggle from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from '../context/LanguageContext';
 import {
   clearSavedPrinter,
@@ -38,6 +40,7 @@ const DEFAULT_POS_SETTINGS = {
 export default function Counter() {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
+  const { resolved: themeResolved } = useTheme();
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState([]);
   const [stats, setStats] = useState({ today_sales: 0, bills_today: 0, items_sold_today: 0 });
@@ -303,6 +306,12 @@ export default function Counter() {
           <span className="wp-admin-bar-live">{t('counter.roleBadge')}</span>
         </div>
         <div className="wp-admin-bar-right">
+          <div className="counter-theme-toggle" title={t('common.themeToggle')}>
+            <span className="counter-theme-toggle__text" aria-hidden="true">
+              {themeResolved === 'dark' ? t('common.themeDark') : t('common.themeLight')}
+            </span>
+            <ThemeToggle className="theme-switch--nav counter-theme-switch" />
+          </div>
           <span className="wp-admin-bar-user">
             {user?.name || user?.username} · {t('counter.counterOnly')}
           </span>

@@ -3,16 +3,22 @@
   --pos-bg: #0e1116;
   --pos-surface: #161b22;
   --pos-surface-2: #1c222c;
+  --pos-shell-bg: #0a0c10;
+  --pos-media-bg: #0c0f14;
+  --pos-tile-hover: #222833;
+  --pos-footer-bg: rgba(14, 17, 22, 0.97);
   --pos-border: rgba(255, 255, 255, 0.1);
   --pos-border-strong: rgba(255, 255, 255, 0.16);
   --pos-text: #eef0f3;
   --pos-muted: #9aa3af;
   --pos-accent: #ff6a2b;
   --pos-accent-soft: rgba(255, 106, 43, 0.16);
+  --pos-chip-text: #ffb089;
   --pos-success: #22c55e;
   --pos-danger: #ef4444;
   --pos-radius: 12px;
   --pos-radius-sm: 8px;
+  --pos-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
   /* legacy aliases used by a few class names */
   --counter-gold: var(--pos-accent);
   --counter-gold-light: #ff8f5c;
@@ -20,6 +26,59 @@
   --counter-panel: var(--pos-surface);
   --counter-cream: var(--pos-surface-2);
   --counter-muted: var(--pos-muted);
+}
+
+/* Light POS — same structure, daylight surfaces (site theme key: asfix-theme) */
+[data-theme='light'] {
+  --pos-bg: #f4f5f7;
+  --pos-surface: #ffffff;
+  --pos-surface-2: #eef0f3;
+  --pos-shell-bg: #e8eaed;
+  --pos-media-bg: #e4e7eb;
+  --pos-tile-hover: #fff4ee;
+  --pos-footer-bg: rgba(255, 255, 255, 0.97);
+  --pos-border: rgba(29, 35, 39, 0.12);
+  --pos-border-strong: rgba(29, 35, 39, 0.2);
+  --pos-text: #1d2327;
+  --pos-muted: #646970;
+  --pos-accent: #e85a1a;
+  --pos-accent-soft: rgba(232, 90, 26, 0.12);
+  --pos-chip-text: #b45309;
+  --pos-shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+}
+
+[data-theme='light'] .counter-bill__feedback--success {
+  color: #15803d;
+}
+
+[data-theme='light'] .counter-bill__feedback--error,
+[data-theme='light'] .counter-return-modal__warning {
+  color: #b42318;
+}
+
+[data-theme='light'] .counter-sales__return {
+  border-color: #b42318 !important;
+  color: #b42318 !important;
+}
+
+[data-theme='light'] .counter-bill__discount-warning {
+  color: #a16207;
+}
+
+[data-theme='light'] .counter-bill__pay--active.counter-bill__pay--cash {
+  color: #166534;
+}
+
+[data-theme='light'] .counter-bill__pay--active.counter-bill__pay--card {
+  color: #1d4ed8;
+}
+
+[data-theme='light'] .counter-bill__pay--active.counter-bill__pay--easypaisa {
+  color: #6b21a8;
+}
+
+[data-theme='light'] .counter-bill__pay--active.counter-bill__pay--jazzcash {
+  color: #b91c1c;
 }
 
 .counter-bill {
@@ -31,7 +90,7 @@
   box-sizing: border-box;
   color: var(--pos-text);
   background: var(--pos-bg);
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.35);
+  box-shadow: var(--pos-shadow);
   display: flex;
   flex-direction: column;
   min-height: min(78dvh, 860px);
@@ -49,9 +108,44 @@
   max-width: 100%;
   min-height: 100dvh;
   overflow-x: clip;
-  background: #0a0c10;
+  background: var(--pos-shell-bg);
+  color: var(--pos-text);
   display: flex;
   flex-direction: column;
+}
+
+.counter-shell .wp-admin-page-title {
+  color: var(--pos-text);
+}
+
+.counter-theme-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0.15rem 0.35rem 0.15rem 0.55rem;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.counter-theme-toggle__text {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #c3c4c7;
+  white-space: nowrap;
+}
+
+.counter-theme-switch {
+  --switch-w: 2.65rem;
+  --switch-h: 1.55rem;
+  --thumb: 1.2rem;
+}
+
+.counter-theme-switch .theme-switch-thumb-icon {
+  width: 0.7rem;
+  height: 0.7rem;
 }
 
 .counter-shell.wp-admin-shell,
@@ -767,7 +861,7 @@
 .counter-bill__product-tile:focus-visible {
   transform: translateY(-1px);
   border-color: var(--pos-accent);
-  background: #222833;
+  background: var(--pos-tile-hover);
   outline: none;
 }
 
@@ -776,7 +870,7 @@
   place-items: center;
   overflow: hidden;
   border-radius: 6px;
-  background: #0c0f14;
+  background: var(--pos-media-bg);
 }
 
 .counter-bill__product-media img {
@@ -1336,7 +1430,7 @@
   border-radius: 999px;
   padding: 0.2rem 0.65rem;
   background: var(--pos-accent-soft);
-  color: #ffb089;
+  color: var(--pos-chip-text);
   cursor: pointer;
   font: inherit;
   font-size: 0.76rem;
@@ -1623,8 +1717,8 @@
     padding: 0.75rem;
     padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
     border-radius: 0 0 14px 14px;
-    background: rgba(14, 17, 22, 0.97);
-    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+    background: var(--pos-footer-bg);
+    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
   }
 }
 
