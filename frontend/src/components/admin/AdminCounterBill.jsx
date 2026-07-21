@@ -350,37 +350,46 @@ function buildReceiptLines(order, maxChars = 18) {
 }
 
 /**
- * Tall thermal PNG — stretched glyph height + 2× pixels so letters look longer/clearer.
- * Slip may grow long; body size stays locked (no global shrink).
+ * Thermal PNG: keep AS FIX & GEAR heading bold;
+ * body text cleaner (fill-only, less blocky pixels) with real dashed linings.
  */
 export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
   const printerDots = pageWidth === '80mm' ? 576 : 384;
-  /* 2× source pixels → fewer jagged “pixels” after Mate scales to printer */
   const scale = 2;
   const widthPx = printerDots * scale;
   const maxChars = pageWidth === '80mm' ? 26 : 18;
   const padX = Math.round(widthPx * 0.07);
   const padY = 16 * scale;
-  /* Vertical stretch = taller letters (user: likhai height / lambai zada) */
-  const stretchY = 1.48;
+  const titleStretch = 1.35;
+  const bodyStretch = 1.28;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
   if (!ctx) throw new Error('Canvas unavailable');
 
   const usable = widthPx - padX * 2;
-  const fontStack = '"Courier New", Courier, monospace';
 
-  const setFont = (size) => {
-    ctx.font = `bold ${size}px ${fontStack}`;
+  const isHeavy = (line) => Boolean(line?.title || line?.grand || line?.totalLabel);
+
+  const setFont = (size, heavy = false) => {
+    /* Heading stays bold display; body uses open sans — unique + fewer blocky pixels */
+    ctx.font = heavy
+      ? `bold ${size}px "Arial Black", Arial, Helvetica, sans-serif`
+      : `600 ${size}px Arial, Helvetica, sans-serif`;
   };
 
-  const letterGapFor = (size) => Math.max(2 * scale, Math.round(size * 0.14));
+  const letterGapFor = (size, heavy) => (
+    heavy
+      ? Math.max(2 * scale, Math.round(size * 0.1))
+      : Math.max(3 * scale, Math.round(size * 0.16))
+  );
 
-  const measureSpaced = (text, size) => {
-    setFont(size);
-    const letterGap = letterGapFor(size);
+  const stretchFor = (heavy) => (heavy ? titleStretch : bodyStretch);
+
+  const measureSpaced = (text, size, heavy = false) => {
+    setFont(size, heavy);
+    const letterGap = letterGapFor(size, heavy);
     const chars = Array.from(String(text ?? ''));
     if (!chars.length) return 0;
     let width = 0;
@@ -392,31 +401,31 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   };
 
   let fontSize = Math.floor(usable / (maxChars * 0.55));
-  while (measureSpaced('M'.repeat(maxChars), fontSize) > usable && fontSize > 20 * scale) {
+  while (measureSpaced('M'.repeat(maxChars), fontSize, false) > usable && fontSize > 20 * scale) {
     fontSize -= 1;
   }
-  while (measureSpaced('M'.repeat(maxChars), fontSize + 1) <= usable) {
+  while (measureSpaced('M'.repeat(maxChars), fontSize + 1, false) <= usable) {
     fontSize += 1;
   }
   fontSize = Math.max(fontSize, pageWidth === '80mm' ? 28 : 24);
 
   const lineSize = (line) => {
-    if (line.grand) return Math.round(fontSize * 1.65);
-    if (line.totalLabel) return Math.round(fontSize * 1.1);
-    if (line.title) return Math.round(fontSize * 1.12);
-    if (line.small) return Math.max(18, Math.round(fontSize * 0.86));
-    if (line.rule) return Math.max(18, Math.round(fontSize * 0.92));
+    if (line.grand) return Math.round(fontSize * 1.7);
+    if (line.totalLabel) return Math.round(fontSize * 1.12);
+    if (line.title) return Math.round(fontSize * 1.2);
+    if (line.small) return Math.max(18, Math.round(fontSize * 0.88));
+    if (line.rule) return fontSize;
     return fontSize;
   };
 
-  const chunkAtSize = (text, size) => {
+  const chunkAtSize = (text, size, heavy) => {
     const chars = Array.from(String(text ?? ''));
     if (!chars.length) return [''];
     const chunks = [];
     let current = '';
     chars.forEach((ch) => {
       const next = current + ch;
-      if (current && measureSpaced(next, size) > usable) {
+      if (current && measureSpaced(next, size, heavy) > usable) {
         chunks.push(current);
         current = ch;
       } else {
@@ -427,20 +436,23 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return chunks;
   };
 
-  /* Line box must fit stretched glyph height */
-  const lineHFor = (size) => Math.ceil(size * stretchY * 1.22);
+  const lineHFor = (size, heavy) => Math.ceil(size * stretchFor(heavy) * (heavy ? 1.18 : 1.28));
+  const ruleH = Math.ceil(fontSize * bodyStretch * 0.85);
 
-  let heightPx = padY * 2 + 12 * scale;
+  let heightPx = padY * 2 + 16 * scale;
   lines.forEach((line) => {
+    if (line.rule) {
+      heightPx += ruleH + 6 * scale;
+      return;
+    }
+    const heavy = isHeavy(line);
     const size = lineSize(line);
-    const lh = lineHFor(size);
+    const lh = lineHFor(size, heavy);
     if (line.columns) {
       heightPx += lh;
-    } else if (line.rule) {
-      heightPx += Math.ceil(lh * 0.72);
     } else {
-      heightPx += chunkAtSize(line.value, size).length * lh;
-      if (line.grand || line.title || line.totalLabel) heightPx += 8 * scale;
+      heightPx += chunkAtSize(line.value, size, heavy).length * lh;
+      if (heavy) heightPx += 6 * scale;
     }
   });
 
@@ -453,11 +465,26 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   ctx.strokeStyle = '#000000';
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
-  ctx.imageSmoothingEnabled = false;
+  ctx.imageSmoothingEnabled = true;
 
-  const drawSpacedText = (text, anchorX, y, size, align = 'left') => {
-    setFont(size);
-    const letterGap = letterGapFor(size);
+  const drawRuleLine = (y) => {
+    const mid = y + ruleH / 2;
+    ctx.save();
+    ctx.strokeStyle = '#000000';
+    ctx.lineWidth = Math.max(1.5, scale);
+    ctx.setLineDash([5 * scale, 4 * scale]);
+    ctx.beginPath();
+    ctx.moveTo(padX, mid);
+    ctx.lineTo(widthPx - padX, mid);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.restore();
+  };
+
+  const drawSpacedText = (text, anchorX, y, size, align = 'left', heavy = false) => {
+    setFont(size, heavy);
+    const letterGap = letterGapFor(size, heavy);
+    const stretch = stretchFor(heavy);
     const chars = Array.from(String(text ?? ''));
     const widths = chars.map((ch) => ctx.measureText(ch).width);
     const totalW = widths.reduce((sum, w, i) => sum + w + (i < widths.length - 1 ? letterGap : 0), 0);
@@ -468,15 +495,16 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     if (x < padX) x = padX;
     if (x + totalW > widthPx - padX) x = Math.max(padX, widthPx - padX - totalW);
 
-    /* Draw with vertical stretch for taller letterforms */
     ctx.save();
     ctx.translate(0, y);
-    ctx.scale(1, stretchY);
-    ctx.lineWidth = Math.max(1.5, size * 0.045);
-    ctx.lineJoin = 'round';
+    ctx.scale(1, stretch);
     let cursor = x;
     chars.forEach((ch, index) => {
-      ctx.strokeText(ch, cursor, 0);
+      if (heavy) {
+        ctx.lineWidth = Math.max(1.2, size * 0.035);
+        ctx.lineJoin = 'round';
+        ctx.strokeText(ch, cursor, 0);
+      }
       ctx.fillText(ch, cursor, 0);
       cursor += widths[index] + letterGap;
     });
@@ -485,19 +513,27 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
 
   let y = padY;
   lines.forEach((line) => {
+    if (line.rule) {
+      y += 3 * scale;
+      drawRuleLine(y);
+      y += ruleH + 3 * scale;
+      return;
+    }
+
+    const heavy = isHeavy(line);
     const size = lineSize(line);
-    const lh = lineHFor(size);
+    const lh = lineHFor(size, heavy);
 
     if (line.columns) {
       let right = line.columns.right;
       while (
-        measureSpaced(line.columns.left, size) + 12 * scale + measureSpaced(right, size) > usable
+        measureSpaced(line.columns.left, size, heavy) + 12 * scale + measureSpaced(right, size, heavy) > usable
         && right.length > 2
       ) {
         right = right.slice(0, -1);
       }
-      drawSpacedText(line.columns.left, padX, y, size, 'left');
-      drawSpacedText(right, widthPx - padX, y, size, 'right');
+      drawSpacedText(line.columns.left, padX, y, size, 'left', heavy);
+      drawSpacedText(right, widthPx - padX, y, size, 'right', heavy);
       y += lh;
     } else {
       const align = line.align === 'center' ? 'center' : line.align === 'right' ? 'right' : 'left';
@@ -506,12 +542,12 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
         : align === 'right'
           ? widthPx - padX
           : padX;
-      const chunks = chunkAtSize(line.value, size);
+      const chunks = chunkAtSize(line.value, size, heavy);
       chunks.forEach((chunk) => {
-        drawSpacedText(chunk, anchor, y, size, align);
-        y += line.rule ? Math.ceil(lh * 0.72) : lh;
+        drawSpacedText(chunk, anchor, y, size, align, heavy);
+        y += lh;
       });
-      if (line.grand || line.title || line.totalLabel) y += 6 * scale;
+      if (heavy) y += 4 * scale;
     }
   });
 
