@@ -261,16 +261,25 @@ function approximatePdfTextWidth(value, size) {
 }
 
 /** Shared receipt lines — tall glyphs, fewer cols so letters stay large. */
-function shortReceiptDate(order) {
-  if (!order?.created_at) return '-';
+function shortReceiptDateParts(order) {
+  if (!order?.created_at) return { date: '-', time: '-' };
   const d = new Date(order.created_at);
-  if (Number.isNaN(d.getTime())) return '-';
+  if (Number.isNaN(d.getTime())) return { date: '-', time: '-' };
   const dd = String(d.getDate()).padStart(2, '0');
   const mm = String(d.getMonth() + 1).padStart(2, '0');
   const yy = String(d.getFullYear()).slice(-2);
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
-  return `${dd}/${mm}/${yy} ${hh}:${mi}`;
+  return {
+    date: `${dd}/${mm}/${yy}`,
+    time: `${hh}:${mi}`,
+  };
+}
+
+function shortReceiptDate(order) {
+  const { date, time } = shortReceiptDateParts(order);
+  if (date === '-') return '-';
+  return `${date} ${time}`;
 }
 
 function buildReceiptLines(order, maxChars = 18) {
@@ -314,6 +323,8 @@ function buildReceiptLines(order, maxChars = 18) {
     });
   };
 
+  const { date: billDate, time: billTime } = shortReceiptDateParts(order);
+
   push('AS FIX & GEAR', { align: 'center', weight: 'bold', title: true });
   push('BILL', { align: 'center', weight: 'bold', title: true });
   wrap('Mobile Repair', { align: 'center', small: true });
@@ -321,10 +332,12 @@ function buildReceiptLines(order, maxChars = 18) {
   wrap(SHOP.phone, { align: 'center', small: true });
   rule();
   kv('Bill', receiptNumber(order));
-  kv('Date', shortReceiptDate(order));
+  /* Separate Date / Time so HH:mm never truncates (was showing 10:5) */
+  kv('Date', billDate);
+  kv('Time', billTime);
   kv('Staff', (order?.created_by_staff_name || 'Counter').slice(0, 10));
   kv('Pay', paymentLabel(order?.payment_mode));
-  kv('Cust', (order?.customer_name || 'Walk-in').slice(0, 10));
+  kv('Customer', (order?.customer_name || 'Walk-in').slice(0, 9));
   if (order?.phone) kv('Phone', String(order.phone).slice(0, 12));
   rule();
 
@@ -787,18 +800,11 @@ html, body {
   <hr class="r-rule" />
   <div class="r-meta">
     <span>Bill</span><span>${escapeHtml(receiptNumber(order))}</span>
-    <span>Date</span><span>${escapeHtml(order?.created_at ? (() => {
-      const d = new Date(order.created_at);
-      const dd = String(d.getDate()).padStart(2, '0');
-      const mm = String(d.getMonth() + 1).padStart(2, '0');
-      const yy = String(d.getFullYear()).slice(-2);
-      const hh = String(d.getHours()).padStart(2, '0');
-      const mi = String(d.getMinutes()).padStart(2, '0');
-      return `${dd}/${mm}/${yy} ${hh}:${mi}`;
-    })() : '-')}</span>
+    <span>Date</span><span>${escapeHtml(order?.created_at ? shortReceiptDateParts(order).date : '-')}</span>
+    <span>Time</span><span>${escapeHtml(order?.created_at ? shortReceiptDateParts(order).time : '-')}</span>
     <span>Staff</span><span>${escapeHtml((order?.created_by_staff_name || 'Counter').slice(0, 12))}</span>
     <span>Pay</span><span>${escapeHtml(paymentLabel(order?.payment_mode))}${paymentNote ? ` (${escapeHtml(paymentNote)})` : ''}</span>
-    <span>Cust</span><span>${escapeHtml((order?.customer_name || 'Walk-in').slice(0, 12))}</span>
+    <span>Customer</span><span>${escapeHtml((order?.customer_name || 'Walk-in').slice(0, 12))}</span>
     ${order?.phone ? `<span>Phone</span><span>${escapeHtml(String(order.phone).slice(0, 12))}</span>` : ''}
   </div>
   <hr class="r-rule" />
