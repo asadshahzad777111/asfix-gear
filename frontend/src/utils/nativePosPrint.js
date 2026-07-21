@@ -21,7 +21,14 @@ const AsfixThermalPrint = registerPlugin('AsfixThermalPrint');
 
 export function isNativePosApp() {
   try {
-    return typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform?.() === true;
+    if (typeof Capacitor !== 'undefined' && Capacitor.isNativePlatform?.() === true) {
+      return true;
+    }
+    /* Remote server.url WebView: bridge may only be on window.Capacitor */
+    if (typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.() === true) {
+      return true;
+    }
+    return false;
   } catch {
     return false;
   }

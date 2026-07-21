@@ -1326,6 +1326,7 @@ export default function AdminCounterBill({
       setFeedback({ type: 'success', text: t('admin.counterBillNativePrinted') });
     } else if (result.reason === 'no_printer') {
       setFeedback({ type: 'error', text: t('admin.counterBillNativeNoPrinter') });
+      void refreshNativePrinters();
     } else if (result.reason === 'permission_denied') {
       setFeedback({ type: 'error', text: t('admin.counterBillNativeBtPermission') });
     } else if (result.reason === 'print_failed') {
@@ -1334,7 +1335,7 @@ export default function AdminCounterBill({
         text: result.message || t('admin.counterBillNativePrintFailed'),
       });
     }
-  }, [nativePos, t]);
+  }, [nativePos, t, refreshNativePrinters]);
 
   const applyPrintFeedback = useCallback((result) => {
     const normalized = normalizePrintResult(result);
@@ -1360,6 +1361,7 @@ export default function AdminCounterBill({
     }
     if (normalized.reason === 'no_printer') {
       setFeedback({ type: 'error', text: t('admin.counterBillNativeNoPrinter') });
+      void refreshNativePrinters();
       return;
     }
     if (normalized.reason === 'permission_denied') {
@@ -1370,7 +1372,7 @@ export default function AdminCounterBill({
       type: 'error',
       text: normalized.message || t('admin.counterBillNativePrintFailed'),
     });
-  }, [nativePos, t]);
+  }, [nativePos, t, refreshNativePrinters]);
 
   const availableProducts = useMemo(() => {
     return products
@@ -2029,7 +2031,7 @@ export default function AdminCounterBill({
           </div>
 
           {nativePos ? (
-            <div className="counter-bill__thermal-setting counter-bill__thermal-setting--native">
+            <div className="counter-bill__thermal-setting counter-bill__thermal-setting--native counter-bill__thermal-setting--native-sticky">
               <span>{t('admin.counterBillNativePrinter')}</span>
               <div className="counter-bill__native-printer">
                 <p className="counter-bill__native-printer-status">
@@ -2337,7 +2339,11 @@ export default function AdminCounterBill({
               {receiptOrder ? (
                 <>
                   <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
-                    {showMateThermalLink ? t('admin.counterBillPrintMate') : t('admin.counterBillPrintNow')}
+                    {nativePos
+                      ? t('admin.counterBillPrintNative')
+                      : showMateThermalLink
+                        ? t('admin.counterBillPrintMate')
+                        : t('admin.counterBillPrintNow')}
                   </button>
                   <button type="button" className="wp-button counter-bill__pdf-cta" onClick={() => downloadInvoice()}>
                     {t('admin.counterBillDownloadPdf')}
@@ -2358,7 +2364,11 @@ export default function AdminCounterBill({
             <strong>{t('admin.counterBillSavedReady')}</strong>
             <div className="counter-bill__receipt-actions">
               <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
-                {showMateThermalLink ? t('admin.counterBillPrintMate') : t('admin.counterBillPrintNow')}
+                {nativePos
+                  ? t('admin.counterBillPrintNative')
+                  : showMateThermalLink
+                    ? t('admin.counterBillPrintMate')
+                    : t('admin.counterBillPrintNow')}
               </button>
               <button type="button" className="wp-button counter-bill__pdf-cta" onClick={() => downloadInvoice()}>
                 {t('admin.counterBillDownloadPdf')}

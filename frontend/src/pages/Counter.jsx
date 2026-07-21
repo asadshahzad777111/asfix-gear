@@ -9,6 +9,13 @@ import AdminCounterBill, {
 import { SHOP } from '../config/shop';
 import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
+import {
+  clearSavedPrinter,
+  getSavedPrinter,
+  isNativePosApp,
+  listBondedPrinters,
+  savePrinter,
+} from '../utils/nativePosPrint';
 import '../components/admin/admin-wp.css';
 import '../components/admin/admin-counter-bill.css';
 
@@ -44,10 +51,58 @@ export default function Counter() {
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const [bootstrapping, setBootstrapping] = useState(true);
   const [salesOpen, setSalesOpen] = useState(false);
+  const nativePos = isNativePosApp();
+  const [nativePrinter, setNativePrinter] = useState(null);
+  const [nativePrinters, setNativePrinters] = useState([]);
+  const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
+  const [nativePickerOpen, setNativePickerOpen] = useState(false);
   const printInFlightRef = useRef(false);
   const salesSectionRef = useRef(null);
+  const printerBarRef = useRef(null);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
+
+  useEffect(() => {
+    if (!nativePos) return undefined;
+    let cancelled = false;
+    (async () => {
+      const saved = await getSavedPrinter();
+      if (!cancelled) setNativePrinter(saved);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [nativePos]);
+
+  const openNativePrinterPicker = useCallback(async () => {
+    if (!nativePos) return;
+    setNativePickerOpen(true);
+    printerBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setNativePrinterBusy(true);
+    try {
+      const list = await listBondedPrinters();
+      setNativePrinters(list);
+      const saved = await getSavedPrinter();
+      setNativePrinter(saved);
+    } catch (err) {
+      window.alert?.(err?.message || t('admin.counterBillNativePrintFailed'));
+    } finally {
+      setNativePrinterBusy(false);
+    }
+  }, [nativePos, t]);
+
+  const selectNativePrinter = useCallback(async (printer) => {
+    await savePrinter(printer);
+    setNativePrinter(printer);
+    setNativePickerOpen(false);
+  }, []);
+
+  const clearNativePrinter = useCallback(async () => {
+    await clearSavedPrinter();
+    setNativePrinter(null);
+    setNativePrinters([]);
+    setNativePickerOpen(false);
+  }, []);
 
   const loadCounterData = async ({ silent = false } = {}) => {
     // Never tear down the bill UI after first paint — silent refresh only.
@@ -282,6 +337,68 @@ export default function Counter() {
           </div>
         </div>
 
+        {nativePos ? (
+          <div className="counter-bt-printer-bar" ref={printerBarRef}>
+            <div className="counter-bt-printer-bar__main">
+              <div className="counter-bt-printer-bar__info">
+                <strong>{t('admin.counterBillNativePrinter')}</strong>
+                <span>
+                  {nativePrinter
+                    ? `${nativePrinter.name || 'Printer'}${nativePrinter.address ? ` · ${nativePrinter.address}` : ''}`
+                    : t('admin.counterBillNativeNoPrinter')}
+                </span>
+                <small>{t('admin.counterBillNativePairHint')}</small>
+              </div>
+              <div className="counter-bt-printer-bar__actions">
+                <button
+                  type="button"
+                  className="wp-button counter-bt-printer-bar__select"
+                  disabled={nativePrinterBusy}
+                  onClick={() => void openNativePrinterPicker()}
+                >
+                  {nativePrinterBusy ? t('common.loading') : t('admin.counterBillNativeRefresh')}
+                </button>
+                {nativePrinter ? (
+                  <button
+                    type="button"
+                    className="wp-button wp-button--secondary"
+                    onClick={() => void clearNativePrinter()}
+                  >
+                    {t('admin.counterBillNativeClear')}
+                  </button>
+                ) : null}
+              </div>
+            </div>
+            {nativePickerOpen ? (
+              <div className="counter-bt-printer-bar__picker">
+                {nativePrinterBusy ? (
+                  <p className="field-hint">{t('common.loading')}</p>
+                ) : nativePrinters.length === 0 ? (
+                  <p className="field-hint">{t('admin.counterBillNativePairHint')}</p>
+                ) : (
+                  <ul className="counter-bt-printer-bar__list">
+                    {nativePrinters.map((printer) => (
+                      <li key={printer.address}>
+                        <button
+                          type="button"
+                          className={
+                            nativePrinter?.address === printer.address
+                              ? 'counter-bt-printer-bar__device counter-bt-printer-bar__device--active'
+                              : 'counter-bt-printer-bar__device'
+                          }
+                          onClick={() => void selectNativePrinter(printer)}
+                        >
+                          {printer.name || printer.address}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
         {bootstrapping && products.length === 0 ? (
           <div className="counter-boot">{t('common.loading')}</div>
         ) : null}
@@ -343,17 +460,24 @@ export default function Counter() {
                                 const result = await printCounterSale(sale);
                                 if (!result?.ok) {
                                   if (result?.reason === 'cancelled' || result?.reason === 'busy') return;
+                                  if (result?.reason === 'no_printer') {
+                                    window.alert?.(t('admin.counterBillNativeNoPrinter'));
+                                    void openNativePrinterPicker();
+                                    return;
+                                  }
                                   const msg =
-                                    result?.reason === 'no_printer'
-                                      ? t('admin.counterBillNativeNoPrinter')
-                                      : result?.reason === 'permission_denied'
-                                        ? t('admin.counterBillNativeBtPermission')
-                                        : result?.message || t('admin.counterBillNativePrintFailed');
+                                    result?.reason === 'permission_denied'
+                                      ? t('admin.counterBillNativeBtPermission')
+                                      : result?.message || t('admin.counterBillNativePrintFailed');
                                   window.alert?.(msg);
                                 }
                               }}
                             >
-                              {isAndroid ? t('admin.counterBillPrintMate') : t('admin.counterBillPrintNow')}
+                              {nativePos
+                                ? t('admin.counterBillPrintNative')
+                                : isAndroid
+                                  ? t('admin.counterBillPrintMate')
+                                  : t('admin.counterBillPrintNow')}
                             </button>
                             <button
                               type="button"
