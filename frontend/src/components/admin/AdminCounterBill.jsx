@@ -186,7 +186,7 @@ function thermalAmountText(amount) {
 function buildThermalReceiptText(order) {
   if (!order) return '';
   /* Fewer chars/line → larger glyphs on paper (sample AS FIX bill size) */
-  return `${buildReceiptLines(order, 20).map((line) => line.value).join('\n')}\n\n`;
+  return `${buildReceiptLines(order, 18).map((line) => line.value).join('\n')}\n\n`;
 }
 
 /** Mate Technologies "Bluetooth Thermal Printer" (Thermer) — package mate.bluetoothprint */
@@ -249,7 +249,7 @@ function approximatePdfTextWidth(value, size) {
   return String(value ?? '').length * size * 0.56;
 }
 
-/** Shared receipt lines — locked LARGE size (sample Mate Image preview). Height may grow. */
+/** Shared receipt lines — tall glyphs, fewer cols so letters stay large. */
 function shortReceiptDate(order) {
   if (!order?.created_at) return '-';
   const d = new Date(order.created_at);
@@ -262,7 +262,7 @@ function shortReceiptDate(order) {
   return `${dd}/${mm}/${yy} ${hh}:${mi}`;
 }
 
-function buildReceiptLines(order, maxChars = 20) {
+function buildReceiptLines(order, maxChars = 18) {
   const { subtotal, discount, grandTotal } = receiptTotals(order);
   const rows = order?.items || [];
   const lines = [];
@@ -311,9 +311,9 @@ function buildReceiptLines(order, maxChars = 20) {
   rule();
   kv('Bill', receiptNumber(order));
   kv('Date', shortReceiptDate(order));
-  kv('Staff', (order?.created_by_staff_name || 'Counter').slice(0, 12));
+  kv('Staff', (order?.created_by_staff_name || 'Counter').slice(0, 10));
   kv('Pay', paymentLabel(order?.payment_mode));
-  kv('Cust', (order?.customer_name || 'Walk-in').slice(0, 12));
+  kv('Cust', (order?.customer_name || 'Walk-in').slice(0, 10));
   if (order?.phone) kv('Phone', String(order.phone).slice(0, 12));
   rule();
 
@@ -350,16 +350,20 @@ function buildReceiptLines(order, maxChars = 20) {
 }
 
 /**
- * Locked LARGE thermal PNG (Mate Image sample size).
- * Width = printer dots (384/576). Height grows as needed — never shrink body font.
+ * Tall thermal PNG — stretched glyph height + 2× pixels so letters look longer/clearer.
+ * Slip may grow long; body size stays locked (no global shrink).
  */
 export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
-  /* Exact BT800S / 80mm dot width — Mate prints 1:1, text stays sample-large */
-  const widthPx = pageWidth === '80mm' ? 576 : 384;
-  const maxChars = pageWidth === '80mm' ? 28 : 20;
-  const padX = Math.round(widthPx * 0.06);
-  const padY = 14;
+  const printerDots = pageWidth === '80mm' ? 576 : 384;
+  /* 2× source pixels → fewer jagged “pixels” after Mate scales to printer */
+  const scale = 2;
+  const widthPx = printerDots * scale;
+  const maxChars = pageWidth === '80mm' ? 26 : 18;
+  const padX = Math.round(widthPx * 0.07);
+  const padY = 16 * scale;
+  /* Vertical stretch = taller letters (user: likhai height / lambai zada) */
+  const stretchY = 1.48;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
   const ctx = canvas.getContext('2d');
@@ -372,7 +376,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     ctx.font = `bold ${size}px ${fontStack}`;
   };
 
-  const letterGapFor = (size) => Math.max(1, Math.round(size * 0.08));
+  const letterGapFor = (size) => Math.max(2 * scale, Math.round(size * 0.14));
 
   const measureSpaced = (text, size) => {
     setFont(size);
@@ -387,31 +391,24 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return width;
   };
 
-  /*
-   * LOCK body size to fill ~maxChars across the paper.
-   * Never shrink this for long content — wrap/extra height instead.
-   */
-  let fontSize = Math.floor(usable / (maxChars * 0.58));
-  while (measureSpaced('M'.repeat(maxChars), fontSize) > usable && fontSize > 16) {
+  let fontSize = Math.floor(usable / (maxChars * 0.55));
+  while (measureSpaced('M'.repeat(maxChars), fontSize) > usable && fontSize > 20 * scale) {
     fontSize -= 1;
   }
   while (measureSpaced('M'.repeat(maxChars), fontSize + 1) <= usable) {
     fontSize += 1;
   }
-  /* Hard floor — must stay near sample Mate preview size */
-  const lockedBody = Math.max(fontSize, pageWidth === '80mm' ? 22 : 18);
-  fontSize = lockedBody;
+  fontSize = Math.max(fontSize, pageWidth === '80mm' ? 28 : 24);
 
   const lineSize = (line) => {
-    if (line.grand) return Math.round(fontSize * 1.75);
-    if (line.totalLabel) return Math.round(fontSize * 1.12);
-    if (line.title) return Math.round(fontSize * 1.15);
-    if (line.small) return Math.max(15, Math.round(fontSize * 0.88));
-    if (line.rule) return Math.max(15, Math.round(fontSize * 0.95));
+    if (line.grand) return Math.round(fontSize * 1.65);
+    if (line.totalLabel) return Math.round(fontSize * 1.1);
+    if (line.title) return Math.round(fontSize * 1.12);
+    if (line.small) return Math.max(18, Math.round(fontSize * 0.86));
+    if (line.rule) return Math.max(18, Math.round(fontSize * 0.92));
     return fontSize;
   };
 
-  /** Split text into chunks that fit at FULL size — grow height, don't shrink glyphs. */
   const chunkAtSize = (text, size) => {
     const chars = Array.from(String(text ?? ''));
     if (!chars.length) return [''];
@@ -430,20 +427,20 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return chunks;
   };
 
-  const lineHFor = (size) => Math.ceil(size * 1.9);
+  /* Line box must fit stretched glyph height */
+  const lineHFor = (size) => Math.ceil(size * stretchY * 1.22);
 
-  let heightPx = padY * 2 + 8;
+  let heightPx = padY * 2 + 12 * scale;
   lines.forEach((line) => {
     const size = lineSize(line);
     const lh = lineHFor(size);
     if (line.columns) {
       heightPx += lh;
     } else if (line.rule) {
-      heightPx += Math.ceil(lh * 0.75);
+      heightPx += Math.ceil(lh * 0.72);
     } else {
-      const chunks = chunkAtSize(line.value, size);
-      heightPx += chunks.length * lh;
-      if (line.grand || line.title || line.totalLabel) heightPx += 6;
+      heightPx += chunkAtSize(line.value, size).length * lh;
+      if (line.grand || line.title || line.totalLabel) heightPx += 8 * scale;
     }
   });
 
@@ -471,15 +468,19 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     if (x < padX) x = padX;
     if (x + totalW > widthPx - padX) x = Math.max(padX, widthPx - padX - totalW);
 
-    ctx.lineWidth = size >= fontSize * 1.4 ? 2.5 : 1.75;
+    /* Draw with vertical stretch for taller letterforms */
+    ctx.save();
+    ctx.translate(0, y);
+    ctx.scale(1, stretchY);
+    ctx.lineWidth = Math.max(1.5, size * 0.045);
     ctx.lineJoin = 'round';
-
     let cursor = x;
     chars.forEach((ch, index) => {
-      ctx.strokeText(ch, cursor, y);
-      ctx.fillText(ch, cursor, y);
+      ctx.strokeText(ch, cursor, 0);
+      ctx.fillText(ch, cursor, 0);
       cursor += widths[index] + letterGap;
     });
+    ctx.restore();
   };
 
   let y = padY;
@@ -488,10 +489,9 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     const lh = lineHFor(size);
 
     if (line.columns) {
-      /* Keep both columns at locked body size — truncate right if needed */
       let right = line.columns.right;
       while (
-        measureSpaced(line.columns.left, size) + 10 + measureSpaced(right, size) > usable
+        measureSpaced(line.columns.left, size) + 12 * scale + measureSpaced(right, size) > usable
         && right.length > 2
       ) {
         right = right.slice(0, -1);
@@ -509,9 +509,9 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       const chunks = chunkAtSize(line.value, size);
       chunks.forEach((chunk) => {
         drawSpacedText(chunk, anchor, y, size, align);
-        y += line.rule ? Math.ceil(lh * 0.75) : lh;
+        y += line.rule ? Math.ceil(lh * 0.72) : lh;
       });
-      if (line.grand || line.title || line.totalLabel) y += 4;
+      if (line.grand || line.title || line.totalLabel) y += 6 * scale;
     }
   });
 
@@ -532,9 +532,9 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const marginX = pdfPointsFromMillimeters(0.8);
   const marginTop = pdfPointsFromMillimeters(1.2);
   const marginBottom = pdfPointsFromMillimeters(1.2);
-  const maxChars = pageWidth === '80mm' ? 28 : 20;
-  const bodySize = pageWidth === '80mm' ? 12 : 11;
-  const bodyLeading = pageWidth === '80mm' ? 16 : 15;
+  const maxChars = pageWidth === '80mm' ? 26 : 18;
+  const bodySize = pageWidth === '80mm' ? 13 : 12;
+  const bodyLeading = pageWidth === '80mm' ? 18 : 17;
   const receiptLines = buildReceiptLines(order, maxChars).map((line) => ({
     value: line.value,
     size: line.grand
