@@ -14,6 +14,7 @@ import {
   savePrinter,
   tryNativeThermalPrint,
 } from '../../utils/nativePosPrint';
+import { useSmartThermalPrint } from '../../hooks/useSmartThermalPrint';
 import './admin-counter-bill.css';
 
 const COUNTER_BILL_DRAFT_KEY = 'asfix_counter_bill_draft_v1';
@@ -207,6 +208,68 @@ export function buildThermalReceiptText(order) {
   if (!order) return '';
   /* Fewer chars/line → larger glyphs on paper (sample AS FIX bill size) */
   return `${buildReceiptLines(order, 18).map((line) => line.value).join('\n')}\n\n`;
+}
+
+function bytesToBase64(bytes) {
+  let binary = '';
+  const chunk = 0x8000;
+  for (let i = 0; i < bytes.length; i += chunk) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
+/**
+ * Full-width ESC/POS receipt for the native AsFix app and remote stations.
+ * Uses the printer's QR command, so the installed APK does not need rebuilding.
+ */
+export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
+  if (!order || typeof TextEncoder === 'undefined' || typeof btoa !== 'function') return '';
+  const width = normalizeThermalWidth(thermalWidth);
+  const maxChars = width === '80mm' ? 48 : 32;
+  const lines = buildReceiptLines(order, maxChars);
+  const encoder = new TextEncoder();
+  const parts = [];
+  const push = (...values) => parts.push(Uint8Array.from(values));
+  const text = (value) => parts.push(encoder.encode(String(value ?? '')));
+
+  push(0x1b, 0x40); // ESC @
+  for (const line of lines) {
+    if (line.qr) {
+      const qr = encoder.encode(line.value || RECEIPT_SITE_URL);
+      const storeLength = qr.length + 3;
+      push(0x1b, 0x61, 0x01); // center
+      push(0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00); // model 2
+      push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, width === '80mm' ? 7 : 6);
+      push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x31); // error M
+      push(0x1d, 0x28, 0x6b, storeLength & 0xff, (storeLength >> 8) & 0xff, 0x31, 0x50, 0x30);
+      parts.push(qr);
+      push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30);
+      push(0x0a);
+      continue;
+    }
+
+    push(0x1b, 0x61, line.align === 'center' ? 0x01 : line.align === 'right' ? 0x02 : 0x00);
+    push(0x1b, 0x45, line.weight === 'bold' ? 0x01 : 0x00);
+    push(0x1b, 0x4d, line.small ? 0x01 : 0x00);
+    push(0x1d, 0x21, line.title ? 0x11 : line.grand ? 0x10 : 0x00);
+    text(line.value);
+    push(0x0a);
+    push(0x1d, 0x21, 0x00);
+    push(0x1b, 0x4d, 0x00);
+  }
+  push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00);
+  push(0x0a, 0x0a, 0x0a);
+  push(0x1d, 0x56, 0x01);
+
+  const size = parts.reduce((sum, part) => sum + part.length, 0);
+  const payload = new Uint8Array(size);
+  let offset = 0;
+  for (const part of parts) {
+    payload.set(part, offset);
+    offset += part.length;
+  }
+  return bytesToBase64(payload);
 }
 
 /**
@@ -1027,7 +1090,8 @@ export async function printActiveCounterReceipt({
     /* Native AsFix POS app: Bluetooth SPP ESC/POS — replaces Thermer happy path */
     if (isNativePosApp()) {
       const text = buildThermalReceiptText(order);
-      const native = await tryNativeThermalPrint(text);
+      const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
+      const native = await tryNativeThermalPrint(text, { dataBase64 });
       finishPrintJob(inFlightRef);
       /* Always return structured result so UI can show Select printer / BT errors */
       return native?.ok
@@ -1247,6 +1311,10 @@ export default function AdminCounterBill({
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const nativePos = isNativePosApp();
   const [nativePrinter, setNativePrinter] = useState(null);
+  const { printSmart, chooser: printChooser } = useSmartThermalPrint({
+    thermalWidth,
+    agentReady: !nativePos || Boolean(nativePrinter?.address),
+  });
   const [nativePrinters, setNativePrinters] = useState([]);
   const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
   const [query, setQuery] = useState('');
@@ -1321,7 +1389,8 @@ export default function AdminCounterBill({
     if (!orderKey || autoPrintedOrderRef.current === orderKey) return;
     autoPrintedOrderRef.current = orderKey;
     const text = buildThermalReceiptText(order);
-    const result = await autoPrintCounterReceiptIfNative(text);
+    const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
+    const result = await autoPrintCounterReceiptIfNative(text, { dataBase64 });
     if (result.ok) {
       setFeedback({ type: 'success', text: t('admin.counterBillNativePrinted') });
     } else if (result.reason === 'no_printer') {
@@ -1335,14 +1404,18 @@ export default function AdminCounterBill({
         text: result.message || t('admin.counterBillNativePrintFailed'),
       });
     }
-  }, [nativePos, t, refreshNativePrinters]);
+  }, [nativePos, t, refreshNativePrinters, thermalWidth]);
 
   const applyPrintFeedback = useCallback((result) => {
     const normalized = normalizePrintResult(result);
     if (normalized.ok) {
       setFeedback({
         type: 'success',
-        text: nativePos ? t('admin.counterBillNativePrinted') : t('admin.counterBillPrintStarted'),
+        text: normalized.job
+          ? t('admin.printTargetQueued')
+          : nativePos
+            ? t('admin.counterBillNativePrinted')
+            : t('admin.counterBillPrintStarted'),
       });
       return;
     }
@@ -1357,6 +1430,10 @@ export default function AdminCounterBill({
         type: 'error',
         text: normalized.message || t('admin.counterBillNoReceipt'),
       });
+      return;
+    }
+    if (normalized.reason === 'no_station') {
+      setFeedback({ type: 'error', text: t('admin.printTargetNoStation') });
       return;
     }
     if (normalized.reason === 'no_printer') {
@@ -1743,10 +1820,9 @@ export default function AdminCounterBill({
         /* Counter page resolves items then prints — must return print result for feedback */
         result = await onPrintOrder(order);
       } else {
-        result = await printActiveCounterReceipt({
+        result = await printSmart(order, {
           thermalWidth,
           inFlightRef: printInFlightRef,
-          order,
         });
       }
       applyPrintFeedback(result);
@@ -1756,7 +1832,7 @@ export default function AdminCounterBill({
         text: err?.message || t('admin.counterBillNativePrintFailed'),
       });
     }
-  }, [applyPrintFeedback, onPrintOrder, receiptOrder, t, thermalWidth]);
+  }, [applyPrintFeedback, onPrintOrder, printSmart, receiptOrder, t, thermalWidth]);
 
   /* No auto-print — confirm + Print was firing multiple thermal jobs (3–4 slips). */
   const confirmBill = async () => {
@@ -2387,6 +2463,7 @@ export default function AdminCounterBill({
           <CounterBillReceipt order={receiptOrder} printable={!onPrintOrder} thermalWidth={thermalWidth} />
         </section>
       ) : null}
+      {!onPrintOrder ? printChooser : null}
     </div>
   );
 }

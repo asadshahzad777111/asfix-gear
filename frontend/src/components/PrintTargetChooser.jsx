@@ -1,0 +1,149 @@
+import { useEffect, useState } from 'react';
+import { useTranslation } from '../context/LanguageContext';
+import {
+  defaultPrintTarget,
+  fetchPrintStations,
+  isAppleMobileDevice,
+  writePrintTarget,
+} from '../utils/remoteThermalPrint';
+import './print-target-chooser.css';
+
+/**
+ * Modal to pick local vs remote thermal print station.
+ */
+export default function PrintTargetChooser({
+  open,
+  onClose,
+  onSelect,
+  busy = false,
+  initialTarget = null,
+}) {
+  const { t } = useTranslation();
+  const [target, setTarget] = useState(() => initialTarget || defaultPrintTarget());
+  const [stations, setStations] = useState({
+    android: { online: false },
+    laptop: { online: false },
+  });
+  const [loadingStations, setLoadingStations] = useState(false);
+  const ios = isAppleMobileDevice();
+
+  useEffect(() => {
+    if (!open) return undefined;
+    setTarget(initialTarget || defaultPrintTarget());
+    let cancelled = false;
+    setLoadingStations(true);
+    (async () => {
+      const next = await fetchPrintStations();
+      if (!cancelled) {
+        setStations(next);
+        setLoadingStations(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, initialTarget]);
+
+  if (!open) return null;
+
+  const androidOnline = Boolean(stations?.android?.online);
+  const laptopOnline = Boolean(stations?.laptop?.online);
+  const anyOnline = androidOnline || laptopOnline;
+
+  const options = [
+    {
+      id: 'local',
+      title: ios ? t('admin.printTargetIos') : t('admin.printTargetLocal'),
+      hint: ios ? t('admin.printTargetLocalIosHint') : t('admin.printTargetLocalHint'),
+      online: true,
+      highlight: !ios,
+    },
+    {
+      id: 'android',
+      title: t('admin.printTargetAndroid'),
+      hint: t('admin.printTargetAndroidHint'),
+      online: androidOnline,
+      highlight: ios,
+    },
+    {
+      id: 'laptop',
+      title: t('admin.printTargetLaptop'),
+      hint: t('admin.printTargetLaptopHint'),
+      online: laptopOnline,
+      highlight: false,
+    },
+    {
+      id: 'any',
+      title: t('admin.printTargetAny'),
+      hint: t('admin.printTargetAnyHint'),
+      online: anyOnline,
+      highlight: ios,
+    },
+  ];
+
+  const confirm = () => {
+    writePrintTarget(target);
+    onSelect?.(target, { stations });
+  };
+
+  return (
+    <div className="print-target-chooser" role="dialog" aria-modal="true" aria-label={t('admin.printTargetTitle')}>
+      <button type="button" className="print-target-chooser__backdrop" aria-label={t('admin.printTargetCancel')} onClick={onClose} />
+      <div className="print-target-chooser__card glass-card">
+        <div className="print-target-chooser__head">
+          <h3>{t('admin.printTargetTitle')}</h3>
+          <p>{t('admin.printTargetSub')}</p>
+        </div>
+
+        <div className="print-target-chooser__options" role="radiogroup" aria-label={t('admin.printTargetTitle')}>
+          {options.map((opt) => (
+            <label
+              key={opt.id}
+              className={[
+                'print-target-chooser__option',
+                target === opt.id ? 'is-selected' : '',
+                opt.highlight ? 'is-preferred' : '',
+                opt.id !== 'local' && !opt.online ? 'is-offline' : '',
+              ].filter(Boolean).join(' ')}
+            >
+              <input
+                type="radio"
+                name="asfix-print-target"
+                value={opt.id}
+                checked={target === opt.id}
+                onChange={() => setTarget(opt.id)}
+                disabled={busy}
+              />
+              <span className="print-target-chooser__option-body">
+                <strong>{opt.title}</strong>
+                <span>{opt.hint}</span>
+                {opt.id !== 'local' ? (
+                  <em className={opt.online ? 'is-on' : 'is-off'}>
+                    {loadingStations
+                      ? t('admin.printTargetChecking')
+                      : opt.online
+                        ? t('admin.printTargetOnline')
+                        : t('admin.printTargetOffline')}
+                  </em>
+                ) : null}
+              </span>
+            </label>
+          ))}
+        </div>
+
+        {!anyOnline ? (
+          <p className="print-target-chooser__warn">{t('admin.printTargetNoStation')}</p>
+        ) : null}
+
+        <div className="print-target-chooser__foot">
+          <button type="button" className="btn btn-ghost" onClick={onClose} disabled={busy}>
+            {t('admin.printTargetCancel')}
+          </button>
+          <button type="button" className="btn btn-primary" onClick={confirm} disabled={busy}>
+            {busy ? t('admin.printTargetSending') : t('admin.printTargetConfirm')}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}

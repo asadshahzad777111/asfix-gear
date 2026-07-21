@@ -626,6 +626,29 @@ export const api = {
       body: JSON.stringify(body),
       timeoutMs: COLD_START_TIMEOUT_MS,
     }),
+
+  createPrintJob: (body) =>
+    request('/print-jobs', { method: 'POST', body: JSON.stringify(body) }),
+  getPendingPrintJobs: (params = {}) => {
+    const query = new URLSearchParams();
+    if (params.station) query.set('station', params.station);
+    const qs = query.toString();
+    return request(`/print-jobs/pending${qs ? `?${qs}` : ''}`);
+  },
+  getPrintStations: () => request('/print-jobs/stations'),
+  printJobHeartbeat: (body) =>
+    request('/print-jobs/heartbeat', { method: 'POST', body: JSON.stringify(body) }),
+  claimPrintJob: (id, body) =>
+    request(`/print-jobs/${encodeURIComponent(id)}/claim`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  completePrintJob: (id, body) =>
+    request(`/print-jobs/${encodeURIComponent(id)}/complete`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  getPrintJob: (id) => request(`/print-jobs/${encodeURIComponent(id)}`),
 };
 
 export function formatPrice(amount) {

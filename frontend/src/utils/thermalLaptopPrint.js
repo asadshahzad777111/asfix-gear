@@ -116,6 +116,27 @@ export async function printViaThermalBridge(text) {
   }
 }
 
+export async function printEscPosViaThermalBridge(dataBase64) {
+  const health = await probeThermalBridge();
+  if (!health?.ok || !health?.ready || !health?.com) {
+    return { ok: false, reason: 'bridge_unavailable' };
+  }
+  try {
+    const res = await fetch(`${BRIDGE_URL}/print`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ data_base64: String(dataBase64 || '') }),
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok || !data?.ok) {
+      return { ok: false, reason: data?.error || 'bridge_print_failed', message: data?.message };
+    }
+    return { ok: true, via: 'bridge', com: data.com };
+  } catch {
+    return { ok: false, reason: 'bridge_error' };
+  }
+}
+
 function canUseWebBluetooth() {
   return typeof navigator !== 'undefined'
     && typeof navigator.bluetooth?.requestDevice === 'function'

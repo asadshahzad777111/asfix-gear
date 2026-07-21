@@ -20,6 +20,7 @@ export const DEFAULT_DATA = {
     nextRepairMessageId: 1,
     nextAuditId: 1,
     nextCounterDraftId: 1,
+    nextPrintJobId: 1,
   },
   users: [],
   sessions: [],
@@ -32,6 +33,7 @@ export const DEFAULT_DATA = {
   contact_messages: [],
   orders: [],
   counter_drafts: [],
+  print_jobs: [],
   audit_logs: [],
   verification_codes: [],
   settings: {
@@ -78,6 +80,7 @@ export function migrateData(data) {
   data.contact_messages = data.contact_messages || [];
   data.orders = data.orders || [];
   data.counter_drafts = Array.isArray(data.counter_drafts) ? data.counter_drafts : [];
+  data.print_jobs = Array.isArray(data.print_jobs) ? data.print_jobs : [];
   data.audit_logs = Array.isArray(data.audit_logs) ? data.audit_logs : [];
   data.verification_codes = data.verification_codes || [];
   data.settings = data.settings || {};
@@ -107,6 +110,10 @@ export function migrateData(data) {
   if (!data.meta.nextCounterDraftId) {
     const maxDraftId = data.counter_drafts.reduce((max, draft) => Math.max(max, Number(draft.id) || 0), 0);
     data.meta.nextCounterDraftId = maxDraftId + 1;
+  }
+  if (!data.meta.nextPrintJobId) {
+    const maxPrintId = data.print_jobs.reduce((max, job) => Math.max(max, Number(job.id) || 0), 0);
+    data.meta.nextPrintJobId = maxPrintId + 1;
   }
 
   if (!Array.isArray(data.settings.product_categories)) {

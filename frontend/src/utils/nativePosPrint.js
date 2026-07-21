@@ -139,12 +139,51 @@ export async function nativePrintText(text, opts = {}) {
 }
 
 /**
- * Prefer native SPP print when running inside AsFix POS app.
- * @param {string} receiptText
+ * Connect + send pre-built ESC/POS bytes. This preserves receipt alignment,
+ * sizing and QR commands instead of reducing the receipt to plain text.
+ * @param {string} dataBase64
+ * @param {{ address?: string }} [opts]
  * @returns {Promise<NativePrintResult>}
  */
-export async function tryNativeThermalPrint(receiptText) {
+export async function nativePrintEscPos(dataBase64, opts = {}) {
   if (!isNativePosApp()) return { ok: false, reason: 'not_native' };
+  const saved = await getSavedPrinter();
+  const address = opts.address || saved?.address;
+  if (!address) return { ok: false, reason: 'no_printer' };
+  if (!dataBase64) return { ok: false, reason: 'empty' };
+
+  try {
+    await requestThermalPrintPermissions();
+  } catch (err) {
+    return {
+      ok: false,
+      reason: err?.reason || 'permission_denied',
+      message: toErrorMessage(err, 'Bluetooth permission denied'),
+    };
+  }
+
+  try {
+    await AsfixThermalPrint.connect({ address });
+    await AsfixThermalPrint.printEscPos({ dataBase64, address });
+    return { ok: true };
+  } catch (err) {
+    return {
+      ok: false,
+      reason: 'print_failed',
+      message: toErrorMessage(err, 'Bluetooth print failed'),
+    };
+  }
+}
+
+/**
+ * Prefer native SPP print when running inside AsFix POS app.
+ * @param {string} receiptText
+ * @param {{ dataBase64?: string }} [opts]
+ * @returns {Promise<NativePrintResult>}
+ */
+export async function tryNativeThermalPrint(receiptText, opts = {}) {
+  if (!isNativePosApp()) return { ok: false, reason: 'not_native' };
+  if (opts.dataBase64) return nativePrintEscPos(opts.dataBase64);
   return nativePrintText(receiptText);
 }
 
@@ -153,9 +192,12 @@ export async function tryNativeThermalPrint(receiptText) {
  * Uses last-selected bonded printer from Preferences.
  * @returns {Promise<NativePrintResult>}
  */
-export async function autoPrintCounterReceiptIfNative(receiptText) {
+export async function autoPrintCounterReceiptIfNative(receiptText, opts = {}) {
   if (!isNativePosApp()) return { ok: false, reason: 'not_native' };
   const saved = await getSavedPrinter();
   if (!saved?.address) return { ok: false, reason: 'no_printer' };
+  if (opts.dataBase64) {
+    return nativePrintEscPos(opts.dataBase64, { address: saved.address });
+  }
   return nativePrintText(receiptText, { address: saved.address });
 }

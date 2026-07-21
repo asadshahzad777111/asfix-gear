@@ -1,13 +1,13 @@
 import { useRef, useState } from 'react';
 import { formatPrice } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
+import { useSmartThermalPrint } from '../hooks/useSmartThermalPrint';
 import { buildOrderReceipt } from '../utils/receipts';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
 import { googleMapsUrl, osmStaticPreviewUrl } from '../utils/maps';
 import { displayAddressLine } from '../utils/address';
 import {
   downloadCounterInvoicePdf,
-  printActiveCounterReceipt,
   readThermalReceiptWidth,
   shareCounterInvoicePdf,
 } from './admin/AdminCounterBill';
@@ -160,6 +160,7 @@ export default function AdminOrderCard({
   const [showRiderForm, setShowRiderForm] = useState(false);
   const [receiptBusy, setReceiptBusy] = useState(false);
   const printInFlightRef = useRef(false);
+  const { printSmart, chooser: printChooser } = useSmartThermalPrint();
   const customerStatus = getOrderCustomerStatus(o);
   const addr = o.shipping_address;
   const mapUrl = addr ? googleMapsUrl(addr.lat, addr.lng) : null;
@@ -181,8 +182,7 @@ export default function AdminOrderCard({
     if (receiptBusy) return;
     setReceiptBusy(true);
     try {
-      const result = await printActiveCounterReceipt({
-        order: o,
+      const result = await printSmart(o, {
         thermalWidth,
         inFlightRef: printInFlightRef,
       });
@@ -192,8 +192,12 @@ export default function AdminOrderCard({
             ? t('admin.counterBillNativeNoPrinter')
             : result?.reason === 'permission_denied'
               ? t('admin.counterBillNativeBtPermission')
-              : result?.message || t('admin.counterBillNativePrintFailed')
+              : result?.reason === 'no_station'
+                ? t('admin.printTargetNoStation')
+                : result?.message || t('admin.counterBillNativePrintFailed')
         );
+      } else if (result?.ok && result?.job) {
+        window.alert?.(t('admin.printTargetQueued'));
       }
     } finally {
       setReceiptBusy(false);
@@ -219,6 +223,7 @@ export default function AdminOrderCard({
   };
 
   return (
+    <>
     <article className={className}>
       <div className="admin-float-card-head">
         <strong>
@@ -411,5 +416,7 @@ export default function AdminOrderCard({
         </p>
       ) : null}
     </article>
+    {printChooser}
+    </>
   );
 }

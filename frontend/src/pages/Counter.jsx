@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../api/client';
 import AdminCounterBill, {
   downloadCounterInvoicePdf,
-  printActiveCounterReceipt,
   readThermalReceiptWidth,
   shareCounterInvoicePdf,
 } from '../components/admin/AdminCounterBill';
@@ -11,6 +10,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useTranslation } from '../context/LanguageContext';
+import { useSmartThermalPrint } from '../hooks/useSmartThermalPrint';
 import {
   clearSavedPrinter,
   getSavedPrinter,
@@ -62,6 +62,10 @@ export default function Counter() {
   const printInFlightRef = useRef(false);
   const salesSectionRef = useRef(null);
   const printerBarRef = useRef(null);
+  const { printSmart, chooser: printChooser } = useSmartThermalPrint({
+    thermalWidth,
+    agentReady: !nativePos || Boolean(nativePrinter?.address),
+  });
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
 
@@ -252,13 +256,12 @@ export default function Counter() {
       window.alert?.('Receipt details are still loading. Refresh sales and try Print Receipt again.');
       return { ok: false, reason: 'no_order', message: 'Receipt details are still loading' };
     }
-    /* Direct print — no delayed useEffect (that blocked popups and auto-downloaded PDF). */
-    return printActiveCounterReceipt({
+    /* Smart print: native BT local, else remote station chooser */
+    return printSmart(order, {
       thermalWidth,
       inFlightRef: printInFlightRef,
-      order,
     });
-  }, [resolvePrintableCounterSale, thermalWidth]);
+  }, [printSmart, resolvePrintableCounterSale, thermalWidth]);
 
   const shareCounterSale = async (sale) => {
     try {
@@ -474,11 +477,19 @@ export default function Counter() {
                                     void openNativePrinterPicker();
                                     return;
                                   }
+                                  if (result?.reason === 'no_station') {
+                                    window.alert?.(t('admin.printTargetNoStation'));
+                                    return;
+                                  }
                                   const msg =
                                     result?.reason === 'permission_denied'
                                       ? t('admin.counterBillNativeBtPermission')
                                       : result?.message || t('admin.counterBillNativePrintFailed');
                                   window.alert?.(msg);
+                                  return;
+                                }
+                                if (result?.job) {
+                                  window.alert?.(t('admin.printTargetQueued'));
                                 }
                               }}
                             >
@@ -596,6 +607,7 @@ export default function Counter() {
           </div>
         ) : null}
       </main>
+      {printChooser}
     </div>
   );
 }

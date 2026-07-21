@@ -3640,3 +3640,221 @@ export function setPaymentSettings(input, userId) {
 export function exportFullData() {
   return readData();
 }
+
+/* ── Cross-device thermal print queue ── */
+
+export const PRINT_JOB_TARGETS = ['any', 'android', 'laptop', 'local'];
+export const PRINT_JOB_STATUSES = ['pending', 'printing', 'done', 'failed', 'expired'];
+export const PRINT_JOB_TTL_MS = 10 * 60_000;
+const PRINT_JOB_MAX_TEXT = 32_000;
+const PRINT_JOB_MAX_BASE64 = 128_000;
+const PRINT_JOB_KEEP = 200;
+
+function isJobExpired(job, at = Date.now()) {
+  if (!job) return true;
+  if (job.status === 'expired') return true;
+  if (job.status !== 'pending' && job.status !== 'printing') return false;
+  const expires = Date.parse(job.expires_at || '');
+  return Number.isFinite(expires) && expires <= at;
+}
+
+function expirePrintJobsInPlace(data, at = Date.now()) {
+  if (!Array.isArray(data.print_jobs)) data.print_jobs = [];
+  for (const job of data.print_jobs) {
+    if (job.status !== 'pending' && job.status !== 'printing') continue;
+    if (!isJobExpired(job, at)) continue;
+    job.status = 'expired';
+    job.finished_at = now();
+    job.error = job.error || 'expired';
+  }
+}
+
+function publicPrintJob(job) {
+  if (!job) return null;
+  const expired = isJobExpired(job);
+  return {
+    id: job.id,
+    status: expired && (job.status === 'pending' || job.status === 'printing') ? 'expired' : job.status,
+    target: job.target,
+    text: job.text,
+    data_base64: job.data_base64 || null,
+    thermal_width: job.thermal_width,
+    order_id: job.order_id ?? null,
+    order_ref: job.order_ref ?? null,
+    created_by_staff_id: job.created_by_staff_id ?? null,
+    created_by_staff_name: job.created_by_staff_name || '',
+    created_at: job.created_at,
+    expires_at: job.expires_at,
+    claimed_by: job.claimed_by || null,
+    claimed_at: job.claimed_at || null,
+    finished_at: job.finished_at || null,
+    error: expired && !job.error ? 'expired' : (job.error || null),
+  };
+}
+
+function jobMatchesStation(job, station) {
+  if (!job || job.status !== 'pending' || isJobExpired(job)) return false;
+  if (job.target === 'any') return station === 'android' || station === 'laptop';
+  return job.target === station;
+}
+
+export function createPrintJob(input = {}) {
+  return withData((data) => {
+    if (!Array.isArray(data.print_jobs)) data.print_jobs = [];
+    if (!data.meta.nextPrintJobId) data.meta.nextPrintJobId = 1;
+    expirePrintJobsInPlace(data);
+
+    const text = String(input.text || '').replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+    if (!text.trim()) throw new Error('Receipt text is required');
+    if (text.length > PRINT_JOB_MAX_TEXT) throw new Error('Receipt text is too long');
+    const dataBase64 = String(input.data_base64 || '').trim();
+    if (dataBase64 && !/^[A-Za-z0-9+/]+={0,2}$/.test(dataBase64)) {
+      throw new Error('Receipt ESC/POS data is invalid');
+    }
+    if (dataBase64.length > PRINT_JOB_MAX_BASE64) {
+      throw new Error('Receipt ESC/POS data is too long');
+    }
+
+    let target = String(input.target || 'any').trim().toLowerCase();
+    if (!PRINT_JOB_TARGETS.includes(target)) target = 'any';
+    if (target === 'local') {
+      throw new Error('Use local print on the device — do not enqueue local jobs');
+    }
+
+    const thermalWidth = input.thermal_width === '80mm' ? '80mm' : '58mm';
+    const staffActor = staffAuditUser(input.staff_user || {});
+    const createdAt = now();
+    const expiresAt = new Date(Date.now() + PRINT_JOB_TTL_MS).toISOString();
+    const id = data.meta.nextPrintJobId++;
+
+    let orderId = null;
+    let orderRef = null;
+    if (input.order_id != null && input.order_id !== '') {
+      const asNum = Number(input.order_id);
+      if (Number.isFinite(asNum) && asNum > 0) {
+        const order = (data.orders || []).find((o) => Number(o.id) === asNum);
+        if (order) {
+          orderId = order.id;
+          orderRef = order.order_id || String(order.id);
+        } else {
+          orderId = asNum;
+          orderRef = String(input.order_ref || input.order_id).slice(0, 40);
+        }
+      } else {
+        orderRef = String(input.order_id).trim().slice(0, 40);
+        const order = (data.orders || []).find((o) => String(o.order_id || '') === orderRef);
+        if (order) {
+          orderId = order.id;
+          orderRef = order.order_id || String(order.id);
+        }
+      }
+    }
+    if (!orderRef && input.order_ref) {
+      orderRef = String(input.order_ref).trim().slice(0, 40);
+    }
+
+    const job = {
+      id,
+      status: 'pending',
+      target,
+      text,
+      data_base64: dataBase64 || null,
+      thermal_width: thermalWidth,
+      order_id: orderId,
+      order_ref: orderRef,
+      created_by_staff_id: staffActor.id ?? input.staff_user_id ?? null,
+      created_by_staff_name: staffActor.name || '',
+      created_at: createdAt,
+      expires_at: expiresAt,
+      claimed_by: null,
+      claimed_at: null,
+      finished_at: null,
+      error: null,
+    };
+    data.print_jobs.unshift(job);
+    data.print_jobs = data.print_jobs.slice(0, PRINT_JOB_KEEP);
+    return publicPrintJob(job);
+  });
+}
+
+export function listPendingPrintJobs({ station = null } = {}) {
+  const data = readData();
+  const stationKey = station === 'android' || station === 'laptop' ? station : null;
+  let jobs = (data.print_jobs || []).filter((job) => job.status === 'pending' && !isJobExpired(job));
+  if (stationKey) {
+    jobs = jobs.filter((job) => jobMatchesStation(job, stationKey));
+  } else {
+    jobs = jobs.filter((job) => job.target === 'any' || job.target === 'android' || job.target === 'laptop');
+  }
+  return jobs
+    .sort((a, b) => String(a.created_at).localeCompare(String(b.created_at)))
+    .map(publicPrintJob);
+}
+
+export function claimPrintJob(id, { station, user = null } = {}) {
+  return withData((data) => {
+    expirePrintJobsInPlace(data);
+    const stationKey = station === 'android' || station === 'laptop' ? station : null;
+    if (!stationKey) throw new Error('station must be android or laptop');
+
+    const index = (data.print_jobs || []).findIndex((job) => Number(job.id) === Number(id));
+    if (index === -1) return null;
+    const job = data.print_jobs[index];
+    if (job.status === 'expired') return null;
+    if (job.status !== 'pending') {
+      throw new Error('Print job is no longer pending');
+    }
+    if (!jobMatchesStation(job, stationKey)) {
+      throw new Error('Print job target does not match this station');
+    }
+
+    const actor = staffAuditUser(user || {});
+    data.print_jobs[index] = {
+      ...job,
+      status: 'printing',
+      claimed_at: now(),
+      claimed_by: {
+        station: stationKey,
+        user_id: actor.id,
+        name: actor.name || stationKey,
+      },
+    };
+    return publicPrintJob(data.print_jobs[index]);
+  });
+}
+
+export function completePrintJob(id, { status = 'done', error = null, user = null } = {}) {
+  return withData((data) => {
+    expirePrintJobsInPlace(data);
+    const nextStatus = status === 'failed' ? 'failed' : 'done';
+    const index = (data.print_jobs || []).findIndex((job) => Number(job.id) === Number(id));
+    if (index === -1) return null;
+    const job = data.print_jobs[index];
+    if (job.status === 'done' || job.status === 'failed' || job.status === 'expired') {
+      return publicPrintJob(job);
+    }
+    if (job.status !== 'printing' && job.status !== 'pending') {
+      throw new Error('Print job cannot be completed');
+    }
+    const actor = staffAuditUser(user || {});
+    data.print_jobs[index] = {
+      ...job,
+      status: nextStatus,
+      finished_at: now(),
+      error: nextStatus === 'failed'
+        ? String(error || 'print_failed').trim().slice(0, 300)
+        : null,
+      claimed_by: job.claimed_by || {
+        station: 'unknown',
+        user_id: actor.id,
+        name: actor.name || '',
+      },
+    };
+    return publicPrintJob(data.print_jobs[index]);
+  });
+}
+
+export function getPrintJob(id) {
+  const job = (readData().print_jobs || []).find((entry) => Number(entry.id) === Number(id));
+  return publicPrintJob(job);
+}

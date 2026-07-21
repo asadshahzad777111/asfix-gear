@@ -14,6 +14,7 @@ import eventsRouter from './routes/events.js';
 import shopRouter from './routes/shop.js';
 import adminRouter from './routes/admin.js';
 import adsRouter from './routes/ads.js';
+import printJobsRouter from './routes/print-jobs.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
 import { requireStorageReady } from './middleware/storageReady.js';
 import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
@@ -112,6 +113,7 @@ app.use('/api/orders', writeLimiter, requireStorageReady, ordersRouter);
 app.use('/api/shop', requireStorageReady, shopRouter);
 app.use('/api/admin', requireStorageReady, adminRouter);
 app.use('/api/admin/ads', requireStorageReady, adsRouter);
+app.use('/api/print-jobs', requireStorageReady, printJobsRouter);
 
 /** Dynamic sitemap — static pages + published product URLs (overrides dist copy in prod). */
 app.get('/sitemap.xml', (req, res) => {

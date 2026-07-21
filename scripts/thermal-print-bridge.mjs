@@ -121,15 +121,22 @@ function readBody(req) {
   });
 }
 
-function extractText(parsed) {
+function extractPayload(parsed) {
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw Object.assign(new Error('JSON object required'), { statusCode: 400 });
   }
-  if (typeof parsed.text === 'string') return parsed.text;
-  if (Array.isArray(parsed.lines)) {
-    return parsed.lines.map((line) => String(line ?? '')).join('\n');
+  if (typeof parsed.data_base64 === 'string' && parsed.data_base64.trim()) {
+    const value = parsed.data_base64.trim();
+    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value) || value.length > MAX_BODY) {
+      throw Object.assign(new Error('Invalid ESC/POS base64'), { statusCode: 400 });
+    }
+    return Buffer.from(value, 'base64');
   }
-  throw Object.assign(new Error('Provide text or lines[]'), { statusCode: 400 });
+  if (typeof parsed.text === 'string') return buildEscPos(parsed.text);
+  if (Array.isArray(parsed.lines)) {
+    return buildEscPos(parsed.lines.map((line) => String(line ?? '')).join('\n'));
+  }
+  throw Object.assign(new Error('Provide data_base64, text or lines[]'), { statusCode: 400 });
 }
 
 function main() {
@@ -185,14 +192,8 @@ function main() {
         } catch {
           throw Object.assign(new Error('Invalid JSON'), { statusCode: 400 });
         }
-        const text = extractText(parsed);
-        if (!String(text).trim()) {
-          throw Object.assign(new Error('Empty receipt text'), { statusCode: 400 });
-        }
-        if (text.length > 32_000) {
-          throw Object.assign(new Error('Text too long'), { statusCode: 400 });
-        }
-        const buf = buildEscPos(text);
+        const buf = extractPayload(parsed);
+        if (!buf.length) throw Object.assign(new Error('Empty receipt'), { statusCode: 400 });
         const result = writeCom(com, buf);
         sendJson(res, 200, { ok: true, com, ...result }, headers);
       } catch (err) {
