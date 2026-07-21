@@ -722,6 +722,14 @@ function isAndroidDevice() {
   return typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
 }
 
+function isAppleMobileDevice() {
+  return typeof navigator !== 'undefined' && /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+}
+
+function prefersThermalPngShare() {
+  return isAndroidDevice() || isAppleMobileDevice();
+}
+
 /** True 58/80mm receipt document — NEVER A4 (A4→thermal scales to a tiny center strip). */
 function buildThermalReceiptHtml(order, thermalWidth = '58mm', qrDataUrl = '') {
   const widthMm = thermalWidth === '80mm' ? 80 : 58;
@@ -967,8 +975,8 @@ export function openMateThermalReceipt(order) {
 
 export function downloadCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order) return;
-  /* Android: thick high-DPI PNG for Mate Image print; PDF letterboxes on 58mm */
-  if (isAndroidDevice()) {
+  /* Phones: high-DPI PNG shares cleanly into thermal print apps (Android Mate / iOS share). */
+  if (prefersThermalPngShare()) {
     createCounterReceiptPngBlob(order, thermalWidth)
       .then((blob) => downloadBlob(blob, receiptPngFilename(order)))
       .catch(() => {
@@ -982,19 +990,21 @@ export function downloadCounterInvoicePdf(order, thermalWidth = readThermalRecei
 export async function shareCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order) return false;
 
-  if (isAndroidDevice()) {
+  if (prefersThermalPngShare()) {
     const blob = await createCounterReceiptPngBlob(order, thermalWidth);
     const file = new File([blob], receiptPngFilename(order), { type: 'image/png' });
     if (navigator.canShare?.({ files: [file] })) {
       await navigator.share({
         title: `${SHOP.name} ${receiptNumber(order)}`,
-        text: `${SHOP.name} receipt — choose Bluetooth Thermal Printer`,
+        text: isAndroidDevice()
+          ? `${SHOP.name} receipt — choose Bluetooth Thermal Printer`
+          : `${SHOP.name} receipt — iPhone Share se Files / Print app kholo`,
         files: [file],
       });
       return true;
     }
     downloadBlob(blob, file.name);
-    openMateThermalText(order);
+    if (isAndroidDevice()) openMateThermalText(order);
     return false;
   }
 

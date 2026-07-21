@@ -1,11 +1,16 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { formatPrice } from '../api/client';
-import { SHOP } from '../config/shop';
 import { useTranslation } from '../context/LanguageContext';
 import { buildOrderReceipt } from '../utils/receipts';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
 import { googleMapsUrl, osmStaticPreviewUrl } from '../utils/maps';
 import { displayAddressLine } from '../utils/address';
+import {
+  downloadCounterInvoicePdf,
+  printActiveCounterReceipt,
+  readThermalReceiptWidth,
+  shareCounterInvoicePdf,
+} from './admin/AdminCounterBill';
 
 export const ORDER_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
 
@@ -19,88 +24,6 @@ const ORDER_QUICK_ACTIONS = [
 function statusBtnLabel(status) {
   const found = ORDER_QUICK_ACTIONS.find((a) => a.status === status);
   return found?.short || status;
-}
-
-function escapeHtml(value) {
-  return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#039;');
-}
-
-function printOrderReceipt(order) {
-  const rows = (order.items || []).map((item) => {
-    const qty = Number(item.qty) || 1;
-    const price = Number(item.price) || 0;
-    return `
-      <div class="item">
-        <strong>${escapeHtml(item.name)}</strong>
-        <div class="row"><span>${qty} x ${escapeHtml(formatPrice(price))}</span><b>${escapeHtml(formatPrice(price * qty))}</b></div>
-      </div>
-    `;
-  }).join('');
-  const win = window.open('', '_blank', 'width=420,height=720');
-  if (!win) return;
-  win.document.write(`
-    <!doctype html>
-    <html>
-      <head>
-        <title>${escapeHtml(order.order_id || order.id)} receipt</title>
-        <style>
-          @page { size: 58mm auto; margin: 0; }
-          html, body { margin: 0; padding: 0; background: #fff; }
-          body { font-family: "Courier New", Courier, monospace; color: #111; }
-          .receipt { width: 58mm; max-width: 100%; margin: 0 auto; padding: 4mm 3mm; font-size: 11px; line-height: 1.25; }
-          .shop { text-align: center; margin-bottom: 6px; }
-          h1 { margin: 0 0 4px; font-family: Arial, sans-serif; font-size: 15px; }
-          p { margin: 2px 0; font-size: 10px; }
-          .meta { margin: 6px 0; font-size: 10px; }
-          .rule { border-top: 1px dashed #111; margin: 6px 0; }
-          .item { margin: 0 0 5px; }
-          .item strong { display: block; overflow-wrap: anywhere; }
-          .row { display: flex; justify-content: space-between; gap: 8px; }
-          .total { font-family: Arial, sans-serif; font-size: 13px; font-weight: 900; margin-top: 4px; }
-          .thanks { text-align: center; margin-top: 8px; font-size: 10px; }
-          .hint { text-align: center; color: #555; font-size: 9px; margin-top: 10px; }
-          @media print {
-            .hint { display: none; }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="receipt">
-          <div class="shop">
-            <h1>${escapeHtml(SHOP.name)}</h1>
-            <p>${escapeHtml(SHOP.addressLine1)}</p>
-            <p>${escapeHtml(SHOP.addressLine2)} | ${escapeHtml(SHOP.phone)}</p>
-          </div>
-          <div class="meta">
-            <div>Bill #: ${escapeHtml(order.order_id || order.id)}</div>
-            <div>Date: ${escapeHtml(order.created_at ? new Date(order.created_at).toLocaleString() : '')}</div>
-            <div>Customer: ${escapeHtml(order.customer_name || 'Walk-in Customer')}</div>
-            <div>Phone: ${escapeHtml(order.phone || '-')}</div>
-            <div>Payment: ${escapeHtml(order.payment_mode || '')}</div>
-            <div>Staff: ${escapeHtml(order.created_by_staff_name || '-')}</div>
-          </div>
-          <div class="rule"></div>
-          ${rows}
-          <div class="rule"></div>
-          <div class="row total"><span>Total</span><span>${escapeHtml(formatPrice(order.total_amount))}</span></div>
-          <p class="thanks">Thank you for shopping at AsFix & Gear.</p>
-          <p class="thanks">asfixgear.com</p>
-          <p class="hint">Print dialog me apna Bluetooth thermal printer select karen · Paper: 58mm</p>
-        </div>
-        <script>
-          window.onload = () => {
-            setTimeout(() => window.print(), 200);
-          };
-        </script>
-      </body>
-    </html>
-  `);
-  win.document.close();
 }
 
 function AssignRiderForm({ onSubmit, onCancel, t, mapUrl }) {
@@ -235,6 +158,8 @@ export default function AdminOrderCard({
 }) {
   const { t } = useTranslation();
   const [showRiderForm, setShowRiderForm] = useState(false);
+  const [receiptBusy, setReceiptBusy] = useState(false);
+  const printInFlightRef = useRef(false);
   const customerStatus = getOrderCustomerStatus(o);
   const addr = o.shipping_address;
   const mapUrl = addr ? googleMapsUrl(addr.lat, addr.lng) : null;
@@ -244,10 +169,37 @@ export default function AdminOrderCard({
   const customerLabel = walkInName
     ? (o.phone ? `Walk-in · ${o.phone}` : 'Walk-in Customer')
     : o.customer_name;
+  const thermalWidth = readThermalReceiptWidth();
 
   const handleAssignRider = async (payload) => {
     await onAssignRider(o.id, payload);
     setShowRiderForm(false);
+  };
+
+  const handleThermalPrint = async () => {
+    if (receiptBusy) return;
+    setReceiptBusy(true);
+    try {
+      await printActiveCounterReceipt({
+        order: o,
+        thermalWidth,
+        inFlightRef: printInFlightRef,
+      });
+    } finally {
+      setReceiptBusy(false);
+    }
+  };
+
+  const handleShareReceipt = async () => {
+    if (receiptBusy) return;
+    setReceiptBusy(true);
+    try {
+      await shareCounterInvoicePdf(o, thermalWidth);
+    } catch {
+      downloadCounterInvoicePdf(o, thermalWidth);
+    } finally {
+      setReceiptBusy(false);
+    }
   };
 
   return (
@@ -358,8 +310,19 @@ export default function AdminOrderCard({
         >
           {t('sales.receiptStaff')}
         </a>
-        <button type="button" className="btn btn-outline btn-sm" onClick={() => printOrderReceipt(o)}>
+        <button type="button" className="btn btn-outline btn-sm" disabled={receiptBusy} onClick={handleThermalPrint}>
           {t('admin.counterBillPrint')}
+        </button>
+        <button type="button" className="btn btn-outline btn-sm" disabled={receiptBusy} onClick={handleShareReceipt}>
+          {t('admin.orderShareThermal')}
+        </button>
+        <button
+          type="button"
+          className="btn btn-outline btn-sm"
+          disabled={receiptBusy}
+          onClick={() => downloadCounterInvoicePdf(o, thermalWidth)}
+        >
+          {t('admin.orderDownloadThermal')}
         </button>
       </div>
 
