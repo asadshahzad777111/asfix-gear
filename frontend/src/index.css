@@ -4488,6 +4488,20 @@ body.modal-open .guest-welcome-banner {
   gap: clamp(0.85rem, 2vw, 1rem);
 }
 
+.wp-order-filters--date {
+  margin-bottom: 0.55rem;
+}
+
+.admin-orders-print-hint {
+  margin: 0 0 0.85rem;
+  padding: 0.65rem 0.8rem;
+  border: 1px dashed rgba(15, 23, 42, 0.16);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.7);
+  color: #475569;
+  font-size: 0.86rem;
+}
+
 .admin-orders-list {
   display: grid;
   gap: 1.35rem;

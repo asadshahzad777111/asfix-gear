@@ -35,15 +35,13 @@ function printOrderReceipt(order) {
     const qty = Number(item.qty) || 1;
     const price = Number(item.price) || 0;
     return `
-      <tr>
-        <td>${escapeHtml(item.name)}</td>
-        <td>${qty}</td>
-        <td>${escapeHtml(formatPrice(price))}</td>
-        <td>${escapeHtml(formatPrice(price * qty))}</td>
-      </tr>
+      <div class="item">
+        <strong>${escapeHtml(item.name)}</strong>
+        <div class="row"><span>${qty} x ${escapeHtml(formatPrice(price))}</span><b>${escapeHtml(formatPrice(price * qty))}</b></div>
+      </div>
     `;
   }).join('');
-  const win = window.open('', '_blank', 'width=780,height=900');
+  const win = window.open('', '_blank', 'width=420,height=720');
   if (!win) return;
   win.document.write(`
     <!doctype html>
@@ -51,42 +49,54 @@ function printOrderReceipt(order) {
       <head>
         <title>${escapeHtml(order.order_id || order.id)} receipt</title>
         <style>
-          body { font-family: Arial, sans-serif; color: #111; margin: 24px; }
-          .shop { text-align: center; border-bottom: 2px solid #111; padding-bottom: 10px; margin-bottom: 12px; }
-          h1 { margin: 0 0 4px; font-size: 24px; }
-          p { margin: 3px 0; }
-          .meta { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 18px; margin: 12px 0; font-size: 14px; }
-          table { width: 100%; border-collapse: collapse; font-size: 14px; }
-          th, td { border: 1px solid #111; padding: 6px 8px; text-align: left; }
-          th { background: #f1f1f1; }
-          th:nth-child(2), td:nth-child(2) { text-align: center; }
-          th:nth-child(3), th:nth-child(4), td:nth-child(3), td:nth-child(4), tfoot td { text-align: right; }
-          tfoot td { font-weight: 700; }
-          .thanks { text-align: center; margin-top: 14px; }
-          @page { margin: 8mm; }
+          @page { size: 58mm auto; margin: 0; }
+          html, body { margin: 0; padding: 0; background: #fff; }
+          body { font-family: "Courier New", Courier, monospace; color: #111; }
+          .receipt { width: 58mm; max-width: 100%; margin: 0 auto; padding: 4mm 3mm; font-size: 11px; line-height: 1.25; }
+          .shop { text-align: center; margin-bottom: 6px; }
+          h1 { margin: 0 0 4px; font-family: Arial, sans-serif; font-size: 15px; }
+          p { margin: 2px 0; font-size: 10px; }
+          .meta { margin: 6px 0; font-size: 10px; }
+          .rule { border-top: 1px dashed #111; margin: 6px 0; }
+          .item { margin: 0 0 5px; }
+          .item strong { display: block; overflow-wrap: anywhere; }
+          .row { display: flex; justify-content: space-between; gap: 8px; }
+          .total { font-family: Arial, sans-serif; font-size: 13px; font-weight: 900; margin-top: 4px; }
+          .thanks { text-align: center; margin-top: 8px; font-size: 10px; }
+          .hint { text-align: center; color: #555; font-size: 9px; margin-top: 10px; }
+          @media print {
+            .hint { display: none; }
+          }
         </style>
       </head>
       <body>
-        <div class="shop">
-          <h1>${escapeHtml(SHOP.name)}</h1>
-          <p>${escapeHtml(SHOP.addressLine1)}</p>
-          <p>${escapeHtml(SHOP.addressLine2)} | ${escapeHtml(SHOP.phone)}</p>
+        <div class="receipt">
+          <div class="shop">
+            <h1>${escapeHtml(SHOP.name)}</h1>
+            <p>${escapeHtml(SHOP.addressLine1)}</p>
+            <p>${escapeHtml(SHOP.addressLine2)} | ${escapeHtml(SHOP.phone)}</p>
+          </div>
+          <div class="meta">
+            <div>Bill #: ${escapeHtml(order.order_id || order.id)}</div>
+            <div>Date: ${escapeHtml(order.created_at ? new Date(order.created_at).toLocaleString() : '')}</div>
+            <div>Customer: ${escapeHtml(order.customer_name || 'Walk-in Customer')}</div>
+            <div>Phone: ${escapeHtml(order.phone || '-')}</div>
+            <div>Payment: ${escapeHtml(order.payment_mode || '')}</div>
+            <div>Staff: ${escapeHtml(order.created_by_staff_name || '-')}</div>
+          </div>
+          <div class="rule"></div>
+          ${rows}
+          <div class="rule"></div>
+          <div class="row total"><span>Total</span><span>${escapeHtml(formatPrice(order.total_amount))}</span></div>
+          <p class="thanks">Thank you for shopping at AsFix & Gear.</p>
+          <p class="thanks">asfixgear.com</p>
+          <p class="hint">Print dialog me apna Bluetooth thermal printer select karen · Paper: 58mm</p>
         </div>
-        <div class="meta">
-          <span>Bill #: ${escapeHtml(order.order_id || order.id)}</span>
-          <span>Date: ${escapeHtml(order.created_at ? new Date(order.created_at).toLocaleString() : '')}</span>
-          <span>Customer: ${escapeHtml(order.customer_name || 'Walk-in Customer')}</span>
-          <span>Payment: ${escapeHtml(order.payment_mode || '')}</span>
-          <span>Staff: ${escapeHtml(order.created_by_staff_name || '-')}</span>
-          <span>Total: ${escapeHtml(formatPrice(order.total_amount))}</span>
-        </div>
-        <table>
-          <thead><tr><th>Item</th><th>Qty</th><th>Rate</th><th>Amount</th></tr></thead>
-          <tbody>${rows}</tbody>
-          <tfoot><tr><td colspan="3">Total</td><td>${escapeHtml(formatPrice(order.total_amount))}</td></tr></tfoot>
-        </table>
-        <p class="thanks">Thank you for shopping at AsFix & Gear.</p>
-        <script>window.onload = () => { window.print(); };</script>
+        <script>
+          window.onload = () => {
+            setTimeout(() => window.print(), 200);
+          };
+        </script>
       </body>
     </html>
   `);

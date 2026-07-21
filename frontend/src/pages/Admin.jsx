@@ -84,6 +84,7 @@ export default function Admin() {
   const [orderStatusFilter, setOrderStatusFilter] = useState('all');
   const [orderSourceFilter, setOrderSourceFilter] = useState('all');
   const [orderStaffFilter, setOrderStaffFilter] = useState('all');
+  const [orderDatePreset, setOrderDatePreset] = useState('all'); // all | today | yesterday | older | custom
   const [orderDateFilter, setOrderDateFilter] = useState('');
   const [bulkLoading, setBulkLoading] = useState(false);
   const [noteDrafts, setNoteDrafts] = useState({});
@@ -225,10 +226,38 @@ export default function Admin() {
     return [...byId.entries()].map(([id, name]) => ({ id, name }));
   }, [orders]);
 
+  const localDateKey = (value = new Date()) => {
+    const d = value instanceof Date ? value : new Date(value);
+    if (Number.isNaN(d.getTime())) return '';
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    return `${y}-${m}-${day}`;
+  };
+
+  const todayKey = localDateKey();
+  const yesterdayKey = (() => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    return localDateKey(d);
+  })();
+
+  const orderDayKey = (order) => (order?.created_at ? localDateKey(order.created_at) : '');
+
   const orderChannel = (o) => {
     const src = o?.source || 'online';
     if (src === 'counter_sale' || src === 'counter_return' || src === 'counter_draft') return 'counter';
     return 'online';
+  };
+
+  const matchesOrderDate = (o) => {
+    const day = orderDayKey(o);
+    if (!day) return orderDatePreset === 'all';
+    if (orderDatePreset === 'today') return day === todayKey;
+    if (orderDatePreset === 'yesterday') return day === yesterdayKey;
+    if (orderDatePreset === 'older') return day < yesterdayKey;
+    if (orderDatePreset === 'custom' && orderDateFilter) return day === orderDateFilter;
+    return true;
   };
 
   const filteredOrders = orders.filter((o) => {
@@ -236,12 +265,19 @@ export default function Admin() {
     if (orderSourceFilter === 'counter_sale' && orderChannel(o) !== 'counter') return false;
     if (orderSourceFilter === 'online' && orderChannel(o) !== 'online') return false;
     if (orderStaffFilter !== 'all' && String(o.created_by_staff_id || '') !== orderStaffFilter) return false;
-    if (orderDateFilter) {
-      const date = o.created_at ? new Date(o.created_at).toISOString().slice(0, 10) : '';
-      if (date !== orderDateFilter) return false;
-    }
+    if (!matchesOrderDate(o)) return false;
     return true;
   });
+
+  const countByDatePreset = (preset) =>
+    orders.filter((o) => {
+      const day = orderDayKey(o);
+      if (!day) return preset === 'all';
+      if (preset === 'today') return day === todayKey;
+      if (preset === 'yesterday') return day === yesterdayKey;
+      if (preset === 'older') return day < yesterdayKey;
+      return true;
+    }).length;
 
   const onlineOrders = filteredOrders.filter((o) => orderChannel(o) === 'online');
   const counterOrders = filteredOrders.filter((o) => orderChannel(o) === 'counter');
@@ -263,6 +299,13 @@ export default function Admin() {
           }`}
         />
       ));
+
+  const clearOrderFilters = () => {
+    setOrderSourceFilter('all');
+    setOrderStaffFilter('all');
+    setOrderDatePreset('all');
+    setOrderDateFilter('');
+  };
 
   const navigateAdmin = (nextTab, filter = {}) => {
     if (filter.category) setProductCategory(filter.category);
@@ -581,6 +624,48 @@ export default function Admin() {
         <AdminManagement />
       ) : tab === 'orders' ? (
             <>
+              <div className="wp-order-filters wp-order-filters--date">
+                <button
+                  type="button"
+                  className={`wp-order-filter ${orderDatePreset === 'all' ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setOrderDatePreset('all');
+                    setOrderDateFilter('');
+                  }}
+                >
+                  {t('admin.orderDateAll')} ({orders.length})
+                </button>
+                <button
+                  type="button"
+                  className={`wp-order-filter ${orderDatePreset === 'today' ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setOrderDatePreset('today');
+                    setOrderDateFilter('');
+                  }}
+                >
+                  {t('admin.orderDateToday')} ({countByDatePreset('today')})
+                </button>
+                <button
+                  type="button"
+                  className={`wp-order-filter ${orderDatePreset === 'yesterday' ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setOrderDatePreset('yesterday');
+                    setOrderDateFilter('');
+                  }}
+                >
+                  {t('admin.orderDateYesterday')} ({countByDatePreset('yesterday')})
+                </button>
+                <button
+                  type="button"
+                  className={`wp-order-filter ${orderDatePreset === 'older' ? 'is-active' : ''}`}
+                  onClick={() => {
+                    setOrderDatePreset('older');
+                    setOrderDateFilter('');
+                  }}
+                >
+                  {t('admin.orderDateOlder')} ({countByDatePreset('older')})
+                </button>
+              </div>
               <div className="wp-order-filters">
                 <button
                   type="button"
@@ -619,23 +704,24 @@ export default function Admin() {
                 <input
                   type="date"
                   value={orderDateFilter}
-                  onChange={(e) => setOrderDateFilter(e.target.value)}
+                  onChange={(e) => {
+                    const value = e.target.value;
+                    setOrderDateFilter(value);
+                    setOrderDatePreset(value ? 'custom' : 'all');
+                  }}
                   aria-label={t('admin.orderDateFilter')}
                 />
-                {(orderSourceFilter !== 'all' || orderStaffFilter !== 'all' || orderDateFilter) ? (
+                {(orderSourceFilter !== 'all' || orderStaffFilter !== 'all' || orderDatePreset !== 'all' || orderDateFilter) ? (
                   <button
                     type="button"
                     className="wp-button wp-button--secondary wp-button--small"
-                    onClick={() => {
-                      setOrderSourceFilter('all');
-                      setOrderStaffFilter('all');
-                      setOrderDateFilter('');
-                    }}
+                    onClick={clearOrderFilters}
                   >
                     Clear filters
                   </button>
                 ) : null}
               </div>
+              <p className="admin-orders-print-hint">{t('admin.orderThermalPrintHint')}</p>
             <div className="admin-orders-list">
               {filteredOrders.length === 0 ? (
                 <div className="empty-state glass-card">Is filter mein koi order nahi.</div>
