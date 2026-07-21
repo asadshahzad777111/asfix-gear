@@ -1,0 +1,23 @@
+{
+  "name": "asfix-pos",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AsFix POS — Capacitor Android shell with Bluetooth ESC/POS thermal print",
+  "scripts": {
+    "sync": "npx cap sync android",
+    "open": "npx cap open android",
+    "build:android": "npx cap sync android",
+    "postinstall": "node ./scripts/ensure-www.js"
+  },
+  "dependencies": {
+    "@asfixgear/asfix-thermal-print": "file:./plugins/asfix-thermal-print",
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/preferences": "^6.0.3"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
+    "typescript": "^5.7.3"
+  }
+}

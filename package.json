@@ -26,7 +26,9 @@
     "mongo:ping": "node scripts/mongo-ping.mjs",
     "setup:check": "node scripts/setup-check.mjs",
     "test:seed-images": "node scripts/test-seed-preserve-images.js",
-    "generate:ad": "node scripts/generate-ad.mjs"
+    "generate:ad": "node scripts/generate-ad.mjs",
+    "thermal:bridge": "node scripts/thermal-print-bridge.mjs",
+    "thermal:com-demo": "node scripts/send-thermal-com.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

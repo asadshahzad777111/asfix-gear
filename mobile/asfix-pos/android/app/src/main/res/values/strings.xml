@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AsFix POS</string>
+    <string name="title_activity_main">AsFix POS</string>
+    <string name="package_name">com.asfixgear.pos</string>
+    <string name="custom_url_scheme">com.asfixgear.pos</string>
+</resources>

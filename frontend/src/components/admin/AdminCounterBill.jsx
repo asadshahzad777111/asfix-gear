@@ -5,6 +5,15 @@ import { SHOP } from '../../config/shop';
 import { useAuth } from '../../context/AuthContext';
 import { getDefaultImage } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
+import { tryLaptopThermalPrint } from '../../utils/thermalLaptopPrint';
+import {
+  autoPrintCounterReceiptIfNative,
+  getSavedPrinter,
+  isNativePosApp,
+  listBondedPrinters,
+  savePrinter,
+  tryNativeThermalPrint,
+} from '../../utils/nativePosPrint';
 import './admin-counter-bill.css';
 
 const COUNTER_BILL_DRAFT_KEY = 'asfix_counter_bill_draft_v1';
@@ -194,17 +203,50 @@ function thermalAmountText(amount) {
   return `Rs. ${Math.round(Number(amount || 0))}`;
 }
 
-function buildThermalReceiptText(order) {
+export function buildThermalReceiptText(order) {
   if (!order) return '';
   /* Fewer chars/line → larger glyphs on paper (sample AS FIX bill size) */
   return `${buildReceiptLines(order, 18).map((line) => line.value).join('\n')}\n\n`;
 }
 
-/** Mate Technologies "Bluetooth Thermal Printer" (Thermer) — package mate.bluetoothprint */
+/**
+ * Mate Technologies Thermer (Play: mate.bluetoothprint).
+ * APK docs (assets/intent_printing.txt): ACTION_SEND text/plain with markup tags
+ *   <BAF>text  B=bold 0|1, A=align 0L|1C|2R, F=0 normal|1 dH|2 dH+W|3 dW
+ *   <QR>A#S#value  <IMAGE>A#base64  <BARCODE>…
+ * Browser scheme my.bluetoothprint.scheme://https://… needs a fetchable JSON URL
+ * (not usable from a pure SPA blob). Share image/* also works (FileReceiver).
+ * Printer link: Bluetooth SPP RFCOMM UUID 00001101-… + ESC/POS (GS v 0 raster).
+ */
 const MATE_THERMAL_PACKAGE = 'mate.bluetoothprint';
+const MATE_PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${MATE_THERMAL_PACKAGE}`;
+
+function sanitizeMatePlain(value) {
+  return String(value ?? '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+/** Build Thermer Intent EXTRA_TEXT with Mate <BAF> markup + QR (better than raw lines). */
+function buildMateThermalMarkup(order) {
+  if (!order) return '';
+  const lines = buildReceiptLines(order, 18);
+  const parts = lines.map((line) => {
+    const text = sanitizeMatePlain(line.value);
+    if (line.rule) return `<010>${'-'.repeat(18)}`;
+    if (!text) return '<010> ';
+    const bold = line.weight === 'bold' || line.title || line.grand || line.totalLabel ? '1' : '0';
+    const align = line.align === 'center' ? '1' : line.align === 'right' ? '2' : '0';
+    const format = line.grand ? '1' : line.title ? '3' : '0';
+    return `<${bold}${align}${format}>${text}`;
+  });
+  parts.push('<010> ');
+  parts.push(`<QR>1#40#${RECEIPT_SITE_URL}`);
+  parts.push(`<110>${RECEIPT_SITE}`);
+  parts.push('<010> ');
+  return parts.join('');
+}
 
 function mateThermalTextHref(order) {
-  const text = buildThermalReceiptText(order);
+  const text = buildMateThermalMarkup(order) || buildThermalReceiptText(order);
   return (
     `intent:#Intent;action=android.intent.action.SEND;type=text/plain;`
     + `package=${MATE_THERMAL_PACKAGE};`
@@ -216,6 +258,7 @@ function openMateThermalText(order) {
   if (!order || typeof window === 'undefined' || typeof document === 'undefined') return false;
   const anchor = document.createElement('a');
   anchor.href = mateThermalTextHref(order);
+  anchor.rel = 'noopener';
   anchor.style.display = 'none';
   document.body.appendChild(anchor);
   anchor.click();
@@ -696,6 +739,53 @@ function downloadBlob(blob, filename) {
   link.click();
   link.remove();
   window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return { ok: true, method: 'download' };
+}
+
+/**
+ * WebView often blocks `<a download>`; prefer Web Share, then open blob URL.
+ * @returns {Promise<{ ok: boolean, method?: string, message?: string }>}
+ */
+async function shareOrOpenBlob(blob, filename, { title = '', text = '' } = {}) {
+  const type = blob?.type || 'application/octet-stream';
+  const file = new File([blob], filename, { type });
+
+  if (typeof navigator !== 'undefined' && navigator.canShare?.({ files: [file] })) {
+    try {
+      await navigator.share({
+        title: title || filename,
+        text: text || title || filename,
+        files: [file],
+      });
+      return { ok: true, method: 'share' };
+    } catch (err) {
+      if (err?.name === 'AbortError') {
+        return { ok: false, method: 'share', message: 'cancelled' };
+      }
+      /* fall through to open / download */
+    }
+  }
+
+  const url = URL.createObjectURL(blob);
+  const opened = typeof window !== 'undefined' ? window.open(url, '_blank') : null;
+  if (opened) {
+    window.setTimeout(() => URL.revokeObjectURL(url), 60_000);
+    return { ok: true, method: 'open' };
+  }
+
+  downloadBlob(blob, filename);
+  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  return { ok: true, method: 'download' };
+}
+
+/** Normalize printActiveCounterReceipt / onPrintOrder return values. */
+export function normalizePrintResult(result) {
+  if (result == null) return { ok: false, reason: 'print_failed', message: 'Print did not run' };
+  if (typeof result === 'boolean') {
+    return result ? { ok: true } : { ok: false, reason: 'print_failed' };
+  }
+  if (typeof result === 'object' && 'ok' in result) return result;
+  return { ok: true };
 }
 
 function waitForNextPaint() {
@@ -908,47 +998,87 @@ function receiptPngFilename(order) {
 }
 
 /**
- * Print for BT800S 58mm thermal:
- * - Android → Mate "Bluetooth Thermal Printer" (PNG share, then text intent)
- * - Other → isolated 58mm HTML iframe print
+ * Print for 58/80mm thermal (BT800S etc.):
+ * - AsFix POS Capacitor app → native Bluetooth SPP ESC/POS (no Thermer)
+ * - Android browser → PNG Web Share (Thermer accepts image/*) → Mate markup Intent fallback
+ * - Desktop → localhost COM bridge (if running) → Web Bluetooth BLE → iframe fallback
+ * @returns {Promise<{ ok: boolean, reason?: string, message?: string }>}
  */
 export async function printActiveCounterReceipt({
   thermalWidth = '58mm',
   inFlightRef,
   order = null,
 } = {}) {
-  if (typeof window === 'undefined' || typeof document === 'undefined') return false;
-  if (inFlightRef?.current) return false;
-  if (!order) return false;
-  if (!claimPrintSlot(order)) return false;
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return { ok: false, reason: 'unavailable', message: 'Print unavailable' };
+  }
+  if (inFlightRef?.current) {
+    return { ok: false, reason: 'busy', message: 'Print already in progress' };
+  }
+  if (!order) {
+    return { ok: false, reason: 'no_order', message: 'No receipt to print' };
+  }
+  if (!claimPrintSlot(order)) {
+    return { ok: false, reason: 'busy', message: 'Print already in progress' };
+  }
 
   if (inFlightRef) inFlightRef.current = true;
   try {
-    /* Android → Mate Technologies Bluetooth Thermal Printer (not RawBT) */
+    /* Native AsFix POS app: Bluetooth SPP ESC/POS — replaces Thermer happy path */
+    if (isNativePosApp()) {
+      const text = buildThermalReceiptText(order);
+      const native = await tryNativeThermalPrint(text);
+      finishPrintJob(inFlightRef);
+      /* Always return structured result so UI can show Select printer / BT errors */
+      return native?.ok
+        ? { ok: true }
+        : {
+            ok: false,
+            reason: native?.reason || 'print_failed',
+            message: native?.message,
+          };
+    }
+
+    /* Android browser → Thermer (mate.bluetoothprint): share PNG, else Mate <BAF> Intent */
     if (isAndroidDevice()) {
       try {
         const blob = await createCounterReceiptPngBlob(order, thermalWidth);
-        const file = new File([blob], receiptPngFilename(order), { type: 'image/png' });
-        if (navigator.canShare?.({ files: [file] })) {
-          await navigator.share({
-            title: `${SHOP.name} ${receiptNumber(order)}`,
-            text: `${SHOP.name} receipt — open in Bluetooth Thermal Printer`,
-            files: [file],
-          });
+        const shared = await shareOrOpenBlob(blob, receiptPngFilename(order), {
+          title: `${SHOP.name} ${receiptNumber(order)}`,
+          text: `${SHOP.name} receipt — choose Thermer / Bluetooth Thermal Printer`,
+        });
+        if (shared.ok && shared.method === 'share') {
           finishPrintJob(inFlightRef);
-          return true;
+          return { ok: true };
         }
-        downloadBlob(blob, file.name);
+        if (shared.message === 'cancelled') {
+          finishPrintJob(inFlightRef);
+          return { ok: false, reason: 'cancelled' };
+        }
       } catch (err) {
-        if (err?.name !== 'AbortError') {
-          openMateThermalText(order);
+        if (err?.name === 'AbortError') {
+          finishPrintJob(inFlightRef);
+          return { ok: false, reason: 'cancelled' };
         }
+        openMateThermalText(order);
         finishPrintJob(inFlightRef);
-        return err?.name === 'AbortError';
+        return { ok: true };
       }
       openMateThermalText(order);
       finishPrintJob(inFlightRef);
-      return true;
+      return { ok: true };
+    }
+
+    /* Laptop: bridge (COM/SPP) or Web Bluetooth (BLE) before Chrome print dialog */
+    try {
+      const text = buildThermalReceiptText(order);
+      const direct = await tryLaptopThermalPrint(text);
+      if (direct.ok) {
+        finishPrintJob(inFlightRef);
+        return { ok: true };
+      }
+    } catch {
+      /* fall through to iframe */
     }
 
     const width = normalizeThermalWidth(thermalWidth);
@@ -959,67 +1089,82 @@ export async function printActiveCounterReceipt({
       qrDataUrl = '';
     }
     const html = buildThermalReceiptHtml(order, width, qrDataUrl);
-    return printViaIframe(html, inFlightRef);
-  } catch {
+    const printed = await printViaIframe(html, inFlightRef);
+    return printed ? { ok: true } : { ok: false, reason: 'print_failed', message: 'Browser print failed' };
+  } catch (err) {
     finishPrintJob(inFlightRef);
-    return false;
+    return {
+      ok: false,
+      reason: 'print_failed',
+      message: err?.message || String(err) || 'Print failed',
+    };
   }
 }
 
-/** Open Mate Bluetooth Thermal Printer with receipt text (Android). */
+/** Open Thermer (Mate Bluetooth Print) with Mate markup Intent (Android). */
 export function openMateThermalReceipt(order) {
   if (!order || typeof window === 'undefined') return false;
   if (!claimPrintSlot(order)) return false;
   return openMateThermalText(order);
 }
 
-export function downloadCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
-  if (!order) return;
-  /* Phones: high-DPI PNG shares cleanly into thermal print apps (Android Mate / iOS share). */
-  if (prefersThermalPngShare()) {
-    createCounterReceiptPngBlob(order, thermalWidth)
-      .then((blob) => downloadBlob(blob, receiptPngFilename(order)))
-      .catch(() => {
-        downloadBlob(createCounterInvoicePdfBlob(order, thermalWidth), receiptFilename(order));
+export { MATE_THERMAL_PACKAGE, MATE_PLAY_STORE_URL, mateThermalTextHref };
+
+export async function downloadCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
+  if (!order) return { ok: false, reason: 'no_order' };
+  /* Native POS / phones: share or open PNG (WebView blocks <a download>). */
+  if (isNativePosApp() || prefersThermalPngShare()) {
+    try {
+      const blob = await createCounterReceiptPngBlob(order, thermalWidth);
+      return shareOrOpenBlob(blob, receiptPngFilename(order), {
+        title: `${SHOP.name} ${receiptNumber(order)}`,
+        text: `${SHOP.name} receipt — Save or Share`,
       });
-    return;
+    } catch {
+      const blob = createCounterInvoicePdfBlob(order, thermalWidth);
+      return shareOrOpenBlob(blob, receiptFilename(order), {
+        title: `${SHOP.name} ${receiptNumber(order)}`,
+        text: `${SHOP.name} receipt`,
+      });
+    }
   }
   downloadBlob(createCounterInvoicePdfBlob(order, thermalWidth), receiptFilename(order));
+  return { ok: true, method: 'download' };
 }
 
 export async function shareCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order) return false;
 
-  if (prefersThermalPngShare()) {
+  if (isNativePosApp() || prefersThermalPngShare()) {
     const blob = await createCounterReceiptPngBlob(order, thermalWidth);
-    const file = new File([blob], receiptPngFilename(order), { type: 'image/png' });
-    if (navigator.canShare?.({ files: [file] })) {
-      await navigator.share({
-        title: `${SHOP.name} ${receiptNumber(order)}`,
-        text: isAndroidDevice()
-          ? `${SHOP.name} receipt — choose Bluetooth Thermal Printer`
-          : `${SHOP.name} receipt — iPhone Share se Files / Print app kholo`,
-        files: [file],
-      });
-      return true;
+    const result = await shareOrOpenBlob(blob, receiptPngFilename(order), {
+      title: `${SHOP.name} ${receiptNumber(order)}`,
+      text: isAndroidDevice()
+        ? `${SHOP.name} receipt — choose Thermer (Bluetooth Thermal Printer)`
+        : `${SHOP.name} receipt — Share se Files / Print app kholo`,
+    });
+    if (result.message === 'cancelled') {
+      const err = new Error('Share cancelled');
+      err.name = 'AbortError';
+      throw err;
     }
-    downloadBlob(blob, file.name);
-    if (isAndroidDevice()) openMateThermalText(order);
+    if (result.method === 'share') return true;
+    /* Opened or downloaded as fallback — treat as handled (not a silent no-op). */
+    if (isAndroidDevice() && !isNativePosApp()) openMateThermalText(order);
     return false;
   }
 
   const blob = createCounterInvoicePdfBlob(order, thermalWidth);
-  const file = new File([blob], receiptFilename(order), { type: 'application/pdf' });
-  if (navigator.canShare?.({ files: [file] })) {
-    await navigator.share({
-      title: `${SHOP.name} ${receiptNumber(order)}`,
-      text: `${SHOP.name} receipt ${receiptNumber(order)}`,
-      files: [file],
-    });
-    return true;
+  const result = await shareOrOpenBlob(blob, receiptFilename(order), {
+    title: `${SHOP.name} ${receiptNumber(order)}`,
+    text: `${SHOP.name} receipt ${receiptNumber(order)}`,
+  });
+  if (result.message === 'cancelled') {
+    const err = new Error('Share cancelled');
+    err.name = 'AbortError';
+    throw err;
   }
-  downloadBlob(blob, file.name);
-  return false;
+  return result.method === 'share';
 }
 
 export function CounterBillReceipt({ order, printable = false, thermalWidth = '58mm' }) {
@@ -1100,6 +1245,10 @@ export default function AdminCounterBill({
   const autoPrintedOrderRef = useRef(null);
   const [draftSeed] = useState(() => readCounterBillDraft());
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
+  const nativePos = isNativePosApp();
+  const [nativePrinter, setNativePrinter] = useState(null);
+  const [nativePrinters, setNativePrinters] = useState([]);
+  const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
   const [query, setQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES);
@@ -1124,7 +1273,104 @@ export default function AdminCounterBill({
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [receiptOrder, setReceiptOrder] = useState(null);
-  const showMateThermalLink = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+  /* Thermer CTA only in Android browser — native app prints via AsfixThermalPrint */
+  const showMateThermalLink = !nativePos && typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
+  useEffect(() => {
+    if (!nativePos) return undefined;
+    let cancelled = false;
+    (async () => {
+      const saved = await getSavedPrinter();
+      if (!cancelled) setNativePrinter(saved);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [nativePos]);
+
+  const refreshNativePrinters = useCallback(async () => {
+    if (!nativePos) return;
+    setNativePrinterBusy(true);
+    try {
+      const list = await listBondedPrinters();
+      setNativePrinters(list);
+      const saved = await getSavedPrinter();
+      setNativePrinter(saved);
+    } catch (err) {
+      setFeedback({ type: 'error', text: err?.message || 'Could not list Bluetooth printers' });
+    } finally {
+      setNativePrinterBusy(false);
+    }
+  }, [nativePos]);
+
+  const selectNativePrinter = useCallback(async (printer) => {
+    await savePrinter(printer);
+    setNativePrinter(printer);
+    setFeedback({
+      type: 'success',
+      text: printer
+        ? `Printer: ${printer.name || printer.address}`
+        : 'Bluetooth printer cleared',
+    });
+  }, []);
+
+  /** Native-only auto-print once per order id after a successful sale. */
+  const maybeAutoPrintNative = useCallback(async (order) => {
+    if (!nativePos || !order) return;
+    const orderKey = String(order.order_id || order.id || '');
+    if (!orderKey || autoPrintedOrderRef.current === orderKey) return;
+    autoPrintedOrderRef.current = orderKey;
+    const text = buildThermalReceiptText(order);
+    const result = await autoPrintCounterReceiptIfNative(text);
+    if (result.ok) {
+      setFeedback({ type: 'success', text: t('admin.counterBillNativePrinted') });
+    } else if (result.reason === 'no_printer') {
+      setFeedback({ type: 'error', text: t('admin.counterBillNativeNoPrinter') });
+    } else if (result.reason === 'permission_denied') {
+      setFeedback({ type: 'error', text: t('admin.counterBillNativeBtPermission') });
+    } else if (result.reason === 'print_failed') {
+      setFeedback({
+        type: 'error',
+        text: result.message || t('admin.counterBillNativePrintFailed'),
+      });
+    }
+  }, [nativePos, t]);
+
+  const applyPrintFeedback = useCallback((result) => {
+    const normalized = normalizePrintResult(result);
+    if (normalized.ok) {
+      setFeedback({
+        type: 'success',
+        text: nativePos ? t('admin.counterBillNativePrinted') : t('admin.counterBillPrintStarted'),
+      });
+      return;
+    }
+    if (normalized.reason === 'cancelled' || normalized.reason === 'busy') {
+      if (normalized.reason === 'busy') {
+        setFeedback({ type: 'error', text: t('admin.counterBillPrintBusy') });
+      }
+      return;
+    }
+    if (normalized.reason === 'no_order') {
+      setFeedback({
+        type: 'error',
+        text: normalized.message || t('admin.counterBillNoReceipt'),
+      });
+      return;
+    }
+    if (normalized.reason === 'no_printer') {
+      setFeedback({ type: 'error', text: t('admin.counterBillNativeNoPrinter') });
+      return;
+    }
+    if (normalized.reason === 'permission_denied') {
+      setFeedback({ type: 'error', text: t('admin.counterBillNativeBtPermission') });
+      return;
+    }
+    setFeedback({
+      type: 'error',
+      text: normalized.message || t('admin.counterBillNativePrintFailed'),
+    });
+  }, [nativePos, t]);
 
   const availableProducts = useMemo(() => {
     return products
@@ -1464,6 +1710,8 @@ export default function AdminCounterBill({
       await loadServerDrafts();
       setFeedback({ type: 'success', text: t('admin.counterBillDraftConfirmed') });
       onBillCreated?.(result.order);
+      /* Auto-print only inside AsFix POS Capacitor app (not desktop / Thermer browser). */
+      void maybeAutoPrintNative(result.order);
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || t('admin.counterBillFailed') });
     } finally {
@@ -1482,17 +1730,31 @@ export default function AdminCounterBill({
   };
 
   const printReceipt = useCallback(async (order = receiptOrder) => {
-    if (!order) return;
-    if (onPrintOrder) {
-      onPrintOrder(order);
+    if (!order) {
+      setFeedback({ type: 'error', text: t('admin.counterBillNoReceipt') });
       return;
     }
-    await printActiveCounterReceipt({
-      thermalWidth,
-      inFlightRef: printInFlightRef,
-      order,
-    });
-  }, [onPrintOrder, receiptOrder, thermalWidth]);
+    setFeedback(null);
+    try {
+      let result;
+      if (onPrintOrder) {
+        /* Counter page resolves items then prints — must return print result for feedback */
+        result = await onPrintOrder(order);
+      } else {
+        result = await printActiveCounterReceipt({
+          thermalWidth,
+          inFlightRef: printInFlightRef,
+          order,
+        });
+      }
+      applyPrintFeedback(result);
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        text: err?.message || t('admin.counterBillNativePrintFailed'),
+      });
+    }
+  }, [applyPrintFeedback, onPrintOrder, receiptOrder, t, thermalWidth]);
 
   /* No auto-print — confirm + Print was firing multiple thermal jobs (3–4 slips). */
   const confirmBill = async () => {
@@ -1549,7 +1811,8 @@ export default function AdminCounterBill({
       setDiscountValue('');
       setCashReceived('');
       onBillCreated?.(result.order);
-      /* Print only when staff taps Print — auto-print caused 3–4 duplicate slips */
+      /* Native app: auto-print once. Browser/desktop: Print button only (avoids duplicate slips). */
+      void maybeAutoPrintNative(result.order);
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || t('admin.counterBillFailed') });
     } finally {
@@ -1557,17 +1820,45 @@ export default function AdminCounterBill({
     }
   };
 
-  const downloadInvoice = (order = receiptOrder) => {
-    if (!order) return;
-    downloadCounterInvoicePdf(order, thermalWidth);
+  const downloadInvoice = async (order = receiptOrder) => {
+    if (!order) {
+      setFeedback({ type: 'error', text: t('admin.counterBillNoReceipt') });
+      return;
+    }
+    setFeedback(null);
+    try {
+      const result = await downloadCounterInvoicePdf(order, thermalWidth);
+      if (result?.message === 'cancelled') return;
+      if (!result?.ok) {
+        setFeedback({
+          type: 'error',
+          text: result?.message || t('admin.counterBillPdfFailed'),
+        });
+        return;
+      }
+      if (result.method === 'share' || result.method === 'open') {
+        setFeedback({ type: 'success', text: t('admin.counterBillShareSheet') });
+      } else {
+        setFeedback({ type: 'success', text: t('admin.counterBillPdfDownloaded') });
+      }
+    } catch (err) {
+      if (err?.name === 'AbortError') return;
+      setFeedback({ type: 'error', text: err?.message || t('admin.counterBillPdfFailed') });
+    }
   };
 
   const shareInvoice = async (order = receiptOrder) => {
-    if (!order) return;
+    if (!order) {
+      setFeedback({ type: 'error', text: t('admin.counterBillNoReceipt') });
+      return;
+    }
+    setFeedback(null);
     try {
       const shared = await shareCounterInvoicePdf(order, thermalWidth);
-      if (!shared) {
-        setFeedback({ type: 'success', text: t('admin.counterBillPdfDownloaded') });
+      if (shared) {
+        setFeedback({ type: 'success', text: t('admin.counterBillShareOpened') });
+      } else {
+        setFeedback({ type: 'success', text: t('admin.counterBillShareSheet') });
       }
     } catch (err) {
       if (err?.name !== 'AbortError') {
@@ -1736,6 +2027,53 @@ export default function AdminCounterBill({
               ))}
             </div>
           </div>
+
+          {nativePos ? (
+            <div className="counter-bill__thermal-setting counter-bill__thermal-setting--native">
+              <span>{t('admin.counterBillNativePrinter')}</span>
+              <div className="counter-bill__native-printer">
+                <p className="counter-bill__native-printer-status">
+                  {nativePrinter
+                    ? `${nativePrinter.name || 'Printer'} (${nativePrinter.address})`
+                    : t('admin.counterBillNativeNoPrinter')}
+                </p>
+                <div role="group" aria-label={t('admin.counterBillNativePrinter')}>
+                  <button
+                    type="button"
+                    disabled={nativePrinterBusy}
+                    onClick={() => void refreshNativePrinters()}
+                  >
+                    {nativePrinterBusy ? t('common.loading') : t('admin.counterBillNativeRefresh')}
+                  </button>
+                  {nativePrinter ? (
+                    <button type="button" onClick={() => void selectNativePrinter(null)}>
+                      {t('admin.counterBillNativeClear')}
+                    </button>
+                  ) : null}
+                </div>
+                {nativePrinters.length > 0 ? (
+                  <ul className="counter-bill__native-printer-list">
+                    {nativePrinters.map((printer) => (
+                      <li key={printer.address}>
+                        <button
+                          type="button"
+                          className={
+                            nativePrinter?.address === printer.address
+                              ? 'counter-bill__thermal-active'
+                              : ''
+                          }
+                          onClick={() => void selectNativePrinter(printer)}
+                        >
+                          {printer.name || printer.address}
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+                <p className="counter-bill__native-printer-hint">{t('admin.counterBillNativeHint')}</p>
+              </div>
+            </div>
+          ) : null}
 
           <div className="counter-bill__quick-actions" aria-label={t('admin.counterBillQuickActions')}>
             <button type="button" onClick={() => document.getElementById('counter-bill-discount')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>

@@ -47,6 +47,7 @@ export default function Counter() {
   const printInFlightRef = useRef(false);
   const salesSectionRef = useRef(null);
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
 
   const loadCounterData = async ({ silent = false } = {}) => {
     // Never tear down the bill UI after first paint — silent refresh only.
@@ -191,10 +192,10 @@ export default function Counter() {
     }
     if (!saleHasReceiptItems(order)) {
       window.alert?.('Receipt details are still loading. Refresh sales and try Print Receipt again.');
-      return;
+      return { ok: false, reason: 'no_order', message: 'Receipt details are still loading' };
     }
     /* Direct print — no delayed useEffect (that blocked popups and auto-downloaded PDF). */
-    await printActiveCounterReceipt({
+    return printActiveCounterReceipt({
       thermalWidth,
       inFlightRef: printInFlightRef,
       order,
@@ -203,10 +204,38 @@ export default function Counter() {
 
   const shareCounterSale = async (sale) => {
     try {
-      await shareCounterInvoicePdf(sale, thermalWidth);
+      const shared = await shareCounterInvoicePdf(sale, thermalWidth);
+      if (!shared) {
+        window.alert?.(t('admin.counterBillShareSheet'));
+      }
     } catch (err) {
       if (err?.name !== 'AbortError') {
-        downloadCounterInvoicePdf(sale, thermalWidth);
+        try {
+          await downloadCounterInvoicePdf(sale, thermalWidth);
+          window.alert?.(t('admin.counterBillShareSheet'));
+        } catch (downloadErr) {
+          window.alert?.(downloadErr?.message || t('admin.counterBillPdfFailed'));
+        }
+      }
+    }
+  };
+
+  const downloadCounterSale = async (sale) => {
+    try {
+      const result = await downloadCounterInvoicePdf(sale, thermalWidth);
+      if (result?.message === 'cancelled') return;
+      if (!result?.ok) {
+        window.alert?.(result?.message || t('admin.counterBillPdfFailed'));
+        return;
+      }
+      window.alert?.(
+        result.method === 'share' || result.method === 'open'
+          ? t('admin.counterBillShareSheet')
+          : t('admin.counterBillPdfDownloaded')
+      );
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        window.alert?.(err?.message || t('admin.counterBillPdfFailed'));
       }
     }
   };
@@ -310,14 +339,26 @@ export default function Counter() {
                             <button
                               type="button"
                               className="wp-button wp-button--secondary counter-sales__print"
-                              onClick={() => printCounterSale(sale)}
+                              onClick={async () => {
+                                const result = await printCounterSale(sale);
+                                if (!result?.ok) {
+                                  if (result?.reason === 'cancelled' || result?.reason === 'busy') return;
+                                  const msg =
+                                    result?.reason === 'no_printer'
+                                      ? t('admin.counterBillNativeNoPrinter')
+                                      : result?.reason === 'permission_denied'
+                                        ? t('admin.counterBillNativeBtPermission')
+                                        : result?.message || t('admin.counterBillNativePrintFailed');
+                                  window.alert?.(msg);
+                                }
+                              }}
                             >
-                              {t('admin.counterBillPrintNow')}
+                              {isAndroid ? t('admin.counterBillPrintMate') : t('admin.counterBillPrintNow')}
                             </button>
                             <button
                               type="button"
                               className="wp-button wp-button--secondary counter-sales__print"
-                              onClick={() => downloadCounterInvoicePdf(sale, thermalWidth)}
+                              onClick={() => downloadCounterSale(sale)}
                             >
                               {t('admin.counterBillDownloadPdf')}
                             </button>

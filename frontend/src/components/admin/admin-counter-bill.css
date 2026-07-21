@@ -861,6 +861,46 @@
   background: var(--pos-bg);
 }
 
+.counter-bill__thermal-setting--native {
+  align-items: flex-start;
+  flex-direction: column;
+}
+
+.counter-bill__native-printer {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+
+.counter-bill__native-printer-status {
+  margin: 0;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--pos-text, inherit);
+  word-break: break-word;
+}
+
+.counter-bill__native-printer-hint {
+  margin: 0;
+  font-size: 0.72rem;
+  line-height: 1.35;
+  color: var(--pos-muted);
+}
+
+.counter-bill__native-printer-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+
+.counter-bill__native-printer-list li {
+  margin: 0;
+}
+
 .counter-bill__thermal-setting > span {
   color: var(--pos-muted);
   font-size: 0.78rem;

@@ -13,3 +13,12 @@ scripts/model-images/node_modules/
 scripts/model-images/_cache/
 scripts/model-images/finalize-log.txt
 .vercel
+# Local APK extracts / CI scratch (never commit Thermer.apk or dex dumps)
+_ci_local/
+# Capacitor / Android local artifacts
+mobile/**/android/local.properties
+mobile/**/android/.gradle/
+mobile/**/android/build/
+mobile/**/android/**/build/
+mobile/**/*.apk
+mobile/**/*.aab

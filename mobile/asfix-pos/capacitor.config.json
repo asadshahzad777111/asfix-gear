@@ -1,0 +1,21 @@
+{
+  "appId": "com.asfixgear.pos",
+  "appName": "AsFix POS",
+  "webDir": "www",
+  "server": {
+    "url": "https://asfixgear.com/pos",
+    "cleartext": false,
+    "allowNavigation": [
+      "asfixgear.com",
+      "www.asfixgear.com",
+      "localhost",
+      "127.0.0.1"
+    ]
+  },
+  "android": {
+    "allowMixedContent": false
+  },
+  "plugins": {
+    "Preferences": {}
+  }
+}

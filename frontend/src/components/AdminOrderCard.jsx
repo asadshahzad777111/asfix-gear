@@ -170,6 +170,7 @@ export default function AdminOrderCard({
     ? (o.phone ? `Walk-in · ${o.phone}` : 'Walk-in Customer')
     : o.customer_name;
   const thermalWidth = readThermalReceiptWidth();
+  const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
 
   const handleAssignRider = async (payload) => {
     await onAssignRider(o.id, payload);
@@ -180,11 +181,20 @@ export default function AdminOrderCard({
     if (receiptBusy) return;
     setReceiptBusy(true);
     try {
-      await printActiveCounterReceipt({
+      const result = await printActiveCounterReceipt({
         order: o,
         thermalWidth,
         inFlightRef: printInFlightRef,
       });
+      if (!result?.ok && result?.reason !== 'cancelled' && result?.reason !== 'busy') {
+        window.alert?.(
+          result?.reason === 'no_printer'
+            ? t('admin.counterBillNativeNoPrinter')
+            : result?.reason === 'permission_denied'
+              ? t('admin.counterBillNativeBtPermission')
+              : result?.message || t('admin.counterBillNativePrintFailed')
+        );
+      }
     } finally {
       setReceiptBusy(false);
     }
@@ -195,8 +205,14 @@ export default function AdminOrderCard({
     setReceiptBusy(true);
     try {
       await shareCounterInvoicePdf(o, thermalWidth);
-    } catch {
-      downloadCounterInvoicePdf(o, thermalWidth);
+    } catch (err) {
+      if (err?.name !== 'AbortError') {
+        try {
+          await downloadCounterInvoicePdf(o, thermalWidth);
+        } catch {
+          window.alert?.(t('admin.counterBillPdfFailed'));
+        }
+      }
     } finally {
       setReceiptBusy(false);
     }
@@ -311,7 +327,7 @@ export default function AdminOrderCard({
           {t('sales.receiptStaff')}
         </a>
         <button type="button" className="btn btn-outline btn-sm" disabled={receiptBusy} onClick={handleThermalPrint}>
-          {t('admin.counterBillPrint')}
+          {isAndroid ? t('admin.counterBillPrintMate') : t('admin.counterBillPrint')}
         </button>
         <button type="button" className="btn btn-outline btn-sm" disabled={receiptBusy} onClick={handleShareReceipt}>
           {t('admin.orderShareThermal')}

@@ -9,6 +9,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/preferences": "^6.0.3",
     "framer-motion": "^11.18.2",
     "leaflet": "^1.9.4",
     "qrcode": "^1.5.4",
