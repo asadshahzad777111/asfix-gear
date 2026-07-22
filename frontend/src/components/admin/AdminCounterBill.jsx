@@ -1062,34 +1062,45 @@ html, body {
 function buildThermalPngPrintHtml(dataUrl, widthMm, heightMm) {
   const paperW = Number(widthMm) || 58;
   /*
-   * POS-58 printable ≈ 48mm of 58mm paper. Center a slightly narrower image so
-   * Chrome→driver margins do not crop Bill# / prices on the right edge.
+   * Page MUST be exactly 58mm (or 80mm) wide so Chrome / POS-58 destination
+   * fills the thermal frame — not a skinny strip on a letter/A4-looking preview.
+   * Image fills ~100% of paper (1mm side pad) so cut/fit matches the roll.
+   * Safe crop margins live inside the PNG (padX), not as a centered narrow sheet.
    */
-  const contentW = paperW === 80 ? 72 : 52;
+  const contentW = paperW === 80 ? 78 : 56;
+  const sidePad = Math.max(0, (paperW - contentW) / 2);
   const contentH = Math.max(40, Math.min(220, Number(heightMm) || 120));
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
 <meta name="viewport" content="width=${paperW}, initial-scale=1" />
 <title>AsFix receipt</title>
 <style>
 @page { size: ${paperW}mm ${contentH}mm; margin: 0; }
-html, body {
+html {
   margin: 0 !important;
   padding: 0 !important;
   width: ${paperW}mm !important;
+  max-width: ${paperW}mm !important;
+  min-width: ${paperW}mm !important;
+  height: ${contentH}mm !important;
+  background: #fff !important;
+}
+body {
+  margin: 0 !important;
+  padding: 0 ${sidePad}mm !important;
+  width: ${paperW}mm !important;
+  max-width: ${paperW}mm !important;
+  min-width: ${paperW}mm !important;
   height: ${contentH}mm !important;
   min-height: 0 !important;
   max-height: ${contentH}mm !important;
   overflow: hidden !important;
   background: #fff !important;
-}
-body {
-  display: flex !important;
-  justify-content: center !important;
-  align-items: flex-start !important;
+  box-sizing: border-box !important;
 }
 img {
   display: block !important;
   width: ${contentW}mm !important;
+  max-width: 100% !important;
   height: ${contentH}mm !important;
   margin: 0 !important;
   padding: 0 !important;
@@ -1342,7 +1353,8 @@ export async function printDirectSystemReceipt({
      */
     const width = normalizeThermalWidth(thermalWidth);
     const widthMm = width === '80mm' ? 80 : 58;
-    const contentWmm = widthMm === 80 ? 72 : 52;
+    /* Match buildThermalPngPrintHtml — nearly full paper width (not 52mm strip) */
+    const contentWmm = widthMm === 80 ? 78 : 56;
     const blob = await createCounterReceiptPngBlob(order, width);
     const dataUrl = await blobToDataUrl(blob);
     const dims = await loadImageNaturalSize(dataUrl);
