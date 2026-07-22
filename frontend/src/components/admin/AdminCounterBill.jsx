@@ -5,7 +5,10 @@ import { SHOP } from '../../config/shop';
 import { useAuth } from '../../context/AuthContext';
 import { getDefaultImage } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
-import { tryLaptopThermalPrint } from '../../utils/thermalLaptopPrint';
+import {
+  printEscPosViaThermalBridge,
+  tryLaptopThermalPrint,
+} from '../../utils/thermalLaptopPrint';
 import {
   autoPrintCounterReceiptIfNative,
   getSavedPrinter,
@@ -441,10 +444,11 @@ function buildReceiptLines(order, maxChars = 18) {
   /* Separate Date / Time so HH:mm never truncates (was showing 10:5) */
   kv('Date', billDate);
   kv('Time', billTime);
-  kv('Staff', (order?.created_by_staff_name || 'Counter').slice(0, 10));
+  /* Let kv() fit to maxChars — do not hard-slice (32-col ESC/POS needs full "Walk-in Customer") */
+  kv('Staff', order?.created_by_staff_name || 'Counter');
   kv('Pay', paymentLabel(order?.payment_mode));
-  kv('Customer', (order?.customer_name || 'Walk-in').slice(0, 9));
-  if (order?.phone) kv('Phone', String(order.phone).slice(0, 12));
+  kv('Customer', order?.customer_name || 'Walk-in');
+  if (order?.phone) kv('Phone', String(order.phone));
   rule();
 
   if (!rows.length) {
@@ -963,10 +967,10 @@ html, body {
     <span>Bill</span><span>${escapeHtml(receiptNumber(order))}</span>
     <span>Date</span><span>${escapeHtml(order?.created_at ? shortReceiptDateParts(order).date : '-')}</span>
     <span>Time</span><span>${escapeHtml(order?.created_at ? shortReceiptDateParts(order).time : '-')}</span>
-    <span>Staff</span><span>${escapeHtml((order?.created_by_staff_name || 'Counter').slice(0, 12))}</span>
+    <span>Staff</span><span>${escapeHtml(order?.created_by_staff_name || 'Counter')}</span>
     <span>Pay</span><span>${escapeHtml(paymentLabel(order?.payment_mode))}${paymentNote ? ` (${escapeHtml(paymentNote)})` : ''}</span>
-    <span>Customer</span><span>${escapeHtml((order?.customer_name || 'Walk-in').slice(0, 12))}</span>
-    ${order?.phone ? `<span>Phone</span><span>${escapeHtml(String(order.phone).slice(0, 12))}</span>` : ''}
+    <span>Customer</span><span>${escapeHtml(order?.customer_name || 'Walk-in')}</span>
+    ${order?.phone ? `<span>Phone</span><span>${escapeHtml(String(order.phone))}</span>` : ''}
   </div>
   <hr class="r-rule" />
   ${items || '<div class="r-item">No items</div>'}
@@ -1133,8 +1137,16 @@ export async function printActiveCounterReceipt({
       return { ok: true };
     }
 
-    /* Laptop: bridge (COM/SPP) or Web Bluetooth (BLE) before Chrome print dialog */
+    /* Laptop: prefer ESC/POS base64 (32-col + QR), then plain text bridge/BLE */
     try {
+      const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
+      if (dataBase64) {
+        const esc = await printEscPosViaThermalBridge(dataBase64);
+        if (esc.ok) {
+          finishPrintJob(inFlightRef);
+          return { ok: true };
+        }
+      }
       const text = buildThermalReceiptText(order);
       const direct = await tryLaptopThermalPrint(text);
       if (direct.ok) {
