@@ -4,12 +4,16 @@ import {
   defaultPrintTarget,
   fetchPrintStations,
   isAppleMobileDevice,
+  isDesktopDevice,
   writePrintTarget,
 } from '../utils/remoteThermalPrint';
 import './print-target-chooser.css';
 
+const LOCAL_TARGETS = new Set(['direct', 'local']);
+
 /**
- * Modal to pick local vs remote thermal print station.
+ * Modal to pick Direct / local share vs remote thermal print station.
+ * Same options on laptop and phone (Direct = system print on laptop, Share on phone).
  */
 export default function PrintTargetChooser({
   open,
@@ -26,6 +30,7 @@ export default function PrintTargetChooser({
   });
   const [loadingStations, setLoadingStations] = useState(false);
   const ios = isAppleMobileDevice();
+  const desktop = isDesktopDevice();
 
   useEffect(() => {
     if (!open) return undefined;
@@ -49,14 +54,26 @@ export default function PrintTargetChooser({
   const androidOnline = Boolean(stations?.android?.online);
   const laptopOnline = Boolean(stations?.laptop?.online);
   const anyOnline = androidOnline || laptopOnline;
+  const needsStation = !LOCAL_TARGETS.has(target);
 
   const options = [
+    {
+      id: 'direct',
+      title: t('admin.printTargetDirect'),
+      hint: ios
+        ? t('admin.printTargetDirectIosHint')
+        : desktop
+          ? t('admin.printTargetDirectHint')
+          : t('admin.printTargetDirectMobileHint'),
+      online: true,
+      highlight: desktop || ios,
+    },
     {
       id: 'local',
       title: ios ? t('admin.printTargetIos') : t('admin.printTargetLocal'),
       hint: ios ? t('admin.printTargetLocalIosHint') : t('admin.printTargetLocalHint'),
       online: true,
-      highlight: !ios,
+      highlight: false,
     },
     {
       id: 'android',
@@ -77,7 +94,7 @@ export default function PrintTargetChooser({
       title: t('admin.printTargetAny'),
       hint: t('admin.printTargetAnyHint'),
       online: anyOnline,
-      highlight: ios,
+      highlight: false,
     },
   ];
 
@@ -103,7 +120,7 @@ export default function PrintTargetChooser({
                 'print-target-chooser__option',
                 target === opt.id ? 'is-selected' : '',
                 opt.highlight ? 'is-preferred' : '',
-                opt.id !== 'local' && !opt.online ? 'is-offline' : '',
+                !LOCAL_TARGETS.has(opt.id) && !opt.online ? 'is-offline' : '',
               ].filter(Boolean).join(' ')}
             >
               <input
@@ -117,7 +134,7 @@ export default function PrintTargetChooser({
               <span className="print-target-chooser__option-body">
                 <strong>{opt.title}</strong>
                 <span>{opt.hint}</span>
-                {opt.id !== 'local' ? (
+                {!LOCAL_TARGETS.has(opt.id) ? (
                   <em className={opt.online ? 'is-on' : 'is-off'}>
                     {loadingStations
                       ? t('admin.printTargetChecking')
@@ -125,13 +142,15 @@ export default function PrintTargetChooser({
                         ? t('admin.printTargetOnline')
                         : t('admin.printTargetOffline')}
                   </em>
-                ) : null}
+                ) : (
+                  <em className="is-on">{t('admin.printTargetNoStationNeeded')}</em>
+                )}
               </span>
             </label>
           ))}
         </div>
 
-        {!anyOnline ? (
+        {needsStation && !anyOnline ? (
           <p className="print-target-chooser__warn">{t('admin.printTargetNoStation')}</p>
         ) : null}
 

@@ -6,7 +6,7 @@ import { buildThermalReceiptText } from '../components/admin/AdminCounterBill';
 import { getSavedPrinter, isNativePosApp } from './nativePosPrint';
 
 export const PRINT_TARGET_KEY = 'asfix_print_target_v1';
-export const PRINT_TARGETS = ['local', 'android', 'laptop', 'any'];
+export const PRINT_TARGETS = ['direct', 'local', 'android', 'laptop', 'any'];
 
 export function readPrintTarget() {
   try {
@@ -40,13 +40,13 @@ export function isDesktopDevice() {
   return typeof navigator !== 'undefined' && !isAndroidDevice() && !isAppleMobileDevice();
 }
 
-/** Prefer remote station on iOS; local elsewhere when no saved preference. */
+/** Prefer Direct Print on laptop (Windows 58mm driver); remote on iOS; local in native app. */
 export function defaultPrintTarget() {
   const saved = readPrintTarget();
   if (saved) return saved;
   if (isAppleMobileDevice()) return 'any';
   if (isNativePosApp()) return 'local';
-  if (isDesktopDevice()) return 'local';
+  if (isDesktopDevice()) return 'direct';
   return 'any';
 }
 
@@ -89,7 +89,7 @@ export async function enqueueRemotePrintJob({
   if (!String(receiptText || '').trim()) {
     return { ok: false, reason: 'no_order', message: 'No receipt to print' };
   }
-  if (target === 'local') {
+  if (target === 'local' || target === 'direct') {
     return { ok: false, reason: 'local', message: 'Local print should not use the queue' };
   }
 

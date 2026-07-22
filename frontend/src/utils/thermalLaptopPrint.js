@@ -44,7 +44,8 @@ function buildEscPosBytes(text) {
   const align = new Uint8Array([ESC, 0x61, 0x00]);
   const encoder = new TextEncoder();
   const payload = encoder.encode(body.endsWith('\n') ? body : `${body}\n`);
-  const feed = encoder.encode('\n\n\n');
+  /* 2 line feeds max before cut — avoid long blank roll */
+  const feed = encoder.encode('\n\n');
   const cut = new Uint8Array([GS, 0x56, 0x00]);
   const out = new Uint8Array(init.length + align.length + payload.length + feed.length + cut.length);
   let o = 0;

@@ -208,7 +208,7 @@ export function buildThermalReceiptText(order, thermalWidth = '58mm') {
   if (!order) return '';
   /* Match ESC/POS 58mm (~32) / 80mm (~48) so plain-text fallbacks fill the roll */
   const maxChars = normalizeThermalWidth(thermalWidth) === '80mm' ? 48 : 32;
-  return `${buildReceiptLines(order, maxChars).map((line) => line.value).join('\n')}\n\n`;
+  return `${buildReceiptLines(order, maxChars).map((line) => line.value).join('\n')}\n`;
 }
 
 function bytesToBase64(bytes) {
@@ -268,8 +268,9 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
     push(0x1b, 0x45, 0x00);
   }
   push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00, 0x1b, 0x4d, 0x00);
-  push(0x1b, 0x4a, 0x30); // ESC J 48 — feed before cut (vendor demo)
-  push(0x1d, 0x56, 0x42, 0x00); // GS V B 0 — partial cut (vendor kit)
+  /* 2–3 line feeds only — never ESC J 48+ (huge blank roll on many clones) */
+  push(0x0a, 0x0a, 0x0a);
+  push(0x1d, 0x56, 0x42, 0x00); // GS V B 0 — partial cut, no extra feed
 
   const size = parts.reduce((sum, part) => sum + part.length, 0);
   const payload = new Uint8Array(size);
@@ -913,45 +914,54 @@ function buildThermalReceiptHtml(order, thermalWidth = '58mm', qrDataUrl = '') {
 
   const css = `
 @page { size: ${widthMm}mm auto; margin: 0; }
+@page { margin: 0; } /* some engines ignore size:auto — never force A4/fixed height */
 html, body {
   margin: 0 !important;
   padding: 0 !important;
   width: ${widthMm}mm !important;
   max-width: ${widthMm}mm !important;
+  height: auto !important;
+  min-height: 0 !important;
+  max-height: none !important;
   background: #fff !important;
   color: #000 !important;
+  overflow: hidden !important;
 }
 * { box-sizing: border-box; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
 .receipt {
   width: ${widthMm}mm !important;
   max-width: ${widthMm}mm !important;
+  height: auto !important;
+  min-height: 0 !important;
   margin: 0 !important;
-  padding: 3.5mm 3mm !important;
+  padding: 2.5mm 2.5mm 1.5mm !important;
   font-family: "Courier New", Courier, monospace !important;
   font-size: 15px !important;
   font-weight: 700 !important;
-  line-height: 1.6 !important;
-  letter-spacing: 0.08em !important;
+  line-height: 1.45 !important;
+  letter-spacing: 0.06em !important;
+  page-break-after: avoid !important;
+  page-break-inside: avoid !important;
 }
-.r-shop { text-align: center; margin-bottom: 7px; }
+.r-shop { text-align: center; margin-bottom: 5px; }
 .r-shop h1 { margin: 0 0 2px; font-size: 18px; font-weight: 900; letter-spacing: 0.1em; }
-.r-shop .r-bill { margin: 0 0 5px; font-size: 16px; font-weight: 900; letter-spacing: 0.12em; }
-.r-shop p { margin: 2px 0; font-size: 12px; letter-spacing: 0.06em; }
-.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 10px; margin: 7px 0; font-size: 14px; }
+.r-shop .r-bill { margin: 0 0 4px; font-size: 16px; font-weight: 900; letter-spacing: 0.12em; }
+.r-shop p { margin: 1px 0; font-size: 12px; letter-spacing: 0.06em; }
+.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 5px 0; font-size: 14px; }
 .r-meta span:last-child { text-align: right; }
-.r-rule { border: 0; border-top: 1px dashed #000; margin: 7px 0; }
-.r-item { margin: 0 0 7px; }
+.r-rule { border: 0; border-top: 1px dashed #000; margin: 5px 0; }
+.r-item { margin: 0 0 5px; }
 .r-item strong { display: block; font-size: 14px; letter-spacing: 0.07em; }
 .r-row { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
-.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: 14px; }
+.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 14px; }
 .r-totals > * { min-width: 0; }
 .r-totals strong { text-align: right; white-space: nowrap; }
-.r-grand-wrap { text-align: center; margin: 10px 0 6px; }
+.r-grand-wrap { text-align: center; margin: 6px 0 4px; }
 .r-grand-label { display: block; font-size: 15px; font-weight: 900; letter-spacing: 0.1em; }
-.r-grand { display: block; font-size: 24px; font-weight: 900; letter-spacing: 0.12em; margin-top: 5px; }
-.r-thanks, .r-site { text-align: center; margin: 6px 0 0; font-size: 13px; font-weight: 700; }
-.r-scan { text-align: center; margin: 8px 0 4px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; }
-.r-qr { display: block; width: 48%; max-width: 48%; height: auto; margin: 4px auto 8px; }
+.r-grand { display: block; font-size: 22px; font-weight: 900; letter-spacing: 0.1em; margin-top: 3px; }
+.r-thanks, .r-site { text-align: center; margin: 4px 0 0; font-size: 13px; font-weight: 700; }
+.r-scan { text-align: center; margin: 5px 0 2px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; }
+.r-qr { display: block; width: 42%; max-width: 42%; height: auto; margin: 2px auto 0; }
 `.trim();
 
   const qrBlock = qrDataUrl
@@ -1009,14 +1019,15 @@ function finishPrintJob(inFlightRef) {
   if (inFlightRef) inFlightRef.current = false;
 }
 
-/** Same-origin iframe print — no popup, no PDF download. */
+/** Same-origin iframe print — 58mm auto height, never A4. */
 function printViaIframe(html, inFlightRef) {
   document.getElementById(PRINT_ROOT_ID)?.remove();
   const iframe = document.createElement('iframe');
   iframe.id = PRINT_ROOT_ID;
   iframe.title = 'AsFix 58mm receipt';
   iframe.setAttribute('aria-hidden', 'true');
-  iframe.style.cssText = 'position:fixed;width:0;height:0;border:0;left:-9999px;top:0;opacity:0;';
+  /* Non-zero size so layout/height:auto is measured correctly before print */
+  iframe.style.cssText = 'position:fixed;width:58mm;height:1px;border:0;left:-9999px;top:0;opacity:0;overflow:hidden;';
   document.body.appendChild(iframe);
 
   const doc = iframe.contentDocument;
@@ -1035,6 +1046,7 @@ function printViaIframe(html, inFlightRef) {
   }
 
   let done = false;
+  let printed = false;
   const cleanup = () => {
     if (done) return;
     done = true;
@@ -1044,14 +1056,35 @@ function printViaIframe(html, inFlightRef) {
   win.addEventListener('afterprint', cleanup, { once: true });
   window.setTimeout(cleanup, 90_000);
 
-  window.setTimeout(() => {
+  const triggerPrint = () => {
+    if (printed || done) return;
+    printed = true;
     try {
       win.focus();
       win.print();
     } catch {
       cleanup();
     }
-  }, 200);
+  };
+
+  const images = Array.from(doc.images || []);
+  if (!images.length) {
+    window.setTimeout(triggerPrint, 50);
+    return true;
+  }
+  let pending = images.length;
+  const onReady = () => {
+    pending -= 1;
+    if (pending <= 0) window.setTimeout(triggerPrint, 30);
+  };
+  images.forEach((img) => {
+    if (img.complete) onReady();
+    else {
+      img.addEventListener('load', onReady, { once: true });
+      img.addEventListener('error', onReady, { once: true });
+    }
+  });
+  window.setTimeout(triggerPrint, 2500);
   return true;
 }
 
@@ -1072,6 +1105,93 @@ function claimPrintSlot(order) {
 
 function receiptPngFilename(order) {
   return `asfix-receipt-${receiptNumber(order)}.png`;
+}
+
+/**
+ * Direct Print — Chrome/system dialog with 58mm CSS (Windows thermal driver),
+ * or Share/Download PNG on phones. Skips bridge / BLE / Thermer.
+ * Does not require a remote print station.
+ */
+export async function printDirectSystemReceipt({
+  thermalWidth = '58mm',
+  inFlightRef,
+  order = null,
+} = {}) {
+  if (typeof window === 'undefined' || typeof document === 'undefined') {
+    return { ok: false, reason: 'unavailable', message: 'Print unavailable' };
+  }
+  if (inFlightRef?.current) {
+    return { ok: false, reason: 'busy', message: 'Print already in progress' };
+  }
+  if (!order) {
+    return { ok: false, reason: 'no_order', message: 'No receipt to print' };
+  }
+  if (!claimPrintSlot(order)) {
+    return { ok: false, reason: 'busy', message: 'Print already in progress' };
+  }
+
+  if (inFlightRef) inFlightRef.current = true;
+  try {
+    /* Native POS already has BT printer — use ESC/POS path */
+    if (isNativePosApp()) {
+      const text = buildThermalReceiptText(order, thermalWidth);
+      const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
+      const native = await tryNativeThermalPrint(text, { dataBase64 });
+      finishPrintJob(inFlightRef);
+      return native?.ok
+        ? { ok: true }
+        : {
+            ok: false,
+            reason: native?.reason || 'print_failed',
+            message: native?.message,
+          };
+    }
+
+    /* Phone: Share / Download only (no system 58mm driver on iOS) */
+    if (isAndroidDevice() || isAppleMobileDevice()) {
+      try {
+        const blob = await createCounterReceiptPngBlob(order, thermalWidth);
+        const shared = await shareOrOpenBlob(blob, receiptPngFilename(order), {
+          title: `${SHOP.name} ${receiptNumber(order)}`,
+          text: `${SHOP.name} receipt — Share or Print`,
+        });
+        finishPrintJob(inFlightRef);
+        if (shared.message === 'cancelled') {
+          return { ok: false, reason: 'cancelled' };
+        }
+        return { ok: true };
+      } catch (err) {
+        finishPrintJob(inFlightRef);
+        if (err?.name === 'AbortError') {
+          return { ok: false, reason: 'cancelled' };
+        }
+        return {
+          ok: false,
+          reason: 'print_failed',
+          message: err?.message || 'Share failed',
+        };
+      }
+    }
+
+    /* Laptop: system print dialog — 58mm auto CSS for installed Windows thermal driver */
+    const width = normalizeThermalWidth(thermalWidth);
+    let qrDataUrl = '';
+    try {
+      qrDataUrl = await buildWebsiteQrDataUrl(160);
+    } catch {
+      qrDataUrl = '';
+    }
+    const html = buildThermalReceiptHtml(order, width, qrDataUrl);
+    const printed = await printViaIframe(html, inFlightRef);
+    return printed ? { ok: true } : { ok: false, reason: 'print_failed', message: 'Browser print failed' };
+  } catch (err) {
+    finishPrintJob(inFlightRef);
+    return {
+      ok: false,
+      reason: 'print_failed',
+      message: err?.message || String(err) || 'Print failed',
+    };
+  }
 }
 
 /**

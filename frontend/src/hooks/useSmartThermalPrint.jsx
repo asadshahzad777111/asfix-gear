@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import PrintTargetChooser from '../components/PrintTargetChooser';
 import {
   printActiveCounterReceipt,
+  printDirectSystemReceipt,
   buildThermalReceiptEscPosBase64,
   buildThermalReceiptText,
 } from '../components/admin/AdminCounterBill';
@@ -14,7 +15,7 @@ import {
 import { resolvePrintAgentStation, startPrintJobAgent } from '../utils/printJobAgent';
 
 /**
- * Shared Print flow: native+printer → local; else chooser → local or remote queue.
+ * Shared Print flow: native+printer → local; else chooser → Direct / local / remote queue.
  * @param {{ thermalWidth?: string, agentReady?: boolean }} [opts]
  */
 export function useSmartThermalPrint({ thermalWidth = '58mm', agentReady = true } = {}) {
@@ -81,6 +82,16 @@ export function useSmartThermalPrint({ thermalWidth = '58mm', agentReady = true 
     setChooserBusy(true);
 
     try {
+      if (target === 'direct') {
+        const result = await printDirectSystemReceipt({
+          order: pending.order,
+          thermalWidth: pending.thermalWidth,
+          inFlightRef: pending.inFlightRef,
+        });
+        finishChooser(result);
+        return;
+      }
+
       if (target === 'local') {
         const result = await printActiveCounterReceipt({
           order: pending.order,

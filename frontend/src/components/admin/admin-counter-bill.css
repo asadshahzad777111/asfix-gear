@@ -1865,7 +1865,7 @@
   }
 
   @page {
-    size: 58mm 200mm;
+    size: 58mm auto;
     margin: 0;
   }
 }
