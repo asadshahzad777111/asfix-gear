@@ -29,7 +29,8 @@
     "generate:ad": "node scripts/generate-ad.mjs",
     "thermal:bridge": "node scripts/thermal-print-bridge.mjs",
     "thermal:com-demo": "node scripts/send-thermal-com.mjs",
-    "thermal:help": "node scripts/thermal-print-help.mjs"
+    "thermal:help": "node scripts/thermal-print-help.mjs",
+    "pos:laptop": "node scripts/asfix-pos-laptop.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

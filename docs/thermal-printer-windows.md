@@ -19,7 +19,7 @@ Typical pack: `58MM Thermal Printer Driver & Tools -50.zip` (Zijiang / BT-POS cl
 Vendor Android SDK facts we coded against:
 
 - **58mm printable width** = **384 dots**; Font A ≈ **32 characters**
-- **QR** = proprietary **`ESC Z`** (`0x1B 0x5A …`), mag **6** on 58mm / **8** on 80mm — not Epson `GS (k`
+- **QR** = proprietary **`ESC Z`** (`0x1B 0x5A …`), mag **7** on 58mm / **9** on 80mm (phone-tuned) — not Epson `GS (k`
 - Cut = `GS V B` + feed (`ESC J`)
 
 ## Three Android apps (do not confuse)
@@ -80,7 +80,9 @@ Vendor drivers often ship with a continuous “Printer Paper” of **58 × 3276 
 
 **Thermer.apk / BT-POSPrinter.apk do not install a Windows kernel driver.**
 
-### Laptop one-click from POS (no driver required for BLE)
+### Laptop Print Station (AsFix POS Laptop)
+
+Double-click `scripts/asfix-pos-laptop.bat` (or `npm run pos:laptop`) — opens POS in the browser and starts the COM bridge when a port is available. See [`ASFIX-POS-LAPTOP.md`](./ASFIX-POS-LAPTOP.md).
 
 1. **Local COM bridge** (when COMx exists):
 

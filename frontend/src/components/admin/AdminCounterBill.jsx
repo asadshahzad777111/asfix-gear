@@ -237,12 +237,15 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
 
   push(0x1b, 0x40); // ESC @
   push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm / ~32 cols @ 384 dots)
+  /* Extra line spacing so dots don’t clump on phone thermal (~30 default → ~42) */
+  push(0x1b, 0x33, 42);
   for (const line of lines) {
     if (line.qr) {
       const qr = encoder.encode(line.value || RECEIPT_SITE_URL);
       const version = 0;
       const ecc = 3; /* vendor max 0–3 */
-      const mag = width === '80mm' ? 8 : 6;
+      /* Slightly larger QR on phone (was 6/8) */
+      const mag = width === '80mm' ? 9 : 7;
       push(0x1b, 0x61, 0x01); // center
       /* ESC Z nVersion nEcc nMag nL nH data — Zijiang BT-POS / 58mm kit */
       push(0x1b, 0x5a, version, ecc, mag, qr.length & 0xff, (qr.length >> 8) & 0xff);
@@ -252,24 +255,30 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
     }
 
     push(0x1b, 0x61, line.align === 'center' ? 0x01 : line.align === 'right' ? 0x02 : 0x00);
-    push(0x1b, 0x45, line.weight === 'bold' || line.title || line.grand || line.totalLabel ? 0x01 : 0x00);
+    /* Bold only shop title + grand total — lighter body so pixels don’t bleed */
+    const useBold = Boolean(line.title || line.grand);
+    push(0x1b, 0x45, useBold ? 0x01 : 0x00);
     /* Always Font A — Font B looks tiny and leaves empty right margin feel */
     push(0x1b, 0x4d, 0x00);
-    /* Title: double W+H; TOTAL: double H; grand amount: double W+H */
+    /* Title: double H only (not W+H blob); grand: double H; body: normal */
     const size = line.title || line.grand
-      ? 0x11
+      ? 0x01
       : line.totalLabel
-        ? 0x01
+        ? 0x00
         : 0x00;
     push(0x1d, 0x21, size);
     text(line.value);
     push(0x0a);
+    /* Extra blank after rules / section breaks → longer, airier receipt */
+    if (line.rule || line.title || line.grand || line.totalLabel) {
+      push(0x0a);
+    }
     push(0x1d, 0x21, 0x00);
     push(0x1b, 0x45, 0x00);
   }
   push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00, 0x1b, 0x4d, 0x00);
-  /* 2 line feeds only — never ESC J 48+ / long feed (meters of blank on POS-58 clones) */
-  push(0x0a, 0x0a);
+  /* 3 line feeds — short extra tail, never ESC J 48+ / meters of blank */
+  push(0x0a, 0x0a, 0x0a);
   push(0x1d, 0x56, 0x42, 0x00); // GS V B 0 — partial cut, no extra feed
 
   const size = parts.reduce((sum, part) => sum + part.length, 0);
@@ -315,8 +324,8 @@ function buildMateThermalMarkup(order) {
   });
   parts.push('<010> ');
   parts.push('<110>Scan');
-  /* Mate QR: align#moduleSize#payload — size ~ body text, not full-roll giant */
-  parts.push(`<QR>1#6#${RECEIPT_SITE_URL}`);
+  /* Mate QR: align#moduleSize#payload — a bit larger on phone */
+  parts.push(`<QR>1#7#${RECEIPT_SITE_URL}`);
   parts.push(`<110>${RECEIPT_SITE}`);
   parts.push('<010> ');
   return parts.join('');
@@ -509,7 +518,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const widthPx = printerDots;
   /* Extra side pad so Windows POS-58 driver margins do not crop Bill#/prices */
   const padX = pageWidth === '80mm' ? 28 : 22;
-  const padY = 14;
+  const padY = 18;
   const maxChars = pageWidth === '80mm' ? 42 : 28;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
@@ -517,13 +526,14 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   if (!ctx) throw new Error('Canvas unavailable');
 
   const usable = widthPx - padX * 2;
-  const isHeavy = (line) => Boolean(line?.title || line?.grand || line?.totalLabel);
+  /* Bold only title + grand — lighter body (“pixels less dense”) */
+  const isHeavy = (line) => Boolean(line?.title || line?.grand);
 
   const setFont = (size, heavy = false) => {
     /* Regular Arial only — no Arial Black / no stroke (those become thermal blobs) */
     ctx.font = heavy
-      ? `bold ${size}px Arial, Helvetica, sans-serif`
-      : `${size}px Arial, Helvetica, sans-serif`;
+      ? `600 ${size}px Arial, Helvetica, sans-serif`
+      : `400 ${size}px Arial, Helvetica, sans-serif`;
   };
 
   const measureText = (text, size, heavy = false) => {
@@ -603,13 +613,14 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return chunks.length ? chunks : [''];
   };
 
-  const lineHFor = (size) => Math.ceil(size * 1.22);
-  const ruleH = Math.ceil(fontSize * 0.7);
+  /* Airier leading so thermal dots don’t meet / clump */
+  const lineHFor = (size) => Math.ceil(size * 1.42);
+  const ruleH = Math.ceil(fontSize * 0.85);
   /*
-   * QR: match ESC Z mag (6 @ 58mm / 8 @ 80mm). Paint modules crisply — no anti-alias mush.
+   * QR: match ESC Z mag (7 @ 58mm / 9 @ 80mm). Paint modules crisply — no anti-alias mush.
    * Mag N ≈ N dots per module; version auto for https://asfixgear.com + quiet zone.
    */
-  const qrMag = pageWidth === '80mm' ? 8 : 6;
+  const qrMag = pageWidth === '80mm' ? 9 : 7;
   const qrMarginModules = 2;
   let qrModules = 29;
   try {
@@ -619,25 +630,25 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     /* keep default */
   }
   const qrSize = (qrModules + qrMarginModules * 2) * qrMag;
-  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.72));
+  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.88));
 
-  let heightPx = padY * 2 + 8;
+  let heightPx = padY * 2 + 16;
   lines.forEach((line) => {
     if (line.rule) {
-      heightPx += ruleH + 6;
+      heightPx += ruleH + 12;
       return;
     }
     if (line.qr) {
-      heightPx += qrDrawSize + 12;
+      heightPx += qrDrawSize + 20;
       return;
     }
     const size = lineSize(line);
     const lh = lineHFor(size);
     if (line.columns) {
-      heightPx += lh;
+      heightPx += lh + 2;
     } else {
       heightPx += chunkAtSize(line.value, size, isHeavy(line)).length * lh;
-      if (line.grand || line.title) heightPx += 2;
+      if (line.grand || line.title) heightPx += 6;
     }
   });
 
@@ -697,18 +708,18 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   let y = padY;
   for (const line of lines) {
     if (line.rule) {
-      y += 2;
+      y += 4;
       drawRuleLine(y);
-      y += ruleH + 2;
+      y += ruleH + 6;
       continue;
     }
 
     if (line.qr) {
       /* "Scan" is its own line already; if missing, still leave proportional gap */
       const qrX = Math.round((widthPx - qrDrawSize) / 2);
-      y += 2;
+      y += 4;
       await drawCrispQr(line.value || RECEIPT_SITE_URL, qrX, y, qrDrawSize);
-      y += qrDrawSize + 8;
+      y += qrDrawSize + 14;
       continue;
     }
 
@@ -734,7 +745,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       }
       drawText(left, padX, y, size, 'left', heavy);
       drawText(right, widthPx - padX, y, size, 'right', heavy);
-      y += lh;
+      y += lh + 2;
     } else {
       const align = line.align === 'center' ? 'center' : line.align === 'right' ? 'right' : 'left';
       const anchor = align === 'center'
@@ -747,7 +758,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
         drawText(chunk, anchor, y, size, align, heavy);
         y += lh;
       });
-      if (line.grand || line.title) y += 2;
+      if (line.grand || line.title) y += 6;
     }
   }
 
@@ -980,34 +991,34 @@ html, body {
   height: auto !important;
   min-height: 0 !important;
   margin: 0 !important;
-  padding: 2.5mm 2.5mm 1.5mm !important;
+  padding: 3mm 2.5mm 2.5mm !important;
   font-family: "Courier New", Courier, monospace !important;
-  font-size: 15px !important;
-  font-weight: 700 !important;
-  line-height: 1.45 !important;
-  letter-spacing: 0.06em !important;
+  font-size: 14px !important;
+  font-weight: 400 !important;
+  line-height: 1.65 !important;
+  letter-spacing: 0.04em !important;
   page-break-after: avoid !important;
   page-break-inside: avoid !important;
 }
-.r-shop { text-align: center; margin-bottom: 5px; }
-.r-shop h1 { margin: 0 0 2px; font-size: 18px; font-weight: 900; letter-spacing: 0.1em; }
-.r-shop .r-bill { margin: 0 0 4px; font-size: 16px; font-weight: 900; letter-spacing: 0.12em; }
-.r-shop p { margin: 1px 0; font-size: 12px; letter-spacing: 0.06em; }
-.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 5px 0; font-size: 14px; }
+.r-shop { text-align: center; margin-bottom: 8px; }
+.r-shop h1 { margin: 0 0 4px; font-size: 17px; font-weight: 700; letter-spacing: 0.08em; }
+.r-shop .r-bill { margin: 0 0 6px; font-size: 15px; font-weight: 700; letter-spacing: 0.1em; }
+.r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; margin: 8px 0; font-size: 13px; font-weight: 400; }
 .r-meta span:last-child { text-align: right; }
-.r-rule { border: 0; border-top: 1px dashed #000; margin: 5px 0; }
-.r-item { margin: 0 0 5px; }
-.r-item strong { display: block; font-size: 14px; letter-spacing: 0.07em; }
-.r-row { display: flex; justify-content: space-between; gap: 8px; font-size: 14px; }
-.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 14px; }
+.r-rule { border: 0; border-top: 1px dashed #000; margin: 8px 0; }
+.r-item { margin: 0 0 8px; }
+.r-item strong { display: block; font-size: 13px; font-weight: 400; letter-spacing: 0.04em; }
+.r-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 400; }
+.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: 13px; font-weight: 400; }
 .r-totals > * { min-width: 0; }
-.r-totals strong { text-align: right; white-space: nowrap; }
-.r-grand-wrap { text-align: center; margin: 6px 0 4px; }
-.r-grand-label { display: block; font-size: 15px; font-weight: 900; letter-spacing: 0.1em; }
-.r-grand { display: block; font-size: 22px; font-weight: 900; letter-spacing: 0.1em; margin-top: 3px; }
-.r-thanks, .r-site { text-align: center; margin: 4px 0 0; font-size: 13px; font-weight: 700; }
-.r-scan { text-align: center; margin: 5px 0 2px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; }
-.r-qr { display: block; width: 42%; max-width: 42%; height: auto; margin: 2px auto 0; }
+.r-totals strong { text-align: right; white-space: nowrap; font-weight: 400; }
+.r-grand-wrap { text-align: center; margin: 10px 0 6px; }
+.r-grand-label { display: block; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; }
+.r-grand { display: block; font-size: 20px; font-weight: 700; letter-spacing: 0.08em; margin-top: 4px; }
+.r-thanks, .r-site { text-align: center; margin: 6px 0 0; font-size: 12px; font-weight: 400; }
+.r-scan { text-align: center; margin: 8px 0 4px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-qr { display: block; width: 54%; max-width: 54%; height: auto; margin: 4px auto 0; }
 `.trim();
 
   const qrBlock = qrDataUrl
