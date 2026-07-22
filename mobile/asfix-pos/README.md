@@ -12,7 +12,7 @@ App id: `com.asfixgear.pos` · Name: **AsFix POS**
 | **Thermer** (`mate.bluetoothprint`) | Play Store | Yes from **Chrome** share/Intent only |
 | **BT-POSPrinter.apk** (seller ZIP) | Sideload from vendor pack | **No** — hardware demo only; not wired to asfixgear.com |
 
-Windows `PrinterDriver.exe` from the same ZIP is laptop-only; see [`docs/thermal-printer-windows.md`](../../docs/thermal-printer-windows.md). Do **not** commit APKs/EXEs into git (`_ci_local/` is gitignored).
+Windows `PrinterDriver.exe` from the same ZIP is laptop-only; see [`docs/thermal-printer-windows.md`](../../docs/thermal-printer-windows.md). Do **not** commit vendor APKs/EXEs (`_ci_local/` is gitignored). The shop install APK lives at `frontend/public/downloads/AsFix-POS.apk` for https://asfixgear.com/downloads/AsFix-POS.apk.
 
 ## What this is / is not
 
@@ -57,6 +57,16 @@ npx cap sync android
 Default `server.url` is production: `https://asfixgear.com/pos`.
 
 **Note:** Frontend native auto-print hooks ship with the website. After changing `frontend/`, deploy (or point `ASFIX_POS_SERVER_URL` at local Vite) before testing print on device.
+
+## Install on a second phone (share)
+
+**Do NOT rename the APK to `.zip`.** WhatsApp/ZIP often corrupt the package. Use one of:
+
+- **Live URL:** https://asfixgear.com/downloads/AsFix-POS.apk
+- Google Drive / USB / Nearby Share (keep the `.apk` extension)
+- Local copy: `frontend/public/downloads/AsFix-POS.apk` or `C:\Users\asads\Downloads\AsFix-POS.apk`
+
+On the second phone: open the link → Allow install from browser → Open **AsFix POS** → login → Select printer.
 
 ## Install debug APK on phone
 

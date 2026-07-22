@@ -409,7 +409,25 @@ export default function Counter() {
               </div>
             ) : null}
           </div>
-        ) : null}
+        ) : (
+          <div className="counter-bt-printer-bar counter-pos-download-bar">
+            <div className="counter-bt-printer-bar__main">
+              <div className="counter-bt-printer-bar__info">
+                <strong>{t('counter.downloadPosApk')}</strong>
+                <small>{t('counter.downloadPosApkHint')}</small>
+              </div>
+              <div className="counter-bt-printer-bar__actions">
+                <a
+                  className="wp-button counter-bt-printer-bar__select"
+                  href="/downloads/AsFix-POS.apk"
+                  download="AsFix-POS.apk"
+                >
+                  {t('counter.downloadPosApk')}
+                </a>
+              </div>
+            </div>
+          </div>
+        )}
 
         {bootstrapping && products.length === 0 ? (
           <div className="counter-boot">{t('common.loading')}</div>

@@ -32,9 +32,12 @@ Or: `npm run thermal:bridge` with `THERMAL_COM` set.
 
 ## Phone APK (separate)
 
-Android debug APK is built from `mobile/asfix-pos` and copied to Downloads (never committed):
+**Do NOT rename to ZIP** — WhatsApp/ZIP transfer often breaks the install. Prefer:
 
-- Typical: `C:\Users\asads\Downloads\AsFix-POS.apk`
-- Or: `mobile/asfix-pos/android/app/build/outputs/apk/debug/app-debug.apk`
+- https://asfixgear.com/downloads/AsFix-POS.apk
+- Drive / USB / Nearby Share (keep `.apk`)
+- Local: `C:\Users\asads\Downloads\AsFix-POS.apk` or `frontend/public/downloads/AsFix-POS.apk`
+
+Build source: `mobile/asfix-pos` → `android/app/build/outputs/apk/debug/app-debug.apk`
 
 Install on phone → open **AsFix POS** → Select printer → print. Website receipt tweaks apply after deploy (app loads asfixgear.com/pos).
