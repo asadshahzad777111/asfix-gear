@@ -52,6 +52,15 @@ Do **not** force-push. Do **not** commit `.env`, `.env.txt`, or `backend/data/da
 - Never invent Windows kernel printer drivers.
 - Prefer existing patterns in `frontend/` and `backend/`.
 
+## Cursor Cloud specific instructions
+
+- Boot deps: `.cursor/environment.json` runs `npm run install:all`.
+- Cloud VM has **no shop Bluetooth printer** — verify JS/API only; ask user to test print on Android POS.
+- Prefer PR → merge when unsure; push direct to `main` only if user clearly says deploy / live / “kr do”.
+- Never commit secrets; put API keys in [Cloud Agents Secrets](https://cursor.com/dashboard/cloud-agents), not git.
+- Useful checks: `npm run build --prefix frontend`, `npm run check:i18n`, `npm run check:secrets`.
+- Full deploy notes: `DEPLOY.md` and `.cursor/skills/deploy-asfix/SKILL.md`.
+
 ## Before claiming done
 
 - Frontend build should pass: `npm run build --prefix frontend`
