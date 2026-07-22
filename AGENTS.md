@@ -54,7 +54,10 @@ Do **not** force-push. Do **not** commit `.env`, `.env.txt`, or `backend/data/da
 
 ## Cursor Cloud specific instructions
 
-- Boot deps: `.cursor/environment.json` runs `npm run install:all`.
+- Boot deps: `.cursor/environment.json` runs `npm run install:all` (this is also the startup update script).
+- Local run: `npm run dev` starts backend (:5000) + frontend (:5173) concurrently; Vite proxies `/api` → `127.0.0.1:5000`. No MongoDB needed — backend defaults to the JSON file store (`backend/data/data.json`); confirm via `GET /api/health` (`storage: json, ready: true`).
+- First run needs data: `npm run seed` populates products, gaming items, repair services, and the seed super-admin (username `asad`, seed password in `seed-admin.js`). Re-seeding overwrites `backend/data/data.json`, so avoid it if you have local data you want to keep.
+- Dev OTP: with no email/SMS provider configured, `NODE_ENV` is unset so signup/login OTP runs in dev mode — the 6-digit code is returned as `devCode` and shown on-screen as "Dev code" (and logged as `[OTP dev]`). Customer signup/login work end-to-end without real email. `register/start` regenerates the code each call, so verify with the most recently shown code (or drive `/api/auth/register/start` → `/api/auth/register/verify` directly).
 - Cloud VM has **no shop Bluetooth printer** — verify JS/API only; ask user to test print on Android POS.
 - Prefer PR → merge when unsure; push direct to `main` only if user clearly says deploy / live / “kr do”.
 - Never commit secrets; put API keys in [Cloud Agents Secrets](https://cursor.com/dashboard/cloud-agents), not git.
