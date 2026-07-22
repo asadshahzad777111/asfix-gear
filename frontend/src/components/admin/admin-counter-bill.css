@@ -1865,6 +1865,7 @@
   }
 
   @page {
+    /* Content height — never fixed 200/3276mm (POS-58 blank roll) */
     size: 58mm auto;
     margin: 0;
   }

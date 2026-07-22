@@ -268,8 +268,8 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
     push(0x1b, 0x45, 0x00);
   }
   push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00, 0x1b, 0x4d, 0x00);
-  /* 2–3 line feeds only — never ESC J 48+ (huge blank roll on many clones) */
-  push(0x0a, 0x0a, 0x0a);
+  /* 2 line feeds only — never ESC J 48+ / long feed (meters of blank on POS-58 clones) */
+  push(0x0a, 0x0a);
   push(0x1d, 0x56, 0x42, 0x00); // GS V B 0 — partial cut, no extra feed
 
   const size = parts.reduce((sum, part) => sum + part.length, 0);
@@ -729,6 +729,12 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   });
 }
 
+/**
+ * Compact 58/80mm PDF — MediaBox height = content only (never A4 / 3276mm continuous).
+ * Prefer PNG for thermal printing; PDF is archival/share fallback only.
+ * Printing any PDF via Windows POS-58 with paper "58×3276mm" still feeds meters of blank —
+ * use Direct Print (HTML @page 58mm auto) or ESC/POS instead.
+ */
 export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
   const widthMm = pageWidth === '80mm' ? 80 : 58;
@@ -762,8 +768,11 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
       font: line.weight === 'bold' || line.title || line.grand || line.totalLabel ? 'F2' : 'F1',
     }));
 
-  const height = Math.ceil(
-    marginTop + marginBottom + receiptLines.reduce((sum, line) => sum + line.leading, 0)
+  /* Content-fit only — never pad to roll length / fixed tall page */
+  const contentPts = receiptLines.reduce((sum, line) => sum + line.leading, 0);
+  const height = Math.max(
+    Math.ceil(marginTop + marginBottom + contentPts),
+    Math.ceil(pdfPointsFromMillimeters(40)), /* floor ~40mm so empty orders stay short */
   );
   const commands = [];
 
@@ -784,10 +793,11 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   });
 
   const stream = commands.join('\n');
+  const box = `[0 0 ${width.toFixed(2)} ${height.toFixed(2)}]`;
   const objects = [
     '<< /Type /Catalog /Pages 2 0 R >>',
     '<< /Type /Pages /Kids [3 0 R] /Count 1 >>',
-    `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 ${width} ${height}] /CropBox [0 0 ${width} ${height}] /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`,
+    `<< /Type /Page /Parent 2 0 R /MediaBox ${box} /CropBox ${box} /TrimBox ${box} /BleedBox ${box} /Resources << /Font << /F1 4 0 R /F2 5 0 R >> >> /Contents 6 0 R >>`,
     '<< /Type /Font /Subtype /Type1 /BaseFont /Courier >>',
     '<< /Type /Font /Subtype /Type1 /BaseFont /Courier-Bold >>',
     `<< /Length ${stream.length} >>\nstream\n${stream}\nendstream`,
@@ -898,7 +908,12 @@ function prefersThermalPngShare() {
   return isAndroidDevice() || isAppleMobileDevice();
 }
 
-/** True 58/80mm receipt document — NEVER A4 (A4→thermal scales to a tiny center strip). */
+/**
+ * True 58/80mm receipt HTML.
+ * NEVER use @page height:auto — Chrome replaces it with the Windows thermal
+ * driver's max roll (often 58×3276mm) → meters of blank paper.
+ * printViaIframe measures content and locks an exact short @page size.
+ */
 function buildThermalReceiptHtml(order, thermalWidth = '58mm', qrDataUrl = '') {
   const widthMm = thermalWidth === '80mm' ? 80 : 58;
   const { subtotal, discount, grandTotal } = receiptTotals(order);
@@ -913,8 +928,8 @@ function buildThermalReceiptHtml(order, thermalWidth = '58mm', qrDataUrl = '') {
   }).join('');
 
   const css = `
-@page { size: ${widthMm}mm auto; margin: 0; }
-@page { margin: 0; } /* some engines ignore size:auto — never force A4/fixed height */
+/* Placeholder — overwritten with measured content height before print */
+@page { size: ${widthMm}mm 120mm; margin: 0; }
 html, body {
   margin: 0 !important;
   padding: 0 !important;
@@ -1012,6 +1027,98 @@ html, body {
 </body></html>`;
 }
 
+/** Content-height PNG sheet for Direct Print — never a tall PDF / never driver 3276mm. */
+function buildThermalPngPrintHtml(dataUrl, widthMm, heightMm) {
+  const w = Number(widthMm) || 58;
+  const h = Math.max(40, Math.min(220, Number(heightMm) || 120));
+  return `<!DOCTYPE html><html><head><meta charset="utf-8" />
+<meta name="viewport" content="width=${w}, initial-scale=1" />
+<title>AsFix receipt</title>
+<style>
+@page { size: ${w}mm ${h}mm; margin: 0; }
+html, body {
+  margin: 0 !important;
+  padding: 0 !important;
+  width: ${w}mm !important;
+  height: ${h}mm !important;
+  min-height: 0 !important;
+  max-height: ${h}mm !important;
+  overflow: hidden !important;
+  background: #fff !important;
+}
+img {
+  display: block !important;
+  width: ${w}mm !important;
+  height: ${h}mm !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+}
+</style></head><body>
+<img src="${dataUrl}" alt="AsFix receipt" />
+</body></html>`;
+}
+
+function blobToDataUrl(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(reader.error || new Error('Could not read receipt image'));
+    reader.readAsDataURL(blob);
+  });
+}
+
+function loadImageNaturalSize(src) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve({
+      width: img.naturalWidth || img.width,
+      height: img.naturalHeight || img.height,
+    });
+    img.onerror = () => reject(new Error('Could not load receipt image'));
+    img.src = src;
+  });
+}
+
+/**
+ * Lock @page to measured content height.
+ * POS-58 Windows drivers often advertise 58×3276mm — never let Chrome use that.
+ */
+function lockThermalPageToContent(doc, widthMm = 58) {
+  const w = widthMm === 80 ? 80 : 58;
+  const node = doc.querySelector('.receipt') || doc.body;
+  const px = Math.max(
+    node?.scrollHeight || 0,
+    node?.offsetHeight || 0,
+    Math.ceil(node?.getBoundingClientRect?.().height || 0),
+    doc.body?.scrollHeight || 0,
+  );
+  /* CSS px → mm @ 96dpi; +2mm padding; clamp away from tall-roll / A4 */
+  let heightMm = Math.ceil((px * 25.4) / 96) + 2;
+  heightMm = Math.max(40, Math.min(heightMm, 220));
+
+  let style = doc.getElementById('asfix-thermal-page-lock');
+  if (!style) {
+    style = doc.createElement('style');
+    style.id = 'asfix-thermal-page-lock';
+    doc.head.appendChild(style);
+  }
+  style.textContent = `
+@page { size: ${w}mm ${heightMm}mm !important; margin: 0 !important; }
+html, body {
+  width: ${w}mm !important;
+  max-width: ${w}mm !important;
+  height: ${heightMm}mm !important;
+  min-height: 0 !important;
+  max-height: ${heightMm}mm !important;
+  overflow: hidden !important;
+  margin: 0 !important;
+  padding: 0 !important;
+}
+`;
+  return heightMm;
+}
+
 function finishPrintJob(inFlightRef) {
   document.getElementById(THERMAL_PAGE_STYLE_ID)?.remove();
   document.getElementById(PRINT_ROOT_ID)?.remove();
@@ -1019,15 +1126,19 @@ function finishPrintJob(inFlightRef) {
   if (inFlightRef) inFlightRef.current = false;
 }
 
-/** Same-origin iframe print — 58mm auto height, never A4. */
-function printViaIframe(html, inFlightRef) {
+/**
+ * Same-origin iframe print — measures content, locks @page to short 58mm×Nmm.
+ * Never A4, never @page auto (maps to 3276mm on POS-58), never tall PDF.
+ */
+function printViaIframe(html, inFlightRef, widthMm = 58) {
   document.getElementById(PRINT_ROOT_ID)?.remove();
+  const w = widthMm === 80 || widthMm === '80mm' ? 80 : 58;
   const iframe = document.createElement('iframe');
   iframe.id = PRINT_ROOT_ID;
   iframe.title = 'AsFix 58mm receipt';
   iframe.setAttribute('aria-hidden', 'true');
-  /* Non-zero size so layout/height:auto is measured correctly before print */
-  iframe.style.cssText = 'position:fixed;width:58mm;height:1px;border:0;left:-9999px;top:0;opacity:0;overflow:hidden;';
+  /* Tall enough to measure full receipt; off-screen */
+  iframe.style.cssText = `position:fixed;width:${w}mm;height:900px;border:0;left:-9999px;top:0;opacity:0;overflow:hidden;`;
   document.body.appendChild(iframe);
 
   const doc = iframe.contentDocument;
@@ -1060,6 +1171,7 @@ function printViaIframe(html, inFlightRef) {
     if (printed || done) return;
     printed = true;
     try {
+      lockThermalPageToContent(doc, w);
       win.focus();
       win.print();
     } catch {
@@ -1069,13 +1181,13 @@ function printViaIframe(html, inFlightRef) {
 
   const images = Array.from(doc.images || []);
   if (!images.length) {
-    window.setTimeout(triggerPrint, 50);
+    window.setTimeout(triggerPrint, 80);
     return true;
   }
   let pending = images.length;
   const onReady = () => {
     pending -= 1;
-    if (pending <= 0) window.setTimeout(triggerPrint, 30);
+    if (pending <= 0) window.setTimeout(triggerPrint, 40);
   };
   images.forEach((img) => {
     if (img.complete) onReady();
@@ -1108,9 +1220,10 @@ function receiptPngFilename(order) {
 }
 
 /**
- * Direct Print — Chrome/system dialog with 58mm CSS (Windows thermal driver),
- * or Share/Download PNG on phones. Skips bridge / BLE / Thermer.
- * Does not require a remote print station.
+ * Direct Print — content-height HTML for Windows 58mm driver (never tall PDF).
+ * Laptop: PNG receipt in iframe with exact @page 58mm×contentMm (POS-58 defaults
+ * to 58×3276mm — @page auto would feed meters of blank paper).
+ * Phone: Share/Download PNG. Skips bridge / BLE / Thermer / stations.
  */
 export async function printDirectSystemReceipt({
   thermalWidth = '58mm',
@@ -1173,16 +1286,21 @@ export async function printDirectSystemReceipt({
       }
     }
 
-    /* Laptop: system print dialog — 58mm auto CSS for installed Windows thermal driver */
+    /*
+     * Laptop Direct Print: content-height PNG HTML only — NEVER createCounterInvoicePdfBlob.
+     * Exact @page 58mm×Nmm from image aspect ratio so POS-58 cannot spool 3276mm.
+     */
     const width = normalizeThermalWidth(thermalWidth);
-    let qrDataUrl = '';
-    try {
-      qrDataUrl = await buildWebsiteQrDataUrl(160);
-    } catch {
-      qrDataUrl = '';
-    }
-    const html = buildThermalReceiptHtml(order, width, qrDataUrl);
-    const printed = await printViaIframe(html, inFlightRef);
+    const widthMm = width === '80mm' ? 80 : 58;
+    const blob = await createCounterReceiptPngBlob(order, width);
+    const dataUrl = await blobToDataUrl(blob);
+    const dims = await loadImageNaturalSize(dataUrl);
+    const heightMm = Math.max(
+      40,
+      Math.min(220, Math.ceil((dims.height / Math.max(1, dims.width)) * widthMm) + 1),
+    );
+    const html = buildThermalPngPrintHtml(dataUrl, widthMm, heightMm);
+    const printed = await printViaIframe(html, inFlightRef, widthMm);
     return printed ? { ok: true } : { ok: false, reason: 'print_failed', message: 'Browser print failed' };
   } catch (err) {
     finishPrintJob(inFlightRef);
@@ -1288,7 +1406,7 @@ export async function printActiveCounterReceipt({
       qrDataUrl = '';
     }
     const html = buildThermalReceiptHtml(order, width, qrDataUrl);
-    const printed = await printViaIframe(html, inFlightRef);
+    const printed = await printViaIframe(html, inFlightRef, width === '80mm' ? 80 : 58);
     return printed ? { ok: true } : { ok: false, reason: 'print_failed', message: 'Browser print failed' };
   } catch (err) {
     finishPrintJob(inFlightRef);
@@ -1309,38 +1427,48 @@ export function openMateThermalReceipt(order) {
 
 export { MATE_THERMAL_PACKAGE, MATE_PLAY_STORE_URL, mateThermalTextHref };
 
+/**
+ * Download receipt — PNG first (thermal-safe). PDF only if canvas fails.
+ * Never encourage printing tall PDF to POS-58 (driver paper 58×3276mm = meters blank).
+ */
 export async function downloadCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order) return { ok: false, reason: 'no_order' };
-  /* Native POS / phones: share or open PNG (WebView blocks <a download>). */
-  if (isNativePosApp() || prefersThermalPngShare()) {
-    try {
-      const blob = await createCounterReceiptPngBlob(order, thermalWidth);
+  try {
+    const blob = await createCounterReceiptPngBlob(order, thermalWidth);
+    /* Phones / native: share-or-open (WebView often blocks <a download>). */
+    if (isNativePosApp() || prefersThermalPngShare()) {
       return shareOrOpenBlob(blob, receiptPngFilename(order), {
         title: `${SHOP.name} ${receiptNumber(order)}`,
-        text: `${SHOP.name} receipt — Save or Share`,
+        text: `${SHOP.name} receipt — Save or Share PNG (do not print PDF to thermal)`,
       });
-    } catch {
-      const blob = createCounterInvoicePdfBlob(order, thermalWidth);
+    }
+    downloadBlob(blob, receiptPngFilename(order));
+    return { ok: true, method: 'download' };
+  } catch {
+    /* Last resort: content-height 58mm PDF (still prefer Direct Print on Windows) */
+    const blob = createCounterInvoicePdfBlob(order, thermalWidth);
+    if (isNativePosApp() || prefersThermalPngShare()) {
       return shareOrOpenBlob(blob, receiptFilename(order), {
         title: `${SHOP.name} ${receiptNumber(order)}`,
         text: `${SHOP.name} receipt`,
       });
     }
+    downloadBlob(blob, receiptFilename(order));
+    return { ok: true, method: 'download' };
   }
-  downloadBlob(createCounterInvoicePdfBlob(order, thermalWidth), receiptFilename(order));
-  return { ok: true, method: 'download' };
 }
 
+/** Share receipt — PNG first on every device (thermal / WhatsApp). */
 export async function shareCounterInvoicePdf(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order) return false;
 
-  if (isNativePosApp() || prefersThermalPngShare()) {
+  try {
     const blob = await createCounterReceiptPngBlob(order, thermalWidth);
     const result = await shareOrOpenBlob(blob, receiptPngFilename(order), {
       title: `${SHOP.name} ${receiptNumber(order)}`,
       text: isAndroidDevice()
         ? `${SHOP.name} receipt — choose Thermer (Bluetooth Thermal Printer)`
-        : `${SHOP.name} receipt — Share se Files / Print app kholo`,
+        : `${SHOP.name} receipt — Share PNG (avoid printing PDF to POS-58)`,
     });
     if (result.message === 'cancelled') {
       const err = new Error('Share cancelled');
@@ -1348,22 +1476,22 @@ export async function shareCounterInvoicePdf(order, thermalWidth = readThermalRe
       throw err;
     }
     if (result.method === 'share') return true;
-    /* Opened or downloaded as fallback — treat as handled (not a silent no-op). */
     if (isAndroidDevice() && !isNativePosApp()) openMateThermalText(order);
     return false;
+  } catch (err) {
+    if (err?.name === 'AbortError') throw err;
+    const blob = createCounterInvoicePdfBlob(order, thermalWidth);
+    const result = await shareOrOpenBlob(blob, receiptFilename(order), {
+      title: `${SHOP.name} ${receiptNumber(order)}`,
+      text: `${SHOP.name} receipt ${receiptNumber(order)}`,
+    });
+    if (result.message === 'cancelled') {
+      const cancelErr = new Error('Share cancelled');
+      cancelErr.name = 'AbortError';
+      throw cancelErr;
+    }
+    return result.method === 'share';
   }
-
-  const blob = createCounterInvoicePdfBlob(order, thermalWidth);
-  const result = await shareOrOpenBlob(blob, receiptFilename(order), {
-    title: `${SHOP.name} ${receiptNumber(order)}`,
-    text: `${SHOP.name} receipt ${receiptNumber(order)}`,
-  });
-  if (result.message === 'cancelled') {
-    const err = new Error('Share cancelled');
-    err.name = 'AbortError';
-    throw err;
-  }
-  return result.method === 'share';
 }
 
 export function CounterBillReceipt({ order, printable = false, thermalWidth = '58mm' }) {

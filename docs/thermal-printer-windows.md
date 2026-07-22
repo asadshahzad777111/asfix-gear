@@ -38,7 +38,7 @@ Website JS cannot install Windows drivers or sideload APKs. Those are **local in
 |--------|------|
 | **AsFix POS Android** | Native SPP + full ESC/POS (32-col + `ESC Z` QR at bottom) |
 | **Android Chrome** | Share PNG → Thermer, else Mate Intent markup + QR |
-| **Laptop Chrome** | Local COM bridge → Web Bluetooth BLE → iframe 58mm HTML |
+| **Laptop Chrome** | **Direct Print** = iframe HTML `@page { size: 58mm auto }` (preferred with Windows driver) → else COM bridge → Web Bluetooth BLE |
 | **iPhone** | No Bluetooth SPP to thermal — use **Print chooser → Android / Laptop** remote queue |
 
 Remote print: iPhone enqueues a job; Android POS or laptop agent (with printer selected / bridge running) polls and prints.
@@ -54,7 +54,29 @@ Only needed if you want a **Windows printer queue** or a real **COMx** serial pa
 3. Prefer **USB cable** if the printer has USB — Windows usually adds COM or a USB printer.
 4. For Bluetooth: pair the printer, then check Device Manager for **Standard Serial over Bluetooth link (COMx)**.  
    If you only see **BlueTooth Printer (BLE / BTHLE)** and **no COMx**, Node/COM bridge cannot talk to it — use **Chrome Web Bluetooth** or phone apps instead.
-5. Paper size: choose **58mm** in the driver / test page if asked.
+5. Paper size: choose **58mm** in the driver / test page if asked — **never leave the default `58 × 3276 mm`** (that feeds ~3 meters of blank paper).
+
+### Critical: POS-58 / POS-58 usb paper size (58 × 3276 mm)
+
+Vendor drivers often ship with a continuous “Printer Paper” of **58 × 3276 mm**. Chrome’s print dialog then shows that size and the printer feeds a huge blank roll even when the receipt content is short.
+
+**Fix the Windows defaults (do this once for USB and once for Bluetooth if both exist):**
+
+1. **Settings → Bluetooth & devices → Printers & scanners** (or Control Panel → Devices and Printers).
+2. Open **POS-58** (and **POS-58 usb** if listed).
+3. **Printing preferences** / **Printer properties → Preferences**.
+4. **Advanced** / **Paper / Quality** → **Paper size**.
+5. Change from **Printer Paper (58 × 3276 mm)** to the **shortest** option available:
+   - Prefer **58 × 210 mm**, **58 × 297 mm**, or a **Custom** height near receipt length (~80–150 mm).
+6. Set as default → **Apply → OK**.
+7. Repeat for the other queue (USB vs Bluetooth).
+
+**Chrome Direct Print checklist (after AsFix deploy):**
+
+1. Hard-refresh POS → **Print → Direct Print** (opens short HTML receipt — **not** a PDF).
+2. Destination: **POS-58** or **POS-58 usb**.
+3. More settings → **Paper size**: shortest (not 3276) → **Scale 100%** → **Margins None**.
+4. Do **not** download `*-invoice.pdf` and print that to thermal — PDF + 3276 paper = meters of blank. Use Direct Print or AsFix POS ESC/POS instead.
 
 **Thermer.apk / BT-POSPrinter.apk do not install a Windows kernel driver.**
 
