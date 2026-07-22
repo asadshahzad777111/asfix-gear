@@ -9,6 +9,7 @@ import TypeLine from '../motion/TypeLine';
 export default function BrandGrid() {
   const { t } = useTranslation();
   const [activeBrand, setActiveBrand] = useState(null);
+  const marqueeBrands = [...SHOP_BRANDS, ...SHOP_BRANDS];
 
   return (
     <section className="home-section" data-section-strap={t('home.selectBrand')} id="home-brands">
@@ -36,6 +37,26 @@ export default function BrandGrid() {
             delay={160}
           />
         </div>
+
+        <div className="home-brand-marquee" aria-hidden="true">
+          <div className="home-brand-marquee-track">
+            {marqueeBrands.map((brand, i) => (
+              <button
+                key={`${brand.id}-m-${i}`}
+                type="button"
+                tabIndex={-1}
+                className="home-brand-chip"
+                onClick={() => setActiveBrand(brand)}
+              >
+                <span className="home-brand-icon">
+                  <SearchBrandIcon brandId={brand.id} />
+                </span>
+                {brand.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <div className="home-brand-grid home-brand-grid--pc">
           {SHOP_BRANDS.map((brand, i) => (
             <ConnectReveal

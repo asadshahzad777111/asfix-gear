@@ -24,10 +24,10 @@
   --mint: #ff5a1f;
   --mint-glow: rgba(255, 90, 31, 0.2);
   --mint-focus: rgba(255, 90, 31, 0.12);
-  /* Classic ambient blooms — orange / violet / mint (atmosphere only) */
+  /* Ambient blooms — orange / warm charcoal / mint (no purple) */
   --orb-a: rgba(255, 107, 44, 0.45);
-  --orb-b: rgba(124, 58, 237, 0.35);
-  --orb-c: rgba(0, 245, 212, 0.28);
+  --orb-b: rgba(40, 28, 22, 0.35);
+  --orb-c: rgba(255, 90, 31, 0.18);
   --ambient-mesh: none;
   --ambient-flare: none;
   --grain-opacity: 0.03;
@@ -45,14 +45,14 @@
   --bg: #0c0c12;
   --bg-gradient:
     radial-gradient(ellipse 50% 42% at 12% 0%, rgba(255, 107, 44, 0.14) 0%, transparent 55%),
-    radial-gradient(ellipse 45% 40% at 88% 18%, rgba(124, 58, 237, 0.16) 0%, transparent 52%),
-    radial-gradient(ellipse 48% 38% at 42% 100%, rgba(0, 245, 212, 0.1) 0%, transparent 55%),
+    radial-gradient(ellipse 45% 40% at 88% 18%, rgba(255, 90, 31, 0.08) 0%, transparent 52%),
+    radial-gradient(ellipse 48% 38% at 42% 100%, rgba(255, 140, 60, 0.07) 0%, transparent 55%),
     linear-gradient(165deg, #08080e 0%, #12121c 42%, #0a0a10 100%);
   --bg-card: rgba(255, 255, 255, 0.06);
   --bg-elevated: rgba(28, 28, 38, 0.92);
   --orb-a: rgba(255, 107, 44, 0.48);
-  --orb-b: rgba(124, 58, 237, 0.38);
-  --orb-c: rgba(0, 245, 212, 0.3);
+  --orb-b: rgba(32, 24, 20, 0.4);
+  --orb-c: rgba(255, 90, 31, 0.22);
   --ambient-mesh: none;
   --ambient-flare: none;
   --grain-opacity: 0.03;
@@ -95,15 +95,15 @@
   --bg: #f2f2f7;
   --bg-gradient:
     radial-gradient(ellipse 48% 40% at 10% -6%, rgba(255, 107, 44, 0.12) 0%, transparent 55%),
-    radial-gradient(ellipse 42% 36% at 92% 8%, rgba(124, 58, 237, 0.1) 0%, transparent 50%),
-    radial-gradient(ellipse 46% 36% at 48% 108%, rgba(0, 168, 150, 0.1) 0%, transparent 52%),
+    radial-gradient(ellipse 42% 36% at 92% 8%, rgba(255, 90, 31, 0.07) 0%, transparent 50%),
+    radial-gradient(ellipse 46% 36% at 48% 108%, rgba(255, 140, 60, 0.08) 0%, transparent 52%),
     linear-gradient(165deg, #e8e8ee 0%, #f2f2f7 38%, #fafafa 100%);
   --bg-card: rgba(255, 255, 255, 0.86);
   --bg-elevated: #ffffff;
   /* Clearer blooms in light mode so motion is readable (still soft) */
   --orb-a: rgba(255, 107, 44, 0.38);
-  --orb-b: rgba(124, 58, 237, 0.3);
-  --orb-c: rgba(0, 168, 150, 0.3);
+  --orb-b: rgba(60, 40, 30, 0.12);
+  --orb-c: rgba(255, 90, 31, 0.2);
   --ambient-mesh: none;
   --ambient-flare: none;
   --grain-opacity: 0.02;
@@ -202,7 +202,7 @@
 
 .theme-switch[aria-checked='true'] .theme-switch-thumb {
   left: calc(100% - var(--thumb) - 0.18rem);
-  color: #4c1d95;
+  color: #ea580c;
 }
 
 .theme-switch-thumb-icon {

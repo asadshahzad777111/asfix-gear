@@ -12,21 +12,21 @@ export default function RepairSteps() {
   const { t } = useTranslation();
 
   return (
-    <div className="repair-steps">
+    <div className="repair-steps" role="list">
       {STEP_KEYS.map((step, i) => (
         <ConnectReveal
           key={step.num}
           className="repair-step"
           from={i % 2 === 0 ? 'left' : 'right'}
           delay={i * 70}
+          role="listitem"
         >
-          <div className="repair-step-num">{step.num}</div>
+          <div className="repair-step-num" aria-hidden="true">{step.num}</div>
           <div className="repair-step-body">
-            <span className="repair-step-icon">{step.icon}</span>
+            <span className="repair-step-icon" aria-hidden="true">{step.icon}</span>
             <h3>{t(step.title)}</h3>
             <p>{t(step.desc)}</p>
           </div>
-          {i < STEP_KEYS.length - 1 && <div className="repair-step-line" />}
         </ConnectReveal>
       ))}
     </div>

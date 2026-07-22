@@ -13,9 +13,9 @@ export default function TrustBadges() {
   return (
     <section className="home-section home-trust" aria-label={t('home.trustEyebrow')}>
       <div className="container">
-        <div className="home-trust-row">
+        <div className="home-trust-row" role="list">
           {BADGES.map(({ key }) => (
-            <div key={key} className="home-trust-badge">
+            <div key={key} className="home-trust-badge" role="listitem">
               <span className="home-trust-label">{t(`home.${key}`)}</span>
             </div>
           ))}

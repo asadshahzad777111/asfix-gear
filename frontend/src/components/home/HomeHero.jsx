@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { motion, useReducedMotion } from 'framer-motion';
 import { PremiumLink } from '../premium/PremiumButton';
 import { useTranslation } from '../../context/LanguageContext';
 import { api } from '../../api/client';
@@ -8,11 +9,19 @@ import { detectMediaType } from '../../utils/heroMediaUpload';
 const IMAGE_INTERVAL_MS = 5200;
 const VIDEO_INTERVAL_MS = 10000;
 
+const reveal = (delay) => ({
+  initial: { opacity: 0, y: 14 },
+  animate: { opacity: 1, y: 0 },
+  transition: { duration: 0.55, ease: [0.22, 1, 0.36, 1], delay },
+});
+
 /** PhoneCase-style full-bleed hero carousel — image or short muted video */
 export default function HomeHero() {
   const { t } = useTranslation();
+  const reduceMotion = useReducedMotion();
   const [slides, setSlides] = useState(DEFAULT_HERO_SLIDES);
   const [index, setIndex] = useState(0);
+  const [contentKey, setContentKey] = useState(0);
   const videoRefs = useRef({});
 
   useEffect(() => {
@@ -62,6 +71,10 @@ export default function HomeHero() {
     return () => window.clearTimeout(timer);
   }, [slides, index]);
 
+  useEffect(() => {
+    setContentKey((k) => k + 1);
+  }, [index]);
+
   // Play active video muted; pause others (autoplay policy friendly)
   useEffect(() => {
     Object.entries(videoRefs.current).forEach(([key, el]) => {
@@ -85,6 +98,9 @@ export default function HomeHero() {
   const slide = slides[index] || slides[0];
   const title = slide.title || (slide.titleKey ? t(slide.titleKey) : '');
   const sub = slide.sub || slide.subtitle || (slide.subKey ? t(slide.subKey) : '');
+  const motionOff = reduceMotion
+    ? { initial: false, animate: { opacity: 1, y: 0 }, transition: { duration: 0 } }
+    : null;
 
   return (
     <section className="pc-hero-carousel" aria-roledescription="carousel">
@@ -122,14 +138,28 @@ export default function HomeHero() {
         );
       })}
       <div className="pc-hero-overlay" />
-      <div className="container pc-hero-content">
-        <p className="pc-hero-kicker">{t('home.heroTag')}</p>
-        <h1 className="pc-hero-title">{title}</h1>
-        <p className="pc-hero-sub">{sub}</p>
-        <PremiumLink to={slide.ctaTo || slide.href || '/shop'} className="btn btn-primary pc-hero-cta">
-          {t('home.shopNow')}
-        </PremiumLink>
-        <div className="pc-hero-dots" role="tablist" aria-label="Hero slides">
+      <div className="container pc-hero-content" key={contentKey}>
+        <motion.p className="pc-hero-kicker" {...(motionOff || reveal(0.04))}>
+          {t('home.heroTag')}
+        </motion.p>
+        <motion.h1 className="pc-hero-title" {...(motionOff || reveal(0.1))}>
+          {title}
+          <span className="pc-hero-title-underline" aria-hidden="true" />
+        </motion.h1>
+        <motion.p className="pc-hero-sub" {...(motionOff || reveal(0.18))}>
+          {sub}
+        </motion.p>
+        <motion.div {...(motionOff || reveal(0.26))}>
+          <PremiumLink to={slide.ctaTo || slide.href || '/shop'} className="btn btn-primary pc-hero-cta">
+            {t('home.shopNow')}
+          </PremiumLink>
+        </motion.div>
+        <motion.div
+          className="pc-hero-dots"
+          role="tablist"
+          aria-label="Hero slides"
+          {...(motionOff || reveal(0.34))}
+        >
           {slides.map((s, i) => (
             <button
               key={s.id}
@@ -140,7 +170,7 @@ export default function HomeHero() {
               onClick={() => setIndex(i)}
             />
           ))}
-        </div>
+        </motion.div>
       </div>
     </section>
   );
