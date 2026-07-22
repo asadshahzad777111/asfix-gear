@@ -733,7 +733,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
  * Compact 58/80mm PDF — MediaBox height = content only (never A4 / 3276mm continuous).
  * Prefer PNG for thermal printing; PDF is archival/share fallback only.
  * Printing any PDF via Windows POS-58 with paper "58×3276mm" still feeds meters of blank —
- * use Direct Print (HTML @page 58mm auto) or ESC/POS instead.
+ * use Direct Print (content-height HTML @page 58mm×Nmm) or ESC/POS instead.
  */
 export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
@@ -1081,21 +1081,26 @@ function loadImageNaturalSize(src) {
 }
 
 /**
- * Lock @page to measured content height.
+ * Lock @page to measured (or forced) content height.
  * POS-58 Windows drivers often advertise 58×3276mm — never let Chrome use that.
  */
-function lockThermalPageToContent(doc, widthMm = 58) {
+function lockThermalPageToContent(doc, widthMm = 58, forcedHeightMm = null) {
   const w = widthMm === 80 ? 80 : 58;
-  const node = doc.querySelector('.receipt') || doc.body;
-  const px = Math.max(
-    node?.scrollHeight || 0,
-    node?.offsetHeight || 0,
-    Math.ceil(node?.getBoundingClientRect?.().height || 0),
-    doc.body?.scrollHeight || 0,
-  );
-  /* CSS px → mm @ 96dpi; +2mm padding; clamp away from tall-roll / A4 */
-  let heightMm = Math.ceil((px * 25.4) / 96) + 2;
-  heightMm = Math.max(40, Math.min(heightMm, 220));
+  let heightMm;
+  if (forcedHeightMm != null && Number.isFinite(Number(forcedHeightMm))) {
+    heightMm = Math.max(40, Math.min(220, Math.ceil(Number(forcedHeightMm))));
+  } else {
+    const node = doc.querySelector('.receipt') || doc.body;
+    const px = Math.max(
+      node?.scrollHeight || 0,
+      node?.offsetHeight || 0,
+      Math.ceil(node?.getBoundingClientRect?.().height || 0),
+      doc.body?.scrollHeight || 0,
+    );
+    /* CSS px → mm @ 96dpi; +2mm padding; clamp away from tall-roll / A4 */
+    heightMm = Math.ceil((px * 25.4) / 96) + 2;
+    heightMm = Math.max(40, Math.min(heightMm, 220));
+  }
 
   let style = doc.getElementById('asfix-thermal-page-lock');
   if (!style) {
@@ -1127,10 +1132,11 @@ function finishPrintJob(inFlightRef) {
 }
 
 /**
- * Same-origin iframe print — measures content, locks @page to short 58mm×Nmm.
+ * Same-origin iframe print — locks @page to short 58mm×Nmm.
  * Never A4, never @page auto (maps to 3276mm on POS-58), never tall PDF.
+ * @param {string} [forcedHeightMm] exact content height from PNG aspect ratio
  */
-function printViaIframe(html, inFlightRef, widthMm = 58) {
+function printViaIframe(html, inFlightRef, widthMm = 58, forcedHeightMm = null) {
   document.getElementById(PRINT_ROOT_ID)?.remove();
   const w = widthMm === 80 || widthMm === '80mm' ? 80 : 58;
   const iframe = document.createElement('iframe');
@@ -1171,7 +1177,7 @@ function printViaIframe(html, inFlightRef, widthMm = 58) {
     if (printed || done) return;
     printed = true;
     try {
-      lockThermalPageToContent(doc, w);
+      lockThermalPageToContent(doc, w, forcedHeightMm);
       win.focus();
       win.print();
     } catch {
@@ -1300,7 +1306,7 @@ export async function printDirectSystemReceipt({
       Math.min(220, Math.ceil((dims.height / Math.max(1, dims.width)) * widthMm) + 1),
     );
     const html = buildThermalPngPrintHtml(dataUrl, widthMm, heightMm);
-    const printed = await printViaIframe(html, inFlightRef, widthMm);
+    const printed = await printViaIframe(html, inFlightRef, widthMm, heightMm);
     return printed ? { ok: true } : { ok: false, reason: 'print_failed', message: 'Browser print failed' };
   } catch (err) {
     finishPrintJob(inFlightRef);

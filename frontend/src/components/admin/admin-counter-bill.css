@@ -1865,8 +1865,8 @@
   }
 
   @page {
-    /* Content height — never fixed 200/3276mm (POS-58 blank roll) */
-    size: 58mm auto;
+    /* Exact short fallback — never auto (POS-58 driver → 58×3276mm blank meters) */
+    size: 58mm 120mm;
     margin: 0;
   }
 }
