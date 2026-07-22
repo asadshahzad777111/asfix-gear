@@ -91,7 +91,7 @@ export function useSmartThermalPrint({ thermalWidth = '58mm', agentReady = true 
         return;
       }
 
-      const text = buildThermalReceiptText(pending.order);
+      const text = buildThermalReceiptText(pending.order, pending.thermalWidth);
       const dataBase64 = buildThermalReceiptEscPosBase64(
         pending.order,
         pending.thermalWidth,

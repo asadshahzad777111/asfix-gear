@@ -56,6 +56,20 @@ function buildEscPosBytes(text) {
   return out;
 }
 
+/** Decode ESC/POS payload from base64 (browser-safe). */
+function decodeBase64ToBytes(dataBase64) {
+  const value = String(dataBase64 || '').trim();
+  if (!value || typeof atob !== 'function') return null;
+  try {
+    const binary = atob(value);
+    const bytes = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+    return bytes.length ? bytes : null;
+  } catch {
+    return null;
+  }
+}
+
 function isBleSkipped() {
   try {
     return sessionStorage.getItem(BLE_SKIP_KEY) === '1';
@@ -117,15 +131,22 @@ export async function printViaThermalBridge(text) {
 }
 
 export async function printEscPosViaThermalBridge(dataBase64) {
+  const payload = String(dataBase64 || '').trim();
+  if (!payload) return { ok: false, reason: 'empty' };
+
   const health = await probeThermalBridge();
   if (!health?.ok || !health?.ready || !health?.com) {
     return { ok: false, reason: 'bridge_unavailable' };
   }
+
+  const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  const timer = ctrl ? setTimeout(() => ctrl.abort(), 8_000) : null;
   try {
     const res = await fetch(`${BRIDGE_URL}/print`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ data_base64: String(dataBase64 || '') }),
+      body: JSON.stringify({ data_base64: payload }),
+      signal: ctrl?.signal,
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data?.ok) {
@@ -134,6 +155,8 @@ export async function printEscPosViaThermalBridge(dataBase64) {
     return { ok: true, via: 'bridge', com: data.com };
   } catch {
     return { ok: false, reason: 'bridge_error' };
+  } finally {
+    if (timer) clearTimeout(timer);
   }
 }
 
@@ -166,15 +189,18 @@ async function writeChunks(characteristic, bytes, chunkSize = 100) {
 }
 
 /**
- * Chrome Web Bluetooth → ESC/POS. Requires a user gesture (Print click).
- * First time: picker shows paired/nearby BLE printers.
+ * Chrome Web Bluetooth → raw ESC/POS bytes. Requires a user gesture (Print click).
+ * Prefer full receipt base64 (32-col + QR) over plain text.
  */
-export async function printViaWebBluetooth(text) {
+export async function printViaWebBluetoothBytes(bytes) {
   if (!canUseWebBluetooth()) {
     return { ok: false, reason: 'web_bluetooth_unsupported' };
   }
   if (isBleSkipped()) {
     return { ok: false, reason: 'ble_skipped' };
+  }
+  if (!bytes?.length) {
+    return { ok: false, reason: 'empty' };
   }
 
   let device;
@@ -218,7 +244,6 @@ export async function printViaWebBluetooth(text) {
       return { ok: false, reason: 'no_writable_characteristic' };
     }
 
-    const bytes = buildEscPosBytes(text);
     await writeChunks(characteristic, bytes);
     return { ok: true, via: 'web_bluetooth', device: device.name || 'BLE printer' };
   } catch (err) {
@@ -233,12 +258,43 @@ export async function printViaWebBluetooth(text) {
 }
 
 /**
- * Try localhost COM bridge, then Web Bluetooth. Does not throw.
- * @returns {{ ok: boolean, via?: string, reason?: string }}
+ * Chrome Web Bluetooth → ESC/POS from plain text (legacy / last-resort).
  */
-export async function tryLaptopThermalPrint(text) {
+export async function printViaWebBluetooth(text) {
+  return printViaWebBluetoothBytes(buildEscPosBytes(text));
+}
+
+/**
+ * Try localhost COM bridge, then Web Bluetooth. Prefer ESC/POS base64 (QR + sizing).
+ * @param {string} text
+ * @param {{ dataBase64?: string }} [opts]
+ * @returns {Promise<{ ok: boolean, via?: string, reason?: string, message?: string }>}
+ */
+export async function tryLaptopThermalPrint(text, opts = {}) {
+  const dataBase64 = String(opts.dataBase64 || '').trim();
+  if (dataBase64) {
+    const bridgeEsc = await printEscPosViaThermalBridge(dataBase64);
+    if (bridgeEsc.ok) return bridgeEsc;
+
+    const escBytes = decodeBase64ToBytes(dataBase64);
+    if (escBytes) {
+      const bleEsc = await printViaWebBluetoothBytes(escBytes);
+      if (bleEsc.ok) return bleEsc;
+      /* Prefer reporting ESC/POS attempt failure over narrow text fallback. */
+      if (bleEsc.reason !== 'web_bluetooth_unsupported' && bleEsc.reason !== 'ble_skipped') {
+        return {
+          ok: false,
+          reason: bleEsc.reason || bridgeEsc.reason || 'unavailable',
+          message: bleEsc.message || bridgeEsc.message,
+        };
+      }
+    }
+  }
+
   const body = String(text || '').trim();
-  if (!body) return { ok: false, reason: 'empty' };
+  if (!body) {
+    return { ok: false, reason: dataBase64 ? 'unavailable' : 'empty' };
+  }
 
   const bridge = await printViaThermalBridge(body);
   if (bridge.ok) return bridge;

@@ -16,7 +16,7 @@
  *
  * Endpoints:
  *   GET  /health  → { ok, com, listening }
- *   POST /print   → { text: "..." } or { lines: ["..."] }  (JSON)
+ *   POST /print   → { data_base64: "..." } (preferred ESC/POS) or { text: "..." } / { lines: ["..."] }
  *   OPTIONS /print (CORS preflight for localhost origins)
  *
  * Docs: docs/thermal-printer-windows.md
@@ -81,7 +81,10 @@ function corsHeaders(req) {
   const allow =
     !origin
     || origin === 'null'
-    || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin);
+    || /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/i.test(origin)
+    /* Live POS (asfixgear.com) → localhost COM bridge */
+    || /^https:\/\/([a-z0-9-]+\.)?asfixgear\.com$/i.test(origin)
+    || /^https:\/\/[a-z0-9-]+\.vercel\.app$/i.test(origin);
   const headers = {
     'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
     'Access-Control-Allow-Headers': 'Content-Type',
@@ -213,7 +216,7 @@ function main() {
   server.listen(port, HOST, () => {
     console.log(`AsFix thermal bridge http://${HOST}:${port}`);
     console.log(com ? `COM target: ${com}` : 'COM target: (none — set THERMAL_COM=COMx for serial print)');
-    console.log('Health: GET /health   Print: POST /print { "text": "..." }');
+    console.log('Health: GET /health   Print: POST /print { "data_base64": "..." } or { "text": "..." }');
   });
 
   server.on('error', (err) => {

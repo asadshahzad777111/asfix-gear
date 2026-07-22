@@ -5,10 +5,7 @@ import { SHOP } from '../../config/shop';
 import { useAuth } from '../../context/AuthContext';
 import { getDefaultImage } from '../../config/products';
 import { useTranslation } from '../../context/LanguageContext';
-import {
-  printEscPosViaThermalBridge,
-  tryLaptopThermalPrint,
-} from '../../utils/thermalLaptopPrint';
+import { tryLaptopThermalPrint } from '../../utils/thermalLaptopPrint';
 import {
   autoPrintCounterReceiptIfNative,
   getSavedPrinter,
@@ -207,10 +204,11 @@ function thermalAmountText(amount) {
   return `Rs. ${Math.round(Number(amount || 0))}`;
 }
 
-export function buildThermalReceiptText(order) {
+export function buildThermalReceiptText(order, thermalWidth = '58mm') {
   if (!order) return '';
-  /* Fewer chars/line → larger glyphs on paper (sample AS FIX bill size) */
-  return `${buildReceiptLines(order, 18).map((line) => line.value).join('\n')}\n\n`;
+  /* Match ESC/POS 58mm (~32) / 80mm (~48) so plain-text fallbacks fill the roll */
+  const maxChars = normalizeThermalWidth(thermalWidth) === '80mm' ? 48 : 32;
+  return `${buildReceiptLines(order, maxChars).map((line) => line.value).join('\n')}\n\n`;
 }
 
 function bytesToBase64(bytes) {
@@ -223,7 +221,7 @@ function bytesToBase64(bytes) {
 }
 
 /**
- * Full-width ESC/POS receipt for the native AsFix app and remote stations.
+ * Full-width ESC/POS receipt for laptop, native AsFix app, and remote stations.
  * Uses the printer's QR command, so the installed APK does not need rebuilding.
  */
 export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
@@ -237,13 +235,15 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
   const text = (value) => parts.push(encoder.encode(String(value ?? '')));
 
   push(0x1b, 0x40); // ESC @
+  push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm)
   for (const line of lines) {
     if (line.qr) {
       const qr = encoder.encode(line.value || RECEIPT_SITE_URL);
       const storeLength = qr.length + 3;
       push(0x1b, 0x61, 0x01); // center
       push(0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00); // model 2
-      push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, width === '80mm' ? 7 : 6);
+      /* Module size 6–7 fills ~58mm paper without clipping most BT800-class printers */
+      push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, width === '80mm' ? 8 : 6);
       push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x31); // error M
       push(0x1d, 0x28, 0x6b, storeLength & 0xff, (storeLength >> 8) & 0xff, 0x31, 0x50, 0x30);
       parts.push(qr);
@@ -253,15 +253,22 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
     }
 
     push(0x1b, 0x61, line.align === 'center' ? 0x01 : line.align === 'right' ? 0x02 : 0x00);
-    push(0x1b, 0x45, line.weight === 'bold' ? 0x01 : 0x00);
-    push(0x1b, 0x4d, line.small ? 0x01 : 0x00);
-    push(0x1d, 0x21, line.title ? 0x11 : line.grand ? 0x10 : 0x00);
+    push(0x1b, 0x45, line.weight === 'bold' || line.title || line.grand || line.totalLabel ? 0x01 : 0x00);
+    /* Always Font A — Font B looks tiny and leaves empty right margin feel */
+    push(0x1b, 0x4d, 0x00);
+    /* Title: double W+H; TOTAL: double H; grand amount: double W+H */
+    const size = line.title || line.grand
+      ? 0x11
+      : line.totalLabel
+        ? 0x01
+        : 0x00;
+    push(0x1d, 0x21, size);
     text(line.value);
     push(0x0a);
     push(0x1d, 0x21, 0x00);
-    push(0x1b, 0x4d, 0x00);
+    push(0x1b, 0x45, 0x00);
   }
-  push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00);
+  push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00, 0x1b, 0x4d, 0x00);
   push(0x0a, 0x0a, 0x0a);
   push(0x1d, 0x56, 0x01);
 
@@ -1093,7 +1100,7 @@ export async function printActiveCounterReceipt({
   try {
     /* Native AsFix POS app: Bluetooth SPP ESC/POS — replaces Thermer happy path */
     if (isNativePosApp()) {
-      const text = buildThermalReceiptText(order);
+      const text = buildThermalReceiptText(order, thermalWidth);
       const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
       const native = await tryNativeThermalPrint(text, { dataBase64 });
       finishPrintJob(inFlightRef);
@@ -1137,18 +1144,11 @@ export async function printActiveCounterReceipt({
       return { ok: true };
     }
 
-    /* Laptop: prefer ESC/POS base64 (32-col + QR), then plain text bridge/BLE */
+    /* Laptop: full ESC/POS (32-col + QR + bold title) via COM bridge or Web Bluetooth */
     try {
       const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
-      if (dataBase64) {
-        const esc = await printEscPosViaThermalBridge(dataBase64);
-        if (esc.ok) {
-          finishPrintJob(inFlightRef);
-          return { ok: true };
-        }
-      }
-      const text = buildThermalReceiptText(order);
-      const direct = await tryLaptopThermalPrint(text);
+      const text = buildThermalReceiptText(order, thermalWidth);
+      const direct = await tryLaptopThermalPrint(text, { dataBase64 });
       if (direct.ok) {
         finishPrintJob(inFlightRef);
         return { ok: true };
@@ -1400,7 +1400,7 @@ export default function AdminCounterBill({
     const orderKey = String(order.order_id || order.id || '');
     if (!orderKey || autoPrintedOrderRef.current === orderKey) return;
     autoPrintedOrderRef.current = orderKey;
-    const text = buildThermalReceiptText(order);
+    const text = buildThermalReceiptText(order, thermalWidth);
     const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
     const result = await autoPrintCounterReceiptIfNative(text, { dataBase64 });
     if (result.ok) {

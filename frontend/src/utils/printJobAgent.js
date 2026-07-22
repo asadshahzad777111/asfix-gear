@@ -10,7 +10,6 @@ import {
   nativePrintText,
 } from './nativePosPrint';
 import {
-  printEscPosViaThermalBridge,
   probeThermalBridge,
   tryLaptopThermalPrint,
 } from './thermalLaptopPrint';
@@ -34,9 +33,10 @@ async function processJob(job, station) {
         ? await nativePrintEscPos(job.data_base64)
         : await nativePrintText(job.text || '');
     } else {
-      printed = job.data_base64
-        ? await printEscPosViaThermalBridge(job.data_base64)
-        : await tryLaptopThermalPrint(job.text || '');
+      /* Prefer ESC/POS base64 (QR + full width) on bridge or Web Bluetooth */
+      printed = await tryLaptopThermalPrint(job.text || '', {
+        dataBase64: job.data_base64 || '',
+      });
     }
 
     if (printed?.ok) {
