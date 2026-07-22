@@ -492,121 +492,152 @@ function buildReceiptLines(order, maxChars = 18) {
   push('Thank You', { align: 'center', weight: 'bold' });
   push(RECEIPT_SITE, { align: 'center', weight: 'bold', small: true });
   rule();
-  push('Scan', { align: 'center', weight: 'bold', small: true });
+  /* Proportional to body — not a second title */
+  push('Scan', { align: 'center', small: true });
   push(RECEIPT_SITE_URL, { align: 'center', qr: true });
   return lines;
 }
 
 /**
- * Thermal PNG: keep AS FIX & GEAR heading bold;
- * body text cleaner (fill-only, less blocky pixels) with real dashed linings.
+ * Thermal PNG for Direct Print / share (384 dots @ 58mm, 576 @ 80mm).
+ * Fill-only glyphs, safe side margins, QR sized like ESC Z mag 6/8.
  */
 export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
+  /* 1px = 1 printer dot — avoids Chrome→POS-58 downscale mush */
   const printerDots = pageWidth === '80mm' ? 576 : 384;
-  const scale = 2;
-  const widthPx = printerDots * scale;
-  const maxChars = pageWidth === '80mm' ? 26 : 18;
-  const padX = Math.round(widthPx * 0.07);
-  const padY = 16 * scale;
-  const titleStretch = 1.35;
-  const bodyStretch = 1.28;
+  const widthPx = printerDots;
+  /* Extra side pad so Windows POS-58 driver margins do not crop Bill#/prices */
+  const padX = pageWidth === '80mm' ? 28 : 22;
+  const padY = 14;
+  const maxChars = pageWidth === '80mm' ? 42 : 28;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
-  const ctx = canvas.getContext('2d');
+  const ctx = canvas.getContext('2d', { alpha: false });
   if (!ctx) throw new Error('Canvas unavailable');
 
   const usable = widthPx - padX * 2;
-
   const isHeavy = (line) => Boolean(line?.title || line?.grand || line?.totalLabel);
 
   const setFont = (size, heavy = false) => {
-    /* Heading stays bold display; body uses open sans — unique + fewer blocky pixels */
+    /* Regular Arial only — no Arial Black / no stroke (those become thermal blobs) */
     ctx.font = heavy
-      ? `bold ${size}px "Arial Black", Arial, Helvetica, sans-serif`
-      : `600 ${size}px Arial, Helvetica, sans-serif`;
+      ? `bold ${size}px Arial, Helvetica, sans-serif`
+      : `${size}px Arial, Helvetica, sans-serif`;
   };
 
-  const letterGapFor = (size, heavy) => (
-    heavy
-      ? Math.max(2 * scale, Math.round(size * 0.1))
-      : Math.max(3 * scale, Math.round(size * 0.16))
-  );
-
-  const stretchFor = (heavy) => (heavy ? titleStretch : bodyStretch);
-
-  const measureSpaced = (text, size, heavy = false) => {
+  const measureText = (text, size, heavy = false) => {
     setFont(size, heavy);
-    const letterGap = letterGapFor(size, heavy);
-    const chars = Array.from(String(text ?? ''));
-    if (!chars.length) return 0;
-    let width = 0;
-    chars.forEach((ch, index) => {
-      width += ctx.measureText(ch).width;
-      if (index < chars.length - 1) width += letterGap;
-    });
-    return width;
+    return ctx.measureText(String(text ?? '')).width;
   };
 
-  let fontSize = Math.floor(usable / (maxChars * 0.55));
-  while (measureSpaced('M'.repeat(maxChars), fontSize, false) > usable && fontSize > 20 * scale) {
+  /* Body ~ Font A feel on 58mm; fit maxChars inside usable with room to spare */
+  let fontSize = pageWidth === '80mm' ? 18 : 16;
+  while (measureText('M'.repeat(maxChars), fontSize, false) > usable && fontSize > 11) {
     fontSize -= 1;
   }
-  while (measureSpaced('M'.repeat(maxChars), fontSize + 1, false) <= usable) {
+  while (measureText('M'.repeat(maxChars), fontSize + 1, false) <= usable * 0.98 && fontSize < 20) {
     fontSize += 1;
   }
-  fontSize = Math.max(fontSize, pageWidth === '80mm' ? 28 : 24);
 
   const lineSize = (line) => {
-    if (line.grand) return Math.round(fontSize * 1.7);
-    if (line.totalLabel) return Math.round(fontSize * 1.12);
-    if (line.title) return Math.round(fontSize * 1.2);
-    if (line.small) return Math.max(18, Math.round(fontSize * 0.88));
-    if (line.rule) return fontSize;
+    /* TOTAL: slight bump only — not double-width blobs */
+    if (line.grand) return Math.round(fontSize * 1.28);
+    if (line.totalLabel) return Math.round(fontSize * 1.08);
+    if (line.title) return Math.round(fontSize * 1.15);
+    if (line.small) return Math.max(11, Math.round(fontSize * 0.88));
     return fontSize;
   };
 
+  const fitText = (text, size, heavy) => {
+    let value = String(text ?? '');
+    if (!value) return '';
+    while (value.length > 1 && measureText(value, size, heavy) > usable) {
+      value = value.slice(0, -1);
+    }
+    return value;
+  };
+
   const chunkAtSize = (text, size, heavy) => {
-    const chars = Array.from(String(text ?? ''));
-    if (!chars.length) return [''];
+    const raw = String(text ?? '');
+    if (!raw) return [''];
+    const words = raw.split(/\s+/).filter(Boolean);
     const chunks = [];
     let current = '';
-    chars.forEach((ch) => {
-      const next = current + ch;
-      if (current && measureSpaced(next, size, heavy) > usable) {
-        chunks.push(current);
-        current = ch;
+    const pushWord = (word) => {
+      const next = current ? `${current} ${word}` : word;
+      if (current && measureText(next, size, heavy) > usable) {
+        chunks.push(fitText(current, size, heavy));
+        if (measureText(word, size, heavy) > usable) {
+          let piece = '';
+          Array.from(word).forEach((ch) => {
+            const tryNext = piece + ch;
+            if (piece && measureText(tryNext, size, heavy) > usable) {
+              chunks.push(piece);
+              piece = ch;
+            } else {
+              piece = tryNext;
+            }
+          });
+          current = piece;
+        } else {
+          current = word;
+        }
       } else {
         current = next;
       }
-    });
-    if (current) chunks.push(current);
-    return chunks;
+    };
+    if (words.length) words.forEach(pushWord);
+    else {
+      Array.from(raw).forEach((ch) => {
+        const next = current + ch;
+        if (current && measureText(next, size, heavy) > usable) {
+          chunks.push(current);
+          current = ch;
+        } else {
+          current = next;
+        }
+      });
+    }
+    if (current) chunks.push(fitText(current, size, heavy));
+    return chunks.length ? chunks : [''];
   };
 
-  const lineHFor = (size, heavy) => Math.ceil(size * stretchFor(heavy) * (heavy ? 1.18 : 1.28));
-  const ruleH = Math.ceil(fontSize * bodyStretch * 0.85);
-  /* QR ~ body-text scale on 58mm (vendor mag 6 ≈ half-roll), not full-bleed giant */
-  const qrSize = Math.round(usable * (pageWidth === '80mm' ? 0.42 : 0.48));
+  const lineHFor = (size) => Math.ceil(size * 1.22);
+  const ruleH = Math.ceil(fontSize * 0.7);
+  /*
+   * QR: match ESC Z mag (6 @ 58mm / 8 @ 80mm). Paint modules crisply — no anti-alias mush.
+   * Mag N ≈ N dots per module; version auto for https://asfixgear.com + quiet zone.
+   */
+  const qrMag = pageWidth === '80mm' ? 8 : 6;
+  const qrMarginModules = 2;
+  let qrModules = 29;
+  try {
+    const qrModel = QRCode.create(RECEIPT_SITE_URL, { errorCorrectionLevel: 'M' });
+    qrModules = qrModel?.modules?.size || qrModules;
+  } catch {
+    /* keep default */
+  }
+  const qrSize = (qrModules + qrMarginModules * 2) * qrMag;
+  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.72));
 
-  let heightPx = padY * 2 + 16 * scale;
+  let heightPx = padY * 2 + 8;
   lines.forEach((line) => {
     if (line.rule) {
-      heightPx += ruleH + 6 * scale;
+      heightPx += ruleH + 6;
       return;
     }
     if (line.qr) {
-      heightPx += qrSize + 18 * scale;
+      heightPx += qrDrawSize + 12;
       return;
     }
-    const heavy = isHeavy(line);
     const size = lineSize(line);
-    const lh = lineHFor(size, heavy);
+    const lh = lineHFor(size);
     if (line.columns) {
       heightPx += lh;
     } else {
-      heightPx += chunkAtSize(line.value, size, heavy).length * lh;
-      if (heavy) heightPx += 6 * scale;
+      heightPx += chunkAtSize(line.value, size, isHeavy(line)).length * lh;
+      if (line.grand || line.title) heightPx += 2;
     }
   });
 
@@ -619,14 +650,13 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   ctx.strokeStyle = '#000000';
   ctx.textBaseline = 'top';
   ctx.textAlign = 'left';
-  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingEnabled = false;
 
   const drawRuleLine = (y) => {
-    const mid = y + ruleH / 2;
+    const mid = Math.round(y + ruleH / 2) + 0.5;
     ctx.save();
-    ctx.strokeStyle = '#000000';
-    ctx.lineWidth = Math.max(1.5, scale);
-    ctx.setLineDash([5 * scale, 4 * scale]);
+    ctx.lineWidth = 1;
+    ctx.setLineDash([4, 3]);
     ctx.beginPath();
     ctx.moveTo(padX, mid);
     ctx.lineTo(widthPx - padX, mid);
@@ -635,74 +665,75 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     ctx.restore();
   };
 
-  const drawSpacedText = (text, anchorX, y, size, align = 'left', heavy = false) => {
+  /** Fill-only text — never stroke / never vertical stretch (those pixelate on POS-58). */
+  const drawText = (text, anchorX, y, size, align = 'left', heavy = false) => {
+    const value = fitText(text, size, heavy);
+    if (!value) return;
     setFont(size, heavy);
-    const letterGap = letterGapFor(size, heavy);
-    const stretch = stretchFor(heavy);
-    const chars = Array.from(String(text ?? ''));
-    const widths = chars.map((ch) => ctx.measureText(ch).width);
-    const totalW = widths.reduce((sum, w, i) => sum + w + (i < widths.length - 1 ? letterGap : 0), 0);
-
+    const totalW = measureText(value, size, heavy);
     let x = anchorX;
     if (align === 'center') x = anchorX - totalW / 2;
     if (align === 'right') x = anchorX - totalW;
     if (x < padX) x = padX;
     if (x + totalW > widthPx - padX) x = Math.max(padX, widthPx - padX - totalW);
+    ctx.fillText(value, Math.round(x), Math.round(y));
+  };
 
-    ctx.save();
-    ctx.translate(0, y);
-    ctx.scale(1, stretch);
-    let cursor = x;
-    chars.forEach((ch, index) => {
-      if (heavy) {
-        ctx.lineWidth = Math.max(1.2, size * 0.035);
-        ctx.lineJoin = 'round';
-        ctx.strokeText(ch, cursor, 0);
-      }
-      ctx.fillText(ch, cursor, 0);
-      cursor += widths[index] + letterGap;
+  const drawCrispQr = async (payload, destX, destY, destSize) => {
+    const qrCanvas = document.createElement('canvas');
+    /* Render at exact module grid, then nearest-neighbor scale into receipt */
+    await QRCode.toCanvas(qrCanvas, payload || RECEIPT_SITE_URL, {
+      width: destSize,
+      margin: qrMarginModules,
+      errorCorrectionLevel: 'M',
+      color: { dark: '#000000', light: '#FFFFFF' },
     });
+    ctx.save();
+    ctx.imageSmoothingEnabled = false;
+    ctx.drawImage(qrCanvas, destX, destY, destSize, destSize);
     ctx.restore();
   };
 
   let y = padY;
   for (const line of lines) {
     if (line.rule) {
-      y += 3 * scale;
+      y += 2;
       drawRuleLine(y);
-      y += ruleH + 3 * scale;
+      y += ruleH + 2;
       continue;
     }
 
     if (line.qr) {
-      const qrCanvas = document.createElement('canvas');
-      await QRCode.toCanvas(qrCanvas, line.value || RECEIPT_SITE_URL, {
-        width: qrSize,
-        margin: 1,
-        errorCorrectionLevel: 'M',
-        color: { dark: '#000000', light: '#FFFFFF' },
-      });
-      const qrX = Math.round((widthPx - qrSize) / 2);
-      y += 6 * scale;
-      ctx.drawImage(qrCanvas, qrX, y, qrSize, qrSize);
-      y += qrSize + 12 * scale;
+      /* "Scan" is its own line already; if missing, still leave proportional gap */
+      const qrX = Math.round((widthPx - qrDrawSize) / 2);
+      y += 2;
+      await drawCrispQr(line.value || RECEIPT_SITE_URL, qrX, y, qrDrawSize);
+      y += qrDrawSize + 8;
       continue;
     }
 
     const heavy = isHeavy(line);
     const size = lineSize(line);
-    const lh = lineHFor(size, heavy);
+    const lh = lineHFor(size);
 
     if (line.columns) {
-      let right = line.columns.right;
+      let left = String(line.columns.left ?? '');
+      let right = String(line.columns.right ?? '');
+      const gapMin = 8;
       while (
-        measureSpaced(line.columns.left, size, heavy) + 12 * scale + measureSpaced(right, size, heavy) > usable
-        && right.length > 2
+        measureText(left, size, heavy) + gapMin + measureText(right, size, heavy) > usable
+        && right.length > 1
       ) {
         right = right.slice(0, -1);
       }
-      drawSpacedText(line.columns.left, padX, y, size, 'left', heavy);
-      drawSpacedText(right, widthPx - padX, y, size, 'right', heavy);
+      while (
+        measureText(left, size, heavy) + gapMin + measureText(right, size, heavy) > usable
+        && left.length > 1
+      ) {
+        left = left.slice(0, -1);
+      }
+      drawText(left, padX, y, size, 'left', heavy);
+      drawText(right, widthPx - padX, y, size, 'right', heavy);
       y += lh;
     } else {
       const align = line.align === 'center' ? 'center' : line.align === 'right' ? 'right' : 'left';
@@ -713,10 +744,10 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
           : padX;
       const chunks = chunkAtSize(line.value, size, heavy);
       chunks.forEach((chunk) => {
-        drawSpacedText(chunk, anchor, y, size, align, heavy);
+        drawText(chunk, anchor, y, size, align, heavy);
         y += lh;
       });
-      if (heavy) y += 4 * scale;
+      if (line.grand || line.title) y += 2;
     }
   }
 
@@ -1029,30 +1060,43 @@ html, body {
 
 /** Content-height PNG sheet for Direct Print — never a tall PDF / never driver 3276mm. */
 function buildThermalPngPrintHtml(dataUrl, widthMm, heightMm) {
-  const w = Number(widthMm) || 58;
-  const h = Math.max(40, Math.min(220, Number(heightMm) || 120));
+  const paperW = Number(widthMm) || 58;
+  /*
+   * POS-58 printable ≈ 48mm of 58mm paper. Center a slightly narrower image so
+   * Chrome→driver margins do not crop Bill# / prices on the right edge.
+   */
+  const contentW = paperW === 80 ? 72 : 52;
+  const contentH = Math.max(40, Math.min(220, Number(heightMm) || 120));
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
-<meta name="viewport" content="width=${w}, initial-scale=1" />
+<meta name="viewport" content="width=${paperW}, initial-scale=1" />
 <title>AsFix receipt</title>
 <style>
-@page { size: ${w}mm ${h}mm; margin: 0; }
+@page { size: ${paperW}mm ${contentH}mm; margin: 0; }
 html, body {
   margin: 0 !important;
   padding: 0 !important;
-  width: ${w}mm !important;
-  height: ${h}mm !important;
+  width: ${paperW}mm !important;
+  height: ${contentH}mm !important;
   min-height: 0 !important;
-  max-height: ${h}mm !important;
+  max-height: ${contentH}mm !important;
   overflow: hidden !important;
   background: #fff !important;
 }
+body {
+  display: flex !important;
+  justify-content: center !important;
+  align-items: flex-start !important;
+}
 img {
   display: block !important;
-  width: ${w}mm !important;
-  height: ${h}mm !important;
+  width: ${contentW}mm !important;
+  height: ${contentH}mm !important;
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
+  image-rendering: pixelated !important;
+  image-rendering: crisp-edges !important;
+  -ms-interpolation-mode: nearest-neighbor !important;
 }
 </style></head><body>
 <img src="${dataUrl}" alt="AsFix receipt" />
@@ -1298,12 +1342,14 @@ export async function printDirectSystemReceipt({
      */
     const width = normalizeThermalWidth(thermalWidth);
     const widthMm = width === '80mm' ? 80 : 58;
+    const contentWmm = widthMm === 80 ? 72 : 52;
     const blob = await createCounterReceiptPngBlob(order, width);
     const dataUrl = await blobToDataUrl(blob);
     const dims = await loadImageNaturalSize(dataUrl);
+    /* PNG is 1px = 1 printer dot; height from aspect at printable content width */
     const heightMm = Math.max(
       40,
-      Math.min(220, Math.ceil((dims.height / Math.max(1, dims.width)) * widthMm) + 1),
+      Math.min(220, Math.ceil((dims.height / Math.max(1, dims.width)) * contentWmm) + 1),
     );
     const html = buildThermalPngPrintHtml(dataUrl, widthMm, heightMm);
     const printed = await printViaIframe(html, inFlightRef, widthMm, heightMm);
