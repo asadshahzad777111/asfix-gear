@@ -1,9 +1,22 @@
-import { lazy, Suspense, useEffect, useRef } from 'react';
+import { lazy, Suspense, useMemo } from 'react';
 import { useLocation, Routes, Route, Navigate } from 'react-router-dom';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import Home from '../../pages/Home';
 import ProtectedRoute from '../ProtectedRoute';
 import CustomerRoute from '../CustomerRoute';
 import PageFallback from '../PageFallback';
+import {
+  isCoarsePointer,
+  pageCenter,
+  pageCenterMobile,
+  pageEnter,
+  pageEnterMobile,
+  pageExit,
+  pageExitMobile,
+  pageTransition,
+  pageTransitionMobile,
+  shouldSkipPageMotion,
+} from '../motion/pageMotion';
 
 // Home loads eagerly (it's the very first thing almost everyone sees), but
 // every other route is code-split so the initial bundle stays small and the
@@ -34,98 +47,108 @@ const ShippingWarrantyPage = lazy(() =>
 const Faq = lazy(() => import('../../pages/Faq'));
 const Wishlist = lazy(() => import('../../pages/Wishlist'));
 
-const ENTER_MS = 220;
+function AppRoutes({ location }) {
+  return (
+    <Routes location={location}>
+      <Route path="/" element={<Home />} />
+      <Route path="/gaming" element={<Gaming />} />
+      <Route path="/shop" element={<Shop />} />
+      <Route path="/shop/p/:slug" element={<ProductDetail />} />
+      <Route path="/shop/:id" element={<ProductDetail />} />
+      <Route path="/privacy" element={<PrivacyPage />} />
+      <Route path="/refund" element={<RefundPage />} />
+      <Route path="/terms" element={<TermsPage />} />
+      <Route path="/shipping" element={<ShippingWarrantyPage />} />
+      <Route path="/faq" element={<Faq />} />
+      <Route path="/repair" element={<Repair />} />
+      <Route path="/wishlist" element={<Wishlist />} />
+      <Route path="/contact" element={<Contact />} />
+      <Route path="/track" element={<OrderTrack />} />
+      <Route path="/account/login" element={<AccountLogin />} />
+      <Route path="/account/forgot-password" element={<AccountForgotPassword />} />
+      <Route path="/account/register" element={<AccountRegister />} />
+      <Route path="/register" element={<Navigate to="/account/register" replace />} />
+      <Route
+        path="/account"
+        element={
+          <CustomerRoute>
+            <Account />
+          </CustomerRoute>
+        }
+      />
+      <Route
+        path="/account/settings"
+        element={
+          <CustomerRoute>
+            <AccountSettings />
+          </CustomerRoute>
+        }
+      />
+      <Route path="/login" element={<Login />} />
+      <Route path="/pos/login" element={<PosLogin />} />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedRoute>
+            <Admin />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="/counter" element={<Navigate to="/pos" replace />} />
+      <Route
+        path="/pos"
+        element={
+          <ProtectedRoute requireCounter>
+            <Counter />
+          </ProtectedRoute>
+        }
+      />
+      <Route path="*" element={<NotFound />} />
+    </Routes>
+  );
+}
 
 export default function PageTransition() {
   const location = useLocation();
-  const pageRef = useRef(null);
-  const prefersReducedMotion = useRef(
-    typeof window !== 'undefined'
-      && window.matchMedia('(prefers-reduced-motion: reduce)').matches,
-  );
+  const reduceMotion = useReducedMotion();
+  const skipMotion = shouldSkipPageMotion(location.pathname);
+  const coarse = useMemo(() => isCoarsePointer(), []);
 
-  useEffect(() => {
-    const el = pageRef.current;
-    if (!el || prefersReducedMotion.current) return undefined;
-
-    document.body.classList.add('is-page-transitioning');
-    el.classList.remove('page-transition-page--enter');
-    // Force reflow so repeated navigations retrigger the enter animation.
-    void el.offsetWidth;
-    el.classList.add('page-transition-page--enter');
-
-    const timer = window.setTimeout(() => {
-      el.classList.remove('page-transition-page--enter');
-      document.body.classList.remove('is-page-transitioning');
-    }, ENTER_MS);
-
-    return () => {
-      window.clearTimeout(timer);
-      document.body.classList.remove('is-page-transitioning');
-    };
-  }, [location.key]);
+  const motionProps = coarse
+    ? {
+        initial: pageEnterMobile,
+        animate: pageCenterMobile,
+        exit: pageExitMobile,
+        transition: pageTransitionMobile,
+      }
+    : {
+        initial: pageEnter,
+        animate: pageCenter,
+        exit: pageExit,
+        transition: pageTransition,
+      };
 
   return (
     <div className="page-transition-shell">
       <Suspense fallback={<PageFallback />}>
-        <div ref={pageRef} className="page-transition-page">
-          <Routes location={location}>
-            <Route path="/" element={<Home />} />
-            <Route path="/gaming" element={<Gaming />} />
-            <Route path="/shop" element={<Shop />} />
-            <Route path="/shop/p/:slug" element={<ProductDetail />} />
-            <Route path="/shop/:id" element={<ProductDetail />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
-            <Route path="/refund" element={<RefundPage />} />
-            <Route path="/terms" element={<TermsPage />} />
-            <Route path="/shipping" element={<ShippingWarrantyPage />} />
-            <Route path="/faq" element={<Faq />} />
-            <Route path="/repair" element={<Repair />} />
-            <Route path="/wishlist" element={<Wishlist />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/track" element={<OrderTrack />} />
-            <Route path="/account/login" element={<AccountLogin />} />
-            <Route path="/account/forgot-password" element={<AccountForgotPassword />} />
-            <Route path="/account/register" element={<AccountRegister />} />
-            <Route path="/register" element={<Navigate to="/account/register" replace />} />
-            <Route
-              path="/account"
-              element={
-                <CustomerRoute>
-                  <Account />
-                </CustomerRoute>
-              }
-            />
-            <Route
-              path="/account/settings"
-              element={
-                <CustomerRoute>
-                  <AccountSettings />
-                </CustomerRoute>
-              }
-            />
-            <Route path="/login" element={<Login />} />
-            <Route path="/pos/login" element={<PosLogin />} />
-            <Route
-              path="/admin"
-              element={
-                <ProtectedRoute>
-                  <Admin />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="/counter" element={<Navigate to="/pos" replace />} />
-            <Route
-              path="/pos"
-              element={
-                <ProtectedRoute requireCounter>
-                  <Counter />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </div>
+        {skipMotion || reduceMotion ? (
+          <div className="page-transition-page">
+            <AppRoutes location={location} />
+          </div>
+        ) : (
+          <AnimatePresence mode="wait" initial={false}>
+            <motion.div
+              key={location.pathname}
+              className="page-transition-page"
+              initial={motionProps.initial}
+              animate={motionProps.animate}
+              exit={motionProps.exit}
+              transition={motionProps.transition}
+            >
+              <AppRoutes location={location} />
+            </motion.div>
+          </AnimatePresence>
+        )}
       </Suspense>
     </div>
   );

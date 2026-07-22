@@ -171,7 +171,7 @@ export default function Account() {
               loading ? (
                 <p className="loading">{t('common.loading')}</p>
               ) : repairs.length === 0 ? (
-                <div className="account-empty">
+                <div className="account-empty account-empty--motion">
                   <p>{t('account.noRepairs')}</p>
                   <Link to="/repair" className="btn btn-primary">{t('nav.repair')}</Link>
                 </div>
@@ -192,7 +192,7 @@ export default function Account() {
                     </div>
                   </div>
 
-                  <ul className="account-list account-order-list">
+                  <ul className="account-list account-order-list account-list--motion">
                     {repairs.map((repair) => {
                       const ref = repair.booking_ref || `ASF-R-${repair.id}`;
                       const refClean = String(ref).replace(/^#/, '');
@@ -269,7 +269,7 @@ export default function Account() {
               <p className="loading">{t('common.loading')}</p>
             ) : tab === 'orders' ? (
               orders.length === 0 ? (
-                <div className="account-empty">
+                <div className="account-empty account-empty--motion">
                   <p>{t('account.noOrders')}</p>
                   <Link to="/shop" className="btn btn-primary">{t('nav.shop')}</Link>
                 </div>
@@ -309,11 +309,11 @@ export default function Account() {
                   </div>
 
                   {visibleOrders.length === 0 ? (
-                    <div className="account-empty">
+                    <div className="account-empty account-empty--motion">
                       <p>{t('account.noOrderSearchMatch')}</p>
                     </div>
                   ) : (
-                    <div className="account-list account-order-list">
+                    <div className="account-list account-order-list account-list--motion">
                       {visibleOrders.map((order) => (
                         <CustomerOrderCard
                           key={order.id}
@@ -329,12 +329,12 @@ export default function Account() {
                 </>
               )
             ) : messages.length === 0 ? (
-              <div className="account-empty">
+              <div className="account-empty account-empty--motion">
                 <p>{t('account.noMessages')}</p>
                 <Link to="/contact" className="btn btn-primary">{t('nav.contact')}</Link>
               </div>
             ) : (
-              <ul className="account-list">
+              <ul className="account-list account-list--motion">
                 {messages.map((msg) => (
                   <li key={msg.id} className="account-list-item">
                     <p>{msg.message}</p>

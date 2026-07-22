@@ -263,7 +263,7 @@ export default function Shop() {
           ) : loading && products.length === 0 ? (
             <ShopGridSkeleton />
           ) : products.length === 0 ? (
-            <div className="empty-state">
+            <div className="empty-state empty-state--motion">
               <p>{t('shop.emptyCategory')}</p>
               {canAddProducts && (
                 <button type="button" className="btn btn-primary" style={{ marginTop: '1rem' }} onClick={() => setAddOpen(true)}>

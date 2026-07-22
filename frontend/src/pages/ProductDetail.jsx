@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { api, formatPrice } from '../api/client';
 import { orderProductContactPath, restockInquiryContactPath } from '../config/shop';
 import { useCart } from '../context/CartContext';
@@ -155,12 +154,7 @@ export default function ProductDetail() {
         path={canonicalPath}
       />
       <ProductJsonLd product={product} path={canonicalPath} />
-      <motion.section
-        className="product-detail"
-        initial={{ opacity: 0, y: 16 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.45, ease: [0.22, 1, 0.36, 1] }}
-      >
+      <section className="product-detail">
         <div className="container">
           <BackButton to="/shop" label={t('product.backToShop')} className="back-nav-btn--spaced" />
 
@@ -174,7 +168,7 @@ export default function ProductDetail() {
               DiscountRibbon={DiscountRibbon}
             />
 
-            <div className="product-detail-info">
+            <div className="product-detail-info product-detail-info--reveal">
               <span className="eyebrow">{product.category}</span>
               {onSale && (
                 <span className="detail-sale-banner">
@@ -296,7 +290,7 @@ export default function ProductDetail() {
             </section>
           ) : null}
         </div>
-      </motion.section>
+      </section>
       <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
       <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
     </>

@@ -1,3 +1,5 @@
+import { useState } from 'react';
+
 /**
  * Triple-image product card media — crossfade through main + up to 2 gallery photos.
  */
@@ -18,6 +20,16 @@ export default function ProductCardImageStack({
   const hasAlt = stack.length > 1;
   const activeIndex = showAlt ? Math.min(imageIndex, stack.length - 1) : 0;
   const onThird = activeIndex === 2 && stack.length >= 3;
+  const [loaded, setLoaded] = useState(() => new Set());
+
+  const markLoaded = (index) => {
+    setLoaded((prev) => {
+      if (prev.has(index)) return prev;
+      const next = new Set(prev);
+      next.add(index);
+      return next;
+    });
+  };
 
   return (
     <div
@@ -26,6 +38,7 @@ export default function ProductCardImageStack({
         hasAlt ? 'has-alt' : '',
         showAlt ? 'show-alt' : '',
         onThird ? 'is-third' : '',
+        loaded.has(activeIndex) ? 'is-img-ready' : '',
       ].filter(Boolean).join(' ')}
     >
       {stack.map((src, index) => (
@@ -36,9 +49,11 @@ export default function ProductCardImageStack({
           aria-hidden={index !== activeIndex}
           loading="lazy"
           onError={onError}
+          onLoad={() => markLoaded(index)}
           className={[
             index === 0 ? 'product-card-img-primary' : 'product-card-img-alt',
             index === activeIndex ? 'is-active' : '',
+            loaded.has(index) ? 'is-loaded' : '',
             className,
           ].filter(Boolean).join(' ')}
         />

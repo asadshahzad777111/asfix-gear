@@ -294,7 +294,7 @@
 }
 
 /* ── CTA / button micro-interactions ── */
-.btn.btn-primary,
+.btn.btn-primary:not(.premium-btn),
 .pc-hero-cta {
   transition:
     transform 0.2s var(--mix-ease),
@@ -304,13 +304,13 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-  .btn.btn-primary:hover {
+  .btn.btn-primary:not(.premium-btn):hover {
     transform: translateY(-2px);
     box-shadow: 0 10px 22px rgba(255, 90, 31, 0.28);
   }
 }
 
-.btn.btn-primary:active,
+.btn.btn-primary:not(.premium-btn):active,
 .pc-hero-cta:active {
   transform: translateY(1px) scale(0.98);
 }
@@ -594,5 +594,310 @@
     flex-wrap: wrap;
     width: 100%;
     justify-content: center;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════
+   Storefront motion polish — page shell, images, CTAs, lists
+   (POS /admin routes skip Framer page shell — see pageMotion.js)
+   ═══════════════════════════════════════════════════════════ */
+
+.page-transition-shell {
+  overflow: visible;
+}
+
+.page-transition-page {
+  overflow: visible;
+  will-change: opacity, transform;
+}
+
+/* Soft reveal for product detail info (page shell handles route fade) */
+@media (prefers-reduced-motion: no-preference) {
+  .product-detail-info--reveal {
+    animation: mix-detail-info 0.4s var(--mix-ease) 0.06s both;
+  }
+}
+
+@keyframes mix-detail-info {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+/* Image load reveal — product detail + first paint only on cards */
+.product-detail-stack-img.is-loaded,
+.product-detail-swipe-slide img.is-loaded {
+  animation: mix-img-reveal 0.4s var(--mix-ease) both;
+}
+
+.product-card-image-stack:not(.is-img-ready) img.is-active {
+  opacity: 0;
+}
+
+.product-card-image-stack.is-img-ready img.is-active {
+  transition: opacity 0.35s var(--mix-ease), transform 0.45s var(--mix-ease);
+}
+
+@keyframes mix-img-reveal {
+  from { opacity: 0; transform: scale(1.03); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card-wrap--grid:hover .product-card-image-stack.is-img-ready img.is-active,
+  .pc-wishlist-card:hover .pc-wishlist-card-media img {
+    transform: scale(1.05);
+  }
+
+  .pc-wishlist-card-media {
+    overflow: hidden;
+  }
+
+  .pc-wishlist-card-media img {
+    transition: transform 0.45s var(--mix-ease);
+  }
+
+  .product-detail-gallery-thumb {
+    transition: transform 0.2s var(--mix-ease), border-color 0.2s ease, box-shadow 0.2s ease;
+  }
+
+  .product-detail-gallery-thumb:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 90, 31, 0.45);
+  }
+
+  .product-detail-gallery-thumb.is-active {
+    box-shadow: 0 0 0 2px rgba(255, 90, 31, 0.35);
+  }
+}
+
+/* Lightbox nav + polish */
+.product-detail-fullscreen {
+  animation: none; /* Framer owns enter/exit */
+}
+
+.product-detail-fullscreen-nav {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  background: rgba(0, 0, 0, 0.45);
+  color: #fff;
+  font-size: 1.75rem;
+  line-height: 1;
+  cursor: pointer;
+  z-index: 2;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s var(--mix-ease);
+}
+
+.product-detail-fullscreen-nav:hover {
+  background: rgba(255, 90, 31, 0.85);
+  border-color: rgba(255, 90, 31, 0.9);
+}
+
+.product-detail-fullscreen-nav:active {
+  transform: translateY(-50%) scale(0.94);
+}
+
+.product-detail-fullscreen-nav--prev { left: 1rem; }
+.product-detail-fullscreen-nav--next { right: 1rem; }
+
+@media (max-width: 640px) {
+  .product-detail-fullscreen-nav {
+    width: 42px;
+    height: 42px;
+    font-size: 1.45rem;
+  }
+  .product-detail-fullscreen-nav--prev { left: 0.5rem; }
+  .product-detail-fullscreen-nav--next { right: 0.5rem; }
+}
+
+/* Buttons — consistent micro-interactions (Framer premium-btn owns transform) */
+.btn.btn-outline,
+.btn.btn-ghost,
+.btn.btn-secondary,
+.wl-add,
+.wl-view,
+.account-panel .btn {
+  transition:
+    transform 0.2s var(--mix-ease),
+    box-shadow 0.22s ease,
+    background 0.2s ease,
+    border-color 0.2s ease,
+    color 0.2s ease !important;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn.btn-outline:hover,
+  .btn.btn-ghost:hover,
+  .wl-view:hover {
+    transform: translateY(-1px);
+  }
+
+  .btn.btn-primary:hover:not(.premium-btn) {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 22px rgba(255, 90, 31, 0.28);
+  }
+
+  /* Avoid CSS + Framer double transform on PremiumButton */
+  .premium-btn.btn.btn-primary:hover {
+    transform: none;
+  }
+}
+
+.btn.btn-outline:active,
+.btn.btn-ghost:active,
+.btn.btn-primary:active:not(.premium-btn),
+.wl-add:active,
+.wl-view:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+/* Header icon micro-motion */
+@media (hover: hover) and (pointer: fine) {
+  .navbar .dx-icon-btn,
+  .navbar .nav-icon-btn {
+    transition: transform 0.2s var(--mix-ease), color 0.2s ease, background 0.2s ease;
+  }
+
+  .navbar .dx-icon-btn:hover,
+  .navbar .nav-icon-btn:hover {
+    transform: translateY(-1px) scale(1.04);
+  }
+
+  .navbar .dx-icon-btn:active,
+  .navbar .nav-icon-btn:active {
+    transform: scale(0.94);
+  }
+
+  .navbar .nav-links a:hover,
+  .navbar .dx-nav-link:hover {
+    color: var(--mix-orange);
+  }
+}
+
+/* Footer brand soft lift */
+@media (hover: hover) and (pointer: fine) {
+  .footer-brand a:hover {
+    opacity: 0.92;
+  }
+}
+
+/* Shop / Account / Wishlist empty + list transitions */
+.empty-state--motion,
+.account-empty--motion,
+.pc-wishlist-empty {
+  animation: mix-empty-in 0.38s var(--mix-ease) both;
+}
+
+@keyframes mix-empty-in {
+  from { opacity: 0; transform: translate3d(0, 12px, 0) scale(0.98); }
+  to { opacity: 1; transform: translate3d(0, 0, 0) scale(1); }
+}
+
+.account-list--motion > .account-list-item,
+.account-list--motion > .account-order-card {
+  animation: mix-list-in 0.32s var(--mix-ease) both;
+}
+
+.account-list--motion > :nth-child(1) { animation-delay: 0.02s; }
+.account-list--motion > :nth-child(2) { animation-delay: 0.05s; }
+.account-list--motion > :nth-child(3) { animation-delay: 0.08s; }
+.account-list--motion > :nth-child(4) { animation-delay: 0.11s; }
+.account-list--motion > :nth-child(5) { animation-delay: 0.14s; }
+.account-list--motion > :nth-child(6) { animation-delay: 0.17s; }
+.account-list--motion > :nth-child(n+7) { animation-delay: 0.2s; }
+
+@keyframes mix-list-in {
+  from { opacity: 0; transform: translate3d(0, 10px, 0); }
+  to { opacity: 1; transform: translate3d(0, 0, 0); }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .account-list-item,
+  .account-order-card,
+  .account-stat-card {
+    transition:
+      transform 0.25s var(--mix-ease),
+      border-color 0.2s ease,
+      box-shadow 0.25s ease;
+  }
+
+  .account-list-item:hover,
+  .account-order-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 90, 31, 0.28);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.08);
+  }
+
+  .account-stat-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 90, 31, 0.3);
+  }
+
+  .account-tabs button {
+    transition: color 0.2s ease, background 0.2s ease, transform 0.18s var(--mix-ease);
+  }
+
+  .account-tabs button:hover {
+    color: var(--mix-orange);
+  }
+
+  .account-tabs button:active {
+    transform: scale(0.97);
+  }
+}
+
+/* Filter chips — shop */
+@media (hover: hover) and (pointer: fine) {
+  .filter-btn {
+    transition: transform 0.18s var(--mix-ease), border-color 0.18s ease, background 0.18s ease;
+  }
+
+  .filter-btn:hover {
+    transform: translateY(-1px);
+  }
+
+  .filter-btn:active {
+    transform: scale(0.97);
+  }
+}
+
+/* Prevent product grid clip during card lift */
+.products-grid--reveal,
+.pc-wishlist-grid {
+  overflow: visible;
+}
+
+/* iPad / tablet spacing for motion lifts */
+@media (min-width: 768px) and (max-width: 1024px) {
+  .products-grid--reveal,
+  .pc-wishlist-grid {
+    padding-block: 0.35rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-detail-info--reveal,
+  .empty-state--motion,
+  .account-empty--motion,
+  .pc-wishlist-empty,
+  .account-list--motion > .account-list-item,
+  .account-list--motion > .account-order-card,
+  .product-detail-stack-img.is-loaded,
+  .product-detail-swipe-slide img.is-loaded {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+
+  .product-card-image-stack:not(.is-img-ready) img.is-active {
+    opacity: 1;
+  }
+
+  .page-transition-page {
+    will-change: auto;
   }
 }

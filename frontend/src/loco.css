@@ -815,10 +815,10 @@
   }
 }
 
-/* Page enter — snappy; do not override mobile opacity-only fade */
+/* Page enter owned by Framer PageTransition — disable CSS double-anim */
 @media (prefers-reduced-motion: no-preference) and (hover: hover) and (pointer: fine) {
   .page-transition-page--enter {
-    animation: locoPageEnter 0.22s var(--loco-ease) both;
+    animation: none;
   }
 }
 

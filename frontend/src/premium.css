@@ -22,7 +22,8 @@ html {
 
 @media (prefers-reduced-motion: no-preference) {
   .page-transition-page--enter {
-    animation: pageEnter 0.22s cubic-bezier(0.22, 1, 0.36, 1) both;
+    /* Framer AnimatePresence owns enter/exit — keep class inert to avoid double-anim. */
+    animation: none;
   }
 }
 
@@ -41,7 +42,7 @@ html {
 @media (prefers-reduced-motion: no-preference) and (hover: none),
   (prefers-reduced-motion: no-preference) and (pointer: coarse) {
   .page-transition-page--enter {
-    animation: pageEnterMobile 0.18s ease-out both;
+    animation: none;
   }
 
   @keyframes pageEnterMobile {

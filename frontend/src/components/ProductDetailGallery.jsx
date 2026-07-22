@@ -1,15 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { AnimatePresence, motion, useReducedMotion } from 'framer-motion';
 import { getProductDetailImages } from '../utils/productImages';
 import { useTranslation } from '../context/LanguageContext';
+import { lightboxBackdrop, lightboxImage, PAGE_EASE } from './motion/pageMotion';
 
 function deviceHasHover() {
   if (typeof window === 'undefined') return false;
   return window.matchMedia('(hover: hover) and (pointer: fine)').matches;
-}
-
-function prefersReducedMotion() {
-  if (typeof window === 'undefined') return false;
-  return window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 }
 
 const ZOOM_SCALE = 2.2;
@@ -34,32 +31,48 @@ export default function ProductDetailGallery({
   const [fullscreen, setFullscreen] = useState(false);
   const [zooming, setZooming] = useState(false);
   const [lensPos, setLensPos] = useState({ x: 0, y: 0, bgX: 0, bgY: 0 });
+  const [imgReady, setImgReady] = useState(false);
   const touchStartX = useRef(null);
   const imageWrapRef = useRef(null);
   const canHover = deviceHasHover();
-  const reducedMotion = prefersReducedMotion();
-
-  useEffect(() => {
-    setSlideIndex(selectedIndex);
-  }, [selectedIndex]);
-
-  useEffect(() => {
-    if (!fullscreen) return undefined;
-    const onKey = (e) => {
-      if (e.key === 'Escape') setFullscreen(false);
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
-  }, [fullscreen]);
-
-  const currentSrc = displayImages[slideIndex] || main;
-  const hasMultiple = displayImages.length > 1;
+  const reducedMotion = useReducedMotion();
 
   const selectSlide = useCallback((index) => {
     const idx = Math.max(0, Math.min(index, displayImages.length - 1));
     setSlideIndex(idx);
     onSelect?.(displayImages[idx]);
   }, [displayImages, onSelect]);
+
+  useEffect(() => {
+    setSlideIndex(selectedIndex);
+  }, [selectedIndex]);
+
+  useEffect(() => {
+    setImgReady(false);
+  }, [slideIndex, product?.id]);
+
+  useEffect(() => {
+    if (!fullscreen) return undefined;
+    const onKey = (e) => {
+      if (e.key === 'Escape') setFullscreen(false);
+      if (e.key === 'ArrowRight' && displayImages.length > 1) {
+        selectSlide(slideIndex + 1);
+      }
+      if (e.key === 'ArrowLeft' && displayImages.length > 1) {
+        selectSlide(slideIndex - 1);
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [fullscreen, slideIndex, displayImages.length, selectSlide]);
+
+  const currentSrc = displayImages[slideIndex] || main;
+  const hasMultiple = displayImages.length > 1;
 
   const handleMouseMove = (e) => {
     if (!canHover || reducedMotion) return;
@@ -99,7 +112,7 @@ export default function ProductDetailGallery({
     <div className={`product-detail-gallery-view ${hasMultiple ? 'has-gallery' : ''}`}>
       <div
         ref={imageWrapRef}
-        className={`product-detail-image premium-product ${animKind} ${zooming ? 'is-zooming' : ''}`}
+        className={`product-detail-image premium-product ${animKind} ${zooming ? 'is-zooming' : ''} ${imgReady ? 'is-img-ready' : ''}`}
         onMouseEnter={() => canHover && !reducedMotion && setZooming(true)}
         onMouseLeave={() => setZooming(false)}
         onMouseMove={handleMouseMove}
@@ -120,7 +133,8 @@ export default function ProductDetailGallery({
             <img
               src={currentSrc}
               alt={product.name}
-              className="product-detail-stack-img is-active"
+              className={`product-detail-stack-img is-active ${imgReady ? 'is-loaded' : ''}`}
+              onLoad={() => setImgReady(true)}
             />
             {zooming && (
               <div
@@ -142,7 +156,12 @@ export default function ProductDetailGallery({
           >
             {displayImages.map((url) => (
               <div key={url} className="product-detail-swipe-slide">
-                <img src={url} alt={product.name} />
+                <img
+                  src={url}
+                  alt={product.name}
+                  className={imgReady ? 'is-loaded' : ''}
+                  onLoad={() => setImgReady(true)}
+                />
               </div>
             ))}
           </div>
@@ -192,25 +211,66 @@ export default function ProductDetailGallery({
         </div>
       ) : null}
 
-      {fullscreen && (
-        <div
-          className="product-detail-fullscreen"
-          role="dialog"
-          aria-modal="true"
-          aria-label={product.name}
-          onClick={() => setFullscreen(false)}
-        >
-          <button
-            type="button"
-            className="product-detail-fullscreen-close"
-            aria-label={t('product.closeQuickView')}
+      <AnimatePresence>
+        {fullscreen && (
+          <motion.div
+            className="product-detail-fullscreen"
+            role="dialog"
+            aria-modal="true"
+            aria-label={product.name}
             onClick={() => setFullscreen(false)}
+            initial={lightboxBackdrop.initial}
+            animate={lightboxBackdrop.animate}
+            exit={lightboxBackdrop.exit}
+            transition={{ duration: 0.22, ease: PAGE_EASE }}
           >
-            ✕
-          </button>
-          <img src={currentSrc} alt={product.name} onClick={(e) => e.stopPropagation()} />
-        </div>
-      )}
+            <button
+              type="button"
+              className="product-detail-fullscreen-close"
+              aria-label={t('product.closeQuickView')}
+              onClick={() => setFullscreen(false)}
+            >
+              ✕
+            </button>
+            {hasMultiple && (
+              <>
+                <button
+                  type="button"
+                  className="product-detail-fullscreen-nav product-detail-fullscreen-nav--prev"
+                  aria-label="Previous photo"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    selectSlide(slideIndex - 1);
+                  }}
+                >
+                  ‹
+                </button>
+                <button
+                  type="button"
+                  className="product-detail-fullscreen-nav product-detail-fullscreen-nav--next"
+                  aria-label="Next photo"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    selectSlide(slideIndex + 1);
+                  }}
+                >
+                  ›
+                </button>
+              </>
+            )}
+            <motion.img
+              key={currentSrc}
+              src={currentSrc}
+              alt={product.name}
+              onClick={(e) => e.stopPropagation()}
+              initial={reducedMotion ? false : lightboxImage.initial}
+              animate={lightboxImage.animate}
+              exit={lightboxImage.exit}
+              transition={{ duration: 0.28, ease: PAGE_EASE }}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
