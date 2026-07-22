@@ -222,7 +222,8 @@ function bytesToBase64(bytes) {
 
 /**
  * Full-width ESC/POS receipt for laptop, native AsFix app, and remote stations.
- * Uses the printer's QR command, so the installed APK does not need rebuilding.
+ * QR uses Zijiang/vendor ESC Z (from 58mm kit SDK) — Epson GS (k is ignored on these clones.
+ * Mag 6 @ 58mm / 8 @ 80mm matches PrinterCommand.getBarCommand demo sizing.
  */
 export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
   if (!order || typeof TextEncoder === 'undefined' || typeof btoa !== 'function') return '';
@@ -235,19 +236,17 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
   const text = (value) => parts.push(encoder.encode(String(value ?? '')));
 
   push(0x1b, 0x40); // ESC @
-  push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm)
+  push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm / ~32 cols @ 384 dots)
   for (const line of lines) {
     if (line.qr) {
       const qr = encoder.encode(line.value || RECEIPT_SITE_URL);
-      const storeLength = qr.length + 3;
+      const version = 0;
+      const ecc = 3; /* vendor max 0–3 */
+      const mag = width === '80mm' ? 8 : 6;
       push(0x1b, 0x61, 0x01); // center
-      push(0x1d, 0x28, 0x6b, 0x04, 0x00, 0x31, 0x41, 0x32, 0x00); // model 2
-      /* Module size 6–7 fills ~58mm paper without clipping most BT800-class printers */
-      push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x43, width === '80mm' ? 8 : 6);
-      push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x45, 0x31); // error M
-      push(0x1d, 0x28, 0x6b, storeLength & 0xff, (storeLength >> 8) & 0xff, 0x31, 0x50, 0x30);
+      /* ESC Z nVersion nEcc nMag nL nH data — Zijiang BT-POS / 58mm kit */
+      push(0x1b, 0x5a, version, ecc, mag, qr.length & 0xff, (qr.length >> 8) & 0xff);
       parts.push(qr);
-      push(0x1d, 0x28, 0x6b, 0x03, 0x00, 0x31, 0x51, 0x30);
       push(0x0a);
       continue;
     }
@@ -269,8 +268,8 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
     push(0x1b, 0x45, 0x00);
   }
   push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00, 0x1b, 0x4d, 0x00);
-  push(0x0a, 0x0a, 0x0a);
-  push(0x1d, 0x56, 0x01);
+  push(0x1b, 0x4a, 0x30); // ESC J 48 — feed before cut (vendor demo)
+  push(0x1d, 0x56, 0x42, 0x00); // GS V B 0 — partial cut (vendor kit)
 
   const size = parts.reduce((sum, part) => sum + part.length, 0);
   const payload = new Uint8Array(size);
@@ -301,10 +300,12 @@ function sanitizeMatePlain(value) {
 /** Build Thermer Intent EXTRA_TEXT with Mate <BAF> markup + QR (better than raw lines). */
 function buildMateThermalMarkup(order) {
   if (!order) return '';
-  const lines = buildReceiptLines(order, 18);
+  /* ~32 cols so Thermer fills 58mm like ESC/POS Font A */
+  const maxChars = 32;
+  const lines = buildReceiptLines(order, maxChars).filter((line) => !line.qr);
   const parts = lines.map((line) => {
     const text = sanitizeMatePlain(line.value);
-    if (line.rule) return `<010>${'-'.repeat(18)}`;
+    if (line.rule) return `<010>${'-'.repeat(maxChars)}`;
     if (!text) return '<010> ';
     const bold = line.weight === 'bold' || line.title || line.grand || line.totalLabel ? '1' : '0';
     const align = line.align === 'center' ? '1' : line.align === 'right' ? '2' : '0';
@@ -312,7 +313,9 @@ function buildMateThermalMarkup(order) {
     return `<${bold}${align}${format}>${text}`;
   });
   parts.push('<010> ');
-  parts.push(`<QR>1#40#${RECEIPT_SITE_URL}`);
+  parts.push('<110>Scan');
+  /* Mate QR: align#moduleSize#payload — size ~ body text, not full-roll giant */
+  parts.push(`<QR>1#6#${RECEIPT_SITE_URL}`);
   parts.push(`<110>${RECEIPT_SITE}`);
   parts.push('<010> ');
   return parts.join('');
@@ -488,7 +491,7 @@ function buildReceiptLines(order, maxChars = 18) {
   push('Thank You', { align: 'center', weight: 'bold' });
   push(RECEIPT_SITE, { align: 'center', weight: 'bold', small: true });
   rule();
-  push('Scan website', { align: 'center', weight: 'bold', small: true });
+  push('Scan', { align: 'center', weight: 'bold', small: true });
   push(RECEIPT_SITE_URL, { align: 'center', qr: true });
   return lines;
 }
@@ -582,8 +585,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
 
   const lineHFor = (size, heavy) => Math.ceil(size * stretchFor(heavy) * (heavy ? 1.18 : 1.28));
   const ruleH = Math.ceil(fontSize * bodyStretch * 0.85);
-  /* Big website QR — ~82% of printable width (sample water-bill style) */
-  const qrSize = Math.round(usable * 0.82);
+  /* QR ~ body-text scale on 58mm (vendor mag 6 ≈ half-roll), not full-bleed giant */
+  const qrSize = Math.round(usable * (pageWidth === '80mm' ? 0.42 : 0.48));
 
   let heightPx = padY * 2 + 16 * scale;
   lines.forEach((line) => {
@@ -947,14 +950,14 @@ html, body {
 .r-grand-label { display: block; font-size: 15px; font-weight: 900; letter-spacing: 0.1em; }
 .r-grand { display: block; font-size: 24px; font-weight: 900; letter-spacing: 0.12em; margin-top: 5px; }
 .r-thanks, .r-site { text-align: center; margin: 6px 0 0; font-size: 13px; font-weight: 700; }
-.r-scan { text-align: center; margin: 8px 0 4px; font-size: 12px; font-weight: 700; letter-spacing: 0.06em; }
-.r-qr { display: block; width: 72%; max-width: 72%; height: auto; margin: 4px auto 8px; }
+.r-scan { text-align: center; margin: 8px 0 4px; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; }
+.r-qr { display: block; width: 48%; max-width: 48%; height: auto; margin: 4px auto 8px; }
 `.trim();
 
   const qrBlock = qrDataUrl
     ? `<hr class="r-rule" />
-  <p class="r-scan">Scan website</p>
-  <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="220" height="220" />`
+  <p class="r-scan">Scan</p>
+  <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="160" height="160" />`
     : '';
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
@@ -1160,7 +1163,7 @@ export async function printActiveCounterReceipt({
     const width = normalizeThermalWidth(thermalWidth);
     let qrDataUrl = '';
     try {
-      qrDataUrl = await buildWebsiteQrDataUrl(280);
+      qrDataUrl = await buildWebsiteQrDataUrl(160);
     } catch {
       qrDataUrl = '';
     }

@@ -52,3 +52,7 @@ Copy `.env.example` → `.env` / `frontend/.env` as needed. Never commit real se
 | `npm run check:i18n` | EN vs Roman Urdu key parity |
 | `npm run check:secrets` | Block tracked secrets |
 | `npm run build` | Frontend production build |
+
+## Mobile POS (Android)
+
+Staff phone app with Bluetooth thermal auto-print (no Thermer): see [`mobile/asfix-pos/README.md`](mobile/asfix-pos/README.md). Windows driver / Thermer / vendor APK (local installs only): [`docs/thermal-printer-windows.md`](docs/thermal-printer-windows.md) · `npm run thermal:help`.

@@ -1,187 +1,136 @@
-# Thermal printer on Windows (BT800S / similar)
+# Thermal printer (58mm) — Windows + Android + iPhone
 
+Honest guide for AsFix & Gear POS. **Do not commit** vendor ZIPs, APKs, or driver EXEs into git — keep them in Downloads or `_ci_local/` (gitignored).
 
+## What the vendor ZIP contains
 
-## Honest status (this PC scan)
+Typical pack: `58MM Thermal Printer Driver & Tools -50.zip` (Zijiang / BT-POS class):
 
+| Path | What it is | Use for AsFix? |
+|------|------------|----------------|
+| `Android APP/BT-POSPrinter.apk` | Vendor Bluetooth test/print app | Optional hardware check only — **not** our POS |
+| `Printer Driver/Windows Driver/PrinterDriver.exe` | Windows USB/COM printer installer | Laptop **system Print** / COM when USB or SPP exists |
+| `Printer Driver/OPOS Driver/…` | OPOS (legacy POS) | No — we do not use OPOS |
+| `Printer Driver/Mac Driver/macOSDriver.dmg` | macOS | **Skip** (not in scope) |
+| `Printer Driver/Linux Driver/…` | CUPS helpers | Skip unless you run Linux |
+| `Printer Manual/*.pdf` | User + programmer manuals | Reference |
+| `Printer SDK/Android SDK/…` | Java demos (`ESC Z` QR, 384-dot 58mm) | We mirrored QR/width in website ESC/POS |
 
+Vendor Android SDK facts we coded against:
 
-On **DESKTOP-E8VMU4A**, with the printer powered and paired:
+- **58mm printable width** = **384 dots**; Font A ≈ **32 characters**
+- **QR** = proprietary **`ESC Z`** (`0x1B 0x5A …`), mag **6** on 58mm / **8** on 80mm — not Epson `GS (k`
+- Cut = `GS V B` + feed (`ESC J`)
 
+## Three Android apps (do not confuse)
 
+| App | Role |
+|-----|------|
+| **AsFix POS** (`com.asfixgear.pos`) | Our Capacitor app → live `/pos` → native Bluetooth **SPP ESC/POS** (preferred shop phone) |
+| **Thermer** (`mate.bluetoothprint`) | Play Store fallback when printing from **Chrome** (PNG share / Mate markup Intent) |
+| **BT-POSPrinter.apk** (vendor) | Seller demo only — pair/print test; **not** integrated into asfixgear.com |
 
-| Check | Result |
+Website JS cannot install Windows drivers or sideload APKs. Those are **local installs**.
 
-|--------|--------|
+## Print paths (what the live site does)
 
-| Device Manager | **BlueTooth Printer** under Bluetooth — OK (no error icon) |
+| Device | Path |
+|--------|------|
+| **AsFix POS Android** | Native SPP + full ESC/POS (32-col + `ESC Z` QR at bottom) |
+| **Android Chrome** | Share PNG → Thermer, else Mate Intent markup + QR |
+| **Laptop Chrome** | Local COM bridge → Web Bluetooth BLE → iframe 58mm HTML |
+| **iPhone** | No Bluetooth SPP to thermal — use **Print chooser → Android / Laptop** remote queue |
 
-| Instance | `BTHLE\DEV_…` → **Bluetooth Low Energy**, not classic SPP |
-
-| **Standard Serial over Bluetooth link (COMx)** | **Not present** |
-
-| Ports (COM & LPT) | Only Intel **USB Serial COM5 / COM6** (not the printer) |
-
-| Windows printers | No thermal printer queue |
-
-
-
-**Conclusion:** Powering the printer did **not** create a Bluetooth COM port. Laptop cannot use `send-thermal-com.mjs` against this device until SPP/USB serial appears. Phone **Thermer** still works (Android SPP/BLE stack).
-
-
-
-**Thermer APK** does **not** install a Windows kernel print driver.
-
-
+Remote print: iPhone enqueues a job; Android POS or laptop agent (with printer selected / bridge running) polls and prints.
 
 ---
 
+## Windows: install vendor driver (optional)
 
+Only needed if you want a **Windows printer queue** or a real **COMx** serial path.
 
-## One-click from website (laptop) — what works
+1. Unzip the vendor pack locally (e.g. Downloads or `_ci_local/thermal-58mm-tools/` — never commit).
+2. Run `Printer Driver\Windows Driver\PrinterDriver.exe` **as Administrator**.
+3. Prefer **USB cable** if the printer has USB — Windows usually adds COM or a USB printer.
+4. For Bluetooth: pair the printer, then check Device Manager for **Standard Serial over Bluetooth link (COMx)**.  
+   If you only see **BlueTooth Printer (BLE / BTHLE)** and **no COMx**, Node/COM bridge cannot talk to it — use **Chrome Web Bluetooth** or phone apps instead.
+5. Paper size: choose **58mm** in the driver / test page if asked.
 
+**Thermer.apk / BT-POSPrinter.apk do not install a Windows kernel driver.**
 
+### Laptop one-click from POS (no driver required for BLE)
 
-POS **Print** tries, in order:
-
-
-
-1. **Local COM bridge** — if you run the bridge with `THERMAL_COM=COMx` (only when Device Manager shows a real serial port for the printer).
-
-2. **Web Bluetooth** (Chrome) — BLE GATT write of ESC/POS text. First click shows a device picker; choose **BlueTooth Printer**.
-
-3. **iframe / system print** — only useful if a Windows printer driver exists.
-
-4. **Phone Thermer** — still the most reliable path for PNG receipts.
-
-
-
-### A) Web Bluetooth (this machine — preferred laptop path)
-
-
-
-1. Use **Chrome** on `https://…` or `http://localhost:…` (secure context).
-
-2. Printer on + paired in Windows Bluetooth settings.
-
-3. POS → **Print**.
-
-4. In the Chrome picker, select **BlueTooth Printer** (allow).
-
-
-
-If the picker lists the device but nothing prints, the GATT write characteristic may differ — keep using phone Thermer, or try a USB cable / printer mode that enables **SPP**.
-
-
-
-### B) Localhost bridge (when a COM port exists)
-
-
+1. **Local COM bridge** (when COMx exists):
 
 ```powershell
-
 cd C:\Users\asads\asfix-gear
-
-# Only if Device Manager shows e.g. "Standard Serial over Bluetooth link (COM7)"
-
-$env:THERMAL_COM = "COM7"
-
-node scripts/thermal-print-bridge.mjs
-
+$env:THERMAL_COM = "COM7"   # your port
+npm run thermal:bridge
 ```
 
+- Listens on **127.0.0.1:9100** only  
+- `POST /print` accepts `{ "data_base64": "…" }` (preferred, includes QR) or `{ "text": "…" }`
 
+2. **Web Bluetooth** (Chrome, secure context): POS → Print → pick **BlueTooth Printer**.
 
-- Listens on **127.0.0.1:9100** only (not LAN).
+3. Fallback: browser iframe print (needs a Windows queue from `PrinterDriver.exe` to be useful on paper).
 
-- `GET /health` — status  
+Help text: `npm run thermal:help`
 
-- `POST /print` — `{ "text": "…" }` → ESC/POS to that COM  
-
-- CORS: localhost origins only; no secrets.
-
-
-
-Without `THERMAL_COM`, the bridge stays up but `/print` returns **503** (honest: no serial path). POS then uses Web Bluetooth / iframe.
-
-
-
-One-shot COM test (same requirement):
-
-
+One-shot COM smoke (includes sample `ESC Z` QR when using `--demo`):
 
 ```powershell
-
 node scripts/send-thermal-com.mjs COM7 --demo
-
 ```
 
+---
 
+## Android: which APK to install
 
-### C) Phone Thermer (works today)
+### A) Shop counter — AsFix POS (recommended)
 
+Build/install our Capacitor app — see [`mobile/asfix-pos/README.md`](../mobile/asfix-pos/README.md).
 
+1. Pair the thermal printer in **Android Settings → Bluetooth**.
+2. Open **AsFix POS** → login → Counter → **Select printer**.
+3. Sale auto-prints once; **Print** reprints full 58mm + Scan QR at bottom.
+
+After a website deploy, hard-refresh / reopen the app (it loads `https://asfixgear.com/pos`).
+
+### B) Browser fallback — Thermer
 
 1. Install [Thermer / Bluetooth Print](https://play.google.com/store/apps/details?id=mate.bluetoothprint).
+2. Pair printer; open Thermer and select it.
+3. Phone Chrome → POS **Print** → share image to Thermer (or Mate Intent).
 
-2. Pair the thermal printer on Android; open Thermer and select it.
+### C) Vendor `BT-POSPrinter.apk` (optional test)
 
-3. Phone Chrome → POS **Print** / **Share → Thermer** (PNG or Mate markup).
-
-4. Prefer **58mm** paper width for BT800S-class devices.
-
-
+Sideload from the ZIP’s `Android APP\` folder. Use only to confirm the printer prints Chinese/English demo tickets. **Do not** expect AsFix receipts from this APK.
 
 ---
 
+## iPhone → remote print
 
-
-## If laptop print is still blocked
-
-
-
-**Why:** Windows paired the device as **BLE only**. No **SPP / RFCOMM COM** → no raw serial from Node, no Generic/Text printer port, no Web Serial COM.
-
-
-
-**Next hardware steps (pick one):**
-
-
-
-1. Printer manual / seller: enable **SPP / Classic Bluetooth** or “Android/PC mode” (not BLE-only).
-
-2. Use a **USB cable** if the printer has USB — Windows should add a real COM or USB printer.
-
-3. Keep printing from **phone + Thermer**.
-
-
-
-Do **not** expect a fake kernel driver from Thermer.apk or from this repo.
-
-
+1. On Android POS (or laptop with bridge): keep AsFix POS / Chrome POS open so the print agent polls.
+2. On iPhone: POS → Print → choose **Android** or **Laptop** station.
+3. Receipt prints on that station with the same ESC/POS + QR.
 
 ---
 
+## Reprint checklist (expect QR)
 
+1. Confirm paper width **58mm** in Counter (thermal width toggle).
+2. Print again (or complete a new sale on AsFix POS).
+3. Bottom of ticket should show **Scan** + scannable **asfixgear.com** QR, sized like body text (not a full-bleed square).
+4. If QR is missing on raw ESC/POS: you are likely on an Epson-only path; this kit needs **`ESC Z`** (already in live builders after deploy).
+5. If laptop COM fails: check COMx vs BLE-only (table above).
 
-## What the website does
+---
 
+## Related code
 
-
-| Device | Print |
-
-|--------|--------|
-
-| **AsFix POS Android app** | Native Bluetooth SPP ESC/POS (no Thermer) — see [`mobile/asfix-pos/README.md`](../mobile/asfix-pos/README.md) |
-
-| Android browser | PNG Web Share → Thermer; else Mate Intent |
-
-| Laptop Chrome | Bridge (COM) → Web Bluetooth (BLE) → iframe HTML print |
-
-| Any | Share / Download PDF or PNG |
-
-
-
-Related scripts: `scripts/thermal-print-bridge.mjs`, `scripts/send-thermal-com.mjs`, `frontend/src/utils/thermalLaptopPrint.js`, `frontend/src/utils/nativePosPrint.js`.
-
-
+- `frontend/src/components/admin/AdminCounterBill.jsx` — receipt lines, ESC/POS, PNG, Thermer markup  
+- `frontend/src/utils/thermalLaptopPrint.js` — bridge + Web Bluetooth  
+- `frontend/src/utils/nativePosPrint.js` — Capacitor SPP  
+- `frontend/src/hooks/useSmartThermalPrint.jsx` — local vs remote chooser  
+- `scripts/thermal-print-bridge.mjs`, `scripts/send-thermal-com.mjs`, `scripts/thermal-print-help.mjs`

@@ -7,7 +7,9 @@
  *
  * This BLE-only "BlueTooth Printer" (BTHLE, no Standard Serial over Bluetooth)
  * cannot be driven from Node without a COM/SPP channel — use Chrome Web
- * Bluetooth from the POS page, or Android Thermer.
+ * Bluetooth from the POS page, AsFix POS Android, or Thermer.
+ * Prefer POST { data_base64 } so ESC Z QR + 32-col layout survive.
+ * Windows PrinterDriver.exe is a local install only (see docs/thermal-printer-windows.md).
  *
  * Usage:
  *   set THERMAL_COM=COM7

@@ -4,15 +4,25 @@ Light **Capacitor 6** shell that opens the live POS (`https://asfixgear.com/pos`
 
 App id: `com.asfixgear.pos` · Name: **AsFix POS**
 
+## AsFix POS vs vendor APK vs Thermer
+
+| App | Install | Prints AsFix receipts? |
+|-----|---------|------------------------|
+| **AsFix POS** (this folder) | Build debug APK below | **Yes** — native SPP + website ESC/POS (32-col 58mm + `ESC Z` QR) |
+| **Thermer** (`mate.bluetoothprint`) | Play Store | Yes from **Chrome** share/Intent only |
+| **BT-POSPrinter.apk** (seller ZIP) | Sideload from vendor pack | **No** — hardware demo only; not wired to asfixgear.com |
+
+Windows `PrinterDriver.exe` from the same ZIP is laptop-only; see [`docs/thermal-printer-windows.md`](../../docs/thermal-printer-windows.md). Do **not** commit APKs/EXEs into git (`_ci_local/` is gitignored).
+
 ## What this is / is not
 
 | In scope | Out of scope |
 |----------|----------------|
-| Android phone + paired Bluetooth thermal printer | Windows laptop driver |
-| ESC/POS text via RFCOMM UUID `00001101-0000-1000-8000-00805F9B34FB` | Fake Windows print driver |
+| Android phone + paired Bluetooth thermal printer | Windows laptop driver / OPOS / macOS |
+| ESC/POS bytes via RFCOMM UUID `00001101-0000-1000-8000-00805F9B34FB` | Embedding vendor `BT-POSPrinter.apk` |
 | Auto-print after sale when staff is in this app | Shipping a Play Store release (you build debug APK) |
 
-**Honest limit:** Pair the printer in **Android Settings → Bluetooth** first. This app lists **bonded** devices and opens an SPP socket. BLE-only gadgets may need a different path (web BLE on laptop is separate).
+**Honest limit:** Pair the printer in **Android Settings → Bluetooth** first. This app lists **bonded** devices and opens an SPP socket. BLE-only gadgets may need a different path (web BLE on laptop is separate). Website JS updates (receipt layout / QR) deploy with Vercel — reopen the app after push to `main`.
 
 Community ESC/POS Capacitor plugins exist, but quality/maintenance varies; this repo uses a thin in-house plugin `AsfixThermalPrint` so we own the SPP send path.
 
@@ -61,8 +71,9 @@ Default `server.url` is production: `https://asfixgear.com/pos`.
 2. In AsFix POS Counter: **Select printer** → choose the bonded device (saved in Capacitor Preferences).
 3. Confirm a sale → receipt **auto-prints once** (native only).
 4. Manual **Print** also uses the same SPP path inside this app.
+5. Expect **full 58mm width**, readable items, and **Scan + QR** at the bottom (`https://asfixgear.com`).
 
-Desktop Chrome / phone browser still use existing bridge / Thermer / share behavior — unchanged.
+Desktop Chrome / phone browser still use existing bridge / Thermer / share behavior — unchanged. iPhone cannot BT-print; use Print chooser → this Android station.
 
 ## Permissions (Android 12+)
 

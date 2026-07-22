@@ -28,7 +28,8 @@
     "test:seed-images": "node scripts/test-seed-preserve-images.js",
     "generate:ad": "node scripts/generate-ad.mjs",
     "thermal:bridge": "node scripts/thermal-print-bridge.mjs",
-    "thermal:com-demo": "node scripts/send-thermal-com.mjs"
+    "thermal:com-demo": "node scripts/send-thermal-com.mjs",
+    "thermal:help": "node scripts/thermal-print-help.mjs"
   },
   "devDependencies": {
     "concurrently": "^9.1.2",

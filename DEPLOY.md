@@ -304,6 +304,18 @@ Short version (Render — single Web Service **only if you are NOT using Vercel*
 
 ---
 
+## Bluetooth thermal printer (Windows + Android)
+
+Vendor ZIP (`PrinterDriver.exe`, `BT-POSPrinter.apk`) **local install only** — never commit binaries. AsFix website already builds **58mm ESC/POS + ESC Z QR**.
+
+- Laptop: USB/SPP COM → `npm run thermal:bridge`, else Chrome **Web Bluetooth**, else iframe.
+- Android: prefer **AsFix POS** app; Chrome → **Thermer**; vendor `BT-POSPrinter.apk` = hardware test only.
+- iPhone: Print chooser → remote Android/Laptop station (no direct BT thermal).
+
+`npm run thermal:help` · full guide: [docs/thermal-printer-windows.md](docs/thermal-printer-windows.md).
+
+---
+
 ## Help
 
 Agar deploy mein koi step atke to mujhe bata dein — main step-by-step help kar dunga.

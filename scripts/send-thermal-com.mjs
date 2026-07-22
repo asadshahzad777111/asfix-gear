@@ -43,29 +43,47 @@ function comDevicePath(com) {
   return `\\\\.\\${com}`;
 }
 
-function buildEscPos(text) {
+/** Zijiang/vendor QR: ESC Z version ecc mag nL nH data (mag 6 @ 58mm). */
+function buildVendorQr(url) {
+  const data = Buffer.from(String(url || 'https://asfixgear.com'), 'utf8');
+  const header = Buffer.from([
+    ESC, 0x61, 0x01, /* center */
+    ESC, 0x5a, 0x00, 0x03, 0x06,
+    data.length & 0xff,
+    (data.length >> 8) & 0xff,
+  ]);
+  return Buffer.concat([header, data, Buffer.from([0x0a])]);
+}
+
+function buildEscPos(text, { withQr = false } = {}) {
   const body = String(text || '')
     .replace(/\r\n/g, '\n')
     .replace(/\r/g, '\n');
   const init = Buffer.from([ESC, 0x40]); /* ESC @ initialize */
   const alignLeft = Buffer.from([ESC, 0x61, 0x00]);
   const payload = Buffer.from(body.endsWith('\n') ? body : `${body}\n`, 'latin1');
-  const feed = Buffer.from('\n\n\n');
-  /* GS V 0 — full cut (many 58mm printers ignore or partial-cut) */
-  const cut = Buffer.from([GS, 0x56, 0x00]);
-  return Buffer.concat([init, alignLeft, payload, feed, cut]);
+  const parts = [init, alignLeft, payload];
+  if (withQr) {
+    parts.push(Buffer.from('Scan\n', 'latin1'));
+    parts.push(buildVendorQr('https://asfixgear.com'));
+  }
+  parts.push(Buffer.from([ESC, 0x4a, 0x30])); /* ESC J 48 feed */
+  parts.push(Buffer.from([GS, 0x56, 0x42, 0x00])); /* GS V B 0 partial cut */
+  return Buffer.concat(parts);
 }
 
 function demoReceipt() {
   const lines = [
     'AS FIX & GEAR',
     'BILL (COM test)',
-    '------------------',
-    'Item            Rs.',
-    'Test item     100',
-    '------------------',
-    'TOTAL         100',
-    '',
+    '--------------------------------',
+    'Item                        Rs.',
+    'Test item                    100',
+    '--------------------------------',
+    'TOTAL AMOUNT',
+    'Rs. 100',
+    '--------------------------------',
+    'Thank You',
     'asfixgear.com',
     '',
   ];
@@ -113,7 +131,8 @@ function main() {
   }
 
   const device = comDevicePath(com);
-  const buf = buildEscPos(text);
+  const withQr = args.includes('--demo');
+  const buf = buildEscPos(text, { withQr });
 
   try {
     const fd = fs.openSync(device, 'w');
@@ -122,8 +141,8 @@ function main() {
     } finally {
       fs.closeSync(fd);
     }
-    console.log(`Sent ${buf.length} ESC/POS bytes to ${com} (${device}).`);
-    console.log('If nothing printed: check baud/pairing, try printer Windows utility, or use phone Thermer.');
+    console.log(`Sent ${buf.length} ESC/POS bytes to ${com} (${device})${withQr ? ' (with ESC Z QR)' : ''}.`);
+    console.log('If nothing printed: check baud/pairing, try PrinterDriver.exe / USB, or use AsFix POS / Thermer.');
   } catch (err) {
     console.error(`Failed writing to ${device}: ${err.message}`);
     console.error('Tips: close other apps using the port; confirm COM number in Device Manager;');
