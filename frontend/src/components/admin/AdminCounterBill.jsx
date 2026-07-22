@@ -237,15 +237,15 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
 
   push(0x1b, 0x40); // ESC @
   push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm / ~32 cols @ 384 dots)
-  /* Extra line spacing so dots don’t clump on phone thermal (~30 default → ~42) */
-  push(0x1b, 0x33, 42);
+  /* Tight leading — readable, not wastefully tall (~30 default; 42 was too airy) */
+  push(0x1b, 0x33, 34);
   for (const line of lines) {
     if (line.qr) {
       const qr = encoder.encode(line.value || RECEIPT_SITE_URL);
       const version = 0;
       const ecc = 3; /* vendor max 0–3 */
-      /* Slightly larger QR on phone (was 6/8) */
-      const mag = width === '80mm' ? 9 : 7;
+      /* QR a bit larger for scan; still fits 58mm without huge quiet zone */
+      const mag = width === '80mm' ? 10 : 8;
       push(0x1b, 0x61, 0x01); // center
       /* ESC Z nVersion nEcc nMag nL nH data — Zijiang BT-POS / 58mm kit */
       push(0x1b, 0x5a, version, ecc, mag, qr.length & 0xff, (qr.length >> 8) & 0xff);
@@ -260,25 +260,23 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
     push(0x1b, 0x45, useBold ? 0x01 : 0x00);
     /* Always Font A — Font B looks tiny and leaves empty right margin feel */
     push(0x1b, 0x4d, 0x00);
-    /* Title: double H only (not W+H blob); grand: double H; body: normal */
+    /* Shop header / grand: double H only (not W+H blob); body unchanged */
     const size = line.title || line.grand
       ? 0x01
-      : line.totalLabel
-        ? 0x00
-        : 0x00;
+      : 0x00;
     push(0x1d, 0x21, size);
     text(line.value);
     push(0x0a);
-    /* Extra blank after rules / section breaks → longer, airier receipt */
-    if (line.rule || line.title || line.grand || line.totalLabel) {
+    /* Section breath only after rules — no extra blank after every title/total */
+    if (line.rule) {
       push(0x0a);
     }
     push(0x1d, 0x21, 0x00);
     push(0x1b, 0x45, 0x00);
   }
   push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00, 0x1b, 0x4d, 0x00);
-  /* 3 line feeds — short extra tail, never ESC J 48+ / meters of blank */
-  push(0x0a, 0x0a, 0x0a);
+  /* 2 line feeds — short tail before cut */
+  push(0x0a, 0x0a);
   push(0x1d, 0x56, 0x42, 0x00); // GS V B 0 — partial cut, no extra feed
 
   const size = parts.reduce((sum, part) => sum + part.length, 0);
@@ -324,8 +322,8 @@ function buildMateThermalMarkup(order) {
   });
   parts.push('<010> ');
   parts.push('<110>Scan');
-  /* Mate QR: align#moduleSize#payload — a bit larger on phone */
-  parts.push(`<QR>1#7#${RECEIPT_SITE_URL}`);
+  /* Mate QR: align#moduleSize#payload — match ESC/PNG mag bump */
+  parts.push(`<QR>1#8#${RECEIPT_SITE_URL}`);
   parts.push(`<110>${RECEIPT_SITE}`);
   parts.push('<010> ');
   return parts.join('');
@@ -454,7 +452,7 @@ function buildReceiptLines(order, maxChars = 18) {
 
   const { date: billDate, time: billTime } = shortReceiptDateParts(order);
 
-  push('AS FIX & GEAR', { align: 'center', weight: 'bold', title: true });
+  push('AS FIX & GEAR', { align: 'center', weight: 'bold', title: true, shopHeader: true });
   push('BILL', { align: 'center', weight: 'bold', title: true });
   wrap('Mobile Repair', { align: 'center', small: true });
   wrap(SHOP.addressLine2, { align: 'center', small: true });
@@ -518,7 +516,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const widthPx = printerDots;
   /* Extra side pad so Windows POS-58 driver margins do not crop Bill#/prices */
   const padX = pageWidth === '80mm' ? 28 : 22;
-  const padY = 18;
+  const padY = 10;
   const maxChars = pageWidth === '80mm' ? 42 : 28;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
@@ -551,9 +549,10 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   }
 
   const lineSize = (line) => {
-    /* TOTAL: slight bump only — not double-width blobs */
+    /* Body/pixel density unchanged; shop header slightly taller only */
     if (line.grand) return Math.round(fontSize * 1.28);
     if (line.totalLabel) return Math.round(fontSize * 1.08);
+    if (line.shopHeader) return Math.round(fontSize * 1.34);
     if (line.title) return Math.round(fontSize * 1.15);
     if (line.small) return Math.max(11, Math.round(fontSize * 0.88));
     return fontSize;
@@ -613,15 +612,15 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return chunks.length ? chunks : [''];
   };
 
-  /* Airier leading so thermal dots don’t meet / clump */
-  const lineHFor = (size) => Math.ceil(size * 1.42);
-  const ruleH = Math.ceil(fontSize * 0.85);
+  /* Compact leading — readable, shorter receipt (1.42 was wastefully tall) */
+  const lineHFor = (size) => Math.ceil(size * 1.22);
+  const ruleH = Math.ceil(fontSize * 0.7);
   /*
-   * QR: match ESC Z mag (7 @ 58mm / 9 @ 80mm). Paint modules crisply — no anti-alias mush.
-   * Mag N ≈ N dots per module; version auto for https://asfixgear.com + quiet zone.
+   * QR: match ESC Z mag (8 @ 58mm / 10 @ 80mm). Small quiet zone, fill usable width.
+   * Mag N ≈ N dots per module; version auto for https://asfixgear.com.
    */
-  const qrMag = pageWidth === '80mm' ? 9 : 7;
-  const qrMarginModules = 2;
+  const qrMag = pageWidth === '80mm' ? 10 : 8;
+  const qrMarginModules = 1;
   let qrModules = 29;
   try {
     const qrModel = QRCode.create(RECEIPT_SITE_URL, { errorCorrectionLevel: 'M' });
@@ -630,25 +629,26 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     /* keep default */
   }
   const qrSize = (qrModules + qrMarginModules * 2) * qrMag;
-  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.88));
+  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.95));
 
-  let heightPx = padY * 2 + 16;
+  let heightPx = padY * 2 + 6;
   lines.forEach((line) => {
     if (line.rule) {
-      heightPx += ruleH + 12;
+      heightPx += ruleH + 6;
       return;
     }
     if (line.qr) {
-      heightPx += qrDrawSize + 20;
+      heightPx += qrDrawSize + 10;
       return;
     }
     const size = lineSize(line);
     const lh = lineHFor(size);
     if (line.columns) {
-      heightPx += lh + 2;
+      heightPx += lh + 1;
     } else {
       heightPx += chunkAtSize(line.value, size, isHeavy(line)).length * lh;
-      if (line.grand || line.title) heightPx += 6;
+      if (line.shopHeader) heightPx += 3;
+      else if (line.grand || line.title) heightPx += 2;
     }
   });
 
@@ -708,18 +708,18 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   let y = padY;
   for (const line of lines) {
     if (line.rule) {
-      y += 4;
+      y += 2;
       drawRuleLine(y);
-      y += ruleH + 6;
+      y += ruleH + 4;
       continue;
     }
 
     if (line.qr) {
       /* "Scan" is its own line already; if missing, still leave proportional gap */
       const qrX = Math.round((widthPx - qrDrawSize) / 2);
-      y += 4;
+      y += 2;
       await drawCrispQr(line.value || RECEIPT_SITE_URL, qrX, y, qrDrawSize);
-      y += qrDrawSize + 14;
+      y += qrDrawSize + 6;
       continue;
     }
 
@@ -745,7 +745,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       }
       drawText(left, padX, y, size, 'left', heavy);
       drawText(right, widthPx - padX, y, size, 'right', heavy);
-      y += lh + 2;
+      y += lh + 1;
     } else {
       const align = line.align === 'center' ? 'center' : line.align === 'right' ? 'right' : 'left';
       const anchor = align === 'center'
@@ -758,7 +758,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
         drawText(chunk, anchor, y, size, align, heavy);
         y += lh;
       });
-      if (line.grand || line.title) y += 6;
+      if (line.shopHeader) y += 3;
+      else if (line.grand || line.title) y += 2;
     }
   }
 
