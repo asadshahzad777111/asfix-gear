@@ -1908,6 +1908,7 @@ export default function AdminCounterBill({
   /** While typing sell rate: allow empty string (not clamped to list/1). */
   const [rateDrafts, setRateDrafts] = useState({});
   const sellRateRefs = useRef({});
+  const cashReceivedRef = useRef(null);
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [receiptOrder, setReceiptOrder] = useState(null);
@@ -2249,6 +2250,31 @@ export default function AdminCounterBill({
         block: 'start',
       });
     }, 30);
+  }, []);
+
+  /** Grand total / amount → Amount Received (cash) so cashier can tender + print. */
+  const jumpToAmountReceived = useCallback(() => {
+    setPaymentMode('cash');
+    window.setTimeout(() => {
+      document.getElementById('counter-bill-cash')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+      const input = cashReceivedRef.current;
+      if (!input) return;
+      window.setTimeout(() => {
+        try {
+          input.focus({ preventScroll: true });
+        } catch {
+          input.focus?.();
+        }
+        try {
+          input.select?.();
+        } catch {
+          /* ignore */
+        }
+      }, 140);
+    }, 40);
   }, []);
 
   const blurSearchKeyboard = useCallback(() => {
@@ -3083,26 +3109,30 @@ export default function AdminCounterBill({
             </div>
           </div>
 
-          {paymentMode === 'cash' ? (
-            <div className="counter-bill__cash-box">
-              <label>
-                <span>{t('admin.counterBillAmountReceived')}</span>
-                <input
-                  type="number"
-                  min="0"
-                  step="1"
-                  inputMode="decimal"
-                  value={cashReceived}
-                  onChange={(e) => setCashReceived(e.target.value)}
-                  placeholder="0"
-                />
-              </label>
-              <div className="counter-bill__change">
-                <span>{t('admin.counterBillChangeReturn')}</span>
-                <strong>{formatPrice(changeDue)}</strong>
-              </div>
+          <div
+            className="counter-bill__cash-box"
+            id="counter-bill-cash"
+            hidden={paymentMode !== 'cash'}
+            aria-hidden={paymentMode !== 'cash'}
+          >
+            <label>
+              <span>{t('admin.counterBillAmountReceived')}</span>
+              <input
+                ref={cashReceivedRef}
+                type="number"
+                min="0"
+                step="1"
+                inputMode="decimal"
+                value={cashReceived}
+                onChange={(e) => setCashReceived(e.target.value)}
+                placeholder="0"
+              />
+            </label>
+            <div className="counter-bill__change">
+              <span>{t('admin.counterBillChangeReturn')}</span>
+              <strong>{formatPrice(changeDue)}</strong>
             </div>
-          ) : null}
+          </div>
 
           <label className="counter-bill__note">
             <span>{t('admin.counterBillPaymentNote')}</span>
@@ -3183,10 +3213,15 @@ export default function AdminCounterBill({
                   <strong>{formatPrice(changeDue)}</strong>
                 </div>
               ) : null}
-              <div className="counter-bill__summary-total">
+              <button
+                type="button"
+                className="counter-bill__summary-total counter-bill__summary-total--jump"
+                onClick={jumpToAmountReceived}
+                title={t('admin.counterBillAmountReceived')}
+              >
                 <span>{t('admin.counterBillGrandTotal')}</span>
                 <strong key={`total-${total}-${lines.length}`}>{formatPrice(total)}</strong>
-              </div>
+              </button>
             </div>
 
             <div className="counter-bill__actions">
@@ -3249,7 +3284,14 @@ export default function AdminCounterBill({
                   </button>
                 ) : null}
               </span>
-              <strong key={`dock-total-${total}-${selectedItemCount}`}>{formatPrice(total)}</strong>
+              <button
+                type="button"
+                className="counter-bill__pos-dock-amount"
+                onClick={jumpToAmountReceived}
+                title={t('admin.counterBillAmountReceived')}
+              >
+                <strong key={`dock-total-${total}-${selectedItemCount}`}>{formatPrice(total)}</strong>
+              </button>
             </div>
             <button
               type="button"
