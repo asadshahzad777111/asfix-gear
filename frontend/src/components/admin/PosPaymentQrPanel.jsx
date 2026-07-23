@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api } from '../../api/client';
 import {
   enabledPosPaymentQrCards,
@@ -10,7 +11,7 @@ import './pos-payment-qr.css';
 
 /**
  * POS / admin panel: list wallet & bank QRs, print one slip at a time.
- * Staff screen shows account name; printed customer body hides name (tear strip).
+ * Portaled to body so it sits above the POS dock; dock is hidden while open.
  */
 export default function PosPaymentQrPanel({
   open,
@@ -61,7 +62,24 @@ export default function PosPaymentQrPanel({
     };
   }, [open, list]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open || typeof document === 'undefined') return undefined;
+    const { body } = document;
+    const prevOverflow = body.style.overflow;
+    body.classList.add('pos-modal-open');
+    body.style.overflow = 'hidden';
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      body.classList.remove('pos-modal-open');
+      body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open, onClose]);
+
+  if (!open || typeof document === 'undefined') return null;
 
   const onPrint = async (card) => {
     setBusyId(card.id);
@@ -80,15 +98,23 @@ export default function PosPaymentQrPanel({
     }
   };
 
-  return (
-    <div className="pos-pay-qr-overlay" role="dialog" aria-modal="true" aria-label={title}>
+  return createPortal(
+    <div
+      className="pos-pay-qr-overlay"
+      role="dialog"
+      aria-modal="true"
+      aria-label={title}
+      onClick={(e) => {
+        if (e.target === e.currentTarget) onClose?.();
+      }}
+    >
       <div className="pos-pay-qr-panel">
         <header className="pos-pay-qr-panel__head">
           <div>
             <h2>{title}</h2>
             <p>
               Staff screen pe naam dikhega. Print pe naam upar tear strip mein hai — customer wale hisse
-              mein naam nahi. Har slip alag Print dabao.
+              mein naam nahi. List scroll karke har Print dabao (neeche dock hide).
             </p>
           </div>
           <button type="button" className="wp-button wp-button--secondary" onClick={onClose}>
@@ -135,6 +161,7 @@ export default function PosPaymentQrPanel({
           ))}
         </ul>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

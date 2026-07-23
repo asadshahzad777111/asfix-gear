@@ -85,6 +85,13 @@ export default function Counter() {
     };
   }, [nativePos]);
 
+  useEffect(() => {
+    if (!nativePos || !nativePickerOpen || typeof document === 'undefined') return undefined;
+    const { body } = document;
+    body.classList.add('pos-modal-open');
+    return () => body.classList.remove('pos-modal-open');
+  }, [nativePos, nativePickerOpen]);
+
   const openNativePrinterPicker = useCallback(async () => {
     if (!nativePos) return;
     setNativePickerOpen(true);

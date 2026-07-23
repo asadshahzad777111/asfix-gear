@@ -316,11 +316,11 @@
 .counter-printer-modal {
   position: fixed;
   inset: 0;
-  z-index: 1300;
+  z-index: 14000;
   display: grid;
   place-items: end center;
   padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right))
-    max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom))) max(0.75rem, env(safe-area-inset-left));
+    max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
   background: rgba(0, 0, 0, 0.45);
 }
 
@@ -477,6 +477,14 @@
   z-index: 5;
   border-width: 2px;
   border-color: var(--pos-accent, #2563eb);
+}
+
+@media (max-width: 900px) {
+  .counter-bill__thermal-setting--native-sticky {
+    position: relative;
+    top: auto;
+    z-index: 1;
+  }
 }
 
 .counter-sales__toggle {
@@ -2090,18 +2098,17 @@
     overflow: visible;
   }
 
-  /* Keep bill/cart panel sticky while products/page scroll — rate edit stays usable */
+  /* Cart scrolls in page flow on phone — sticky 68vh overlay was covering products + mixing with dock */
   .counter-bill__panel--cart {
-    position: sticky;
-    top: 0;
-    z-index: 6;
-    max-height: min(68dvh, 560px);
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    touch-action: pan-y;
+    position: relative;
+    top: auto;
+    z-index: 1;
+    max-height: none;
+    overflow: visible;
+    overscroll-behavior: auto;
+    touch-action: auto;
     background: var(--pos-surface);
-    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+    box-shadow: none;
   }
 
   .counter-bill__products {
@@ -2119,15 +2126,15 @@
   }
 
   .counter-bill__footer {
-    position: sticky;
-    bottom: 0;
-    z-index: 5;
-    margin: 0.75rem -0.85rem -0.85rem;
-    padding: 0.75rem;
-    padding-bottom: calc(0.75rem + env(safe-area-inset-bottom));
-    border-radius: 0 0 14px 14px;
-    background: var(--pos-footer-bg);
-    box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.18);
+    position: relative;
+    bottom: auto;
+    z-index: 1;
+    margin: 0.75rem 0 0;
+    padding: 0.75rem 0 0;
+    padding-bottom: 0;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
   }
 }
 
