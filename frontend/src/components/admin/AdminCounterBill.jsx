@@ -2277,6 +2277,43 @@ export default function AdminCounterBill({
     }, 40);
   }, []);
 
+  const jumpToSearch = useCallback(() => {
+    setProductPanelCollapsed(false);
+    window.setTimeout(() => {
+      document.getElementById('counter-bill-search')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+      try {
+        searchRef.current?.focus();
+      } catch {
+        /* ignore */
+      }
+      setSearchFocused(true);
+    }, 40);
+  }, []);
+
+  const jumpToDiscount = useCallback(() => {
+    window.setTimeout(() => {
+      document.getElementById('counter-bill-discount')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+      document.querySelector('#counter-bill-discount input')?.focus?.();
+    }, 40);
+  }, []);
+
+  const jumpToCustomer = useCallback(() => {
+    setShowCustomerDetails(true);
+    window.setTimeout(() => {
+      document.getElementById('counter-bill-customer')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+      document.querySelector('#counter-bill-customer input')?.focus?.();
+    }, 60);
+  }, []);
+
   const blurSearchKeyboard = useCallback(() => {
     setSearchFocused(false);
     try {
@@ -2739,7 +2776,7 @@ export default function AdminCounterBill({
             </div>
           ) : null}
 
-          <div className="counter-bill__search-wrap">
+          <div className="counter-bill__search-wrap" id="counter-bill-search">
             <label className="counter-bill__search">
               <span>{t('admin.counterBillSearch')}</span>
               <input
@@ -3084,7 +3121,7 @@ export default function AdminCounterBill({
           </div>
 
           {showCustomerDetails ? (
-            <div className="counter-bill__customer">
+            <div className="counter-bill__customer" id="counter-bill-customer">
               <label>
                 <span>{t('admin.counterBillCustomer')}</span>
                 <input
@@ -3278,7 +3315,9 @@ export default function AdminCounterBill({
       {typeof document !== 'undefined'
         ? createPortal(
           <div
-            className={`counter-bill__pos-dock${cartFlashKey ? ' counter-bill__pos-dock--flash' : ''}`}
+            className={`counter-bill__pos-dock${cartFlashKey ? ' counter-bill__pos-dock--flash' : ''}${
+              lines.length > 0 ? ' counter-bill__pos-dock--cart' : ' counter-bill__pos-dock--idle'
+            }`}
             role="region"
             aria-label={t('admin.counterBillSummary')}
           >
@@ -3306,52 +3345,81 @@ export default function AdminCounterBill({
                 <strong key={`dock-total-${total}-${selectedItemCount}`}>{formatPrice(total)}</strong>
               </button>
             </div>
-            <button
-              type="button"
-              className="counter-bill__pos-dock-sales"
-              onClick={() => onJumpToSales?.()}
-            >
-              {t('counter.mySalesToday')}
-            </button>
-            <button
-              type="button"
-              className="counter-bill__pos-dock-printer"
-              onClick={() => openPrinterSetup()}
-              aria-label={t('admin.counterBillNativeRefresh')}
-              title={
-                nativePos
-                  ? (nativePrinter?.name || t('admin.counterBillNativeRefresh'))
-                  : t('admin.counterBillNativeRefresh')
-              }
-            >
-              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
-                <path
-                  fill="currentColor"
-                  d="M17 7V5a3 3 0 0 0-3-3H10a3 3 0 0 0-3 3v2H5a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h1v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2h1a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-2zM10 5h4v2h-4V5zm6 14H8v-4h8v4zm3-6a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"
-                />
-              </svg>
-            </button>
-            <button
-              type="button"
-              className="counter-bill__pos-dock-print"
-              onClick={() => {
-                if (nativePos && !nativePrinter?.address) {
-                  openPrinterSetup();
-                  return;
-                }
-                void printReceipt();
-              }}
-              disabled={!receiptOrder && !(nativePos && !nativePrinter?.address)}
-              aria-label={t('admin.counterBillPrintNow')}
-              title={t('admin.counterBillPrintNow')}
-            >
-              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-                <path
-                  fill="currentColor"
-                  d="M6 9V3h12v6h2a2 2 0 0 1 2 2v6h-4v4H6v-4H2v-6a2 2 0 0 1 2-2h2zm2-4v4h8V5H8zm-2 12v2h12v-2H6zm-2-2h16v-4H4v4zm2-2.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"
-                />
-              </svg>
-            </button>
+
+            {lines.length === 0 ? (
+              <>
+                <button
+                  type="button"
+                  className="counter-bill__pos-dock-sales"
+                  onClick={() => onJumpToSales?.()}
+                >
+                  {t('counter.mySalesToday')}
+                </button>
+                <button
+                  type="button"
+                  className="counter-bill__pos-dock-printer"
+                  onClick={() => openPrinterSetup()}
+                  aria-label={t('admin.counterBillNativeRefresh')}
+                  title={
+                    nativePos
+                      ? (nativePrinter?.name || t('admin.counterBillNativeRefresh'))
+                      : t('admin.counterBillNativeRefresh')
+                  }
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                    <path
+                      fill="currentColor"
+                      d="M17 7V5a3 3 0 0 0-3-3H10a3 3 0 0 0-3 3v2H5a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h1v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2h1a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-2zM10 5h4v2h-4V5zm6 14H8v-4h8v4zm3-6a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="counter-bill__pos-dock-print"
+                  onClick={() => {
+                    if (nativePos && !nativePrinter?.address) {
+                      openPrinterSetup();
+                      return;
+                    }
+                    void printReceipt();
+                  }}
+                  disabled={!receiptOrder && !(nativePos && !nativePrinter?.address)}
+                  aria-label={t('admin.counterBillPrintNow')}
+                  title={t('admin.counterBillPrintNow')}
+                >
+                  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                    <path
+                      fill="currentColor"
+                      d="M6 9V3h12v6h2a2 2 0 0 1 2 2v6h-4v4H6v-4H2v-6a2 2 0 0 1 2-2h2zm2-4v4h8V5H8zm-2 12v2h12v-2H6zm-2-2h16v-4H4v4zm2-2.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"
+                    />
+                  </svg>
+                </button>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  className="counter-bill__pos-dock-jump"
+                  onClick={jumpToSearch}
+                >
+                  {t('admin.counterBillSearch')}
+                </button>
+                <button
+                  type="button"
+                  className="counter-bill__pos-dock-jump"
+                  onClick={jumpToDiscount}
+                >
+                  {t('admin.counterBillToolbarDiscount')}
+                </button>
+                <button
+                  type="button"
+                  className="counter-bill__pos-dock-jump"
+                  onClick={jumpToCustomer}
+                >
+                  {t('admin.counterBillToolbarCustomer')}
+                </button>
+              </>
+            )}
           </div>,
           document.body,
         )
