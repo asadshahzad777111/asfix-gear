@@ -29,6 +29,7 @@ import {
   IconWhatsAppOutline,
 } from './nav/NavIcons';
 import MorphIcon from './nav/MorphIcon';
+import MenuToggle from './ui/MenuToggle';
 import { useWishlistIds } from '../hooks/useWishlist';
 import { useCart } from '../context/CartContext';
 import { useChatAssistant } from '../context/ChatAssistantContext';
@@ -247,20 +248,14 @@ export default function Navbar() {
         {/* Row 1 — utility */}
         <div className="dx-utility">
           <div className="container dx-utility-inner">
-            <button
-              type="button"
+            <MenuToggle
+              open={menuOpen}
+              onOpenChange={() => toggleMenu()}
               className={`menu-toggle menu-toggle--leading dx-menu-toggle dx-icon-btn ${menuOpen ? 'is-open' : ''}`}
-              onClick={toggleMenu}
               aria-label={menuOpen ? t('nav.closeMenu') : t('nav.openMenu')}
               aria-expanded={menuOpen}
               aria-controls="main-nav"
-            >
-              <span className="dx-burger" aria-hidden="true">
-                <span className="dx-burger-line" />
-                <span className="dx-burger-line" />
-                <span className="dx-burger-line" />
-              </span>
-            </button>
+            />
 
             <LogoLink onNavigate={closeMenu} />
 

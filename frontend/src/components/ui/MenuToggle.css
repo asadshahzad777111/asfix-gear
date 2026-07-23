@@ -1,0 +1,48 @@
+/* Animated hamburger ↔ X (stroke-dash + rotate). No Tailwind required. */
+
+.menu-toggle-anim {
+  display: inline-grid;
+  place-items: center;
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.menu-toggle-anim__svg {
+  width: 1.125rem;
+  height: 1.125rem;
+  display: block;
+  overflow: visible;
+  transition: transform 600ms ease-out;
+  transform-origin: center;
+}
+
+.menu-toggle-anim.is-open .menu-toggle-anim__svg,
+.menu-toggle-anim__svg.is-open {
+  transform: rotate(-45deg);
+}
+
+.menu-toggle-anim__path {
+  transition:
+    stroke-dasharray 600ms ease-out,
+    stroke-dashoffset 600ms ease-out;
+  stroke-dasharray: 12 63;
+  stroke-dashoffset: 0;
+}
+
+.menu-toggle-anim.is-open .menu-toggle-anim__path,
+.menu-toggle-anim__path.is-open {
+  stroke-dasharray: 20 300;
+  stroke-dashoffset: -32.42px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu-toggle-anim__svg,
+  .menu-toggle-anim__path {
+    transition: none;
+  }
+}
