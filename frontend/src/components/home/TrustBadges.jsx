@@ -1,4 +1,5 @@
 import { useTranslation } from '../../context/LanguageContext';
+import TextParticle from '../motion/TextParticle';
 
 const BADGES = [
   { key: 'trustWarranty' },
@@ -16,7 +17,14 @@ export default function TrustBadges() {
         <div className="home-trust-row" role="list">
           {BADGES.map(({ key }) => (
             <div key={key} className="home-trust-badge" role="listitem">
-              <span className="home-trust-label">{t(`home.${key}`)}</span>
+              <TextParticle
+                as="span"
+                className="home-trust-label"
+                text={t(`home.${key}`)}
+                gap={3}
+                mouseRadius={36}
+                maxParticles={280}
+              />
             </div>
           ))}
         </div>

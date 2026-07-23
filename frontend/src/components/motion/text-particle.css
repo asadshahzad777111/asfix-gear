@@ -1,0 +1,97 @@
+.text-particle {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 100%;
+  line-height: 1.15;
+  vertical-align: middle;
+  color: inherit;
+  font: inherit;
+  font-weight: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  touch-action: manipulation;
+}
+
+.text-particle__canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.text-particle__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.text-particle__static {
+  display: inline-block;
+}
+
+/* Trust strip labels */
+.home-trust-label.text-particle {
+  display: inline-flex;
+  min-width: 7.5rem;
+  height: 1.35rem;
+  color: color-mix(in srgb, var(--primary) 72%, var(--text-muted));
+}
+
+@media (min-width: 769px) {
+  .home-trust-label.text-particle {
+    min-width: 8.5rem;
+    height: 1.45rem;
+  }
+}
+
+/* Collection category titles */
+.home-collection-overlay .text-particle {
+  display: flex;
+  width: min(100%, 12rem);
+  height: 1.55rem;
+  margin-bottom: 0.15rem;
+  color: #fff;
+  justify-content: flex-start;
+}
+
+/* Marquee category/service words */
+.marquee-item .text-particle {
+  display: inline-flex;
+  min-width: 9rem;
+  height: 1.15rem;
+  color: color-mix(in srgb, var(--primary) 55%, var(--text-muted));
+  vertical-align: middle;
+}
+
+/* Section headings */
+.section-title.text-particle,
+h2.text-particle.section-title {
+  display: flex;
+  width: min(100%, 22rem);
+  height: clamp(2.1rem, 5vw, 2.85rem);
+  margin-left: auto;
+  margin-right: auto;
+  color: var(--text);
+}
+
+.home-reviews .section-title.text-particle {
+  width: min(100%, 26rem);
+}
+
+.location-section .section-title.text-particle {
+  width: min(100%, 18rem);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .text-particle__canvas {
+    display: none;
+  }
+}

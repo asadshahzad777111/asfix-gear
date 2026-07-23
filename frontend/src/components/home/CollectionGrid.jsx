@@ -6,6 +6,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import PhoneFinderModal from '../PhoneFinderModal';
 import ConnectReveal from '../motion/ConnectReveal';
 import TypeLine from '../motion/TypeLine';
+import TextParticle from '../motion/TextParticle';
 
 const COLLECTION_HINTS = {
   Cases: 'home.collectionCases',
@@ -80,7 +81,13 @@ export default function CollectionGrid() {
                 loading="lazy"
               />
               <div className="home-collection-overlay">
-                <strong>{category}</strong>
+                <TextParticle
+                  as="strong"
+                  text={category}
+                  gap={3}
+                  mouseRadius={42}
+                  maxParticles={360}
+                />
                 <span>{t(COLLECTION_HINTS[category] || 'home.collectionDefault')}</span>
               </div>
             </ConnectReveal>

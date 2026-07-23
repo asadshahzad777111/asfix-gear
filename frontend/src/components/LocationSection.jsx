@@ -3,6 +3,7 @@ import { buildContactPrefill } from '../utils/contactPrefill';
 import OpenBadge from './OpenBadge';
 import { useTranslation } from '../context/LanguageContext';
 import ConnectReveal from './motion/ConnectReveal';
+import TextParticle from './motion/TextParticle';
 
 const GENERAL_WHATSAPP_HREF = whatsappLink(buildContactPrefill({ type: 'general' }).message);
 
@@ -14,7 +15,14 @@ export default function LocationSection({ showMap = true }) {
       <div className="container">
         <ConnectReveal className="section-head" from="line">
           <span className="eyebrow">📍 {t('location.eyebrow')}</span>
-          <h2 className="section-title">{t('location.title')}</h2>
+          <TextParticle
+            as="h2"
+            className="section-title"
+            text={t('location.title')}
+            gap={3}
+            mouseRadius={56}
+            maxParticles={640}
+          />
           <p className="section-subtitle">
             {t('location.subtitle', { shop: SHOP.name })}
           </p>

@@ -4,12 +4,14 @@ import { readProductsCache, writeProductsCache } from '../utils/productCache';
 import { filterPublishedProducts } from '../utils/productStatus';
 import HomeHero from '../components/home/HomeHero';
 import TrustBadges from '../components/home/TrustBadges';
+import Marquee from '../components/Marquee';
 import CollectionGrid from '../components/home/CollectionGrid';
 import BrandGrid from '../components/home/BrandGrid';
 import ProductCarousel from '../components/home/ProductCarousel';
 import LocationSection from '../components/LocationSection';
 import Testimonials from '../components/Testimonials';
 import ConnectReveal from '../components/motion/ConnectReveal';
+import TextParticle from '../components/motion/TextParticle';
 import { HomeProductsSkeleton } from '../components/skeleton/ContentSkeletons';
 import { useTranslation } from '../context/LanguageContext';
 import { SHOP } from '../config/shop';
@@ -79,6 +81,7 @@ export default function Home() {
       <LocalBusinessJsonLd />
       <HomeHero />
       <TrustBadges />
+      <Marquee />
       <BrandGrid />
       <CollectionGrid />
 
@@ -114,7 +117,14 @@ export default function Home() {
         <div className="container">
           <ConnectReveal className="home-section-head" from="line">
             <span className="eyebrow">{t('home.reviewsEyebrow')}</span>
-            <h2 className="section-title">{t('home.reviewsTitle')}</h2>
+            <TextParticle
+              as="h2"
+              className="section-title"
+              text={t('home.reviewsTitle')}
+              gap={3}
+              mouseRadius={56}
+              maxParticles={720}
+            />
           </ConnectReveal>
           <ConnectReveal delay={80} from="up">
             <Testimonials />

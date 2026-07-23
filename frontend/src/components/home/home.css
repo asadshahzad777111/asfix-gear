@@ -386,7 +386,8 @@
   z-index: 3;
 }
 
-.home-collection-overlay strong {
+.home-collection-overlay strong,
+.home-collection-overlay .text-particle {
   color: #fff;
   font-family: var(--font-display);
   font-size: 1.05rem;
