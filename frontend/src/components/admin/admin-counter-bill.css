@@ -1143,8 +1143,16 @@
   cursor: text;
 }
 
+.counter-bill__cart-rate-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 0.4rem;
+  width: 100%;
+}
+
 .counter-bill__cart-rate-label {
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   align-items: center;
   gap: 0.4rem;
@@ -1153,6 +1161,7 @@
   color: var(--pos-muted);
   text-transform: uppercase;
   letter-spacing: 0.04em;
+  min-width: 0;
 }
 
 .counter-bill__cart-rate-label input {
@@ -1174,6 +1183,35 @@
 .counter-bill__cart-rate-label input:focus {
   outline: 2px solid rgba(255, 106, 43, 0.45);
   border-color: var(--pos-accent);
+}
+
+.counter-bill__cart-rate-ok {
+  flex: 0 0 auto;
+  min-width: 3.25rem;
+  min-height: 44px;
+  padding: 0.35rem 0.65rem;
+  border: 1px solid #15803d;
+  border-radius: var(--pos-radius-sm);
+  background: #16a34a;
+  color: #fff;
+  font: inherit;
+  font-size: 0.85rem;
+  font-weight: 800;
+  cursor: pointer;
+  z-index: 2;
+}
+
+.counter-bill__cart-rate-ok:hover {
+  background: #15803d;
+}
+
+.counter-bill__cart-rate-ok--blocked {
+  border-color: #b91c1c;
+  background: #dc2626;
+}
+
+.counter-bill__cart-rate-ok--blocked:hover {
+  background: #b91c1c;
 }
 
 .counter-bill__cart-refs {

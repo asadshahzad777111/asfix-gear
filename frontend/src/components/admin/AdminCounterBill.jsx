@@ -2417,6 +2417,59 @@ export default function AdminCounterBill({
     });
   };
 
+  /** OK on sell rate: dismiss keyboard unless below cost (keep focus + warning). */
+  const confirmSellRate = useCallback((productId) => {
+    const id = Number(productId);
+    if (!Number.isFinite(id)) return;
+    const line = lines.find((item) => item.product.id === id);
+    if (!line) return;
+    const draft = rateDrafts[id];
+    let unit = lineUnitPrice(line);
+    if (draft !== undefined) {
+      const trimmed = String(draft).trim();
+      if (trimmed === '' || trimmed === '-' || trimmed === '.') unit = 0;
+      else {
+        const raw = Number(trimmed);
+        unit = Number.isFinite(raw) && raw >= 0 ? Math.round(raw) : 0;
+      }
+    }
+    commitSellRateDraft(id);
+    const cost = Math.max(0, Number(line.product.cost_price) || 0);
+    if (cost > 0 && unit < cost) {
+      setFocusedLineId(id);
+      window.setTimeout(() => {
+        const input = sellRateRefs.current[id];
+        if (!input) return;
+        try {
+          input.focus({ preventScroll: true });
+        } catch {
+          input.focus?.();
+        }
+        try {
+          input.select?.();
+        } catch {
+          /* ignore */
+        }
+      }, 30);
+      return;
+    }
+    setFocusedLineId(null);
+    window.setTimeout(() => {
+      try {
+        sellRateRefs.current[id]?.blur();
+      } catch {
+        /* ignore */
+      }
+      try {
+        if (typeof document !== 'undefined' && document.activeElement?.blur) {
+          document.activeElement.blur();
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 0);
+  }, [lines, rateDrafts]);
+
   const resetBill = () => {
     clearBillFields();
     setFeedback(null);
@@ -2988,41 +3041,65 @@ export default function AdminCounterBill({
                     <div
                       className="counter-bill__cart-rate"
                       onPointerDown={(e) => {
-                        if (e.target.closest('input')) return;
+                        if (e.target.closest('input, button')) return;
                         e.preventDefault();
                         focusSellRate(line.product.id);
                       }}
                     >
-                      <label className="counter-bill__cart-rate-label">
-                        <span>{t('admin.counterBillSellRate')}</span>
-                        <input
-                          ref={(el) => {
-                            if (el) sellRateRefs.current[line.product.id] = el;
-                            else delete sellRateRefs.current[line.product.id];
+                      <div className="counter-bill__cart-rate-row">
+                        <label className="counter-bill__cart-rate-label">
+                          <span>{t('admin.counterBillSellRate')}</span>
+                          <input
+                            ref={(el) => {
+                              if (el) sellRateRefs.current[line.product.id] = el;
+                              else delete sellRateRefs.current[line.product.id];
+                            }}
+                            type="number"
+                            min="0"
+                            step="1"
+                            inputMode="numeric"
+                            value={rateInputValue}
+                            onFocus={() => {
+                              setFocusedLineId(line.product.id);
+                              setRateDrafts((prev) => (
+                                prev[line.product.id] !== undefined
+                                  ? prev
+                                  : { ...prev, [line.product.id]: String(unit) }
+                              ));
+                            }}
+                            onChange={(e) => {
+                              const next = e.target.value;
+                              setRateDrafts((prev) => ({ ...prev, [line.product.id]: next }));
+                              setUnitPrice(line.product.id, next);
+                            }}
+                            onBlur={() => commitSellRateDraft(line.product.id)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                confirmSellRate(line.product.id);
+                              }
+                            }}
+                            aria-label={`${line.product.name} ${t('admin.counterBillSellRate')}`}
+                          />
+                        </label>
+                        <button
+                          type="button"
+                          className={`counter-bill__cart-rate-ok${rateWarnBelowCost ? ' counter-bill__cart-rate-ok--blocked' : ''}`}
+                          onPointerDown={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
                           }}
-                          type="number"
-                          min="0"
-                          step="1"
-                          inputMode="numeric"
-                          value={rateInputValue}
-                          onFocus={() => {
-                            setFocusedLineId(line.product.id);
-                            setRateDrafts((prev) => (
-                              prev[line.product.id] !== undefined
-                                ? prev
-                                : { ...prev, [line.product.id]: String(unit) }
-                            ));
-                          }}
-                          onChange={(e) => {
-                            const next = e.target.value;
-                            setRateDrafts((prev) => ({ ...prev, [line.product.id]: next }));
-                            /* Live total: empty → 0; never snap back to list / Math.max(1) */
-                            setUnitPrice(line.product.id, next);
-                          }}
-                          onBlur={() => commitSellRateDraft(line.product.id)}
-                          aria-label={`${line.product.name} ${t('admin.counterBillSellRate')}`}
-                        />
-                      </label>
+                          onClick={() => confirmSellRate(line.product.id)}
+                          aria-label={t('admin.counterBillRateOk')}
+                          title={
+                            rateWarnBelowCost
+                              ? t('admin.counterBillRateBelowCostWarn')
+                              : t('admin.counterBillRateOk')
+                          }
+                        >
+                          {t('admin.counterBillRateOk')}
+                        </button>
+                      </div>
                       <div className="counter-bill__cart-refs">
                         <small className="counter-bill__cart-actual">
                           {t('admin.counterBillActualPrice', { price: formatPrice(actual) })}
