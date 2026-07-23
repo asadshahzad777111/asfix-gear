@@ -2,7 +2,10 @@ import { useEffect, useRef, useState } from 'react';
 import './text-particle.css';
 
 const DEFAULT_ORANGE = '#ff6a2b';
-const DEFAULT_LIGHT = 'rgba(245, 245, 247, 0.92)';
+const DEFAULT_LIGHT = 'rgba(245, 245, 247, 0.96)';
+const MIN_LAYOUT_PX = 24;
+const PAD_X = 6;
+const PAD_Y = 3;
 
 function prefersReducedMotion() {
   return typeof window !== 'undefined'
@@ -56,6 +59,23 @@ function resolveCssColor(el, colorProp, fallback) {
   return parseColor(computed, parseColor(fallback, { r: 255, g: 106, b: 43, a: 1 }));
 }
 
+/** Shrink font until `text` fits inside canvas with padding. */
+function fitFontSize(ctx, text, maxWidth, maxHeight, startSize, fontFamily, fontWeight) {
+  let size = Math.max(8, Math.floor(startSize));
+  const floor = 8;
+  while (size > floor) {
+    ctx.font = `${fontWeight} ${size}px ${fontFamily}`;
+    const metrics = ctx.measureText(text);
+    const w = metrics.width;
+    const asc = metrics.actualBoundingBoxAscent || size * 0.8;
+    const desc = metrics.actualBoundingBoxDescent || size * 0.25;
+    const h = asc + desc;
+    if (w <= maxWidth - PAD_X * 2 && h <= maxHeight - PAD_Y * 2) break;
+    size -= 1;
+  }
+  return size;
+}
+
 function sampleTextParticles({
   text,
   width,
@@ -65,6 +85,7 @@ function sampleTextParticles({
   fontWeight,
   gap,
   maxParticles,
+  particleSizeBase,
 }) {
   const off = document.createElement('canvas');
   off.width = Math.max(1, Math.floor(width));
@@ -72,29 +93,33 @@ function sampleTextParticles({
   const ctx = off.getContext('2d', { willReadFrequently: true });
   if (!ctx) return [];
 
+  const fitted = fitFontSize(ctx, text, off.width, off.height, fontSize, fontFamily, fontWeight);
+
   ctx.clearRect(0, 0, off.width, off.height);
   ctx.fillStyle = '#fff';
-  ctx.font = `${fontWeight} ${fontSize}px ${fontFamily}`;
+  ctx.font = `${fontWeight} ${fitted}px ${fontFamily}`;
   ctx.textAlign = 'center';
   ctx.textBaseline = 'middle';
   ctx.fillText(text, off.width / 2, off.height / 2);
 
   const { data } = ctx.getImageData(0, 0, off.width, off.height);
   const pts = [];
-  const step = Math.max(2, Math.round(gap));
+  const step = Math.max(2, Math.min(4, Math.round(gap)));
+  const base = particleSizeBase || 1.35;
 
   for (let y = 0; y < off.height; y += step) {
     for (let x = 0; x < off.width; x += step) {
       const i = (y * off.width + x) * 4;
-      if (data[i + 3] > 128) {
+      if (data[i + 3] > 110) {
         pts.push({
-          x: x + (Math.random() - 0.5) * 24,
-          y: y + (Math.random() - 0.5) * 24,
+          // Tiny jitter only — large scatter made letterforms unreadable
+          x: x + (Math.random() - 0.5) * 2.5,
+          y: y + (Math.random() - 0.5) * 2.5,
           ox: x,
           oy: y,
           vx: 0,
           vy: 0,
-          size: Math.random() * 1.1 + 0.7,
+          size: Math.random() * 0.55 + base,
         });
       }
     }
@@ -117,13 +142,13 @@ export default function TextParticle({
   color,
   fontSize: fontSizeProp,
   fontWeight = 700,
-  gap = 3,
+  gap = 2,
   particleSize,
   mouseRadius = 46,
   mouseForce = 4.2,
   returnForce = 0.065,
   friction = 0.86,
-  maxParticles = 900,
+  maxParticles = 1400,
   idleDrift = true,
   'aria-hidden': ariaHidden,
 }) {
@@ -132,7 +157,7 @@ export default function TextParticle({
   const mouseRef = useRef({ x: -9999, y: -9999, active: false });
   const particlesRef = useRef([]);
   const rafRef = useRef(0);
-  const colorRef = useRef({ r: 255, g: 106, b: 43, a: 0.92 });
+  const colorRef = useRef({ r: 255, g: 106, b: 43, a: 0.96 });
   const optsRef = useRef({});
   const [fallback, setFallback] = useState(false);
   const label = String(text || '');
@@ -167,6 +192,7 @@ export default function TextParticle({
     let running = false;
     let visible = true;
     let disposed = false;
+    let retryTimer = 0;
 
     const stopLoop = () => {
       running = false;
@@ -206,8 +232,8 @@ export default function TextParticle({
           p.vx += (dx / dist) * f;
           p.vy += (dy / dist) * f;
         } else if (coarse && drift) {
-          p.vx += Math.sin(t + p.ox * 0.04) * 0.035;
-          p.vy += Math.cos(t * 0.9 + p.oy * 0.04) * 0.035;
+          p.vx += Math.sin(t + p.ox * 0.04) * 0.02;
+          p.vy += Math.cos(t * 0.9 + p.oy * 0.04) * 0.02;
         }
 
         p.vx += (p.ox - p.x) * home;
@@ -217,7 +243,7 @@ export default function TextParticle({
         p.x += p.vx;
         p.y += p.vy;
 
-        const s = (sizeMul || p.size);
+        const s = sizeMul || p.size;
         ctx.fillRect(p.x, p.y, s, s);
       }
 
@@ -231,21 +257,21 @@ export default function TextParticle({
     };
 
     const rebuild = () => {
+      if (disposed) return;
       const rect = wrap.getBoundingClientRect();
       const css = getComputedStyle(wrap);
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      const width = Math.max(1, Math.ceil(rect.width));
-      const height = Math.max(1, Math.ceil(rect.height));
+      let width = Math.max(1, Math.ceil(rect.width));
+      let height = Math.max(1, Math.ceil(rect.height));
 
-      canvas.width = Math.floor(width * dpr);
-      canvas.height = Math.floor(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      // Layout not ready yet — retry shortly instead of sampling a tiny canvas
+      if (width < MIN_LAYOUT_PX || height < 10) {
+        if (retryTimer) window.clearTimeout(retryTimer);
+        retryTimer = window.setTimeout(rebuild, 50);
+        return;
+      }
 
-      const resolvedSize = fontSizeProp
-        || Number.parseFloat(css.fontSize)
-        || Math.max(12, Math.min(width * 0.12, height * 0.62));
+      // Prefer measured text width so letterforms never clip horizontally
       const family = css.fontFamily || 'system-ui, sans-serif';
       const weight = fontWeight || css.fontWeight || 700;
       const drawText = css.textTransform === 'uppercase'
@@ -253,26 +279,64 @@ export default function TextParticle({
         : css.textTransform === 'lowercase'
           ? label.toLowerCase()
           : label;
+      const startSize = fontSizeProp
+        || Number.parseFloat(css.fontSize)
+        || Math.max(12, Math.min(width * 0.12, height * 0.62));
+
+      const positioned = css.position === 'absolute' || css.position === 'fixed';
+      const measure = document.createElement('canvas').getContext('2d');
+      if (measure && !positioned) {
+        measure.font = `${weight} ${startSize}px ${family}`;
+        const needed = Math.ceil(measure.measureText(drawText).width + PAD_X * 2);
+        if (needed > width) {
+          width = needed;
+          wrap.style.minWidth = `${needed}px`;
+        }
+      }
+
+      if (!positioned) {
+        const minH = Math.max(height, Math.ceil(startSize * 1.15));
+        if (minH > height) {
+          height = minH;
+          wrap.style.minHeight = `${minH}px`;
+        }
+      }
+
+      canvas.width = Math.floor(width * dpr);
+      canvas.height = Math.floor(height * dpr);
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       colorRef.current = resolveCssColor(
         wrap,
         color || css.color,
         DEFAULT_ORANGE,
       );
+      // Floor alpha so particles stay readable on dark backgrounds
+      if (colorRef.current.a < 0.85) {
+        colorRef.current = { ...colorRef.current, a: 0.92 };
+      }
       if (colorRef.current.a < 0.2) {
-        colorRef.current = parseColor(DEFAULT_LIGHT, { r: 245, g: 245, b: 247, a: 0.92 });
+        colorRef.current = parseColor(DEFAULT_LIGHT, { r: 245, g: 245, b: 247, a: 0.96 });
       }
 
-      const densityGap = gap + (width < 160 ? 1 : 0) + (coarse ? 1 : 0);
+      // Denser sampling: gap 2–3 (never sparse 8+)
+      const densityGap = Math.max(2, Math.min(3, gap + (coarse && width < 120 ? 1 : 0)));
+      const particleCap = coarse
+        ? Math.min(maxParticles, 900)
+        : maxParticles;
+
       particlesRef.current = sampleTextParticles({
         text: drawText,
         width,
         height,
-        fontSize: resolvedSize,
+        fontSize: startSize,
         fontFamily: family,
         fontWeight: weight,
         gap: densityGap,
-        maxParticles: coarse ? Math.min(maxParticles, 420) : maxParticles,
+        maxParticles: particleCap,
+        particleSizeBase: particleSize || (width < 140 ? 1.2 : 1.4),
       });
 
       if (!particlesRef.current.length) {
@@ -281,6 +345,7 @@ export default function TextParticle({
         return;
       }
 
+      setFallback(false);
       startLoop();
     };
 
@@ -327,6 +392,7 @@ export default function TextParticle({
     return () => {
       disposed = true;
       stopLoop();
+      if (retryTimer) window.clearTimeout(retryTimer);
       ro.disconnect();
       io.disconnect();
       wrap.removeEventListener('pointermove', onPointerMove);
@@ -334,8 +400,10 @@ export default function TextParticle({
       wrap.removeEventListener('pointercancel', onPointerLeave);
       document.removeEventListener('visibilitychange', onVisibility);
       particlesRef.current = [];
+      wrap.style.minWidth = '';
+      wrap.style.minHeight = '';
     };
-  }, [label, color, fontSizeProp, fontWeight, gap, maxParticles]);
+  }, [label, color, fontSizeProp, fontWeight, gap, maxParticles, particleSize]);
 
   if (!label) return null;
 

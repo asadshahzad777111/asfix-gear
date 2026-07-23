@@ -12,6 +12,7 @@
   letter-spacing: inherit;
   text-transform: inherit;
   touch-action: manipulation;
+  overflow: visible;
 }
 
 .text-particle__canvas {
@@ -37,61 +38,114 @@
   display: inline-block;
 }
 
-/* Trust strip labels */
+/* Trust strip labels — wide enough for full phrases */
 .home-trust-label.text-particle {
   display: inline-flex;
-  min-width: 7.5rem;
-  height: 1.35rem;
-  color: color-mix(in srgb, var(--primary) 72%, var(--text-muted));
+  width: max-content;
+  min-width: 9.5rem;
+  min-height: 1.55rem;
+  height: auto;
+  padding: 0.1rem 0.15rem;
+  color: color-mix(in srgb, var(--primary) 88%, #fff 8%);
+  overflow: visible;
 }
 
 @media (min-width: 769px) {
   .home-trust-label.text-particle {
-    min-width: 8.5rem;
-    height: 1.45rem;
+    min-width: 11rem;
+    min-height: 1.65rem;
   }
 }
 
 /* Collection category titles */
 .home-collection-overlay .text-particle {
   display: flex;
-  width: min(100%, 12rem);
-  height: 1.55rem;
+  width: max-content;
+  max-width: 100%;
+  min-width: 6rem;
+  min-height: 1.7rem;
+  height: auto;
   margin-bottom: 0.15rem;
   color: #fff;
   justify-content: flex-start;
+  overflow: visible;
 }
 
-/* Marquee category/service words */
-.marquee-item .text-particle {
+/* Marquee: clear static words while scrolling; particles on hover pause */
+.marquee-item__stack {
+  position: relative;
   display: inline-flex;
-  min-width: 9rem;
-  height: 1.15rem;
-  color: color-mix(in srgb, var(--primary) 55%, var(--text-muted));
-  vertical-align: middle;
+  align-items: center;
+  min-height: 1.35rem;
 }
 
-/* Section headings */
+.marquee-item__label {
+  display: inline;
+  color: inherit;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  white-space: nowrap;
+}
+
+.marquee-item .text-particle {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  opacity: 0;
+  pointer-events: none;
+  color: color-mix(in srgb, var(--primary) 92%, #fff);
+  overflow: visible;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .marquee-wrap:hover .marquee-item__label {
+    visibility: hidden;
+  }
+
+  .marquee-wrap:hover .marquee-item .text-particle {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+/* Section headings — full phrase, no side clipping */
 .section-title.text-particle,
 h2.text-particle.section-title {
   display: flex;
-  width: min(100%, 22rem);
-  height: clamp(2.1rem, 5vw, 2.85rem);
+  width: max-content;
+  max-width: 100%;
+  min-width: min(100%, 20rem);
+  min-height: clamp(2.25rem, 5.5vw, 3.1rem);
+  height: auto;
   margin-left: auto;
   margin-right: auto;
   color: var(--text);
+  overflow: visible;
 }
 
 .home-reviews .section-title.text-particle {
-  width: min(100%, 26rem);
+  min-width: min(100%, 28rem);
 }
 
 .location-section .section-title.text-particle {
-  width: min(100%, 18rem);
+  min-width: min(100%, 22rem);
 }
 
 @media (prefers-reduced-motion: reduce) {
   .text-particle__canvas {
     display: none;
+  }
+
+  .marquee-wrap:hover .marquee-item__label {
+    visibility: visible;
+  }
+
+  .marquee-wrap:hover .marquee-item .text-particle {
+    opacity: 0;
+    pointer-events: none;
   }
 }

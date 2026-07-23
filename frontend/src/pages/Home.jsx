@@ -121,9 +121,10 @@ export default function Home() {
               as="h2"
               className="section-title"
               text={t('home.reviewsTitle')}
-              gap={3}
+              gap={2}
+              particleSize={1.55}
               mouseRadius={56}
-              maxParticles={720}
+              maxParticles={1200}
             />
           </ConnectReveal>
           <ConnectReveal delay={80} from="up">

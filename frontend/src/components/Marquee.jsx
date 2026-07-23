@@ -14,12 +14,22 @@ export default function Marquee() {
       <div className="marquee-track">
         {track.map((item, i) => (
           <span key={`${item}-${i}`} className="marquee-item">
-            {/* Duplicate half stays plain text for perf; first half gets particles */}
-            {i < items.length ? (
-              <TextParticle text={item} gap={4} mouseRadius={40} maxParticles={220} aria-hidden />
-            ) : (
-              item
-            )}
+            {/* Static label sizes the slot and stays readable while scrolling.
+                Particles overlay only on hover (track paused). */}
+            <span className="marquee-item__stack">
+              <span className="marquee-item__label">{item}</span>
+              {i < items.length ? (
+                <TextParticle
+                  text={item}
+                  className="marquee-particle"
+                  gap={2}
+                  particleSize={1.45}
+                  mouseRadius={40}
+                  maxParticles={700}
+                  aria-hidden
+                />
+              ) : null}
+            </span>
             <span className="marquee-dot">✦</span>
           </span>
         ))}

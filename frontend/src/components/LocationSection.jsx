@@ -19,9 +19,10 @@ export default function LocationSection({ showMap = true }) {
             as="h2"
             className="section-title"
             text={t('location.title')}
-            gap={3}
+            gap={2}
+            particleSize={1.55}
             mouseRadius={56}
-            maxParticles={640}
+            maxParticles={1200}
           />
           <p className="section-subtitle">
             {t('location.subtitle', { shop: SHOP.name })}

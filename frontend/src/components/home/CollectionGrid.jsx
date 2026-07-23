@@ -84,9 +84,10 @@ export default function CollectionGrid() {
                 <TextParticle
                   as="strong"
                   text={category}
-                  gap={3}
+                  gap={2}
+                  particleSize={1.4}
                   mouseRadius={42}
-                  maxParticles={360}
+                  maxParticles={800}
                 />
                 <span>{t(COLLECTION_HINTS[category] || 'home.collectionDefault')}</span>
               </div>

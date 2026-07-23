@@ -21,9 +21,10 @@ export default function TrustBadges() {
                 as="span"
                 className="home-trust-label"
                 text={t(`home.${key}`)}
-                gap={3}
+                gap={2}
+                particleSize={1.35}
                 mouseRadius={36}
-                maxParticles={280}
+                maxParticles={720}
               />
             </div>
           ))}
