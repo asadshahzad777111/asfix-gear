@@ -72,9 +72,102 @@
   white-space: nowrap;
 }
 
+.home-trust-label-static {
+  font-size: 0.68rem;
+  font-weight: 750;
+  letter-spacing: 0.055em;
+  text-transform: uppercase;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
 @media (min-width: 769px) {
-  .home-trust-label {
+  .home-trust-label,
+  .home-trust-label-static {
     font-size: 0.74rem;
+  }
+}
+
+/* Mid-page repair CTA band — flat, brand orange, no card clutter */
+.home-repair-band {
+  padding-block: clamp(1.25rem, 3.5vw, 2.25rem);
+}
+
+.home-repair-band__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.15rem 1.75rem;
+  padding: clamp(1.15rem, 3vw, 1.65rem) clamp(1.1rem, 3vw, 1.85rem);
+  border-radius: var(--radius-lg, 16px);
+  border: 1px solid color-mix(in srgb, var(--mix-orange, #ff5a1f) 28%, var(--border));
+  background:
+    linear-gradient(
+      125deg,
+      color-mix(in srgb, var(--mix-orange, #ff5a1f) 14%, var(--bg-card)) 0%,
+      var(--bg-card) 48%,
+      color-mix(in srgb, var(--mix-orange, #ff5a1f) 6%, var(--bg-card)) 100%
+    );
+  box-shadow: 0 12px 32px color-mix(in srgb, var(--mix-orange, #ff5a1f) 8%, transparent);
+}
+
+.home-repair-band__copy {
+  flex: 1 1 16rem;
+  min-width: 0;
+}
+
+.home-repair-band__title {
+  margin: 0.25rem 0 0.4rem;
+  font-family: var(--font-display);
+  font-size: clamp(1.2rem, 2.8vw, 1.65rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.home-repair-band__sub {
+  margin: 0;
+  max-width: 36rem;
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+.home-repair-band__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  flex: 0 0 auto;
+}
+
+.home-repair-band__cta {
+  min-height: 46px;
+}
+
+@media (max-width: 640px) {
+  .home-repair-band__inner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .home-repair-band__copy .eyebrow {
+    display: inline-block;
+  }
+
+  .home-repair-band__sub {
+    margin-inline: auto;
+  }
+
+  .home-repair-band__actions {
+    justify-content: center;
+  }
+
+  .home-repair-band__cta {
+    flex: 1 1 auto;
+    min-width: 9rem;
   }
 }
 

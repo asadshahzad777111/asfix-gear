@@ -12,6 +12,23 @@ export default function Footer() {
 
   return (
     <footer className="footer">
+      <div className="footer-cta-band">
+        <div className="container footer-cta-band__inner">
+          <div className="footer-cta-band__copy">
+            <strong className="footer-cta-band__title">{t('footer.ctaTitle')}</strong>
+            <p className="footer-cta-band__sub">{t('footer.ctaSub')}</p>
+          </div>
+          <div className="footer-cta-band__actions">
+            <Link to="/repair" className="btn btn-primary btn-sm">
+              {t('common.bookRepair')}
+            </Link>
+            <Link to="/shop" className="btn btn-outline btn-sm">
+              {t('common.accessoriesShop')}
+            </Link>
+          </div>
+        </div>
+      </div>
+
       <div className="container footer-grid">
         <div className="footer-brand">
           <Link to="/" aria-label={SHOP.name}>

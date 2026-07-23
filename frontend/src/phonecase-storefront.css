@@ -1233,6 +1233,13 @@
   line-height: 1.5;
 }
 
+.pc-wishlist-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+}
+
 .pc-wishlist-grid {
   display: grid;
   grid-template-columns: 1fr;

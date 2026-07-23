@@ -172,8 +172,16 @@ export default function Account() {
                 <p className="loading">{t('common.loading')}</p>
               ) : repairs.length === 0 ? (
                 <div className="account-empty account-empty--motion">
+                  <div className="account-empty-icon" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                      <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                   <p>{t('account.noRepairs')}</p>
-                  <Link to="/repair" className="btn btn-primary">{t('nav.repair')}</Link>
+                  <div className="account-empty-actions">
+                    <Link to="/repair" className="btn btn-primary">{t('account.emptyRepairsCta')}</Link>
+                    <Link to="/shop" className="btn btn-outline">{t('nav.shop')}</Link>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -270,8 +278,19 @@ export default function Account() {
             ) : tab === 'orders' ? (
               orders.length === 0 ? (
                 <div className="account-empty account-empty--motion">
+                  <div className="account-empty-icon" aria-hidden="true">
+                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                      <path d="M6 6h15l-1.5 9h-12z" strokeLinecap="round" strokeLinejoin="round" />
+                      <circle cx="9" cy="20" r="1.25" fill="currentColor" stroke="none" />
+                      <circle cx="18" cy="20" r="1.25" fill="currentColor" stroke="none" />
+                      <path d="M6 6 5 3H2" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </div>
                   <p>{t('account.noOrders')}</p>
-                  <Link to="/shop" className="btn btn-primary">{t('nav.shop')}</Link>
+                  <div className="account-empty-actions">
+                    <Link to="/shop" className="btn btn-primary">{t('account.emptyOrdersCta')}</Link>
+                    <Link to="/repair" className="btn btn-outline">{t('nav.repair')}</Link>
+                  </div>
                 </div>
               ) : (
                 <>
@@ -330,8 +349,15 @@ export default function Account() {
               )
             ) : messages.length === 0 ? (
               <div className="account-empty account-empty--motion">
+                <div className="account-empty-icon" aria-hidden="true">
+                  <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </div>
                 <p>{t('account.noMessages')}</p>
-                <Link to="/contact" className="btn btn-primary">{t('nav.contact')}</Link>
+                <div className="account-empty-actions">
+                  <Link to="/contact" className="btn btn-primary">{t('account.emptyMessagesCta')}</Link>
+                </div>
               </div>
             ) : (
               <ul className="account-list account-list--motion">

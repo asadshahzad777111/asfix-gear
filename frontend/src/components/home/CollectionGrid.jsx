@@ -73,7 +73,16 @@ export default function CollectionGrid() {
               from={i % 2 === 0 ? 'left' : 'right'}
               delay={Math.min(i, 6) * 60}
               onClick={() => handleClick(category)}
-              className="home-collection-card"
+              className="home-collection-card home-collection-card--spotlight"
+              onPointerMove={(e) => {
+                const el = e.currentTarget;
+                if (!el) return;
+                const r = el.getBoundingClientRect();
+                const x = ((e.clientX - r.left) / r.width) * 100;
+                const y = ((e.clientY - r.top) / r.height) * 100;
+                el.style.setProperty('--spot-x', `${x}%`);
+                el.style.setProperty('--spot-y', `${y}%`);
+              }}
             >
               <img
                 src={imageOverrides[category] || DEFAULT_IMAGES[category]}

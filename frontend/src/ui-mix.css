@@ -241,6 +241,24 @@
 /* ── Spotlight collection / product cards (Motion Gear, orange) ── */
 .home-collection-card {
   isolation: isolate;
+  --spot-x: 50%;
+  --spot-y: 40%;
+}
+
+.home-collection-card--spotlight::before {
+  background:
+    radial-gradient(
+      420px circle at var(--spot-x) var(--spot-y),
+      rgba(255, 90, 31, 0.42),
+      transparent 55%
+    ),
+    linear-gradient(
+      145deg,
+      rgba(255, 90, 31, 0.5),
+      rgba(255, 140, 60, 0.18),
+      transparent 70%
+    ) !important;
+  transition: opacity 0.25s ease;
 }
 
 .home-collection-card::before {
@@ -335,14 +353,42 @@
   }
 }
 
-/* ── CTA / button micro-interactions ── */
+/* CTA / button micro-interactions + soft shine (21st hover button, orange) */
 .btn.btn-primary:not(.premium-btn),
 .pc-hero-cta {
+  position: relative;
+  overflow: hidden;
   transition:
     transform 0.2s var(--mix-ease),
     box-shadow 0.22s ease,
     background 0.2s ease,
     border-color 0.2s ease !important;
+}
+
+.btn.btn-primary:not(.premium-btn)::after,
+.pc-hero-cta::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    105deg,
+    transparent 35%,
+    rgba(255, 255, 255, 0.22) 48%,
+    transparent 62%
+  );
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .btn.btn-primary:not(.premium-btn):hover::after,
+  .pc-hero-cta:hover::after {
+    animation: mix-btn-shine 0.65s var(--mix-ease);
+  }
+}
+
+@keyframes mix-btn-shine {
+  to { transform: translateX(120%); }
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -832,6 +878,121 @@
 .account-empty--motion,
 .pc-wishlist-empty {
   animation: mix-empty-in 0.38s var(--mix-ease) both;
+}
+
+.account-empty-icon {
+  display: grid;
+  place-items: center;
+  width: 3.75rem;
+  height: 3.75rem;
+  margin: 0 auto 0.85rem;
+  border-radius: 50%;
+  color: var(--mix-orange, #ff5a1f);
+  background:
+    radial-gradient(circle at 35% 30%, rgba(255, 255, 255, 0.35), transparent 55%),
+    color-mix(in srgb, var(--mix-orange, #ff5a1f) 14%, var(--bg-card));
+  border: 1px solid color-mix(in srgb, var(--mix-orange, #ff5a1f) 28%, var(--border));
+  box-shadow: 0 8px 20px color-mix(in srgb, var(--mix-orange, #ff5a1f) 12%, transparent);
+}
+
+.account-empty-actions,
+.pc-wishlist-empty-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: center;
+  margin-top: 0.15rem;
+}
+
+.account-empty-actions .btn,
+.pc-wishlist-empty-actions .btn {
+  min-height: 44px;
+}
+
+/* Footer CTA band */
+.footer-cta-band {
+  border-bottom: 1px solid color-mix(in srgb, var(--mix-orange, #ff5a1f) 18%, var(--border));
+  background:
+    linear-gradient(
+      90deg,
+      color-mix(in srgb, var(--mix-orange, #ff5a1f) 10%, transparent),
+      transparent 40%,
+      color-mix(in srgb, var(--mix-orange, #ff5a1f) 8%, transparent)
+    );
+}
+
+.footer-cta-band__inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 1.5rem;
+  padding: 1.1rem 0 1.25rem;
+}
+
+.footer-cta-band__title {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.footer-cta-band__sub {
+  margin: 0.2rem 0 0;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+  max-width: 32rem;
+  line-height: 1.45;
+}
+
+.footer-cta-band__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+@media (max-width: 640px) {
+  .footer-cta-band__inner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+
+  .footer-cta-band__sub {
+    margin-inline: auto;
+  }
+
+  .footer-cta-band__actions {
+    justify-content: center;
+  }
+}
+
+/* Desktop float stack — keep repair + chat tidy (no overlap fight) */
+@media (min-width: 1025px) {
+  .floating-repair-btn {
+    box-shadow:
+      0 12px 28px rgba(0, 0, 0, 0.18),
+      0 0 0 1px color-mix(in srgb, var(--mix-orange, #ff5a1f) 35%, transparent);
+  }
+
+  .chat-fab,
+  .chat-assistant-fab {
+    transition: transform 0.22s var(--mix-ease), box-shadow 0.22s ease;
+  }
+}
+
+/* Mobile dock active mark — soft orange glow (21st dock feel, brand-safe) */
+@media (max-width: 1024px) {
+  .mobile-bottom-nav__item.is-active .mobile-bottom-nav__underline {
+    background: var(--bnav-accent, #ff6a2b);
+    box-shadow: 0 0 10px color-mix(in srgb, var(--bnav-accent, #ff6a2b) 55%, transparent);
+  }
+
+  .mobile-bottom-nav__fab-orb {
+    transition: transform 0.28s var(--mix-ease), box-shadow 0.28s ease;
+  }
 }
 
 @keyframes mix-empty-in {

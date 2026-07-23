@@ -40,25 +40,61 @@
   display: inline-block;
 }
 
-/* Trust strip labels — compact one-line bar slots (no height blowout) */
+/* Trust strip labels — compact one-line bar slots (no height blowout).
+   Static text is always readable; particles overlay on desktop hover only. */
+.home-trust-stack {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 1.35rem;
+  max-height: 1.55rem;
+  max-width: 100%;
+}
+
+.home-trust-label-static {
+  display: inline-block;
+  font: inherit;
+  font-weight: 750;
+  letter-spacing: inherit;
+  text-transform: uppercase;
+  line-height: 1.15;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--primary, #ff6a2b) 78%, var(--text));
+}
+
 .home-trust-label.text-particle {
+  position: absolute;
+  inset: 0;
   display: inline-flex;
   box-sizing: border-box;
-  width: max-content;
+  width: 100%;
   max-width: 100%;
   min-width: 0;
-  height: 1.35rem;
-  min-height: 1.35rem;
-  max-height: 1.45rem;
-  padding: 0.02rem 0.05rem;
-  color: color-mix(in srgb, var(--primary) 88%, #fff 8%);
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
+  padding: 0;
+  color: color-mix(in srgb, var(--primary) 92%, #fff 4%);
+  opacity: 0;
+  pointer-events: none;
   overflow: hidden;
 }
 
+@media (hover: hover) and (pointer: fine) {
+  .home-trust-badge:hover .home-trust-label-static,
+  .home-trust-row:hover .home-trust-badge:hover .home-trust-label-static {
+    visibility: hidden;
+  }
+
+  .home-trust-badge:hover .home-trust-label.text-particle {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
 @media (min-width: 769px) {
-  .home-trust-label.text-particle {
-    min-width: 0;
-    height: 1.45rem;
+  .home-trust-stack {
     min-height: 1.45rem;
     max-height: 1.55rem;
   }
@@ -158,6 +194,15 @@ h2.text-particle.section-title {
   }
 
   .marquee-wrap:hover .marquee-item .text-particle {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .home-trust-badge:hover .home-trust-label-static {
+    visibility: visible;
+  }
+
+  .home-trust-badge:hover .home-trust-label.text-particle {
     opacity: 0;
     pointer-events: none;
   }

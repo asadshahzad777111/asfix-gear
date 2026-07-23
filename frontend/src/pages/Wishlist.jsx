@@ -148,9 +148,14 @@ export default function Wishlist() {
                 </div>
                 <h2>{t('wishlist.emptyTitle')}</h2>
                 <p>{t('wishlist.emptySub')}</p>
-                <Link to="/shop" className="btn btn-primary">
-                  {t('wishlist.shopCta')}
-                </Link>
+                <div className="pc-wishlist-empty-actions">
+                  <Link to="/shop" className="btn btn-primary">
+                    {t('wishlist.shopCta')}
+                  </Link>
+                  <Link to="/repair" className="btn btn-outline">
+                    {t('wishlist.emptyRepairCta')}
+                  </Link>
+                </div>
               </motion.div>
             ) : (
               <motion.div

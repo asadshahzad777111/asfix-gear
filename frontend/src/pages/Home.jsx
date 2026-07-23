@@ -9,6 +9,7 @@ import CollectionGrid from '../components/home/CollectionGrid';
 import BrandGrid from '../components/home/BrandGrid';
 import ProductCarousel from '../components/home/ProductCarousel';
 import LocationSection from '../components/LocationSection';
+import HomeRepairBand from '../components/home/HomeRepairBand';
 import Testimonials from '../components/Testimonials';
 import ConnectReveal from '../components/motion/ConnectReveal';
 import TextParticle from '../components/motion/TextParticle';
@@ -108,6 +109,8 @@ export default function Home() {
           />
         </>
       )}
+
+      <HomeRepairBand />
 
       <section
         className="home-section home-reviews"

@@ -5458,11 +5458,15 @@ body.modal-open .guest-welcome-banner {
 
 .account-empty {
   text-align: center;
-  padding: 1.5rem 0;
+  padding: 1.75rem 0.75rem 2rem;
+  max-width: 26rem;
+  margin: 0 auto;
 }
 
 .account-empty p {
   margin-bottom: 1rem;
+  color: var(--text-muted);
+  line-height: 1.5;
 }
 
 .account-order-stats {
