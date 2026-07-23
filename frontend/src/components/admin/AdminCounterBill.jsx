@@ -33,10 +33,10 @@ const RECEIPT_SITE_URL = `https://${RECEIPT_SITE}`;
 const THERMAL_PAGE_STYLE_ID = 'thermal-page-size';
 const PRINT_ROOT_ID = 'counter-receipt-print-root';
 
-async function buildWebsiteQrDataUrl(size = 320) {
+async function buildWebsiteQrDataUrl(size = 280) {
   return QRCode.toDataURL(RECEIPT_SITE_URL, {
     width: size,
-    margin: 2,
+    margin: 1,
     errorCorrectionLevel: 'M',
     color: { dark: '#000000', light: '#FFFFFF' },
   });
@@ -223,7 +223,7 @@ function bytesToBase64(bytes) {
 /**
  * Full-width ESC/POS receipt for laptop, native AsFix app, and remote stations.
  * QR uses Zijiang/vendor ESC Z (from 58mm kit SDK) — Epson GS (k is ignored on these clones.
- * Mag 6 @ 58mm / 8 @ 80mm matches PrinterCommand.getBarCommand demo sizing.
+ * Mag 12 @ 58mm / 14 @ 80mm — large scannable QR within ~384-dot roll.
  */
 export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
   if (!order || typeof TextEncoder === 'undefined' || typeof btoa !== 'function') return '';
@@ -237,15 +237,17 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
 
   push(0x1b, 0x40); // ESC @
   push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm / ~32 cols @ 384 dots)
-  /* Tight leading — readable, not wastefully tall (~30 default; 42 was too airy) */
-  push(0x1b, 0x33, 34);
+  /* Compact leading — save paper around rules / totals */
+  push(0x1b, 0x33, 28);
+  /* Top feed so double-H brand “AS FIX & GEAR” is not clipped by cutter/head */
+  push(0x1b, 0x4a, 48);
   for (const line of lines) {
     if (line.qr) {
       const qr = encoder.encode(line.value || RECEIPT_SITE_URL);
       const version = 0;
       const ecc = 3; /* vendor max 0–3 */
-      /* QR a bit larger for scan; still fits 58mm without huge quiet zone */
-      const mag = width === '80mm' ? 10 : 8;
+      /* Large QR for scan; mag 12 ≈ wide on 58mm without overflowing 384 dots */
+      const mag = width === '80mm' ? 14 : 12;
       push(0x1b, 0x61, 0x01); // center
       /* ESC Z nVersion nEcc nMag nL nH data — Zijiang BT-POS / 58mm kit */
       push(0x1b, 0x5a, version, ecc, mag, qr.length & 0xff, (qr.length >> 8) & 0xff);
@@ -267,10 +269,7 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
     push(0x1d, 0x21, size);
     text(line.value);
     push(0x0a);
-    /* Section breath only after rules — no extra blank after every title/total */
-    if (line.rule) {
-      push(0x0a);
-    }
+    /* No extra blank after dashed rules — keep receipt short */
     push(0x1d, 0x21, 0x00);
     push(0x1b, 0x45, 0x00);
   }
@@ -320,12 +319,10 @@ function buildMateThermalMarkup(order) {
     const format = line.grand ? '1' : line.title ? '3' : '0';
     return `<${bold}${align}${format}>${text}`;
   });
-  parts.push('<010> ');
   parts.push('<110>Scan');
-  /* Mate QR: align#moduleSize#payload — match ESC/PNG mag bump */
-  parts.push(`<QR>1#8#${RECEIPT_SITE_URL}`);
+  /* Mate QR: align#moduleSize#payload — match ESC/PNG large QR */
+  parts.push(`<QR>1#12#${RECEIPT_SITE_URL}`);
   parts.push(`<110>${RECEIPT_SITE}`);
-  parts.push('<010> ');
   return parts.join('');
 }
 
@@ -387,18 +384,21 @@ function approximatePdfTextWidth(value, size) {
   return String(value ?? '').length * size * 0.56;
 }
 
+const RECEIPT_MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
+
 /** Shared receipt lines — tall glyphs, fewer cols so letters stay large. */
 function shortReceiptDateParts(order) {
   if (!order?.created_at) return { date: '-', time: '-' };
   const d = new Date(order.created_at);
   if (Number.isNaN(d.getTime())) return { date: '-', time: '-' };
-  const dd = String(d.getDate()).padStart(2, '0');
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const yy = String(d.getFullYear()).slice(-2);
+  const day = String(d.getDate()).padStart(2, '0');
+  const mon = RECEIPT_MONTHS[d.getMonth()] || 'JAN';
+  const year = String(d.getFullYear());
   const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
   return {
-    date: `${dd}/${mm}/${yy}`,
+    /* Unique POS style: 26 JUL 2026 (not 23/07/26) */
+    date: `${day} ${mon} ${year}`,
     time: `${hh}:${mi}`,
   };
 }
@@ -462,8 +462,7 @@ function buildReceiptLines(order, maxChars = 18) {
   /* Separate Date / Time so HH:mm never truncates (was showing 10:5) */
   kv('Date', billDate);
   kv('Time', billTime);
-  /* Let kv() fit to maxChars — do not hard-slice (32-col ESC/POS needs full "Walk-in Customer") */
-  kv('Staff', order?.created_by_staff_name || 'Counter');
+  /* No Staff line — Bill / Date / Time / Pay / Customer only */
   kv('Pay', paymentLabel(order?.payment_mode));
   kv('Customer', order?.customer_name || 'Walk-in');
   if (order?.phone) kv('Phone', String(order.phone));
@@ -491,15 +490,14 @@ function buildReceiptLines(order, maxChars = 18) {
   money('Subtotal', subtotal);
   if (discount) money('Discount', discount);
   rule();
-  push('TOTAL AMOUNT', { align: 'center', weight: 'bold', totalLabel: true });
-  push(thermalAmountText(grandTotal), { align: 'center', weight: 'bold', grand: true });
+  /* Same layout as Subtotal: label left, amount right on one row */
+  money('TOTAL AMOUNT', grandTotal, { weight: 'bold', grand: true });
   const note = counterPaymentNote(order);
   if (note) wrap(`Note: ${note}`, { small: true });
   rule();
   push('Thank You', { align: 'center', weight: 'bold' });
   push(RECEIPT_SITE, { align: 'center', weight: 'bold', small: true });
-  rule();
-  /* Proportional to body — not a second title */
+  /* Proportional to body — not a second title; no extra rule before QR */
   push('Scan', { align: 'center', small: true });
   push(RECEIPT_SITE_URL, { align: 'center', qr: true });
   return lines;
@@ -507,7 +505,7 @@ function buildReceiptLines(order, maxChars = 18) {
 
 /**
  * Thermal PNG for Direct Print / share (384 dots @ 58mm, 576 @ 80mm).
- * Fill-only glyphs, safe side margins, QR sized like ESC Z mag 6/8.
+ * Fill-only glyphs, safe side margins, QR sized like ESC Z mag 12/14.
  */
 export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
@@ -516,7 +514,9 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const widthPx = printerDots;
   /* Extra side pad so Windows POS-58 driver margins do not crop Bill#/prices */
   const padX = pageWidth === '80mm' ? 28 : 22;
-  const padY = 10;
+  /* Extra top pad so double-tall brand is not clipped; short bottom */
+  const padTop = 22;
+  const padBottom = 8;
   const maxChars = pageWidth === '80mm' ? 42 : 28;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
@@ -550,8 +550,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
 
   const lineSize = (line) => {
     /* Body/pixel density unchanged; shop header slightly taller only */
-    if (line.grand) return Math.round(fontSize * 1.28);
-    if (line.totalLabel) return Math.round(fontSize * 1.08);
+    if (line.grand) return Math.round(fontSize * 1.22);
     if (line.shopHeader) return Math.round(fontSize * 1.34);
     if (line.title) return Math.round(fontSize * 1.15);
     if (line.small) return Math.max(11, Math.round(fontSize * 0.88));
@@ -612,14 +611,14 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return chunks.length ? chunks : [''];
   };
 
-  /* Compact leading — readable, shorter receipt (1.42 was wastefully tall) */
-  const lineHFor = (size) => Math.ceil(size * 1.22);
-  const ruleH = Math.ceil(fontSize * 0.7);
+  /* Compact leading — less paper waste around items / separators */
+  const lineHFor = (size) => Math.ceil(size * 1.1);
+  const ruleH = Math.ceil(fontSize * 0.55);
   /*
-   * QR: match ESC Z mag (8 @ 58mm / 10 @ 80mm). Small quiet zone, fill usable width.
+   * QR: match ESC Z mag (12 @ 58mm / 14 @ 80mm). Near-full usable width.
    * Mag N ≈ N dots per module; version auto for https://asfixgear.com.
    */
-  const qrMag = pageWidth === '80mm' ? 10 : 8;
+  const qrMag = pageWidth === '80mm' ? 14 : 12;
   const qrMarginModules = 1;
   let qrModules = 29;
   try {
@@ -629,26 +628,25 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     /* keep default */
   }
   const qrSize = (qrModules + qrMarginModules * 2) * qrMag;
-  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.95));
+  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.98));
 
-  let heightPx = padY * 2 + 6;
+  let heightPx = padTop + padBottom + 4;
   lines.forEach((line) => {
     if (line.rule) {
-      heightPx += ruleH + 6;
+      heightPx += ruleH + 3;
       return;
     }
     if (line.qr) {
-      heightPx += qrDrawSize + 10;
+      heightPx += qrDrawSize + 6;
       return;
     }
     const size = lineSize(line);
     const lh = lineHFor(size);
     if (line.columns) {
-      heightPx += lh + 1;
+      heightPx += lh;
     } else {
       heightPx += chunkAtSize(line.value, size, isHeavy(line)).length * lh;
-      if (line.shopHeader) heightPx += 3;
-      else if (line.grand || line.title) heightPx += 2;
+      if (line.shopHeader) heightPx += 2;
     }
   });
 
@@ -705,21 +703,18 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     ctx.restore();
   };
 
-  let y = padY;
+  let y = padTop;
   for (const line of lines) {
     if (line.rule) {
-      y += 2;
       drawRuleLine(y);
-      y += ruleH + 4;
+      y += ruleH + 3;
       continue;
     }
 
     if (line.qr) {
-      /* "Scan" is its own line already; if missing, still leave proportional gap */
       const qrX = Math.round((widthPx - qrDrawSize) / 2);
-      y += 2;
       await drawCrispQr(line.value || RECEIPT_SITE_URL, qrX, y, qrDrawSize);
-      y += qrDrawSize + 6;
+      y += qrDrawSize + 4;
       continue;
     }
 
@@ -745,7 +740,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       }
       drawText(left, padX, y, size, 'left', heavy);
       drawText(right, widthPx - padX, y, size, 'right', heavy);
-      y += lh + 1;
+      y += lh;
     } else {
       const align = line.align === 'center' ? 'center' : line.align === 'right' ? 'right' : 'left';
       const anchor = align === 'center'
@@ -758,8 +753,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
         drawText(chunk, anchor, y, size, align, heavy);
         y += lh;
       });
-      if (line.shopHeader) y += 3;
-      else if (line.grand || line.title) y += 2;
+      if (line.shopHeader) y += 2;
     }
   }
 
@@ -784,7 +778,7 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const width = pdfPointsFromMillimeters(widthMm);
   /* Near-zero margins — content must span the full MediaBox */
   const marginX = pdfPointsFromMillimeters(0.8);
-  const marginTop = pdfPointsFromMillimeters(1.2);
+  const marginTop = pdfPointsFromMillimeters(2.5);
   const marginBottom = pdfPointsFromMillimeters(1.2);
   const maxChars = pageWidth === '80mm' ? 26 : 18;
   const bodySize = pageWidth === '80mm' ? 13 : 12;
@@ -794,21 +788,19 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
     .map((line) => ({
       value: line.value,
       size: line.grand
-        ? bodySize + 8
-        : line.totalLabel
-          ? bodySize + 2
-          : line.title
-            ? bodySize + 3
-            : line.small
-              ? bodySize - 0.5
-              : bodySize,
+        ? bodySize + 4
+        : line.title
+          ? bodySize + 3
+          : line.small
+            ? bodySize - 0.5
+            : bodySize,
       leading: line.grand
-        ? bodyLeading + 10
-        : line.totalLabel || line.title
-          ? bodyLeading + 3
+        ? bodyLeading + 4
+        : line.title
+          ? bodyLeading + 2
           : bodyLeading,
       align: line.align || 'left',
-      font: line.weight === 'bold' || line.title || line.grand || line.totalLabel ? 'F2' : 'F1',
+      font: line.weight === 'bold' || line.title || line.grand ? 'F2' : 'F1',
     }));
 
   /* Content-fit only — never pad to roll length / fixed tall page */
@@ -992,40 +984,39 @@ html, body {
   height: auto !important;
   min-height: 0 !important;
   margin: 0 !important;
-  padding: 3mm 2.5mm 2.5mm !important;
+  padding: 5mm 2.5mm 2mm !important;
   font-family: "Courier New", Courier, monospace !important;
   font-size: 14px !important;
   font-weight: 400 !important;
-  line-height: 1.65 !important;
+  line-height: 1.28 !important;
   letter-spacing: 0.04em !important;
   page-break-after: avoid !important;
   page-break-inside: avoid !important;
 }
-.r-shop { text-align: center; margin-bottom: 8px; }
-.r-shop h1 { margin: 0 0 4px; font-size: 17px; font-weight: 700; letter-spacing: 0.08em; }
-.r-shop .r-bill { margin: 0 0 6px; font-size: 15px; font-weight: 700; letter-spacing: 0.1em; }
-.r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
-.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 4px 8px; margin: 8px 0; font-size: 13px; font-weight: 400; }
+.r-shop { text-align: center; margin-bottom: 3px; }
+.r-shop h1 { margin: 0 0 2px; font-size: 17px; font-weight: 700; letter-spacing: 0.08em; }
+.r-shop .r-bill { margin: 0 0 3px; font-size: 15px; font-weight: 700; letter-spacing: 0.1em; }
+.r-shop p { margin: 1px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; margin: 3px 0; font-size: 13px; font-weight: 400; }
 .r-meta span:last-child { text-align: right; }
-.r-rule { border: 0; border-top: 1px dashed #000; margin: 8px 0; }
-.r-item { margin: 0 0 8px; }
+.r-rule { border: 0; border-top: 1px dashed #000; margin: 3px 0; }
+.r-item { margin: 0 0 2px; }
 .r-item strong { display: block; font-size: 13px; font-weight: 400; letter-spacing: 0.04em; }
 .r-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 400; }
-.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 4px 8px; font-size: 13px; font-weight: 400; }
+.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; font-size: 13px; font-weight: 400; }
 .r-totals > * { min-width: 0; }
 .r-totals strong { text-align: right; white-space: nowrap; font-weight: 400; }
-.r-grand-wrap { text-align: center; margin: 10px 0 6px; }
-.r-grand-label { display: block; font-size: 14px; font-weight: 700; letter-spacing: 0.08em; }
-.r-grand { display: block; font-size: 20px; font-weight: 700; letter-spacing: 0.08em; margin-top: 4px; }
-.r-thanks, .r-site { text-align: center; margin: 6px 0 0; font-size: 12px; font-weight: 400; }
-.r-scan { text-align: center; margin: 8px 0 4px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
-.r-qr { display: block; width: 54%; max-width: 54%; height: auto; margin: 4px auto 0; }
+.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; align-items: baseline; margin: 2px 0; }
+.r-grand-label { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; }
+.r-grand { font-size: 16px; font-weight: 700; letter-spacing: 0.04em; text-align: right; white-space: nowrap; }
+.r-thanks, .r-site { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 400; }
+.r-scan { text-align: center; margin: 3px 0 2px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-qr { display: block; width: 84%; max-width: 84%; height: auto; margin: 2px auto 0; }
 `.trim();
 
   const qrBlock = qrDataUrl
-    ? `<hr class="r-rule" />
-  <p class="r-scan">Scan</p>
-  <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="160" height="160" />`
+    ? `<p class="r-scan">Scan</p>
+  <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="240" height="240" />`
     : '';
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
@@ -1045,7 +1036,6 @@ html, body {
     <span>Bill</span><span>${escapeHtml(receiptNumber(order))}</span>
     <span>Date</span><span>${escapeHtml(order?.created_at ? shortReceiptDateParts(order).date : '-')}</span>
     <span>Time</span><span>${escapeHtml(order?.created_at ? shortReceiptDateParts(order).time : '-')}</span>
-    <span>Staff</span><span>${escapeHtml(order?.created_by_staff_name || 'Counter')}</span>
     <span>Pay</span><span>${escapeHtml(paymentLabel(order?.payment_mode))}${paymentNote ? ` (${escapeHtml(paymentNote)})` : ''}</span>
     <span>Customer</span><span>${escapeHtml(order?.customer_name || 'Walk-in')}</span>
     ${order?.phone ? `<span>Phone</span><span>${escapeHtml(String(order.phone))}</span>` : ''}
@@ -1058,7 +1048,7 @@ html, body {
     ${discount ? `<span>Discount</span><strong>${escapeHtml(thermalAmountText(discount))}</strong>` : ''}
   </div>
   <hr class="r-rule" />
-  <div class="r-grand-wrap">
+  <div class="r-grand-row">
     <span class="r-grand-label">TOTAL AMOUNT</span>
     <strong class="r-grand">${escapeHtml(thermalAmountText(grandTotal))}</strong>
   </div>
@@ -1477,7 +1467,7 @@ export async function printActiveCounterReceipt({
     const width = normalizeThermalWidth(thermalWidth);
     let qrDataUrl = '';
     try {
-      qrDataUrl = await buildWebsiteQrDataUrl(160);
+      qrDataUrl = await buildWebsiteQrDataUrl(280);
     } catch {
       qrDataUrl = '';
     }
@@ -1590,8 +1580,7 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
       </div>
       <div className="counter-bill-print__meta">
         <span>{t('admin.counterBillNo')}: {order.order_id || order.id}</span>
-        <span>{t('admin.counterBillDate')}: {order.created_at ? new Date(order.created_at).toLocaleString() : '-'}</span>
-        <span>{t('admin.counterBillStaff')}: {order.created_by_staff_name || 'Counter staff'}</span>
+        <span>{t('admin.counterBillDate')}: {order.created_at ? shortReceiptDate(order) : '-'}</span>
         <span>
           {t('admin.counterBillPayment')}: {paymentLabel(order.payment_mode)}
           {paymentNote ? ` (${paymentNote})` : ''}
