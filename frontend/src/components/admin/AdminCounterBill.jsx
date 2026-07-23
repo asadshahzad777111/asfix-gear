@@ -1909,6 +1909,7 @@ export default function AdminCounterBill({
   const [rateDrafts, setRateDrafts] = useState({});
   const sellRateRefs = useRef({});
   const cashReceivedRef = useRef(null);
+  const [dockFocus, setDockFocus] = useState(null); /* search | discount | customer | null */
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [receiptOrder, setReceiptOrder] = useState(null);
@@ -1926,6 +1927,37 @@ export default function AdminCounterBill({
       cancelled = true;
     };
   }, [nativePos]);
+
+  /* Lift POS dock above Android/iOS keyboard so Search/Discount/Customer stay usable */
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof document === 'undefined') return undefined;
+    const root = document.documentElement;
+    const sync = () => {
+      const vv = window.visualViewport;
+      let inset = 0;
+      if (vv) {
+        inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+      }
+      root.style.setProperty('--pos-vv-bottom', `${inset}px`);
+      root.classList.toggle('pos-keyboard-open', inset > 72);
+    };
+    sync();
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', sync);
+    vv?.addEventListener('scroll', sync);
+    window.addEventListener('resize', sync);
+    document.addEventListener('focusin', sync);
+    document.addEventListener('focusout', sync);
+    return () => {
+      vv?.removeEventListener('resize', sync);
+      vv?.removeEventListener('scroll', sync);
+      window.removeEventListener('resize', sync);
+      document.removeEventListener('focusin', sync);
+      document.removeEventListener('focusout', sync);
+      root.style.removeProperty('--pos-vv-bottom');
+      root.classList.remove('pos-keyboard-open');
+    };
+  }, []);
 
   const refreshNativePrinters = useCallback(async () => {
     if (!nativePos) return;
@@ -2279,10 +2311,11 @@ export default function AdminCounterBill({
 
   const jumpToSearch = useCallback(() => {
     setProductPanelCollapsed(false);
+    setDockFocus('search');
     window.setTimeout(() => {
       document.getElementById('counter-bill-search')?.scrollIntoView({
         behavior: 'smooth',
-        block: 'center',
+        block: 'start',
       });
       try {
         searchRef.current?.focus();
@@ -2294,6 +2327,7 @@ export default function AdminCounterBill({
   }, []);
 
   const jumpToDiscount = useCallback(() => {
+    setDockFocus('discount');
     window.setTimeout(() => {
       document.getElementById('counter-bill-discount')?.scrollIntoView({
         behavior: 'smooth',
@@ -2305,6 +2339,7 @@ export default function AdminCounterBill({
 
   const jumpToCustomer = useCallback(() => {
     setShowCustomerDetails(true);
+    setDockFocus('customer');
     window.setTimeout(() => {
       document.getElementById('counter-bill-customer')?.scrollIntoView({
         behavior: 'smooth',
@@ -2837,8 +2872,14 @@ export default function AdminCounterBill({
                 type="search"
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => setSearchFocused(true)}
-                onBlur={() => setSearchFocused(false)}
+                onFocus={() => {
+                  setSearchFocused(true);
+                  setDockFocus('search');
+                }}
+                onBlur={() => {
+                  setSearchFocused(false);
+                  setDockFocus((cur) => (cur === 'search' ? null : cur));
+                }}
                 onKeyDown={handleSearchKeyDown}
                 placeholder={t('admin.counterBillSearchPh')}
                 autoComplete="off"
@@ -3476,21 +3517,21 @@ export default function AdminCounterBill({
               <>
                 <button
                   type="button"
-                  className="counter-bill__pos-dock-jump"
+                  className={`counter-bill__pos-dock-jump${dockFocus === 'search' ? ' counter-bill__pos-dock-jump--active' : ''}`}
                   onClick={jumpToSearch}
                 >
                   {t('admin.counterBillSearch')}
                 </button>
                 <button
                   type="button"
-                  className="counter-bill__pos-dock-jump"
+                  className={`counter-bill__pos-dock-jump${dockFocus === 'discount' ? ' counter-bill__pos-dock-jump--active' : ''}`}
                   onClick={jumpToDiscount}
                 >
                   {t('admin.counterBillToolbarDiscount')}
                 </button>
                 <button
                   type="button"
-                  className="counter-bill__pos-dock-jump"
+                  className={`counter-bill__pos-dock-jump${dockFocus === 'customer' ? ' counter-bill__pos-dock-jump--active' : ''}`}
                   onClick={jumpToCustomer}
                 >
                   {t('admin.counterBillToolbarCustomer')}

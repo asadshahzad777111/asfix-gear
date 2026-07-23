@@ -849,7 +849,7 @@
 
 .counter-bill__search-wrap {
   position: relative;
-  z-index: 20;
+  z-index: 40;
 }
 
 .counter-bill__search {
@@ -898,15 +898,33 @@
   top: calc(100% + 0.3rem);
   left: 0;
   right: 0;
-  z-index: 30;
+  z-index: 50;
   display: grid;
-  max-height: min(340px, 50vh);
+  max-height: min(340px, 46vh);
+  overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   border: 1px solid var(--pos-border-strong);
   border-radius: var(--pos-radius);
   background: var(--pos-surface-2);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.5);
   -webkit-overflow-scrolling: touch;
+  /* Leave room above lifted dock + keyboard */
+  margin-bottom: calc(0.5rem + var(--pos-vv-bottom, 0px));
+}
+
+html.pos-keyboard-open .counter-bill__search-results {
+  max-height: min(280px, calc(100dvh - var(--pos-vv-bottom, 0px) - 11rem));
+}
+
+html.pos-keyboard-open .counter-bill__customer,
+html.pos-keyboard-open #counter-bill-discount {
+  scroll-margin-bottom: calc(5.5rem + var(--pos-vv-bottom, 0px));
+}
+
+html.pos-keyboard-open #counter-bill-search {
+  scroll-margin-top: 0.5rem;
+  scroll-margin-bottom: calc(5.5rem + var(--pos-vv-bottom, 0px));
 }
 
 .counter-bill__search-option {
@@ -2018,7 +2036,7 @@
   position: fixed;
   left: max(0.55rem, env(safe-area-inset-left, 0px));
   right: max(0.55rem, env(safe-area-inset-right, 0px));
-  bottom: max(0.55rem, env(safe-area-inset-bottom, 0px));
+  bottom: calc(max(0.55rem, env(safe-area-inset-bottom, 0px)) + var(--pos-vv-bottom, 0px));
   z-index: 1200;
   display: grid;
   grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.95fr) auto auto;
@@ -2033,6 +2051,7 @@
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
   pointer-events: auto;
+  transition: bottom 0.12s ease-out;
 }
 
 .counter-bill__pos-dock--cart {
@@ -2057,6 +2076,13 @@
 .counter-bill__pos-dock-jump:hover {
   border-color: var(--pos-accent);
   color: var(--pos-accent);
+}
+
+.counter-bill__pos-dock-jump--active {
+  border-color: var(--pos-accent);
+  color: var(--pos-accent);
+  background: color-mix(in srgb, var(--pos-accent) 12%, var(--pos-surface-2));
+  box-shadow: 0 0 0 2px var(--pos-accent-soft);
 }
 
 .counter-bill__pos-dock--tucked {
