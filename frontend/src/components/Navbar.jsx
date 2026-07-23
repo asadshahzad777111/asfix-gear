@@ -354,6 +354,12 @@ export default function Navbar() {
             <NavLink to="/contact" className={({ isActive }) => `dx-nav-link${isActive ? ' is-active' : ''}`}>
               {t('nav.contact')}
             </NavLink>
+            <NavLink
+              to="/download"
+              className={({ isActive }) => `dx-nav-link dx-nav-link--download${isActive ? ' is-active' : ''}`}
+            >
+              {t('nav.downloadApp')}
+            </NavLink>
             {isCustomer ? (
               <NavLink
                 to="/account"
@@ -637,6 +643,7 @@ export default function Navbar() {
                         onClick={closeMenu}
                       />
                       <NavDrawerLink to="/contact" icon="💬" label={t('nav.contact')} onClick={closeMenu} />
+                      <NavDrawerLink to="/download" icon="⬇️" label={t('nav.downloadApp')} onClick={closeMenu} />
                     </div>
 
                     <span className="nav-drawer-section-label">{t('nav.accountSection')}</span>

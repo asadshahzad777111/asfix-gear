@@ -25,6 +25,9 @@ export default function Footer() {
             <Link to="/shop" className="btn btn-outline btn-sm">
               {t('common.accessoriesShop')}
             </Link>
+            <Link to="/download" className="btn btn-outline btn-sm">
+              {t('footer.downloadApp')}
+            </Link>
           </div>
         </div>
       </div>

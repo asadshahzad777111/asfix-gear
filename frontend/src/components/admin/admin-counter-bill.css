@@ -865,13 +865,17 @@
 .counter-bill__customer input,
 .counter-bill__cash-box input,
 .counter-bill__note input,
-.counter-bill__qty-stepper input {
+.counter-bill__qty-stepper input,
+.counter-bill__cart-rate-label input,
+.counter-bill__discount-box input {
   width: 100%;
   min-height: 42px;
   border: 1px solid var(--pos-border-strong);
   border-radius: var(--pos-radius-sm);
   padding: 0.45rem 0.65rem;
   font: inherit;
+  /* ≥16px prevents iOS/Android focus zoom that shoves the dock into the keyboard */
+  font-size: 16px;
   background: var(--pos-bg);
   color: var(--pos-text);
   outline: none;
@@ -1192,7 +1196,7 @@ html.pos-keyboard-open #counter-bill-search {
   background: var(--pos-surface-2);
   color: var(--pos-text);
   font: inherit;
-  font-size: 1.05rem;
+  font-size: 16px;
   font-weight: 800;
   padding: 0.35rem 0.5rem;
   font-variant-numeric: tabular-nums;

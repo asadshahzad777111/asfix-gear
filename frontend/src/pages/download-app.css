@@ -7,7 +7,7 @@
 }
 
 .download-app__inner {
-  max-width: 34rem;
+  max-width: 36rem;
 }
 
 .download-app__eyebrow {
@@ -32,6 +32,35 @@
   color: var(--muted, #b0b8c0);
 }
 
+.download-app__card {
+  margin: 0 0 1rem;
+  padding: 1rem 1.1rem;
+  border-radius: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.download-app__card h2 {
+  margin: 0 0 0.45rem;
+  font-size: 1.05rem;
+  color: var(--text, #f4f4f5);
+}
+
+.download-app__card p {
+  margin: 0 0 0.85rem;
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--muted, #c5ccd3);
+}
+
+.download-app__card--android {
+  border-color: rgba(232, 93, 4, 0.35);
+}
+
+.download-app__card--ios {
+  border-color: rgba(96, 165, 250, 0.35);
+}
+
 .download-app__cta {
   display: inline-flex;
   min-height: 48px;
@@ -39,8 +68,27 @@
   font-weight: 700;
 }
 
+.download-app__steps {
+  margin: 0 0 0.75rem;
+  padding-left: 1.2rem;
+  font-size: 0.9rem;
+  line-height: 1.55;
+  color: var(--muted, #c5ccd3);
+}
+
+.download-app__platform-note {
+  margin: 0.75rem 0 0;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  color: var(--muted, #9aa3ad);
+}
+
+.download-app__platform-note--accent {
+  color: #93c5fd;
+}
+
 .download-app__notice {
-  margin-top: 1.75rem;
+  margin-top: 1.25rem;
   padding: 1rem 1.1rem;
   border-radius: 12px;
   border: 1px solid rgba(232, 93, 4, 0.35);
