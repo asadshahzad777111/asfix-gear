@@ -2926,7 +2926,8 @@ export default function AdminCounterBill({
                 const unit = lineUnitPrice(line);
                 const stock = Number(line.product.stock) || 1;
                 const cost = Math.max(0, Number(line.product.cost_price) || 0);
-                const rateWarnLow = unit < actual || (cost > 0 && unit < cost);
+                const rateWarnBelowList = actual > 0 && unit < actual;
+                const rateWarnBelowCost = cost > 0 && unit < cost;
                 const rateWarnHigh = actual > 0 && unit > actual;
                 const isFocused = focusedLineId === line.product.id;
                 const rateDraft = rateDrafts[line.product.id];
@@ -2985,10 +2986,22 @@ export default function AdminCounterBill({
                           aria-label={`${line.product.name} ${t('admin.counterBillSellRate')}`}
                         />
                       </label>
-                      <small className="counter-bill__cart-actual">
-                        {t('admin.counterBillActualPrice', { price: formatPrice(actual) })}
-                      </small>
-                      {rateWarnLow ? (
+                      <div className="counter-bill__cart-refs">
+                        <small className="counter-bill__cart-actual">
+                          {t('admin.counterBillActualPrice', { price: formatPrice(actual) })}
+                        </small>
+                        <small className="counter-bill__cart-cost">
+                          {t('admin.counterBillCostPrice', {
+                            price: cost > 0 ? formatPrice(cost) : t('admin.counterBillCostUnset'),
+                          })}
+                        </small>
+                      </div>
+                      {rateWarnBelowCost ? (
+                        <small className="counter-bill__cart-rate-warn counter-bill__cart-rate-warn--cost">
+                          {t('admin.counterBillRateBelowCostWarn')}
+                        </small>
+                      ) : null}
+                      {rateWarnBelowList && !rateWarnBelowCost ? (
                         <small className="counter-bill__cart-rate-warn">{t('admin.counterBillRateLowWarn')}</small>
                       ) : null}
                       {rateWarnHigh ? (

@@ -1176,19 +1176,34 @@
   border-color: var(--pos-accent);
 }
 
-.counter-bill__cart-actual {
+.counter-bill__cart-refs {
+  display: grid;
+  gap: 0.12rem;
+  margin-top: 0.2rem;
+}
+
+.counter-bill__cart-actual,
+.counter-bill__cart-cost {
   display: block;
   color: var(--pos-muted);
   font-size: 0.78rem;
   font-weight: 600;
-  margin-top: 0.1rem;
   line-height: 1.35;
+}
+
+.counter-bill__cart-cost {
+  color: #64748b;
 }
 
 .counter-bill__cart-rate-warn {
   color: #c45c00 !important;
   font-size: 0.72rem;
   font-weight: 600;
+}
+
+.counter-bill__cart-rate-warn--cost {
+  color: #b91c1c !important;
+  font-weight: 700;
 }
 
 .counter-bill__cart-rate-warn--high {
