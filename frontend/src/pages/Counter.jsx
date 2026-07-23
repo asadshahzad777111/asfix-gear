@@ -37,6 +37,9 @@ const DEFAULT_POS_SETTINGS = {
   posDiscountMaxAmountWithoutPin: 500,
 };
 
+/** Hosted on Vercel from frontend/public/downloads/AsFix-POS.apk */
+const POS_APK_HREF = '/downloads/AsFix-POS.apk';
+
 export default function Counter() {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
@@ -354,6 +357,31 @@ export default function Counter() {
             </div>
           </div>
         </div>
+
+        {nativePos ? (
+          <p className="counter-pos-apk-installed" role="status">
+            {t('counter.downloadPosApkInstalled')}
+          </p>
+        ) : (
+          <div
+            className={`counter-pos-download-bar${isAndroid ? ' counter-pos-download-bar--android' : ''}`}
+            role="region"
+            aria-label={t('counter.downloadPosApk')}
+          >
+            <div className="counter-pos-download-bar__copy">
+              <strong>{t('counter.downloadPosApk')}</strong>
+              <small>{t('counter.downloadPosApkHint')}</small>
+            </div>
+            <a
+              className="wp-button counter-pos-download-bar__cta"
+              href={POS_APK_HREF}
+              download="AsFix-POS.apk"
+              type="application/vnd.android.package-archive"
+            >
+              {t('counter.downloadPosApk')}
+            </a>
+          </div>
+        )}
 
         {bootstrapping && products.length === 0 ? (
           <div className="counter-boot">{t('common.loading')}</div>

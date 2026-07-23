@@ -680,7 +680,8 @@ export const translations = {
       mySalesToday: 'My Sales Today',
       noSales: 'No counter bills created today.',
       downloadPosApk: 'Download AsFix POS',
-      downloadPosApkHint: 'Second phone: open the APK link — do not rename to ZIP. Prefer Drive/USB/Nearby Share if WhatsApp fails.',
+      downloadPosApkHint: 'Do not send via WhatsApp — download here directly. Do not rename to ZIP.',
+      downloadPosApkInstalled: 'AsFix POS app installed',
     },
     sales: {
       tab: 'Sales & Profit',
@@ -2124,7 +2125,8 @@ export const translations = {
       mySalesToday: 'Aaj Meri Sales',
       noSales: 'Aaj abhi koi counter bill nahi bana.',
       downloadPosApk: 'AsFix POS download',
-      downloadPosApkHint: 'Dosra phone: APK link kholo — ZIP rename mat karo. WhatsApp fail ho to Drive/USB/Nearby Share use karo.',
+      downloadPosApkHint: 'WhatsApp se mat bhejo — yahan se direct download karo. ZIP rename mat karo.',
+      downloadPosApkInstalled: 'AsFix POS app installed',
     },
     sales: {
       tab: 'Sales & Profit',
