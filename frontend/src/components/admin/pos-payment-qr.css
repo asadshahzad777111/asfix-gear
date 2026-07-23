@@ -136,9 +136,12 @@
   min-height: 44px;
 }
 
-body.pos-modal-open .counter-bill__pos-dock {
+body.pos-modal-open .counter-bill__pos-dock,
+html.pos-modal-open .counter-bill__pos-dock {
   display: none !important;
+  visibility: hidden !important;
   pointer-events: none !important;
+  opacity: 0 !important;
 }
 
 @media (min-width: 720px) {

@@ -12,7 +12,7 @@ App id: `com.asfixgear.pos` · Name: **AsFix POS**
 | **Thermer** (`mate.bluetoothprint`) | Play Store | Yes from **Chrome** share/Intent only |
 | **BT-POSPrinter.apk** (seller ZIP) | Sideload from vendor pack | **No** — hardware demo only; not wired to asfixgear.com |
 
-Windows `PrinterDriver.exe` from the same ZIP is laptop-only; see [`docs/thermal-printer-windows.md`](../../docs/thermal-printer-windows.md). Do **not** commit vendor APKs/EXEs (`_ci_local/` is gitignored). The shop install APK lives at `frontend/public/downloads/AsFix-POS.apk` for https://asfixgear.com/downloads/AsFix-POS.apk.
+Windows `PrinterDriver.exe` from the same ZIP is laptop-only; see [`docs/thermal-printer-windows.md`](../../docs/thermal-printer-windows.md). Do **not** commit vendor APKs/EXEs (`_ci_local/` is gitignored). The shop install APK lives at `frontend/public/downloads/AsFix-POS.apk` for https://asfixgear.com/downloads/AsFix-POS.apk — offered **only on the POS / Counter page** for cashiers. The public `/download` page serves the storefront app (`asfix-gear.apk`) from [`mobile/asfix-web/`](../asfix-web/), not this POS APK.
 
 ## What this is / is not
 

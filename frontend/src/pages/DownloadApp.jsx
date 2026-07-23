@@ -3,7 +3,9 @@ import { useMemo } from 'react';
 import { useTranslation } from '../context/LanguageContext';
 import './download-app.css';
 
-const POS_APK_HREF = '/downloads/AsFix-POS.apk';
+/** Public storefront APK (loads asfixgear.com — not POS / cashier). */
+const STORE_APK_HREF = '/downloads/asfix-gear.apk';
+const STORE_APK_FILENAME = 'asfix-gear.apk';
 
 function detectPlatform() {
   if (typeof navigator === 'undefined') return 'other';
@@ -20,6 +22,16 @@ export default function DownloadApp() {
   return (
     <div className="download-app">
       <div className="container download-app__inner">
+        <div className="download-app__brand">
+          <img
+            className="download-app__logo"
+            src="/logo.png"
+            alt="AsFix & Gear"
+            width={72}
+            height={72}
+            decoding="async"
+          />
+        </div>
         <p className="download-app__eyebrow">{t('downloadApp.eyebrow')}</p>
         <h1 className="download-app__title">{t('downloadApp.title')}</h1>
         <p className="download-app__lead">{t('downloadApp.lead')}</p>
@@ -29,8 +41,8 @@ export default function DownloadApp() {
           <p>{t('downloadApp.androidLead')}</p>
           <a
             className="btn btn-primary download-app__cta"
-            href={POS_APK_HREF}
-            download="AsFix-POS.apk"
+            href={STORE_APK_HREF}
+            download={STORE_APK_FILENAME}
             type="application/vnd.android.package-archive"
           >
             {t('downloadApp.downloadCta')}
@@ -56,6 +68,11 @@ export default function DownloadApp() {
           ) : null}
         </section>
 
+        <section className="download-app__card download-app__card--laptop" aria-labelledby="download-laptop-title">
+          <h2 id="download-laptop-title">{t('downloadApp.laptopTitle')}</h2>
+          <p>{t('downloadApp.laptopLead')}</p>
+        </section>
+
         <div className="download-app__notice" role="note">
           <strong>{t('downloadApp.noticeTitle')}</strong>
           <p>{t('downloadApp.noticeBody')}</p>
@@ -70,8 +87,6 @@ export default function DownloadApp() {
 
         <p className="download-app__back">
           <Link to="/">{t('downloadApp.backHome')}</Link>
-          {' · '}
-          <Link to="/pos">{t('downloadApp.openPos')}</Link>
         </p>
       </div>
     </div>

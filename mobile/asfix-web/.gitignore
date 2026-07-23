@@ -1,0 +1,25 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+.env
+.env.*
+
+# Capacitor / Android
+android/app/build/
+android/build/
+android/.gradle/
+android/local.properties
+android/captures/
+android/.idea/
+android/*.iml
+android/app/*.keystore
+android/app/release/
+*.apk
+*.aab
+*.ap_
+*.dex
+.cxx/
+
+# Local overrides
+capacitor.config.local.json

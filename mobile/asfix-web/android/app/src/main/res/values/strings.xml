@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">AsFix &amp; Gear</string>
+    <string name="title_activity_main">AsFix &amp; Gear</string>
+    <string name="package_name">com.asfixgear.app</string>
+    <string name="custom_url_scheme">com.asfixgear.app</string>
+</resources>

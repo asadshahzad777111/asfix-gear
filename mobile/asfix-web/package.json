@@ -1,0 +1,21 @@
+{
+  "name": "asfix-web",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "AsFix & Gear — public storefront Capacitor Android shell (loads asfixgear.com)",
+  "scripts": {
+    "sync": "npx cap sync android",
+    "open": "npx cap open android",
+    "build:android": "npx cap sync android",
+    "build:apk": "npx cap sync android && cd android && .\\gradlew.bat assembleDebug",
+    "postinstall": "node ./scripts/ensure-www.js"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0"
+  }
+}
