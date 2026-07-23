@@ -615,15 +615,17 @@
 /* Trust — text strip, not card cluster */
 .home-trust {
   border-top: 1px solid var(--border);
-  padding: clamp(1.5rem, 4vw, 2.5rem) 0;
+  padding: clamp(0.85rem, 2.5vw, 1.5rem) 0;
 }
 
 .home-trust-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 0.75rem 2rem;
+  align-items: center;
+  gap: 0.5rem 2rem;
   justify-content: flex-start;
   border: none;
+  max-height: 5rem;
 }
 
 .home-trust-badge {
@@ -631,7 +633,8 @@
   align-items: center;
   gap: 0.55rem;
   min-height: 0;
-  padding: 0.35rem 0;
+  max-height: 2rem;
+  padding: 0.2rem 0;
   background: transparent !important;
   border: none !important;
   box-shadow: none !important;

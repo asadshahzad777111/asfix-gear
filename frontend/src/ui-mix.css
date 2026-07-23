@@ -85,16 +85,26 @@
 /* ── Trust strip polish ── */
 .home-trust-row {
   gap: 0.5rem 0;
-  padding: 0.85rem 1rem;
+  padding: 0.55rem 0.85rem;
   border-radius: var(--radius-lg, 14px);
   background: color-mix(in srgb, var(--bg-card) 88%, var(--mix-orange) 4%);
   border: 1px solid color-mix(in srgb, var(--border) 80%, var(--mix-orange) 20%);
+  align-items: center;
+  /* One row desktop; up to two compact rows on narrow phones */
+  max-height: 4.5rem;
+}
+
+@media (min-width: 600px) {
+  .home-trust-row {
+    max-height: 5.25rem;
+  }
 }
 
 .home-trust-badge {
   flex: 1 1 auto;
   min-width: 7.5rem;
-  padding: 0.35rem 0.75rem;
+  max-height: 2rem;
+  padding: 0.2rem 0.75rem;
   position: relative;
 }
 

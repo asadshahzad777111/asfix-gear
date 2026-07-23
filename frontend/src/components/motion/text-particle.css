@@ -12,13 +12,15 @@
   letter-spacing: inherit;
   text-transform: inherit;
   touch-action: manipulation;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .text-particle__canvas {
   display: block;
   width: 100%;
   height: 100%;
+  max-width: 100%;
+  max-height: 100%;
   pointer-events: none;
 }
 
@@ -38,37 +40,44 @@
   display: inline-block;
 }
 
-/* Trust strip labels — wide enough for full phrases */
+/* Trust strip labels — compact one-line bar slots */
 .home-trust-label.text-particle {
   display: inline-flex;
+  box-sizing: border-box;
   width: max-content;
-  min-width: 9.5rem;
+  max-width: 100%;
+  min-width: 8.5rem;
+  height: 1.55rem;
   min-height: 1.55rem;
-  height: auto;
-  padding: 0.1rem 0.15rem;
+  max-height: 1.75rem;
+  padding: 0.05rem 0.1rem;
   color: color-mix(in srgb, var(--primary) 88%, #fff 8%);
-  overflow: visible;
+  overflow: hidden;
 }
 
 @media (min-width: 769px) {
   .home-trust-label.text-particle {
-    min-width: 11rem;
-    min-height: 1.65rem;
+    min-width: 10rem;
+    height: 1.75rem;
+    min-height: 1.75rem;
+    max-height: 1.95rem;
   }
 }
 
 /* Collection category titles */
 .home-collection-overlay .text-particle {
   display: flex;
+  box-sizing: border-box;
   width: max-content;
   max-width: 100%;
   min-width: 6rem;
+  height: 1.7rem;
   min-height: 1.7rem;
-  height: auto;
+  max-height: 2.1rem;
   margin-bottom: 0.15rem;
   color: #fff;
   justify-content: flex-start;
-  overflow: visible;
+  overflow: hidden;
 }
 
 /* Marquee: clear static words while scrolling; particles on hover pause */
@@ -77,6 +86,7 @@
   display: inline-flex;
   align-items: center;
   min-height: 1.35rem;
+  max-height: 1.6rem;
 }
 
 .marquee-item__label {
@@ -95,10 +105,11 @@
   height: 100%;
   min-width: 0;
   min-height: 0;
+  max-height: 100%;
   opacity: 0;
   pointer-events: none;
   color: color-mix(in srgb, var(--primary) 92%, #fff);
-  overflow: visible;
+  overflow: hidden;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -112,19 +123,21 @@
   }
 }
 
-/* Section headings — full phrase, no side clipping */
+/* Section headings — full phrase, capped height (no viewport blow-up) */
 .section-title.text-particle,
 h2.text-particle.section-title {
   display: flex;
+  box-sizing: border-box;
   width: max-content;
   max-width: 100%;
   min-width: min(100%, 20rem);
+  height: clamp(2.25rem, 5.5vw, 3.1rem);
   min-height: clamp(2.25rem, 5.5vw, 3.1rem);
-  height: auto;
+  max-height: clamp(2.5rem, 6vw, 3.4rem);
   margin-left: auto;
   margin-right: auto;
   color: var(--text);
-  overflow: visible;
+  overflow: hidden;
 }
 
 .home-reviews .section-title.text-particle {

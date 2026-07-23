@@ -256,13 +256,24 @@ export default function TextParticle({
       rafRef.current = requestAnimationFrame(drawFrame);
     };
 
+    let lastLayoutKey = '';
+
     const rebuild = () => {
       if (disposed) return;
       const rect = wrap.getBoundingClientRect();
       const css = getComputedStyle(wrap);
       const dpr = Math.min(window.devicePixelRatio || 1, 2);
-      let width = Math.max(1, Math.ceil(rect.width));
-      let height = Math.max(1, Math.ceil(rect.height));
+      // Content-box only — using border-box + padding ratchets height via ResizeObserver
+      const padX = (Number.parseFloat(css.paddingLeft) || 0)
+        + (Number.parseFloat(css.paddingRight) || 0);
+      const padY = (Number.parseFloat(css.paddingTop) || 0)
+        + (Number.parseFloat(css.paddingBottom) || 0);
+      const borderX = (Number.parseFloat(css.borderLeftWidth) || 0)
+        + (Number.parseFloat(css.borderRightWidth) || 0);
+      const borderY = (Number.parseFloat(css.borderTopWidth) || 0)
+        + (Number.parseFloat(css.borderBottomWidth) || 0);
+      let width = Math.max(1, Math.ceil(rect.width - padX - borderX));
+      let height = Math.max(1, Math.ceil(rect.height - padY - borderY));
 
       // Layout not ready yet — retry shortly instead of sampling a tiny canvas
       if (width < MIN_LAYOUT_PX || height < 10) {
@@ -290,22 +301,37 @@ export default function TextParticle({
         const needed = Math.ceil(measure.measureText(drawText).width + PAD_X * 2);
         if (needed > width) {
           width = needed;
-          wrap.style.minWidth = `${needed}px`;
+          // minWidth is border-box; include pad/border so content area stays `needed`
+          wrap.style.minWidth = `${needed + padX + borderX}px`;
         }
       }
 
+      // Floor from font only — never grow from measured height (avoids RO feedback loops)
       if (!positioned) {
-        const minH = Math.max(height, Math.ceil(startSize * 1.15));
-        if (minH > height) {
-          height = minH;
-          wrap.style.minHeight = `${minH}px`;
+        const fontBasedH = Math.max(18, Math.ceil(startSize * 1.2));
+        if (height < fontBasedH) {
+          height = fontBasedH;
+          wrap.style.minHeight = `${fontBasedH + padY + borderY}px`;
         }
+        // Hard cap: canvas must not expand toward viewport height
+        const cssMaxH = Number.parseFloat(css.maxHeight);
+        const hardCap = Number.isFinite(cssMaxH) && cssMaxH > 0
+          ? Math.max(fontBasedH, Math.ceil(cssMaxH - padY - borderY))
+          : Math.max(40, Math.ceil(startSize * 3.25));
+        height = Math.min(height, hardCap);
       }
+
+      const layoutKey = `${width}x${height}@${dpr}`;
+      if (layoutKey === lastLayoutKey && particlesRef.current.length) {
+        return;
+      }
+      lastLayoutKey = layoutKey;
 
       canvas.width = Math.floor(width * dpr);
       canvas.height = Math.floor(height * dpr);
-      canvas.style.width = `${width}px`;
-      canvas.style.height = `${height}px`;
+      // Fill the content box — do not push parent larger than CSS allows
+      canvas.style.width = '100%';
+      canvas.style.height = '100%';
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
       colorRef.current = resolveCssColor(
