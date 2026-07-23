@@ -3,6 +3,13 @@ import { api } from '../../api/client';
 import { DEFAULT_PAYMENTS, mergePaymentSettings } from '../../config/payments';
 import { DEFAULT_DELIVERY, mergeDeliverySettings } from '../../config/delivery';
 import { DEFAULT_ADDRESS_SETTINGS, mergeAddressSettings } from '../../config/addressSettings';
+import {
+  DEFAULT_POS_PAYMENT_QR_CARDS,
+  formatPaymentDisplayNumber,
+  mergePosPaymentQrCards,
+} from '../../config/posPaymentQr';
+import PosPaymentQrPanel from './PosPaymentQrPanel';
+import { printPaymentQrSlip } from '../../utils/paymentQrPrint';
 
 const METHODS = [
   { id: 'jazzcash', title: 'JazzCash', fields: ['number', 'accountName'] },
@@ -40,6 +47,8 @@ export default function AdminPayments() {
   const [deliveryMsg, setDeliveryMsg] = useState('');
   const [addressMsg, setAddressMsg] = useState('');
   const [posMsg, setPosMsg] = useState('');
+  const [qrPanelOpen, setQrPanelOpen] = useState(false);
+  const [qrPrintBusy, setQrPrintBusy] = useState('');
 
   useEffect(() => {
     Promise.all([
@@ -133,7 +142,34 @@ export default function AdminPayments() {
 
   const resetDefaults = () => {
     if (!confirm('Reset all payment details to defaults?')) return;
-    setForm(mergePaymentSettings(DEFAULT_PAYMENTS));
+    setForm(mergePaymentSettings({
+      ...DEFAULT_PAYMENTS,
+      posQrCards: DEFAULT_POS_PAYMENT_QR_CARDS,
+    }));
+  };
+
+  const setQrCardField = (index, field, value) => {
+    setForm((prev) => {
+      const cards = mergePosPaymentQrCards(prev.posQrCards).map((c) => ({ ...c }));
+      if (!cards[index]) return prev;
+      cards[index] = { ...cards[index], [field]: value };
+      if (field === 'number' || field === 'iban') {
+        cards[index].payload = String(value || cards[index].payload || '').trim();
+      }
+      return { ...prev, posQrCards: cards };
+    });
+  };
+
+  const printQrCard = async (card) => {
+    setQrPrintBusy(card.id);
+    try {
+      const result = await printPaymentQrSlip(card, { thermalWidth: '58mm' });
+      if (!result?.ok) window.alert?.(result?.message || 'Print failed');
+    } catch (err) {
+      window.alert?.(err?.message || 'Print failed');
+    } finally {
+      setQrPrintBusy('');
+    }
   };
 
   if (loading) return <div className="wp-loading">Loading payments…</div>;
@@ -183,6 +219,85 @@ export default function AdminPayments() {
         </button>
       </div>
       {msg ? <p className="wp-payments-msg">{msg}</p> : null}
+
+      <div className="wp-postbox" style={{ marginTop: '1.5rem' }}>
+        <div className="wp-postbox-head">POS Payment QR slips (thermal)</div>
+        <div className="wp-postbox-body">
+          <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
+            Har number ka bada QR slip. Print pe account name upar <strong>STAFF ONLY — TEAR HERE</strong> strip
+            mein hota hai — customer hisse mein naam nahi. POS Billing mein bhi yahi button hai.
+          </p>
+          <div className="wp-payments-actions" style={{ marginBottom: '1rem' }}>
+            <button type="button" className="wp-button" onClick={() => setQrPanelOpen(true)}>
+              Open QR print panel
+            </button>
+          </div>
+          {mergePosPaymentQrCards(form.posQrCards).map((card, index) => (
+            <div
+              key={card.id}
+              style={{
+                border: '1px solid #dcdcde',
+                borderRadius: 8,
+                padding: '0.75rem',
+                marginBottom: '0.75rem',
+              }}
+            >
+              <div className="wp-payments-grid">
+                <label className="wp-payments-field">
+                  <span>Label (JazzCash / EasyPaisa / Bank)</span>
+                  <input
+                    type="text"
+                    value={card.label || card.method || ''}
+                    onChange={(e) => setQrCardField(index, 'label', e.target.value)}
+                  />
+                </label>
+                <label className="wp-payments-field">
+                  <span>Number / IBAN</span>
+                  <input
+                    type="text"
+                    value={card.number || card.iban || ''}
+                    onChange={(e) => setQrCardField(index, 'number', e.target.value)}
+                  />
+                </label>
+                <label className="wp-payments-field">
+                  <span>Account name (staff / tear strip only)</span>
+                  <input
+                    type="text"
+                    value={card.accountName || ''}
+                    onChange={(e) => setQrCardField(index, 'accountName', e.target.value)}
+                  />
+                </label>
+                <label className="wp-payments-field">
+                  <span>QR payload</span>
+                  <input
+                    type="text"
+                    value={card.payload || ''}
+                    onChange={(e) => setQrCardField(index, 'payload', e.target.value)}
+                  />
+                </label>
+              </div>
+              <p style={{ margin: '0.5rem 0 0', fontSize: '0.8rem', color: '#50575e' }}>
+                Preview: {formatPaymentDisplayNumber(card.number || card.iban)} · Staff: {card.accountName || '—'}
+              </p>
+              <div className="wp-payments-actions" style={{ marginTop: '0.5rem' }}>
+                <button
+                  type="button"
+                  className="wp-button wp-button--secondary"
+                  disabled={Boolean(qrPrintBusy)}
+                  onClick={() => printQrCard(card)}
+                >
+                  {qrPrintBusy === card.id ? 'Printing…' : 'Print this QR'}
+                </button>
+              </div>
+            </div>
+          ))}
+          <p style={{ fontSize: '0.8rem', color: '#646970' }}>
+            Save payment settings dabane se ye QR cards bhi save ho jate hain.
+          </p>
+        </div>
+      </div>
+
+      <PosPaymentQrPanel open={qrPanelOpen} onClose={() => setQrPanelOpen(false)} />
 
       <div className="wp-postbox" style={{ marginTop: '1.5rem' }}>
         <div className="wp-postbox-head">Delivery estimate (checkout)</div>

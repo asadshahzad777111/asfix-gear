@@ -5,6 +5,7 @@ import AdminCounterBill, {
   readThermalReceiptWidth,
   shareCounterInvoicePdf,
 } from '../components/admin/AdminCounterBill';
+import PosPaymentQrPanel from '../components/admin/PosPaymentQrPanel';
 import { SHOP } from '../config/shop';
 import ThemeToggle from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
@@ -62,6 +63,7 @@ export default function Counter() {
   const [nativePrinters, setNativePrinters] = useState([]);
   const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
   const [nativePickerOpen, setNativePickerOpen] = useState(false);
+  const [paymentQrOpen, setPaymentQrOpen] = useState(false);
   const printInFlightRef = useRef(false);
   const salesSectionRef = useRef(null);
   const { printSmart, openPrintSetup, chooser: printChooser } = useSmartThermalPrint({
@@ -383,6 +385,16 @@ export default function Counter() {
           </div>
         )}
 
+        <div className="counter-pos-tools">
+          <button
+            type="button"
+            className="wp-button counter-pos-tools__pay-qr"
+            onClick={() => setPaymentQrOpen(true)}
+          >
+            {t('counter.paymentQrSlips')}
+          </button>
+        </div>
+
         {bootstrapping && products.length === 0 ? (
           <div className="counter-boot">{t('common.loading')}</div>
         ) : null}
@@ -395,6 +407,13 @@ export default function Counter() {
           onJumpToSales={jumpToSales}
           onOpenReturnFlow={jumpToSales}
           onOpenPrinterSetup={openPrinterSetup}
+        />
+
+        <PosPaymentQrPanel
+          open={paymentQrOpen}
+          onClose={() => setPaymentQrOpen(false)}
+          thermalWidth={thermalWidth}
+          title={t('counter.paymentQrSlips')}
         />
 
         <section className="counter-sales" ref={salesSectionRef}>

@@ -3371,6 +3371,79 @@ export function setShopManualOverride(manual_override, userId) {
   });
 }
 
+const DEFAULT_POS_QR_CARDS = [
+  {
+    id: 'jazzcash-03039227000',
+    method: 'JazzCash',
+    label: 'JazzCash',
+    number: '03039227000',
+    accountName: 'ASAD SHAHZAD',
+    payload: '03039227000',
+    enabled: true,
+  },
+  {
+    id: 'easypaisa-03039227000',
+    method: 'EasyPaisa',
+    label: 'EasyPaisa',
+    number: '03039227000',
+    accountName: 'ASAD SHAHZAD',
+    payload: '03039227000',
+    enabled: true,
+  },
+  {
+    id: 'jazzcash-03004405890',
+    method: 'JazzCash',
+    label: 'JazzCash',
+    number: '03004405890',
+    accountName: 'ASAD SHAHZAD',
+    payload: '03004405890',
+    enabled: true,
+  },
+  {
+    id: 'easypaisa-03218858747',
+    method: 'EasyPaisa',
+    label: 'EasyPaisa',
+    number: '03218858747',
+    accountName: 'ASAD SHAHZAD',
+    payload: '03218858747',
+    enabled: true,
+  },
+  {
+    id: 'meezan-iban',
+    method: 'Meezan Bank',
+    label: 'Meezan Bank',
+    number: 'PK81MEZN0011590105485732',
+    accountNumber: '11590105485732',
+    iban: 'PK81MEZN0011590105485732',
+    accountName: 'ASAD SHAHZAD',
+    payload: 'PK81MEZN0011590105485732',
+    enabled: true,
+  },
+];
+
+function normalizePosQrCards(input) {
+  const source = Array.isArray(input) && input.length ? input : DEFAULT_POS_QR_CARDS;
+  return source.slice(0, 12).map((raw, index) => {
+    const method = String(raw?.method || raw?.label || 'Pay').trim().slice(0, 40) || 'Pay';
+    const number = String(raw?.number || '').trim().slice(0, 40);
+    const iban = String(raw?.iban || '').trim().slice(0, 40);
+    const accountNumber = String(raw?.accountNumber || '').trim().slice(0, 30);
+    const accountName = String(raw?.accountName || '').trim().slice(0, 120);
+    const payload = String(raw?.payload || iban || number || '').trim().slice(0, 80);
+    return {
+      id: String(raw?.id || `${method}-${number || index}`).trim().slice(0, 64),
+      method,
+      label: String(raw?.label || method).trim().slice(0, 40),
+      number: number || iban,
+      accountNumber,
+      iban,
+      accountName,
+      payload: payload || number || iban,
+      enabled: raw?.enabled !== false,
+    };
+  }).filter((c) => c.payload);
+}
+
 const DEFAULT_PAYMENT_SETTINGS = {
   jazzcash: { enabled: true, number: '03039227000', accountName: 'ASAD SHAHZAD' },
   easypaisa: { enabled: true, number: '03039227000', accountName: 'ASAD SHAHZAD' },
@@ -3385,6 +3458,8 @@ const DEFAULT_PAYMENT_SETTINGS = {
   cod: { enabled: true },
   /** Premier PayFast — disabled until merchant credentials are configured. */
   payfast: { enabled: false },
+  /** POS thermal Scan & Pay slips (JazzCash / EasyPaisa / Meezan). */
+  posQrCards: DEFAULT_POS_QR_CARDS,
 };
 
 const DEFAULT_DELIVERY_SETTINGS = {
@@ -3598,6 +3673,7 @@ export function getPaymentSettings() {
     bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
     cod: { ...DEFAULT_PAYMENT_SETTINGS.cod, ...(saved.cod || {}) },
     payfast: { ...DEFAULT_PAYMENT_SETTINGS.payfast, ...(saved.payfast || {}) },
+    posQrCards: normalizePosQrCards(saved.posQrCards),
     updated_at: saved.updated_at ?? null,
     updated_by: saved.updated_by ?? null,
   };
@@ -3613,6 +3689,7 @@ export function setPaymentSettings(input, userId) {
       bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
       cod: { ...DEFAULT_PAYMENT_SETTINGS.cod, ...(saved.cod || {}) },
       payfast: { ...DEFAULT_PAYMENT_SETTINGS.payfast, ...(saved.payfast || {}) },
+      posQrCards: normalizePosQrCards(saved.posQrCards),
     };
 
     for (const key of ['jazzcash', 'easypaisa', 'bank', 'cod', 'payfast']) {
@@ -3628,6 +3705,10 @@ export function setPaymentSettings(input, userId) {
         ...(patch.bankName != null ? { bankName: String(patch.bankName).trim().slice(0, 80) } : {}),
         ...(patch.branch != null ? { branch: String(patch.branch).trim().slice(0, 120) } : {}),
       };
+    }
+
+    if (Object.prototype.hasOwnProperty.call(input, 'posQrCards')) {
+      next.posQrCards = normalizePosQrCards(input.posQrCards);
     }
 
     const payload = {

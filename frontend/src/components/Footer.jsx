@@ -51,6 +51,7 @@ export default function Footer() {
               {canAddProducts && <li><Link to="/shop?add=1">{t('common.addProductStaff')}</Link></li>}
               <li><Link to="/repair">{t('common.bookRepair')}</Link></li>
               <li><Link to="/faq">{t('footer.faq')}</Link></li>
+              <li><Link to="/download">{t('footer.downloadApp')}</Link></li>
               <li><Link to="/contact">{t('common.contactMap')}</Link></li>
             </ul>
           </div>

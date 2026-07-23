@@ -1,4 +1,5 @@
 import { SHOP } from './shop';
+import { DEFAULT_POS_PAYMENT_QR_CARDS, mergePosPaymentQrCards } from './posPaymentQr';
 
 /** Default payment accounts — admin can override via Settings → Payments (stored in API). */
 export const DEFAULT_PAYMENTS = {
@@ -34,6 +35,8 @@ export const DEFAULT_PAYMENTS = {
   payfast: {
     enabled: false,
   },
+  /** Extra POS thermal QR slips (JazzCash / EasyPaisa / Meezan). */
+  posQrCards: DEFAULT_POS_PAYMENT_QR_CARDS,
 };
 
 export const PAYMENT_METHOD_IDS = ['jazzcash', 'easypaisa', 'bank', 'cod', 'payfast'];
@@ -51,6 +54,7 @@ export function mergePaymentSettings(saved) {
     bank: { ...DEFAULT_PAYMENTS.bank, ...(s.bank || {}) },
     cod: { ...DEFAULT_PAYMENTS.cod, ...(s.cod || {}) },
     payfast: { ...DEFAULT_PAYMENTS.payfast, ...(s.payfast || {}) },
+    posQrCards: mergePosPaymentQrCards(s.posQrCards),
   };
 }
 

@@ -257,6 +257,19 @@
   white-space: nowrap;
 }
 
+.counter-pos-tools {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin: 0 0 0.85rem;
+}
+
+.counter-pos-tools__pay-qr {
+  background: linear-gradient(135deg, #1a1a1a, #333);
+  color: #fff;
+  border: none;
+}
+
 .counter-pos-apk-installed {
   margin: 0 0 0.55rem;
   padding: 0.35rem 0.55rem;

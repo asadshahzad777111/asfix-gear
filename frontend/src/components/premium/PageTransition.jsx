@@ -37,6 +37,7 @@ const AccountLogin = lazy(() => import('../../pages/AccountLogin'));
 const AccountForgotPassword = lazy(() => import('../../pages/AccountForgotPassword'));
 const AccountRegister = lazy(() => import('../../pages/AccountRegister'));
 const AccountSettings = lazy(() => import('../../pages/AccountSettings'));
+const DownloadApp = lazy(() => import('../../pages/DownloadApp'));
 const NotFound = lazy(() => import('../../pages/NotFound'));
 const PrivacyPage = lazy(() => import('../../pages/legal').then((m) => ({ default: m.PrivacyPage })));
 const RefundPage = lazy(() => import('../../pages/legal').then((m) => ({ default: m.RefundPage })));
@@ -84,6 +85,8 @@ function AppRoutes({ location }) {
           </CustomerRoute>
         }
       />
+      <Route path="/download" element={<DownloadApp />} />
+      <Route path="/app" element={<Navigate to="/download" replace />} />
       <Route path="/login" element={<Login />} />
       <Route path="/pos/login" element={<PosLogin />} />
       <Route

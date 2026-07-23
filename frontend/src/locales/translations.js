@@ -415,6 +415,22 @@ export const translations = {
       terms: 'Terms of Service',
       refund: 'Refund & Returns',
       shipping: 'Shipping & Warranty',
+      downloadApp: 'Download Android POS app',
+    },
+    downloadApp: {
+      eyebrow: 'Android app',
+      title: 'Download AsFix POS',
+      lead: 'Install the shop POS app for Bluetooth thermal printing and faster counter billing. Direct download from our site — not from Google Play.',
+      downloadCta: 'Download AsFix-POS.apk',
+      noticeTitle: 'About the install warning',
+      noticeBody:
+        'This app is not listed on the Play Store, so Android may show “Unknown app” or a security warning. That is normal for our shop APK. Allow install from Chrome/browser if asked.',
+      tip1: 'Do not share the APK on WhatsApp — download only from this page.',
+      tip2: 'On Xiaomi/OPPO: Settings → Install unknown apps → allow your browser.',
+      tip3: 'After install, open AsFix POS → Select printer → pair your thermal printer.',
+      updates: 'When we push updates, open this page again to download the new APK. We may also message staff about new features or stock.',
+      backHome: 'Back to home',
+      openPos: 'Open POS (staff)',
     },
     testimonials: {
       r1: 'Screen replaced same day — fair price. Asad guided me well.',
@@ -682,6 +698,7 @@ export const translations = {
       downloadPosApk: 'Download AsFix POS',
       downloadPosApkHint: 'Do not send via WhatsApp — download here directly. Do not rename to ZIP.',
       downloadPosApkInstalled: 'AsFix POS app installed',
+      paymentQrSlips: 'Payment QR slips',
     },
     sales: {
       tab: 'Sales & Profit',
@@ -1860,6 +1877,22 @@ export const translations = {
       terms: 'Terms of Service',
       refund: 'Refund & Returns',
       shipping: 'Shipping & Warranty',
+      downloadApp: 'Android POS app download',
+    },
+    downloadApp: {
+      eyebrow: 'Android app',
+      title: 'AsFix POS download',
+      lead: 'Bluetooth thermal print aur tez counter billing ke liye POS app install karo. Seedha hamari site se — Google Play se nahi.',
+      downloadCta: 'AsFix-POS.apk download',
+      noticeTitle: 'Install warning ke baare mein',
+      noticeBody:
+        'Ye app Play Store pe nahi hai, is liye Android “Unknown app” ya security warning dikha sakta hai — ye normal hai. Chrome/browser se install allow karo.',
+      tip1: 'APK WhatsApp pe mat bhejo — sirf is page se download karo.',
+      tip2: 'Xiaomi/OPPO: Settings → Install unknown apps → browser allow.',
+      tip3: 'Install ke baad AsFix POS kholo → Select printer → thermal pair karo.',
+      updates: 'Update aaye to is page se naya APK download karo. Staff ko naye features / stock ke baare mein message bhi mil sakta hai.',
+      backHome: 'Home',
+      openPos: 'POS kholo (staff)',
     },
     testimonials: {
       r1: 'Screen change same day ho gaya — price bhi fair thi. Asad bhai ne achha guide kiya.',
@@ -2127,6 +2160,7 @@ export const translations = {
       downloadPosApk: 'AsFix POS download',
       downloadPosApkHint: 'WhatsApp se mat bhejo — yahan se direct download karo. ZIP rename mat karo.',
       downloadPosApkInstalled: 'AsFix POS app installed',
+      paymentQrSlips: 'Payment QR slips',
     },
     sales: {
       tab: 'Sales & Profit',
