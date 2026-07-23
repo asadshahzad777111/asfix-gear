@@ -1905,6 +1905,8 @@ export default function AdminCounterBill({
   const [cartFlashKey, setCartFlashKey] = useState(0);
   const [highlightProductId, setHighlightProductId] = useState(null);
   const [focusedLineId, setFocusedLineId] = useState(null);
+  /** While typing sell rate: allow empty string (not clamped to list/1). */
+  const [rateDrafts, setRateDrafts] = useState({});
   const sellRateRefs = useRef({});
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
@@ -2113,6 +2115,8 @@ export default function AdminCounterBill({
     setDiscountValue('');
     setCashReceived('');
     setReceiptOrder(null);
+    setRateDrafts({});
+    setFocusedLineId(null);
   }, []);
 
   useEffect(() => {
@@ -2187,7 +2191,8 @@ export default function AdminCounterBill({
     });
   }, [lines, customerName, customerPhone, paymentMode, paymentNote, discountType, discountValue]);
 
-  const jumpToCartProduct = useCallback((productId, { focusRate = false } = {}) => {
+  /** Item name/row → scroll + highlight product tile in the grid (not the rate field). */
+  const jumpToCartProduct = useCallback((productId) => {
     const id = Number(productId);
     if (!Number.isFinite(id)) return;
     setProductPanelCollapsed(false);
@@ -2200,8 +2205,33 @@ export default function AdminCounterBill({
         behavior: 'smooth',
         block: 'center',
       });
-      if (focusRate) sellRateRefs.current[id]?.focus?.();
     }, 60);
+    window.setTimeout(() => {
+      setHighlightProductId((current) => (current === id ? null : current));
+    }, 2200);
+  }, []);
+
+  /** Rate control → land on that line’s sell-rate input (do not scroll product grid away). */
+  const focusSellRate = useCallback((productId) => {
+    const id = Number(productId);
+    if (!Number.isFinite(id)) return;
+    setFocusedLineId(id);
+    setHighlightProductId(id);
+    window.setTimeout(() => {
+      const input = sellRateRefs.current[id];
+      if (!input) return;
+      input.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
+      try {
+        input.focus({ preventScroll: true });
+      } catch {
+        input.focus?.();
+      }
+      try {
+        input.select?.();
+      } catch {
+        /* select unsupported on some number inputs */
+      }
+    }, 30);
     window.setTimeout(() => {
       setHighlightProductId((current) => (current === id ? null : current));
     }, 2200);
@@ -2257,21 +2287,41 @@ export default function AdminCounterBill({
     setReceiptOrder(null);
     setLines((prev) => prev.filter((line) => line.product.id !== productId));
     setFocusedLineId((current) => (current === productId ? null : current));
+    setRateDrafts((prev) => {
+      if (prev[productId] === undefined) return prev;
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
   };
 
+  /**
+   * Sell-rate path only — never Math.max(1, …) (that is qty).
+   * Empty / invalid while editing → treat as 0 (not catalog list price).
+   */
   const setUnitPrice = (productId, value) => {
     setReceiptOrder(null);
     setCartFlashKey(Date.now());
-    const raw = Number(value);
+    const trimmed = String(value ?? '').trim();
+    let next = 0;
+    if (trimmed !== '' && trimmed !== '-' && trimmed !== '.') {
+      const raw = Number(trimmed);
+      if (Number.isFinite(raw) && raw >= 0) next = Math.round(raw);
+    }
     setLines((prev) =>
-      prev.map((line) => {
-        if (line.product.id !== productId) return line;
-        if (!Number.isFinite(raw) || raw < 0) {
-          return { ...line, unitPrice: salePrice(line.product) };
-        }
-        return { ...line, unitPrice: Math.round(raw) };
-      })
+      prev.map((line) => (line.product.id !== productId ? line : { ...line, unitPrice: next }))
     );
+  };
+
+  const commitSellRateDraft = (productId) => {
+    const draft = rateDrafts[productId];
+    if (draft === undefined) return;
+    setUnitPrice(productId, draft);
+    setRateDrafts((prev) => {
+      const next = { ...prev };
+      delete next[productId];
+      return next;
+    });
   };
 
   const resetBill = () => {
@@ -2817,8 +2867,11 @@ export default function AdminCounterBill({
                 const unit = lineUnitPrice(line);
                 const stock = Number(line.product.stock) || 1;
                 const cost = Math.max(0, Number(line.product.cost_price) || 0);
-                const rateWarn = unit < actual || (cost > 0 && unit < cost);
+                const rateWarnLow = unit < actual || (cost > 0 && unit < cost);
+                const rateWarnHigh = actual > 0 && unit > actual;
                 const isFocused = focusedLineId === line.product.id;
+                const rateDraft = rateDrafts[line.product.id];
+                const rateInputValue = rateDraft !== undefined ? rateDraft : String(unit);
                 return (
                   <article
                     className={`counter-bill__cart-row${isFocused ? ' counter-bill__cart-row--focus' : ''}`}
@@ -2828,13 +2881,20 @@ export default function AdminCounterBill({
                     <button
                       type="button"
                       className="counter-bill__cart-item"
-                      onClick={() => jumpToCartProduct(line.product.id, { focusRate: true })}
+                      onClick={() => jumpToCartProduct(line.product.id)}
                       title={t('admin.counterBillGoToItem')}
                     >
                       <strong>{line.product.name}</strong>
                       <small>{t('admin.stockLabel', { count: stock })}</small>
                     </button>
-                    <div className="counter-bill__cart-rate">
+                    <div
+                      className="counter-bill__cart-rate"
+                      onClick={(e) => {
+                        /* Clicking rate chrome (not qty/name) focuses the sell-rate input */
+                        if (e.target.closest('input')) return;
+                        focusSellRate(line.product.id);
+                      }}
+                    >
                       <label className="counter-bill__cart-rate-label">
                         <span>{t('admin.counterBillSellRate')}</span>
                         <input
@@ -2846,20 +2906,35 @@ export default function AdminCounterBill({
                           min="0"
                           step="1"
                           inputMode="numeric"
-                          value={unit}
+                          value={rateInputValue}
                           onFocus={() => {
                             setFocusedLineId(line.product.id);
-                            jumpToCartProduct(line.product.id);
+                            setRateDrafts((prev) => (
+                              prev[line.product.id] !== undefined
+                                ? prev
+                                : { ...prev, [line.product.id]: String(unit) }
+                            ));
                           }}
-                          onChange={(e) => setUnitPrice(line.product.id, e.target.value)}
+                          onChange={(e) => {
+                            const next = e.target.value;
+                            setRateDrafts((prev) => ({ ...prev, [line.product.id]: next }));
+                            /* Live total: empty → 0; never snap back to list / Math.max(1) */
+                            setUnitPrice(line.product.id, next);
+                          }}
+                          onBlur={() => commitSellRateDraft(line.product.id)}
                           aria-label={`${line.product.name} ${t('admin.counterBillSellRate')}`}
                         />
                       </label>
                       <small className="counter-bill__cart-actual">
                         {t('admin.counterBillActualPrice', { price: formatPrice(actual) })}
                       </small>
-                      {rateWarn ? (
+                      {rateWarnLow ? (
                         <small className="counter-bill__cart-rate-warn">{t('admin.counterBillRateLowWarn')}</small>
+                      ) : null}
+                      {rateWarnHigh ? (
+                        <small className="counter-bill__cart-rate-warn counter-bill__cart-rate-warn--high">
+                          {t('admin.counterBillRateHighWarn')}
+                        </small>
                       ) : null}
                     </div>
                     <div className="counter-bill__qty-stepper">

@@ -670,12 +670,14 @@
 .counter-bill__panel--cart {
   position: sticky;
   top: 0;
+  z-index: 5;
   color: var(--pos-text);
   max-height: min(78dvh, 860px);
   overflow-x: hidden;
   overflow-y: auto;
   overscroll-behavior: contain;
   touch-action: pan-y;
+  background: var(--pos-surface);
 }
 
 .counter-bill__panel--flash {
@@ -1063,6 +1065,7 @@
   grid-column: 2 / 4;
   display: grid;
   gap: 0.2rem;
+  cursor: text;
 }
 
 .counter-bill__cart-rate-label {
@@ -1081,15 +1084,16 @@
   flex: 1 1 5.5rem;
   min-width: 5rem;
   max-width: 8rem;
-  min-height: 40px;
+  min-height: 44px;
   border: 1px solid var(--pos-border-strong);
   border-radius: var(--pos-radius-sm);
   background: var(--pos-surface-2);
   color: var(--pos-text);
   font: inherit;
-  font-size: 1rem;
+  font-size: 1.05rem;
   font-weight: 800;
   padding: 0.35rem 0.5rem;
+  font-variant-numeric: tabular-nums;
 }
 
 .counter-bill__cart-rate-label input:focus {
@@ -1098,15 +1102,22 @@
 }
 
 .counter-bill__cart-actual {
+  display: block;
   color: var(--pos-muted);
   font-size: 0.78rem;
   font-weight: 600;
+  margin-top: 0.1rem;
+  line-height: 1.35;
 }
 
 .counter-bill__cart-rate-warn {
   color: #c45c00 !important;
   font-size: 0.72rem;
   font-weight: 600;
+}
+
+.counter-bill__cart-rate-warn--high {
+  color: #b45309 !important;
 }
 
 .counter-bill__qty-stepper {
@@ -2005,14 +2016,32 @@
     grid-template-columns: 1fr;
   }
 
-  .counter-bill__panel--products,
-  .counter-bill__panel--cart {
-    position: static;
+  .counter-bill__panel--products {
+    position: relative;
+    z-index: 4;
     max-height: none;
     overflow: visible;
   }
 
-  .counter-bill__products,
+  /* Keep bill/cart panel sticky while products/page scroll — rate edit stays usable */
+  .counter-bill__panel--cart {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    max-height: min(68dvh, 560px);
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+    background: var(--pos-surface);
+    box-shadow: 0 10px 28px rgba(0, 0, 0, 0.16);
+  }
+
+  .counter-bill__products {
+    max-height: none;
+    overflow: visible;
+  }
+
   .counter-bill__cart-lines {
     max-height: none;
     overflow: visible;
