@@ -18,13 +18,6 @@ import {
   listBondedPrinters,
   savePrinter,
 } from '../utils/nativePosPrint';
-import {
-  defaultPrintTarget,
-  fetchPrintStations,
-  isAppleMobileDevice,
-  isDesktopDevice,
-  readPrintTarget,
-} from '../utils/remoteThermalPrint';
 import '../components/admin/admin-wp.css';
 import '../components/admin/admin-counter-bill.css';
 
@@ -36,36 +29,6 @@ function counterSaleDate(sale, fallbackDate) {
   if (!sale?.created_at) return fallbackDate;
   const timestamp = new Date(sale.created_at);
   return Number.isNaN(timestamp.getTime()) ? fallbackDate : timestamp.toISOString().slice(0, 10);
-}
-
-function describeWebPrintStatus(target, stations, t) {
-  const androidOnline = Boolean(stations?.android?.online);
-  const laptopOnline = Boolean(stations?.laptop?.online);
-  if (target === 'android') {
-    return androidOnline
-      ? t('admin.printStationAndroidConnected')
-      : t('admin.printStationAndroidOffline');
-  }
-  if (target === 'laptop') {
-    return laptopOnline
-      ? t('admin.printStationLaptopConnected')
-      : t('admin.printStationLaptopOffline');
-  }
-  if (target === 'any') {
-    if (androidOnline || laptopOnline) return t('admin.printStationConnected');
-    return t('admin.printStationOffline');
-  }
-  if (target === 'direct') {
-    return isDesktopDevice()
-      ? t('admin.printStationDirectReady')
-      : t('admin.printStationDirectMobile');
-  }
-  if (target === 'local') {
-    return isAppleMobileDevice()
-      ? t('admin.printStationLocalIos')
-      : t('admin.printStationLocalReady');
-  }
-  return t('admin.printStationNotSet');
 }
 
 const DEFAULT_POS_SETTINGS = {
@@ -96,21 +59,14 @@ export default function Counter() {
   const [nativePrinters, setNativePrinters] = useState([]);
   const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
   const [nativePickerOpen, setNativePickerOpen] = useState(false);
-  const [printTarget, setPrintTarget] = useState(() => defaultPrintTarget());
-  const [printStations, setPrintStations] = useState({
-    android: { online: false },
-    laptop: { online: false },
-  });
   const printInFlightRef = useRef(false);
   const salesSectionRef = useRef(null);
-  const printerBarRef = useRef(null);
-  const { printSmart, openPrintSetup, chooser: printChooser, targetVersion } = useSmartThermalPrint({
+  const { printSmart, openPrintSetup, chooser: printChooser } = useSmartThermalPrint({
     thermalWidth,
     agentReady: !nativePos || Boolean(nativePrinter?.address),
   });
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
-  const isIos = isAppleMobileDevice();
 
   useEffect(() => {
     if (!nativePos) return undefined;
@@ -124,28 +80,9 @@ export default function Counter() {
     };
   }, [nativePos]);
 
-  useEffect(() => {
-    if (nativePos) return undefined;
-    let cancelled = false;
-    const refresh = async () => {
-      const target = readPrintTarget() || defaultPrintTarget();
-      const stations = await fetchPrintStations();
-      if (cancelled) return;
-      setPrintTarget(target);
-      setPrintStations(stations);
-    };
-    refresh();
-    const timer = window.setInterval(refresh, 12_000);
-    return () => {
-      cancelled = true;
-      window.clearInterval(timer);
-    };
-  }, [nativePos, targetVersion]);
-
   const openNativePrinterPicker = useCallback(async () => {
     if (!nativePos) return;
     setNativePickerOpen(true);
-    printerBarRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     setNativePrinterBusy(true);
     try {
       const list = await listBondedPrinters();
@@ -158,6 +95,14 @@ export default function Counter() {
       setNativePrinterBusy(false);
     }
   }, [nativePos, t]);
+
+  const openPrinterSetup = useCallback(() => {
+    if (nativePos) {
+      void openNativePrinterPicker();
+      return;
+    }
+    openPrintSetup();
+  }, [nativePos, openNativePrinterPicker, openPrintSetup]);
 
   const selectNativePrinter = useCallback(async (printer) => {
     await savePrinter(printer);
@@ -410,98 +355,6 @@ export default function Counter() {
           </div>
         </div>
 
-        {nativePos ? (
-          <div className="counter-bt-printer-bar" ref={printerBarRef}>
-            <div className="counter-bt-printer-bar__main">
-              <div className="counter-bt-printer-bar__info">
-                <strong>{t('admin.counterBillNativePrinter')}</strong>
-                <span>
-                  {nativePrinter
-                    ? `${nativePrinter.name || 'Printer'}${nativePrinter.address ? ` · ${nativePrinter.address}` : ''}`
-                    : t('admin.counterBillNativeNoPrinter')}
-                </span>
-                <small>{t('admin.counterBillNativePairHint')}</small>
-              </div>
-              <div className="counter-bt-printer-bar__actions">
-                <button
-                  type="button"
-                  className="wp-button counter-bt-printer-bar__select"
-                  disabled={nativePrinterBusy}
-                  onClick={() => void openNativePrinterPicker()}
-                >
-                  {nativePrinterBusy ? t('common.loading') : t('admin.counterBillNativeRefresh')}
-                </button>
-                {nativePrinter ? (
-                  <button
-                    type="button"
-                    className="wp-button wp-button--secondary"
-                    onClick={() => void clearNativePrinter()}
-                  >
-                    {t('admin.counterBillNativeClear')}
-                  </button>
-                ) : null}
-              </div>
-            </div>
-            {nativePickerOpen ? (
-              <div className="counter-bt-printer-bar__picker">
-                {nativePrinterBusy ? (
-                  <p className="field-hint">{t('common.loading')}</p>
-                ) : nativePrinters.length === 0 ? (
-                  <p className="field-hint">{t('admin.counterBillNativePairHint')}</p>
-                ) : (
-                  <ul className="counter-bt-printer-bar__list">
-                    {nativePrinters.map((printer) => (
-                      <li key={printer.address}>
-                        <button
-                          type="button"
-                          className={
-                            nativePrinter?.address === printer.address
-                              ? 'counter-bt-printer-bar__device counter-bt-printer-bar__device--active'
-                              : 'counter-bt-printer-bar__device'
-                          }
-                          onClick={() => void selectNativePrinter(printer)}
-                        >
-                          {printer.name || printer.address}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            ) : null}
-          </div>
-        ) : (
-          <div className="counter-bt-printer-bar" ref={printerBarRef}>
-            <div className="counter-bt-printer-bar__main">
-              <div className="counter-bt-printer-bar__info">
-                <strong>{t('admin.printStationBarTitle')}</strong>
-                <span>{describeWebPrintStatus(printTarget, printStations, t)}</span>
-                <small>
-                  {isIos ? t('admin.printStationIosHint') : t('admin.printStationWebHint')}
-                </small>
-              </div>
-              <div className="counter-bt-printer-bar__actions">
-                <button
-                  type="button"
-                  className="wp-button counter-bt-printer-bar__select"
-                  onClick={() => openPrintSetup()}
-                >
-                  {t('admin.counterBillNativeRefresh')}
-                </button>
-                {isAndroid ? (
-                  <a
-                    className="wp-button wp-button--secondary"
-                    href="/downloads/AsFix-POS.apk"
-                    download="AsFix-POS.apk"
-                  >
-                    {t('counter.downloadPosApk')}
-                  </a>
-                ) : null}
-              </div>
-            </div>
-          </div>
-        )}
-
         {bootstrapping && products.length === 0 ? (
           <div className="counter-boot">{t('common.loading')}</div>
         ) : null}
@@ -513,6 +366,7 @@ export default function Counter() {
           onThermalWidthChange={setThermalWidth}
           onJumpToSales={jumpToSales}
           onOpenReturnFlow={jumpToSales}
+          onOpenPrinterSetup={openPrinterSetup}
         />
 
         <section className="counter-sales" ref={salesSectionRef}>
@@ -694,6 +548,69 @@ export default function Counter() {
                 </button>
               </div>
               {returnFeedback ? <p className="counter-return-modal__feedback">{returnFeedback}</p> : null}
+            </div>
+          </div>
+        ) : null}
+
+        {nativePos && nativePickerOpen ? (
+          <div className="counter-printer-modal" role="dialog" aria-modal="true" aria-label={t('admin.counterBillNativePrinter')}>
+            <div className="counter-printer-modal__card">
+              <div className="counter-printer-modal__head">
+                <div>
+                  <h3>{t('admin.counterBillNativePrinter')}</h3>
+                  <p>
+                    {nativePrinter
+                      ? `${nativePrinter.name || 'Printer'}${nativePrinter.address ? ` · ${nativePrinter.address}` : ''}`
+                      : t('admin.counterBillNativeNoPrinter')}
+                  </p>
+                </div>
+                <button type="button" className="wp-button wp-button--secondary" onClick={() => setNativePickerOpen(false)}>
+                  Close
+                </button>
+              </div>
+              <p className="field-hint">{t('admin.counterBillNativePairHint')}</p>
+              {nativePrinterBusy ? (
+                <p className="field-hint">{t('common.loading')}</p>
+              ) : nativePrinters.length === 0 ? (
+                <p className="field-hint">{t('admin.counterBillNativePairHint')}</p>
+              ) : (
+                <ul className="counter-bt-printer-bar__list">
+                  {nativePrinters.map((printer) => (
+                    <li key={printer.address}>
+                      <button
+                        type="button"
+                        className={
+                          nativePrinter?.address === printer.address
+                            ? 'counter-bt-printer-bar__device counter-bt-printer-bar__device--active'
+                            : 'counter-bt-printer-bar__device'
+                        }
+                        onClick={() => void selectNativePrinter(printer)}
+                      >
+                        {printer.name || printer.address}
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              <div className="counter-printer-modal__actions">
+                <button
+                  type="button"
+                  className="wp-button"
+                  disabled={nativePrinterBusy}
+                  onClick={() => void openNativePrinterPicker()}
+                >
+                  {nativePrinterBusy ? t('common.loading') : t('admin.counterBillNativeRefresh')}
+                </button>
+                {nativePrinter ? (
+                  <button
+                    type="button"
+                    className="wp-button wp-button--secondary"
+                    onClick={() => void clearNativePrinter()}
+                  >
+                    {t('admin.counterBillNativeClear')}
+                  </button>
+                ) : null}
+              </div>
             </div>
           </div>
         ) : null}

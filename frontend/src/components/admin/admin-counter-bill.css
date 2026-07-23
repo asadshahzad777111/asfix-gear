@@ -152,7 +152,8 @@
 .wp-admin-shell.counter-shell {
   height: 100dvh;
   max-height: 100dvh;
-  overflow: hidden;
+  /* visible so APK WebView does not clip fixed grand-total dock */
+  overflow: visible;
 }
 
 .counter-shell .wp-admin-bar {
@@ -245,17 +246,83 @@
   flex: 0 0 auto;
 }
 
-.counter-bt-printer-bar {
-  position: sticky;
-  top: 0;
-  z-index: 40;
-  margin: 0 0 0.75rem;
-  padding: 0.75rem 0.85rem;
-  border: 2px solid var(--pos-accent, #2563eb);
-  border-radius: 14px;
-  background: var(--pos-surface, #fff);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+.counter-printer-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  display: grid;
+  place-items: end center;
+  padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right))
+    max(5.5rem, calc(4.5rem + env(safe-area-inset-bottom))) max(0.75rem, env(safe-area-inset-left));
+  background: rgba(0, 0, 0, 0.45);
 }
+
+.counter-printer-modal__card {
+  width: min(100%, 420px);
+  max-height: min(70dvh, 520px);
+  overflow: auto;
+  padding: 0.9rem;
+  border: 1px solid var(--pos-border-strong);
+  border-radius: 16px;
+  background: var(--pos-surface);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.35);
+}
+
+.counter-printer-modal__head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin-bottom: 0.55rem;
+}
+
+.counter-printer-modal__head h3 {
+  margin: 0 0 0.2rem;
+  font-size: 1rem;
+}
+
+.counter-printer-modal__head p {
+  margin: 0;
+  color: var(--pos-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+
+.counter-printer-modal__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin-top: 0.75rem;
+}
+
+.counter-bt-printer-bar__list {
+  list-style: none;
+  margin: 0.5rem 0 0;
+  padding: 0;
+  display: grid;
+  gap: 0.4rem;
+}
+
+.counter-bt-printer-bar__device {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--pos-border);
+  border-radius: 12px;
+  padding: 0.55rem 0.75rem;
+  background: var(--pos-bg);
+  color: var(--pos-text);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+  text-align: left;
+}
+
+.counter-bt-printer-bar__device--active,
+.counter-bt-printer-bar__device:hover {
+  border-color: var(--pos-accent);
+  background: var(--pos-accent-soft);
+}
+
 
 .counter-bt-printer-bar__main {
   display: flex;
@@ -1649,12 +1716,19 @@
 
 .counter-bill-print__grand-label,
 .counter-bill-print__grand {
-  margin-top: 0.12rem;
-  padding-top: 0.18rem;
+  margin-top: 0.28rem;
+  padding-top: 0.35rem;
+  padding-right: 0.2rem;
   border-top: 1px solid #111;
   font-family: Arial, sans-serif;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 900;
+  letter-spacing: 0.06em;
+}
+
+.counter-bill-print__grand {
+  letter-spacing: 0.08em;
+  padding-right: 0.35em;
 }
 
 .counter-bill-print__thanks,
@@ -1679,8 +1753,8 @@
 
 .counter-bill-print__qr {
   display: block;
-  width: 72%;
-  max-width: 180px;
+  width: 68%;
+  max-width: 168px;
   height: auto;
   margin: 0.25rem auto 0.4rem;
   image-rendering: pixelated;
@@ -1693,13 +1767,13 @@
 
 .counter-bill__pos-dock {
   position: fixed;
-  left: max(0.55rem, env(safe-area-inset-left));
-  right: max(0.55rem, env(safe-area-inset-right));
-  bottom: max(0.55rem, env(safe-area-inset-bottom));
-  z-index: 40;
+  left: max(0.55rem, env(safe-area-inset-left, 0px));
+  right: max(0.55rem, env(safe-area-inset-right, 0px));
+  bottom: max(0.55rem, env(safe-area-inset-bottom, 0px));
+  z-index: 1200;
   display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr) auto;
-  gap: 0.45rem;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.95fr) auto auto;
+  gap: 0.4rem;
   align-items: center;
   padding: 0.55rem 0.65rem;
   border: 1px solid var(--pos-border-strong);
@@ -1707,13 +1781,16 @@
   background: var(--pos-footer-bg);
   box-shadow: 0 10px 28px rgba(0, 0, 0, 0.28);
   backdrop-filter: blur(10px);
-  transition: transform 0.22s ease, opacity 0.22s ease;
+  transform: translateZ(0);
+  -webkit-transform: translateZ(0);
+  pointer-events: auto;
 }
 
 .counter-bill__pos-dock--tucked {
-  transform: translateY(calc(100% + 0.75rem));
-  opacity: 0;
-  pointer-events: none;
+  /* Kept for backwards compatibility — dock is never tucked (APK must always show total). */
+  transform: none;
+  opacity: 1;
+  pointer-events: auto;
 }
 
 .counter-bill__pos-dock-total {
@@ -1728,6 +1805,14 @@
   font-weight: 800;
   letter-spacing: 0.06em;
   text-transform: uppercase;
+}
+
+.counter-bill__pos-dock-count {
+  font-style: normal;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  color: var(--pos-text);
 }
 
 .counter-bill__pos-dock-total strong {
@@ -1760,6 +1845,25 @@
   border-color: var(--pos-accent);
 }
 
+.counter-bill__pos-dock-printer {
+  width: 44px;
+  height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--pos-border-strong);
+  border-radius: 14px;
+  background: var(--pos-surface-2);
+  color: var(--pos-text);
+  cursor: pointer;
+  flex: 0 0 auto;
+}
+
+.counter-bill__pos-dock-printer:hover {
+  border-color: var(--pos-accent);
+  color: var(--pos-accent);
+}
+
 .counter-bill__pos-dock-print {
   width: 48px;
   height: 48px;
@@ -1789,11 +1893,6 @@
 .counter-bill,
 .counter-content {
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
-}
-
-.counter-bill-print__grand {
-  letter-spacing: 0.06em;
-  padding-right: 0.15em;
 }
 
 @media (max-width: 900px) {

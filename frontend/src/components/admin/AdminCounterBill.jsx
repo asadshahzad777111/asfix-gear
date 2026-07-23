@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { api, formatPrice } from '../../api/client';
 import { SHOP } from '../../config/shop';
@@ -208,10 +209,57 @@ function thermalAmountText(amount) {
 
 /**
  * ESC Z / Mate / PNG QR module size — must fit printable dots.
- * Mag 12 @ 58mm (~29 modules) overflows ~384-dot rolls and printers skip the QR.
+ * Mag 10–12 @ 58mm overflowed some rolls (printers skip the QR).
+ * Prefer medium mag 6–8: slightly larger than early receipts, always visible.
  */
 function thermalQrModuleSize(thermalWidth = '58mm') {
-  return normalizeThermalWidth(thermalWidth) === '80mm' ? 12 : 10;
+  return normalizeThermalWidth(thermalWidth) === '80mm' ? 8 : 6;
+}
+
+/**
+ * Universal ESC/POS QR via GS v 0 raster (works on clones that ignore Epson GS (k).
+ * Sized ~65% of printable dots — scannable without overflowing the roll.
+ */
+function buildEscPosQrRasterBytes(payload, thermalWidth = '58mm') {
+  const width = normalizeThermalWidth(thermalWidth);
+  const printableDots = width === '80mm' ? 576 : 384;
+  const targetDots = Math.max(120, Math.floor(printableDots * 0.65));
+  let model;
+  try {
+    model = QRCode.create(String(payload || RECEIPT_SITE_URL), { errorCorrectionLevel: 'M' });
+  } catch {
+    return new Uint8Array(0);
+  }
+  const modules = model?.modules;
+  const moduleCount = modules?.size || 0;
+  if (!moduleCount) return new Uint8Array(0);
+
+  const quiet = 2;
+  const scale = Math.max(3, Math.min(thermalQrModuleSize(width), Math.floor(targetDots / (moduleCount + quiet * 2))));
+  const dim = (moduleCount + quiet * 2) * scale;
+  const bytesPerRow = Math.ceil(dim / 8);
+  const bitmap = new Uint8Array(bytesPerRow * dim);
+
+  for (let y = 0; y < dim; y += 1) {
+    const my = Math.floor(y / scale) - quiet;
+    for (let x = 0; x < dim; x += 1) {
+      const mx = Math.floor(x / scale) - quiet;
+      const dark = my >= 0 && mx >= 0 && my < moduleCount && mx < moduleCount && modules.get(mx, my);
+      if (!dark) continue;
+      const byteIndex = y * bytesPerRow + (x >> 3);
+      bitmap[byteIndex] |= 0x80 >> (x & 7);
+    }
+  }
+
+  const xL = bytesPerRow & 0xff;
+  const xH = (bytesPerRow >> 8) & 0xff;
+  const yL = dim & 0xff;
+  const yH = (dim >> 8) & 0xff;
+  const header = Uint8Array.from([0x1d, 0x76, 0x30, 0x00, xL, xH, yL, yH]);
+  const out = new Uint8Array(header.length + bitmap.length);
+  out.set(header, 0);
+  out.set(bitmap, header.length);
+  return out;
 }
 
 export function buildThermalReceiptText(order, thermalWidth = '58mm') {
@@ -232,8 +280,8 @@ function bytesToBase64(bytes) {
 
 /**
  * Full-width ESC/POS receipt for laptop, native AsFix app, and remote stations.
- * QR uses Zijiang/vendor ESC Z (from 58mm kit SDK) — Epson GS (k is ignored on these clones.
- * Mag 10 @ 58mm / 12 @ 80mm — large scannable QR that still fits the roll.
+ * QR uses GS v 0 raster (~65% width) so clones that ignore Epson GS (k still print a scanner.
+ * Mag 6/8 also used for Mate <QR> sizing — not huge, always fits 58mm.
  */
 export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
   if (!order || typeof TextEncoder === 'undefined' || typeof btoa !== 'function') return '';
@@ -253,32 +301,38 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
   push(0x1b, 0x4a, 48);
   for (const line of lines) {
     if (line.qr) {
-      const qr = encoder.encode(line.value || RECEIPT_SITE_URL);
-      const version = 0;
-      const ecc = 3; /* vendor max 0–3 */
-      const mag = thermalQrModuleSize(width);
+      const qrPayload = line.value || RECEIPT_SITE_URL;
       push(0x1b, 0x61, 0x01); // center
-      /* ESC Z nVersion nEcc nMag nL nH data — Zijiang BT-POS / 58mm kit */
-      push(0x1b, 0x5a, version, ecc, mag, qr.length & 0xff, (qr.length >> 8) & 0xff);
-      parts.push(qr);
-      push(0x0a);
+      const raster = buildEscPosQrRasterBytes(qrPayload, width);
+      if (raster.length) {
+        parts.push(raster);
+        push(0x0a);
+      } else {
+        /* Fallback: Zijiang ESC Z at medium mag if raster build failed */
+        const qr = encoder.encode(qrPayload);
+        const mag = thermalQrModuleSize(width);
+        push(0x1b, 0x5a, 0x00, 0x03, mag, qr.length & 0xff, (qr.length >> 8) & 0xff);
+        parts.push(qr);
+        push(0x0a);
+      }
       continue;
     }
 
     push(0x1b, 0x61, line.align === 'center' ? 0x01 : line.align === 'right' ? 0x02 : 0x00);
-    /* Bold only shop title + grand total — lighter body so pixels don’t bleed */
+    /* Bold shop title + grand total; grand slightly larger (double H) with room around digits */
     const useBold = Boolean(line.title || line.grand);
     push(0x1b, 0x45, useBold ? 0x01 : 0x00);
     /* Always Font A — Font B looks tiny and leaves empty right margin feel */
     push(0x1b, 0x4d, 0x00);
-    /* Shop header / grand: double H only (not W+H blob); body unchanged */
-    const size = line.title || line.grand
+    /* Shop header: double H; grand TOTAL: double H (clearer amounts, not W+H blob) */
+    const size = line.grand || line.title
       ? 0x01
       : 0x00;
     push(0x1d, 0x21, size);
     text(line.value);
     push(0x0a);
-    /* No extra blank after dashed rules — keep receipt short */
+    /* Extra feed after grand so amount is not cramped against next rule */
+    if (line.grand) push(0x0a);
     push(0x1d, 0x21, 0x00);
     push(0x1b, 0x45, 0x00);
   }
@@ -449,8 +503,8 @@ function buildReceiptLines(order, maxChars = 18) {
   const money = (label, value, options = {}) => {
     let right = thermalAmountText(value);
     const left = String(label);
-    /* Leave 1–2 cols on the right so TOTAL isn’t flush to the paper edge */
-    const budget = Math.max(8, maxChars - (options.grand ? 2 : 1));
+    /* Grand total: extra right inset so amounts (e.g. 2000) are not flush to the edge */
+    const budget = Math.max(8, maxChars - (options.grand ? 4 : 1));
     if (left.length + 1 + right.length > budget) {
       right = thermalAmountText(value).replace(/^Rs\.\s*/, 'Rs.');
     }
@@ -470,7 +524,7 @@ function buildReceiptLines(order, maxChars = 18) {
 
   push('AS FIX & GEAR', { align: 'center', weight: 'bold', title: true, shopHeader: true });
   push('BILL', { align: 'center', weight: 'bold', title: true });
-  wrap('Mobile Repair', { align: 'center', small: true });
+  /* No “Mobile Repair / accessories” tagline — brand + address + phone only */
   wrap(SHOP.addressLine2, { align: 'center', small: true });
   wrap(SHOP.phone, { align: 'center', small: true });
   rule();
@@ -506,8 +560,10 @@ function buildReceiptLines(order, maxChars = 18) {
   money('Subtotal', subtotal);
   if (discount) money('Discount', discount);
   rule();
-  /* Same layout as Subtotal: label left, amount right on one row */
+  /* Blank line + bold TOTAL — clearer spacing around amount */
+  push('', { small: true });
   money('TOTAL AMOUNT', grandTotal, { weight: 'bold', grand: true });
+  push('', { small: true });
   const note = counterPaymentNote(order);
   if (note) wrap(`Note: ${note}`, { small: true });
   rule();
@@ -565,8 +621,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   }
 
   const lineSize = (line) => {
-    /* Body/pixel density unchanged; shop header slightly taller only */
-    if (line.grand) return Math.round(fontSize * 1.22);
+    /* Grand TOTAL slightly larger + airy; shop header tallest */
+    if (line.grand) return Math.round(fontSize * 1.4);
     if (line.shopHeader) return Math.round(fontSize * 1.34);
     if (line.title) return Math.round(fontSize * 1.15);
     if (line.small) return Math.max(11, Math.round(fontSize * 0.88));
@@ -631,8 +687,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const lineHFor = (size) => Math.ceil(size * 1.1);
   const ruleH = Math.ceil(fontSize * 0.55);
   /*
-   * QR: match ESC Z mag (10 @ 58mm / 12 @ 80mm). Fit usable width with quiet zone.
-   * Mag N ≈ N dots per module; version auto for https://asfixgear.com.
+   * QR: medium size (~68% of printable band) — scannable, not oversized.
+   * Mag 6–8 dots/module; never exceed roll width or printers drop the block.
    */
   const qrMag = thermalQrModuleSize(pageWidth);
   const qrMarginModules = 2;
@@ -644,8 +700,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     /* keep default */
   }
   const qrSize = (qrModules + qrMarginModules * 2) * qrMag;
-  /* Keep QR large but never wider than printable band (overflow = missing scanner) */
-  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.92));
+  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.68));
 
   let heightPx = padTop + padBottom + 4;
   lines.forEach((line) => {
@@ -744,8 +799,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     if (line.columns) {
       let left = String(line.columns.left ?? '');
       let right = String(line.columns.right ?? '');
-      const gapMin = 8;
-      const rightEdge = widthPx - padX - (line.grand ? 8 : 4);
+      const gapMin = line.grand ? 12 : 8;
+      const rightEdge = widthPx - padX - (line.grand ? 14 : 4);
       const colUsable = rightEdge - padX;
       while (
         measureText(left, size, heavy) + gapMin + measureText(right, size, heavy) > colUsable
@@ -809,14 +864,14 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
     .map((line) => ({
       value: line.value,
       size: line.grand
-        ? bodySize + 4
+        ? bodySize + 6
         : line.title
           ? bodySize + 3
           : line.small
             ? bodySize - 0.5
             : bodySize,
       leading: line.grand
-        ? bodyLeading + 4
+        ? bodyLeading + 7
         : line.title
           ? bodyLeading + 2
           : bodyLeading,
@@ -1027,12 +1082,12 @@ html, body {
 .r-totals { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; font-size: 13px; font-weight: 400; }
 .r-totals > * { min-width: 0; }
 .r-totals strong { text-align: right; white-space: nowrap; font-weight: 400; }
-.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; align-items: baseline; margin: 2px 0; padding-right: 2mm; }
-.r-grand-label { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; }
-.r-grand { font-size: 16px; font-weight: 700; letter-spacing: 0.08em; text-align: right; white-space: nowrap; padding-right: 1mm; }
+.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; margin: 5px 0 4px; padding: 3px 2.5mm 3px 0; }
+.r-grand-label { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
+.r-grand { font-size: 18px; font-weight: 700; letter-spacing: 0.1em; text-align: right; white-space: nowrap; padding-right: 1.5mm; }
 .r-thanks, .r-site { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 400; }
 .r-scan { text-align: center; margin: 4px 0 3px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
-.r-qr { display: block; width: 72%; max-width: 72%; height: auto; margin: 2px auto 4px; }
+.r-qr { display: block; width: 68%; max-width: 68%; height: auto; margin: 2px auto 4px; }
 `.trim();
 
   const qrBlock = qrDataUrl
@@ -1048,7 +1103,6 @@ html, body {
   <div class="r-shop">
     <h1>AS FIX &amp; GEAR</h1>
     <p class="r-bill">BILL</p>
-    <p>Mobile Repair</p>
     <p>${escapeHtml(SHOP.addressLine2)}</p>
     <p>${escapeHtml(SHOP.phone)}</p>
   </div>
@@ -1698,7 +1752,7 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
       <p className="counter-bill-print__site">{RECEIPT_SITE}</p>
       <p className="counter-bill-print__scan">Scan</p>
       {qrDataUrl ? (
-        <img className="counter-bill-print__qr" src={qrDataUrl} alt="asfixgear.com QR" width="180" height="180" />
+        <img className="counter-bill-print__qr" src={qrDataUrl} alt="asfixgear.com QR" width="168" height="168" />
       ) : (
         <p className="counter-bill-print__site">{RECEIPT_SITE_URL}</p>
       )}
@@ -1713,6 +1767,7 @@ export default function AdminCounterBill({
   onThermalWidthChange,
   onJumpToSales,
   onOpenReturnFlow,
+  onOpenPrinterSetup,
 }) {
   const { t } = useTranslation();
   const { user } = useAuth();
@@ -1724,7 +1779,7 @@ export default function AdminCounterBill({
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const nativePos = isNativePosApp();
   const [nativePrinter, setNativePrinter] = useState(null);
-  const { printSmart, chooser: printChooser } = useSmartThermalPrint({
+  const { printSmart, openPrintSetup, chooser: printChooser } = useSmartThermalPrint({
     thermalWidth,
     agentReady: !nativePos || Boolean(nativePrinter?.address),
   });
@@ -1754,30 +1809,8 @@ export default function AdminCounterBill({
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [receiptOrder, setReceiptOrder] = useState(null);
-  const [dockTucked, setDockTucked] = useState(false);
   /* Thermer CTA only in Android browser — native app prints via AsfixThermalPrint */
   const showMateThermalLink = !nativePos && typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
-
-  useEffect(() => {
-    if (typeof window === 'undefined') return undefined;
-    let lastY = window.scrollY || 0;
-    let ticking = false;
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      window.requestAnimationFrame(() => {
-        const y = window.scrollY || 0;
-        const delta = y - lastY;
-        /* Tuck slightly on scroll-down; bring total back on scroll-up */
-        if (delta > 12 && y > 64) setDockTucked(true);
-        else if (delta < -8) setDockTucked(false);
-        lastY = y;
-        ticking = false;
-      });
-    };
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
-  }, []);
 
   useEffect(() => {
     if (!nativePos) return undefined;
@@ -1805,6 +1838,18 @@ export default function AdminCounterBill({
       setNativePrinterBusy(false);
     }
   }, [nativePos]);
+
+  const openPrinterSetup = useCallback(() => {
+    if (typeof onOpenPrinterSetup === 'function') {
+      onOpenPrinterSetup();
+      return;
+    }
+    if (nativePos) {
+      void refreshNativePrinters();
+      return;
+    }
+    openPrintSetup();
+  }, [nativePos, onOpenPrinterSetup, openPrintSetup, refreshNativePrinters]);
 
   const selectNativePrinter = useCallback(async (printer) => {
     await savePrinter(printer);
@@ -1873,7 +1918,7 @@ export default function AdminCounterBill({
     }
     if (normalized.reason === 'no_printer') {
       setFeedback({ type: 'error', text: t('admin.counterBillNativeNoPrinter') });
-      void refreshNativePrinters();
+      openPrinterSetup();
       return;
     }
     if (normalized.reason === 'permission_denied') {
@@ -1884,7 +1929,7 @@ export default function AdminCounterBill({
       type: 'error',
       text: normalized.message || t('admin.counterBillNativePrintFailed'),
     });
-  }, [nativePos, t, refreshNativePrinters]);
+  }, [nativePos, t, openPrinterSetup]);
 
   const availableProducts = useMemo(() => {
     return products
@@ -1925,6 +1970,7 @@ export default function AdminCounterBill({
   const cashReceivedValue = Number(cashReceived);
   const changeDue = paymentMode === 'cash' && Number.isFinite(cashReceivedValue) ? Math.max(0, cashReceivedValue - total) : 0;
   const hasActiveBill = Boolean(lines.length || customerName || customerPhone || paymentNote || discountValue);
+  const selectedItemCount = lines.reduce((sum, line) => sum + (Number(line.qty) || 0), 0);
 
   const billSnapshot = useCallback(() => ({
     lines: lines.map((line) => ({
@@ -2042,7 +2088,6 @@ export default function AdminCounterBill({
   const addProduct = (product) => {
     setReceiptOrder(null);
     setFeedback(null);
-    setDockTucked(false);
     setCartFlashKey(Date.now());
     setLines((prev) => {
       const existing = prev.find((line) => line.product.id === product.id);
@@ -2074,7 +2119,6 @@ export default function AdminCounterBill({
 
   const setQty = (productId, value) => {
     setReceiptOrder(null);
-    setDockTucked(false);
     setCartFlashKey(Date.now());
     const raw = Number(value);
     setLines((prev) =>
@@ -2828,6 +2872,18 @@ export default function AdminCounterBill({
                   <strong>{formatPrice(0)}</strong>
                 )}
               </div>
+              {paymentMode === 'cash' && Number.isFinite(cashReceivedValue) && cashReceived !== '' ? (
+                <div>
+                  <span>{t('admin.counterBillAmountReceived')}</span>
+                  <strong>{formatPrice(cashReceivedValue)}</strong>
+                </div>
+              ) : null}
+              {paymentMode === 'cash' && Number.isFinite(cashReceivedValue) && cashReceived !== '' ? (
+                <div>
+                  <span>{t('admin.counterBillChangeReturn')}</span>
+                  <strong>{formatPrice(changeDue)}</strong>
+                </div>
+              ) : null}
               <div className="counter-bill__summary-total">
                 <span>{t('admin.counterBillGrandTotal')}</span>
                 <strong key={`total-${total}-${lines.length}`}>{formatPrice(total)}</strong>
@@ -2872,44 +2928,72 @@ export default function AdminCounterBill({
         </section>
       </div>
 
-      <div
-        className={`counter-bill__pos-dock${dockTucked ? ' counter-bill__pos-dock--tucked' : ''}${cartFlashKey ? ' counter-bill__pos-dock--flash' : ''}`}
-        role="region"
-        aria-label={t('admin.counterBillSummary')}
-      >
-        <div className="counter-bill__pos-dock-total">
-          <span>{t('admin.counterBillGrandTotal')}</span>
-          <strong key={`dock-total-${total}-${lines.length}`}>{formatPrice(total)}</strong>
-        </div>
-        <button
-          type="button"
-          className="counter-bill__pos-dock-sales"
-          onClick={() => {
-            setDockTucked(false);
-            onJumpToSales?.();
-          }}
-        >
-          {t('counter.mySalesToday')}
-        </button>
-        <button
-          type="button"
-          className="counter-bill__pos-dock-print"
-          onClick={() => {
-            setDockTucked(false);
-            void printReceipt();
-          }}
-          disabled={!receiptOrder}
-          aria-label={t('admin.counterBillPrintNow')}
-          title={t('admin.counterBillPrintNow')}
-        >
-          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
-            <path
-              fill="currentColor"
-              d="M6 9V3h12v6h2a2 2 0 0 1 2 2v6h-4v4H6v-4H2v-6a2 2 0 0 1 2-2h2zm2-4v4h8V5H8zm-2 12v2h12v-2H6zm-2-2h16v-4H4v4zm2-2.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"
-            />
-          </svg>
-        </button>
-      </div>
+      {typeof document !== 'undefined'
+        ? createPortal(
+          <div
+            className={`counter-bill__pos-dock${cartFlashKey ? ' counter-bill__pos-dock--flash' : ''}`}
+            role="region"
+            aria-label={t('admin.counterBillSummary')}
+          >
+            <div className="counter-bill__pos-dock-total">
+              <span>
+                {t('admin.counterBillGrandTotal')}
+                {selectedItemCount > 0 ? (
+                  <em className="counter-bill__pos-dock-count"> · {t('admin.counterBillSelectedCount', { count: selectedItemCount })}</em>
+                ) : null}
+              </span>
+              <strong key={`dock-total-${total}-${selectedItemCount}`}>{formatPrice(total)}</strong>
+            </div>
+            <button
+              type="button"
+              className="counter-bill__pos-dock-sales"
+              onClick={() => onJumpToSales?.()}
+            >
+              {t('counter.mySalesToday')}
+            </button>
+            <button
+              type="button"
+              className="counter-bill__pos-dock-printer"
+              onClick={() => openPrinterSetup()}
+              aria-label={t('admin.counterBillNativeRefresh')}
+              title={
+                nativePos
+                  ? (nativePrinter?.name || t('admin.counterBillNativeRefresh'))
+                  : t('admin.counterBillNativeRefresh')
+              }
+            >
+              <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                <path
+                  fill="currentColor"
+                  d="M17 7V5a3 3 0 0 0-3-3H10a3 3 0 0 0-3 3v2H5a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h1v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2h1a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-2zM10 5h4v2h-4V5zm6 14H8v-4h8v4zm3-6a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"
+                />
+              </svg>
+            </button>
+            <button
+              type="button"
+              className="counter-bill__pos-dock-print"
+              onClick={() => {
+                if (nativePos && !nativePrinter?.address) {
+                  openPrinterSetup();
+                  return;
+                }
+                void printReceipt();
+              }}
+              disabled={!receiptOrder && !(nativePos && !nativePrinter?.address)}
+              aria-label={t('admin.counterBillPrintNow')}
+              title={t('admin.counterBillPrintNow')}
+            >
+              <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                <path
+                  fill="currentColor"
+                  d="M6 9V3h12v6h2a2 2 0 0 1 2 2v6h-4v4H6v-4H2v-6a2 2 0 0 1 2-2h2zm2-4v4h8V5H8zm-2 12v2h12v-2H6zm-2-2h16v-4H4v4zm2-2.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"
+                />
+              </svg>
+            </button>
+          </div>,
+          document.body,
+        )
+        : null}
 
       {receiptOrder ? (
         <section className="counter-bill__receipt">
