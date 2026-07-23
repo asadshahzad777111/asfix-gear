@@ -470,7 +470,8 @@ router.delete('/counter-drafts/:id', requireAuth, requireRole(...COUNTER_SELLERS
 
 router.get('/counter-sales', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
   const date = String(req.query.date || '').trim();
-  let orders = store.getOrders().filter((order) => (order.source || 'online') === 'counter_sale');
+  const allOrders = store.getOrders();
+  let orders = allOrders.filter((order) => (order.source || 'online') === 'counter_sale');
   if (req.auth.user.role === 'counter') {
     orders = orders.filter((order) => String(order.created_by_staff_id || '') === String(req.auth.user.id));
   } else if (req.query.staff_id) {
@@ -482,7 +483,24 @@ router.get('/counter-sales', requireAuth, requireRole(...COUNTER_SELLERS), (req,
       return orderDate === date;
     });
   }
-  res.json(orders);
+  /* Attach returned totals from linked counter_return rows so POS list can show refunds */
+  const enriched = orders.map((order) => {
+    const returnedAmount = allOrders.reduce((sum, candidate) => {
+      const isReturn = candidate.source === 'counter_return' || candidate.transaction_type === 'return';
+      if (!isReturn || Number(candidate.original_order_id) !== Number(order.id)) return sum;
+      const amount = Number(candidate.return_amount);
+      if (Number.isFinite(amount) && amount > 0) return sum + amount;
+      return sum + Math.abs(Number(candidate.total_amount) || 0);
+    }, 0);
+    if (!(returnedAmount > 0)) return order;
+    const originalTotal = Number(order.total_amount) || 0;
+    return {
+      ...order,
+      returned_amount: returnedAmount,
+      net_amount: originalTotal - returnedAmount,
+    };
+  });
+  res.json(enriched);
 });
 
 router.get('/counter-sales/:id', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {

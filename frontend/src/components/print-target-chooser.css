@@ -1,12 +1,14 @@
-/* Print target chooser — compact sheet for admin / POS Print */
+/* Print target chooser — compact sheet for admin / POS Print (portaled above dock) */
 .print-target-chooser {
   position: fixed;
   inset: 0;
-  z-index: 12000;
+  z-index: 15000;
   display: grid;
   place-items: end center;
   padding: 1rem;
-  pointer-events: none;
+  padding-bottom: max(1rem, env(safe-area-inset-bottom, 0px));
+  pointer-events: auto;
+  isolation: isolate;
 }
 
 .print-target-chooser__backdrop {
@@ -22,13 +24,23 @@
 
 .print-target-chooser__card {
   position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
   width: min(420px, 100%);
   margin-bottom: 0.5rem;
-  padding: 1rem 1rem 0.85rem;
+  padding: 1rem 1rem 0;
   pointer-events: auto;
   border-radius: 16px 16px 12px 12px;
   max-height: min(88vh, 640px);
-  overflow: auto;
+  max-height: min(88dvh, 640px);
+  overflow: hidden;
+  -webkit-overflow-scrolling: touch;
+}
+
+.print-target-chooser__head {
+  flex: 0 0 auto;
+  padding-bottom: 0.15rem;
 }
 
 .print-target-chooser__head h3,
@@ -52,6 +64,10 @@
   display: grid;
   gap: 0.5rem;
   margin: 0.9rem 0 0.75rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  -webkit-overflow-scrolling: touch;
 }
 
 .print-target-chooser__option {
@@ -115,13 +131,14 @@
 }
 
 .print-target-chooser__warn {
-  margin: 0 0 0.75rem;
+  margin: 0 0 0.5rem;
   padding: 0.55rem 0.65rem;
   border-radius: 10px;
   font-size: 0.8rem;
   line-height: 1.35;
   background: color-mix(in srgb, #d27a4a 18%, transparent);
   color: inherit;
+  flex: 0 0 auto;
 }
 
 .print-target-chooser__foot {
@@ -129,6 +146,30 @@
   justify-content: flex-end;
   gap: 0.5rem;
   flex-wrap: wrap;
+  flex: 0 0 auto;
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  margin: 0 -1rem;
+  padding: 0.75rem 1rem max(0.85rem, env(safe-area-inset-bottom, 0px));
+  pointer-events: auto;
+  background: color-mix(in srgb, var(--surface, #161a22) 96%, transparent);
+  border-top: 1px solid color-mix(in srgb, var(--text, #e8e8e8) 10%, transparent);
+}
+
+.print-target-chooser__foot .btn {
+  pointer-events: auto;
+  min-height: 44px;
+}
+
+/* Hide sticky POS dock while print chooser is open (same as payment QR / return modal). */
+body.pos-modal-open .counter-bill__pos-dock,
+html.pos-modal-open .counter-bill__pos-dock,
+body:has(.print-target-chooser) .counter-bill__pos-dock {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
 }
 
 @media (min-width: 640px) {
@@ -138,5 +179,9 @@
 
   .print-target-chooser__card {
     border-radius: 14px;
+  }
+
+  .print-target-chooser__foot {
+    padding-bottom: 0.85rem;
   }
 }

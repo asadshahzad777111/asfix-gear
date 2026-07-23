@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { api, formatPrice } from '../api/client';
 import AdminCounterBill, {
   downloadCounterInvoicePdf,
@@ -159,12 +160,55 @@ export default function Counter() {
     loadCounterData({ silent: false });
   }, []);
 
-  const jumpToSales = () => {
+  /** Soft-pin sales list into view (same pattern as Discount/Customer — no center overshoot). */
+  const softScrollToSales = useCallback(() => {
+    const section = salesSectionRef.current;
+    if (!section) return;
+    const topPad = 12;
+    const dockReserve = 96;
+    const rect = section.getBoundingClientRect();
+    const viewH = window.innerHeight || 0;
+    /* Already usable above the sticky dock — do not jump the page. */
+    if (rect.top >= topPad && rect.top <= Math.max(topPad + 8, viewH - dockReserve - 72)) {
+      return;
+    }
+    const nextTop = Math.max(0, window.scrollY + rect.top - topPad);
+    window.scrollTo({ top: nextTop, behavior: 'smooth' });
+  }, []);
+
+  const jumpToSales = useCallback(() => {
     setSalesOpen(true);
-    window.requestAnimationFrame(() => {
-      salesSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    });
-  };
+    window.requestAnimationFrame(() => softScrollToSales());
+    window.setTimeout(() => softScrollToSales(), 280);
+  }, [softScrollToSales]);
+
+  /** Refund / Return toolbar: open sales with Return actions pinned under the dock. */
+  const openReturnFlow = useCallback(() => {
+    setSalesOpen(true);
+    const pin = () => {
+      softScrollToSales();
+      salesSectionRef.current?.classList.add('counter-sales--return-focus');
+    };
+    window.requestAnimationFrame(pin);
+    window.setTimeout(pin, 60);
+    window.setTimeout(pin, 300);
+    window.setTimeout(() => {
+      salesSectionRef.current?.classList.remove('counter-sales--return-focus');
+    }, 2200);
+  }, [softScrollToSales]);
+
+  useEffect(() => {
+    if (!returnSale || typeof document === 'undefined') return undefined;
+    const { body } = document;
+    const prevOverflow = body.style.overflow;
+    body.classList.add('pos-modal-open');
+    body.style.overflow = 'hidden';
+    return () => {
+      body.classList.remove('pos-modal-open');
+      body.style.overflow = prevOverflow || '';
+      if (!prevOverflow) body.style.removeProperty('overflow');
+    };
+  }, [returnSale]);
 
   const openReturnModal = async (sale) => {
     setReturnFeedback('');
@@ -263,7 +307,8 @@ export default function Counter() {
     ) || null;
   }, [today]);
 
-  const printCounterSale = useCallback(async (sale) => {
+  /** Always regenerate from current builders — never replay an old layout snapshot. */
+  const loadPrintableCounterSale = useCallback(async (sale) => {
     let order = null;
     try {
       order = await resolvePrintableCounterSale(sale);
@@ -272,6 +317,14 @@ export default function Counter() {
     }
     if (!saleHasReceiptItems(order)) {
       window.alert?.('Receipt details are still loading. Refresh sales and try Print Receipt again.');
+      return null;
+    }
+    return order;
+  }, [resolvePrintableCounterSale]);
+
+  const printCounterSale = useCallback(async (sale) => {
+    const order = await loadPrintableCounterSale(sale);
+    if (!order) {
       return { ok: false, reason: 'no_order', message: 'Receipt details are still loading' };
     }
     /* Smart print: native BT local, else remote station chooser */
@@ -279,18 +332,20 @@ export default function Counter() {
       thermalWidth,
       inFlightRef: printInFlightRef,
     });
-  }, [printSmart, resolvePrintableCounterSale, thermalWidth]);
+  }, [loadPrintableCounterSale, printSmart, thermalWidth]);
 
   const shareCounterSale = async (sale) => {
+    const order = await loadPrintableCounterSale(sale);
+    if (!order) return;
     try {
-      const shared = await shareCounterInvoicePdf(sale, thermalWidth);
+      const shared = await shareCounterInvoicePdf(order, thermalWidth);
       if (!shared) {
         window.alert?.(t('admin.counterBillShareSheet'));
       }
     } catch (err) {
       if (err?.name !== 'AbortError') {
         try {
-          await downloadCounterInvoicePdf(sale, thermalWidth);
+          await downloadCounterInvoicePdf(order, thermalWidth);
           window.alert?.(t('admin.counterBillShareSheet'));
         } catch (downloadErr) {
           window.alert?.(downloadErr?.message || t('admin.counterBillPdfFailed'));
@@ -300,8 +355,10 @@ export default function Counter() {
   };
 
   const downloadCounterSale = async (sale) => {
+    const order = await loadPrintableCounterSale(sale);
+    if (!order) return;
     try {
-      const result = await downloadCounterInvoicePdf(sale, thermalWidth);
+      const result = await downloadCounterInvoicePdf(order, thermalWidth);
       if (result?.message === 'cancelled') return;
       if (!result?.ok) {
         window.alert?.(result?.message || t('admin.counterBillPdfFailed'));
@@ -412,7 +469,7 @@ export default function Counter() {
           onPrintOrder={printCounterSale}
           onThermalWidthChange={setThermalWidth}
           onJumpToSales={jumpToSales}
-          onOpenReturnFlow={jumpToSales}
+          onOpenReturnFlow={openReturnFlow}
           onOpenPrinterSetup={openPrinterSetup}
         />
 
@@ -423,7 +480,7 @@ export default function Counter() {
           title={t('counter.paymentQrSlips')}
         />
 
-        <section className="counter-sales" ref={salesSectionRef}>
+        <section className="counter-sales" id="counter-bill-sales" ref={salesSectionRef}>
           <div className="counter-sales__head">
             <button
               type="button"
@@ -455,13 +512,34 @@ export default function Counter() {
                     </tr>
                   </thead>
                   <tbody>
-                    {sales.map((sale) => (
-                      <tr key={sale.id}>
+                    {sales.map((sale) => {
+                      const returnedAmount = Math.max(0, Number(sale.returned_amount) || 0);
+                      const originalTotal = Number(sale.total_amount) || 0;
+                      const netAmount = Number.isFinite(Number(sale.net_amount))
+                        ? Number(sale.net_amount)
+                        : originalTotal - returnedAmount;
+                      const hasReturn = returnedAmount > 0;
+                      return (
+                      <tr key={sale.id} className={hasReturn ? 'counter-sales__row--returned' : undefined}>
                         <td>{sale.order_id || sale.id}</td>
                         <td>{sale.created_at ? new Date(sale.created_at).toLocaleTimeString() : '-'}</td>
                         <td>{sale.customer_name || 'Walk-in Customer'}</td>
                         <td>{sale.payment_mode}</td>
-                        <td>{formatPrice(sale.total_amount)}</td>
+                        <td>
+                          <div className="counter-sales__total-cell">
+                            <strong className="counter-sales__total-original">{formatPrice(originalTotal)}</strong>
+                            {hasReturn ? (
+                              <>
+                                <span className="counter-sales__returned-badge">
+                                  {t('counter.returnedAmount')}: {formatPrice(returnedAmount)}
+                                </span>
+                                <small className="counter-sales__net-amount">
+                                  {t('counter.netAfterReturn')}: {formatPrice(netAmount)}
+                                </small>
+                              </>
+                            ) : null}
+                          </div>
+                        </td>
                         <td>
                           <div className="counter-sales__actions">
                             <button
@@ -517,12 +595,13 @@ export default function Counter() {
                               className="wp-button wp-button--secondary counter-sales__print counter-sales__return"
                               onClick={() => openReturnModal(sale)}
                             >
-                              Process Return
+                              {hasReturn ? t('counter.processReturnAgain') : t('counter.processReturn')}
                             </button>
                           </div>
                         </td>
                       </tr>
-                    ))}
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>
@@ -530,81 +609,84 @@ export default function Counter() {
           ) : null}
         </section>
 
-        {returnSale ? (
-          <div className="counter-return-modal" role="dialog" aria-modal="true" aria-label="Process return">
-            <div className="counter-return-modal__card glass-card">
-              <div className="counter-return-modal__head">
-                <div>
-                  <h3>Process Return</h3>
-                  <p>
-                    Bill {returnSale.order_id || returnSale.id} · Return window: {posSettings.posReturnWindowHours} hours
-                  </p>
+        {returnSale && typeof document !== 'undefined'
+          ? createPortal(
+            <div className="counter-return-modal" role="dialog" aria-modal="true" aria-label="Process return">
+              <div className="counter-return-modal__card glass-card">
+                <div className="counter-return-modal__head">
+                  <div>
+                    <h3>Process Return</h3>
+                    <p>
+                      Bill {returnSale.order_id || returnSale.id} · Return window: {posSettings.posReturnWindowHours} hours
+                    </p>
+                  </div>
+                  <button type="button" className="wp-button wp-button--secondary" onClick={() => setReturnSale(null)}>
+                    Close
+                  </button>
                 </div>
-                <button type="button" className="wp-button wp-button--secondary" onClick={() => setReturnSale(null)}>
-                  Close
-                </button>
-              </div>
 
-              {returnNeedsOverride ? (
-                <p className="counter-return-modal__warning">
-                  This bill is outside the normal return window. Manager approval will be required.
-                </p>
-              ) : null}
+                {returnNeedsOverride ? (
+                  <p className="counter-return-modal__warning">
+                    This bill is outside the normal return window. Manager approval will be required.
+                  </p>
+                ) : null}
 
-              <div className="counter-return-modal__items">
-                {(returnSale.items || []).map((item) => (
-                  <label key={item.product_id} className="counter-return-item">
-                    <span>
-                      <strong>{item.name}</strong>
-                      <small>Sold: {item.qty} · {formatPrice(item.price)} each</small>
-                    </span>
+                <div className="counter-return-modal__items">
+                  {(returnSale.items || []).map((item) => (
+                    <label key={item.product_id} className="counter-return-item">
+                      <span>
+                        <strong>{item.name}</strong>
+                        <small>Sold: {item.qty} · {formatPrice(item.price)} each</small>
+                      </span>
+                      <input
+                        type="number"
+                        min="0"
+                        max={Number(item.qty) || 0}
+                        step="1"
+                        value={returnQty[item.product_id] || ''}
+                        onChange={(e) => setReturnItemQty(item.product_id, e.target.value)}
+                        placeholder="0"
+                      />
+                    </label>
+                  ))}
+                </div>
+
+                <div className="counter-return-modal__grid">
+                  <label>
+                    <span>Refund method</span>
+                    <select value={returnMethod} onChange={(e) => setReturnMethod(e.target.value)}>
+                      <option value="cash">Cash</option>
+                      <option value="store_credit">Store Credit</option>
+                    </select>
+                  </label>
+                  <label>
+                    <span>Reason (optional)</span>
                     <input
-                      type="number"
-                      min="0"
-                      max={Number(item.qty) || 0}
-                      step="1"
-                      value={returnQty[item.product_id] || ''}
-                      onChange={(e) => setReturnItemQty(item.product_id, e.target.value)}
-                      placeholder="0"
+                      value={returnReason}
+                      onChange={(e) => setReturnReason(e.target.value)}
+                      maxLength={500}
+                      placeholder="Customer reason / staff note"
                     />
                   </label>
-                ))}
-              </div>
+                </div>
 
-              <div className="counter-return-modal__grid">
-                <label>
-                  <span>Refund method</span>
-                  <select value={returnMethod} onChange={(e) => setReturnMethod(e.target.value)}>
-                    <option value="cash">Cash</option>
-                    <option value="store_credit">Store Credit</option>
-                  </select>
-                </label>
-                <label>
-                  <span>Reason (optional)</span>
-                  <input
-                    value={returnReason}
-                    onChange={(e) => setReturnReason(e.target.value)}
-                    maxLength={500}
-                    placeholder="Customer reason / staff note"
-                  />
-                </label>
+                <div className="counter-return-modal__foot">
+                  <strong>Refund total: {formatPrice(returnTotal)}</strong>
+                  <button
+                    type="button"
+                    className="wp-button"
+                    onClick={submitReturn}
+                    disabled={returnSubmitting || !returnItems.length}
+                  >
+                    {returnSubmitting ? 'Processing…' : 'Confirm Return'}
+                  </button>
+                </div>
+                {returnFeedback ? <p className="counter-return-modal__feedback">{returnFeedback}</p> : null}
               </div>
-
-              <div className="counter-return-modal__foot">
-                <strong>Refund total: {formatPrice(returnTotal)}</strong>
-                <button
-                  type="button"
-                  className="wp-button"
-                  onClick={submitReturn}
-                  disabled={returnSubmitting || !returnItems.length}
-                >
-                  {returnSubmitting ? 'Processing…' : 'Confirm Return'}
-                </button>
-              </div>
-              {returnFeedback ? <p className="counter-return-modal__feedback">{returnFeedback}</p> : null}
-            </div>
-          </div>
-        ) : null}
+            </div>,
+            document.body,
+          )
+          : null}
 
         {nativePos && nativePickerOpen ? (
           <div className="counter-printer-modal" role="dialog" aria-modal="true" aria-label={t('admin.counterBillNativePrinter')}>

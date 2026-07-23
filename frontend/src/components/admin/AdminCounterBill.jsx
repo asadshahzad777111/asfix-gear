@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { api, formatPrice } from '../../api/client';
@@ -312,8 +312,8 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
 
   push(0x1b, 0x40); // ESC @
   push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm / ~32 cols @ 384 dots)
-  /* Slightly airier leading — still compact for paper */
-  push(0x1b, 0x33, 32);
+  /* Compact leading — TOTAL sits flush to dashed rules */
+  push(0x1b, 0x33, 24);
   /* Top feed so logo is not clipped by cutter/head */
   push(0x1b, 0x4a, 40);
 
@@ -321,7 +321,7 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
   if (logoRaster.length) {
     push(0x1b, 0x61, 0x01); // center
     parts.push(logoRaster);
-    push(0x0a, 0x0a);
+    push(0x0a);
   }
 
   for (const line of lines) {
@@ -345,22 +345,18 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
     }
 
     push(0x1b, 0x61, line.align === 'center' ? 0x01 : line.align === 'right' ? 0x02 : 0x00);
-    /* Bold grand total; grand slightly larger (double H) with room around digits */
     const useBold = Boolean(line.title || line.grand);
     push(0x1b, 0x45, useBold ? 0x01 : 0x00);
-    /* Always Font A — Font B looks tiny and leaves empty right margin feel */
     push(0x1b, 0x4d, 0x00);
-    /* Grand TOTAL: double H (clearer amounts, not W+H blob) */
-    const size = line.grand || line.title
-      ? 0x01
-      : 0x00;
+    /* Grand: bold only (no double-H) — avoids large vertical gap around TOTAL */
+    const size = line.title ? 0x01 : 0x00;
+    if (line.grand) push(0x1b, 0x33, 18);
     push(0x1d, 0x21, size);
     text(line.value);
     push(0x0a);
-    /* Extra feed after grand so amount is not cramped against next rule */
-    if (line.grand) push(0x0a);
     push(0x1d, 0x21, 0x00);
     push(0x1b, 0x45, 0x00);
+    if (line.grand) push(0x1b, 0x33, 24);
   }
   push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00, 0x1b, 0x4d, 0x00);
   /* Extra feed so cutter does not eat Scan/QR */
@@ -411,13 +407,12 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
       parts.push(`<010>${'-'.repeat(maxChars)}`);
       return;
     }
-    if (!text) {
-      parts.push('<010> ');
-      return;
-    }
+    /* Skip blank spacers — keeps TOTAL band tight on Thermer */
+    if (!text) return;
     const bold = line.weight === 'bold' || line.title || line.grand || line.totalLabel ? '1' : '0';
     const align = line.align === 'center' ? '1' : line.align === 'right' ? '2' : '0';
-    const format = line.grand ? '1' : line.title ? '3' : '0';
+    /* Grand: bold only — skip dH/dW so TOTAL stays tight and fits 32 cols */
+    const format = line.title ? '3' : '0';
     parts.push(`<${bold}${align}${format}>${text}`);
   });
   parts.push('<110>Scan');
@@ -517,7 +512,7 @@ function shortReceiptDate(order) {
 }
 
 function buildReceiptLines(order, maxChars = 18) {
-  const { subtotal, discount, grandTotal } = receiptTotals(order);
+  const { discount, grandTotal } = receiptTotals(order);
   const rows = order?.items || [];
   const lines = [];
   const push = (value = '', options = {}) => {
@@ -599,14 +594,10 @@ function buildReceiptLines(order, maxChars = 18) {
     });
   }
 
+  /* Items → rule → [Discount] → TOTAL → rule (no Subtotal; no blank spacers) */
   rule();
-  money('Subtotal', subtotal);
   if (discount) money('Discount', discount);
-  rule();
-  /* Blank line + bold TOTAL — clearer spacing around amount */
-  push('', { small: true });
   money('TOTAL AMOUNT', grandTotal, { weight: 'bold', grand: true });
-  push('', { small: true });
   const note = counterPaymentNote(order);
   if (note) wrap(`Note: ${note}`, { small: true });
   rule();
@@ -664,8 +655,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   }
 
   const lineSize = (line) => {
-    /* Grand TOTAL slightly larger + airy */
-    if (line.grand) return Math.round(fontSize * 1.4);
+    /* Grand TOTAL slightly larger — keep leading tight to dashed rules */
+    if (line.grand) return Math.round(fontSize * 1.12);
     if (line.shopHeader) return Math.round(fontSize * 1.34);
     if (line.title) return Math.round(fontSize * 1.15);
     if (line.small) return Math.max(11, Math.round(fontSize * 0.88));
@@ -726,9 +717,9 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return chunks.length ? chunks : [''];
   };
 
-  /* Slightly airier leading — polish without wasting paper */
-  const lineHFor = (size) => Math.ceil(size * 1.18);
-  const ruleH = Math.ceil(fontSize * 0.55);
+  /* Aggressive tight leading — rules sit flush against TOTAL */
+  const lineHFor = (size) => Math.ceil(size * 1.02);
+  const ruleH = Math.ceil(fontSize * 0.34);
   /*
    * QR: medium size (~68% of printable band) — scannable, not oversized.
    * Mag 6–8 dots/module; never exceed roll width or printers drop the block.
@@ -749,10 +740,11 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const logoEstimate = Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10;
 
   let heightPx = padTop + padBottom + 4 + logoEstimate;
-  lines.forEach((line) => {
+  lines.forEach((line, idx) => {
     if (line.logo) return;
     if (line.rule) {
-      heightPx += ruleH + 4;
+      const nearGrand = Boolean(lines[idx - 1]?.grand || lines[idx + 1]?.grand);
+      heightPx += ruleH + (nearGrand ? 0 : 1);
       return;
     }
     if (line.qr) {
@@ -760,7 +752,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       return;
     }
     const size = lineSize(line);
-    const lh = lineHFor(size);
+    const lh = line.grand ? size : lineHFor(size);
     if (line.columns) {
       heightPx += lh;
     } else {
@@ -833,11 +825,13 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   if (logoH) y += logoH;
   else y += 4;
 
-  for (const line of lines) {
+  for (let i = 0; i < lines.length; i += 1) {
+    const line = lines[i];
     if (line.logo) continue;
     if (line.rule) {
       drawRuleLine(y);
-      y += ruleH + 4;
+      const nearGrand = Boolean(lines[i - 1]?.grand || lines[i + 1]?.grand);
+      y += ruleH + (nearGrand ? 0 : 1);
       continue;
     }
 
@@ -850,7 +844,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
 
     const heavy = isHeavy(line);
     const size = lineSize(line);
-    const lh = lineHFor(size);
+    /* Grand leading = glyph size — no extra air above/below TOTAL */
+    const lh = line.grand ? size : lineHFor(size);
 
     if (line.columns) {
       let left = String(line.columns.left ?? '');
@@ -934,23 +929,26 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const marginBottom = pdfPointsFromMillimeters(1.2);
   const maxChars = pageWidth === '80mm' ? 26 : 18;
   const bodySize = pageWidth === '80mm' ? 13 : 12;
-  const bodyLeading = pageWidth === '80mm' ? 18 : 17;
+  const bodyLeading = pageWidth === '80mm' ? 15 : 14;
   const receiptLines = buildReceiptLines(order, maxChars)
     .filter((line) => !line.qr && !line.logo)
     .map((line) => ({
       value: line.value,
       size: line.grand
-        ? bodySize + 6
+        ? bodySize + 2
         : line.title
           ? bodySize + 3
           : line.small
             ? bodySize - 0.5
             : bodySize,
+      /* Grand leading ≈ glyph — no extra air around TOTAL */
       leading: line.grand
-        ? bodyLeading + 7
+        ? bodySize + 3
         : line.title
           ? bodyLeading + 2
-          : bodyLeading,
+          : line.rule
+            ? Math.max(8, bodyLeading - 4)
+            : bodyLeading,
       align: line.align || 'left',
       font: line.weight === 'bold' || line.title || line.grand ? 'F2' : 'F1',
     }));
@@ -1103,7 +1101,7 @@ function prefersThermalPngShare() {
  */
 function buildThermalReceiptHtml(order, thermalWidth = '58mm', qrDataUrl = '', logoDataUrl = '') {
   const widthMm = thermalWidth === '80mm' ? 80 : 58;
-  const { subtotal, discount, grandTotal } = receiptTotals(order);
+  const { discount, grandTotal } = receiptTotals(order);
   const paymentNote = counterPaymentNote(order);
   const items = (order?.items || []).map((item) => {
     const qty = Number(item.qty) || 1;
@@ -1140,28 +1138,28 @@ html, body {
   font-family: "Courier New", Courier, monospace !important;
   font-size: 14px !important;
   font-weight: 400 !important;
-  line-height: 1.28 !important;
+  line-height: 1.18 !important;
   letter-spacing: 0.04em !important;
   page-break-after: avoid !important;
   page-break-inside: avoid !important;
 }
-.r-shop { text-align: center; margin-bottom: 5px; }
-.r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 0 auto 4px; }
-.r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
-.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 4px 0; font-size: 13px; font-weight: 400; }
+.r-shop { text-align: center; margin-bottom: 3px; }
+.r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 0 auto 2px; }
+.r-shop p { margin: 1px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; margin: 2px 0; font-size: 13px; font-weight: 400; }
 .r-meta span:last-child { text-align: right; }
-.r-rule { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
-.r-item { margin: 0 0 3px; }
+.r-rule { border: 0; border-top: 1px dashed #000; margin: 0; padding: 0; }
+.r-item { margin: 0 0 2px; }
 .r-item strong { display: block; font-size: 13px; font-weight: 400; letter-spacing: 0.04em; }
 .r-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 400; }
-.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 13px; font-weight: 400; }
+.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; font-size: 13px; font-weight: 400; margin: 0; padding: 0; line-height: 1; }
 .r-totals > * { min-width: 0; }
 .r-totals strong { text-align: right; white-space: nowrap; font-weight: 400; }
-.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; margin: 6px 0 5px; padding: 3px 2.5mm 3px 0; }
-.r-grand-label { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
-.r-grand { font-size: 18px; font-weight: 700; letter-spacing: 0.1em; text-align: right; white-space: nowrap; padding-right: 1.5mm; }
-.r-thanks, .r-site { text-align: center; margin: 3px 0 0; font-size: 12px; font-weight: 400; }
-.r-scan { text-align: center; margin: 5px 0 3px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; align-items: baseline; margin: 0; padding: 0 2mm 0 0; line-height: 1; }
+.r-grand-label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
+.r-grand { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-align: right; white-space: nowrap; padding-right: 1mm; line-height: 1; }
+.r-thanks, .r-site { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 400; }
+.r-scan { text-align: center; margin: 4px 0 2px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
 .r-qr { display: block; width: 68%; max-width: 68%; height: auto; margin: 2px auto 4px; }
 `.trim();
 
@@ -1196,11 +1194,7 @@ html, body {
   <hr class="r-rule" />
   ${items || '<div class="r-item">No items</div>'}
   <hr class="r-rule" />
-  <div class="r-totals">
-    <span>Subtotal</span><strong>${escapeHtml(thermalAmountText(subtotal))}</strong>
-    ${discount ? `<span>Discount</span><strong>${escapeHtml(thermalAmountText(discount))}</strong>` : ''}
-  </div>
-  <hr class="r-rule" />
+  ${discount ? `<div class="r-totals"><span>Discount</span><strong>${escapeHtml(thermalAmountText(discount))}</strong></div>` : ''}
   <div class="r-grand-row">
     <span class="r-grand-label">TOTAL AMOUNT</span>
     <strong class="r-grand">${escapeHtml(thermalAmountText(grandTotal))}</strong>
@@ -1788,7 +1782,7 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
   if (!order) return null;
 
   const paymentNote = counterPaymentNote(order);
-  const { subtotal, discount, grandTotal } = receiptTotals(order);
+  const { discount, grandTotal } = receiptTotals(order);
 
   return (
     <div
@@ -1834,8 +1828,6 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
       </div>
       <div className="counter-bill-print__rule" />
       <div className="counter-bill-print__totals">
-        <span>{t('admin.counterBillSubtotal')}</span>
-        <strong>{formatPrice(subtotal)}</strong>
         {discount ? (
           <>
             <span>{t('admin.counterBillDiscount')}</span>
@@ -1870,6 +1862,7 @@ export default function AdminCounterBill({
   const { user } = useAuth();
   const searchRef = useRef(null);
   const noteRef = useRef(null);
+  const stickyDockRef = useRef(null);
   const printInFlightRef = useRef(false);
   const autoPrintedOrderRef = useRef(null);
   const [draftSeed] = useState(() => readCounterBillDraft());
@@ -1884,6 +1877,8 @@ export default function AdminCounterBill({
   const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
   const [query, setQuery] = useState('');
   const [searchFocused, setSearchFocused] = useState(false);
+  /** Spacer height while search is fixed-lifted (keeps layout from collapsing). */
+  const [searchSlotH, setSearchSlotH] = useState(0);
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES);
   const [lines, setLines] = useState(() => draftSeed?.lines || []);
   const [customerName, setCustomerName] = useState(() => draftSeed?.customerName || '');
@@ -1935,10 +1930,13 @@ export default function AdminCounterBill({
     const sync = () => {
       const vv = window.visualViewport;
       let inset = 0;
+      let top = 0;
       if (vv) {
         inset = Math.max(0, Math.round(window.innerHeight - vv.height - vv.offsetTop));
+        top = Math.max(0, Math.round(vv.offsetTop || 0));
       }
       root.style.setProperty('--pos-vv-bottom', `${inset}px`);
+      root.style.setProperty('--pos-vv-top', `${top}px`);
       root.classList.toggle('pos-keyboard-open', inset > 72);
     };
     sync();
@@ -1955,9 +1953,22 @@ export default function AdminCounterBill({
       document.removeEventListener('focusin', sync);
       document.removeEventListener('focusout', sync);
       root.style.removeProperty('--pos-vv-bottom');
+      root.style.removeProperty('--pos-vv-top');
       root.classList.remove('pos-keyboard-open');
     };
   }, []);
+
+  /* Keep document-flow height while search is fixed to the top (keyboard-safe lift). */
+  useLayoutEffect(() => {
+    if (!searchFocused) {
+      setSearchSlotH(0);
+      return;
+    }
+    const el = document.getElementById('counter-bill-search');
+    if (!el) return;
+    const h = Math.ceil(el.getBoundingClientRect().height);
+    if (h > 0) setSearchSlotH((prev) => (prev > 0 ? prev : h));
+  }, [searchFocused]);
 
   const refreshNativePrinters = useCallback(async () => {
     if (!nativePos) return;
@@ -2273,81 +2284,134 @@ export default function AdminCounterBill({
     }, 2200);
   }, []);
 
+  /** Pin section near the top of the screen — never center (that overshoots Discount → Customer). */
+  const softScrollToSection = useCallback((sectionId) => {
+    const section = document.getElementById(sectionId);
+    if (!section) return;
+    const topPad = 12;
+    const dockReserve = 100;
+    let vvBottom = 0;
+    try {
+      vvBottom = parseInt(
+        getComputedStyle(document.documentElement).getPropertyValue('--pos-vv-bottom') || '0',
+        10,
+      ) || 0;
+    } catch {
+      vvBottom = 0;
+    }
+    const viewH = window.visualViewport?.height || window.innerHeight || 0;
+    const rect = section.getBoundingClientRect();
+    /* Already usable above the sticky dock — do not jump the page. */
+    if (rect.top >= topPad && rect.top <= Math.max(topPad + 8, viewH - dockReserve - vvBottom - 48)) {
+      return;
+    }
+    const nextTop = Math.max(0, window.scrollY + rect.top - topPad);
+    window.scrollTo({ top: nextTop, behavior: 'smooth' });
+  }, []);
+
+  const focusWithoutScroll = useCallback((el) => {
+    if (!el || typeof el.focus !== 'function') return;
+    try {
+      el.focus({ preventScroll: true });
+    } catch {
+      try {
+        el.focus();
+      } catch {
+        /* ignore */
+      }
+    }
+  }, []);
+
   /** Dock “N items” → scroll to cart / bill items panel. */
   const jumpToCartPanel = useCallback(() => {
     setProductPanelCollapsed(false);
     window.setTimeout(() => {
-      document.getElementById('counter-bill-cart')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
+      softScrollToSection('counter-bill-cart');
     }, 30);
-  }, []);
+  }, [softScrollToSection]);
 
   /** Grand total / amount → Amount Received (cash) so cashier can tender + print. */
   const jumpToAmountReceived = useCallback(() => {
     setPaymentMode('cash');
     window.setTimeout(() => {
-      document.getElementById('counter-bill-cash')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
+      softScrollToSection('counter-bill-cash');
       const input = cashReceivedRef.current;
       if (!input) return;
       window.setTimeout(() => {
-        try {
-          input.focus({ preventScroll: true });
-        } catch {
-          input.focus?.();
-        }
+        focusWithoutScroll(input);
         try {
           input.select?.();
         } catch {
           /* ignore */
         }
-      }, 140);
+      }, 180);
     }, 40);
-  }, []);
+  }, [focusWithoutScroll, softScrollToSection]);
 
   const jumpToSearch = useCallback(() => {
+    const input = searchRef.current;
+    /*
+     * Focus FIRST in this same pointer gesture — mobile only opens the keyboard then.
+     * Never scrollTo/scrollIntoView here (scroll dismisses an opening keyboard).
+     * Visibility: CSS fixed-lifts #counter-bill-search while searchFocused.
+     */
+    const wrap = document.getElementById('counter-bill-search');
+    if (wrap && !wrap.classList.contains('counter-bill__search-wrap--lifted')) {
+      const h = Math.ceil(wrap.getBoundingClientRect().height);
+      if (h > 0) setSearchSlotH(h);
+    }
+    if (input) {
+      try {
+        input.focus({ preventScroll: true });
+      } catch {
+        try {
+          input.focus();
+        } catch {
+          /* ignore */
+        }
+      }
+    }
     setProductPanelCollapsed(false);
     setDockFocus('search');
-    window.setTimeout(() => {
-      document.getElementById('counter-bill-search')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'start',
-      });
-      try {
-        searchRef.current?.focus();
-      } catch {
-        /* ignore */
-      }
-      setSearchFocused(true);
-    }, 40);
+    setSearchFocused(true);
   }, []);
+
+  /** Dock Search: open keyboard on pointerdown (same gesture); click is backup for keyboard activation. */
+  const onSearchDockPointerDown = useCallback((e) => {
+    if (typeof e.button === 'number' && e.button !== 0) return;
+    /* Keep focus on the search input — dock button must not steal it. */
+    e.preventDefault();
+    jumpToSearch();
+  }, [jumpToSearch]);
+
+  const onSearchDockClick = useCallback((e) => {
+    /* detail === 0 → activated via keyboard (Enter/Space), not a pointer tap. */
+    if (e.detail === 0) jumpToSearch();
+  }, [jumpToSearch]);
 
   const jumpToDiscount = useCallback(() => {
     setDockFocus('discount');
     window.setTimeout(() => {
-      document.getElementById('counter-bill-discount')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-      document.querySelector('#counter-bill-discount input')?.focus?.();
+      softScrollToSection('counter-bill-discount');
+      window.setTimeout(() => {
+        focusWithoutScroll(document.querySelector('#counter-bill-discount input'));
+        /* One soft re-pin after keyboard — no center scroll, no tight loop. */
+        window.setTimeout(() => softScrollToSection('counter-bill-discount'), 280);
+      }, 160);
     }, 40);
-  }, []);
+  }, [focusWithoutScroll, softScrollToSection]);
 
   const jumpToCustomer = useCallback(() => {
     setShowCustomerDetails(true);
     setDockFocus('customer');
     window.setTimeout(() => {
-      document.getElementById('counter-bill-customer')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
-      document.querySelector('#counter-bill-customer input')?.focus?.();
-    }, 60);
-  }, []);
+      softScrollToSection('counter-bill-customer');
+      window.setTimeout(() => {
+        focusWithoutScroll(document.querySelector('#counter-bill-customer input'));
+        window.setTimeout(() => softScrollToSection('counter-bill-customer'), 280);
+      }, 160);
+    }, 80);
+  }, [focusWithoutScroll, softScrollToSection]);
 
   const blurSearchKeyboard = useCallback(() => {
     setSearchFocused(false);
@@ -2864,57 +2928,70 @@ export default function AdminCounterBill({
             </div>
           ) : null}
 
-          <div className="counter-bill__search-wrap" id="counter-bill-search">
-            <label className="counter-bill__search">
-              <span>{t('admin.counterBillSearch')}</span>
-              <input
-                ref={searchRef}
-                type="search"
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onFocus={() => {
-                  setSearchFocused(true);
-                  setDockFocus('search');
-                }}
-                onBlur={() => {
-                  setSearchFocused(false);
-                  setDockFocus((cur) => (cur === 'search' ? null : cur));
-                }}
-                onKeyDown={handleSearchKeyDown}
-                placeholder={t('admin.counterBillSearchPh')}
-                autoComplete="off"
-                aria-autocomplete="list"
-                aria-expanded={showSearchDropdown}
-                aria-controls="counter-bill-search-results"
-              />
-              <small>{t('admin.counterBillSearchHint')}</small>
-            </label>
-            {showSearchDropdown ? (
-              <div className="counter-bill__search-results" id="counter-bill-search-results" role="listbox">
-                {autocompleteProducts.length === 0 ? (
-                  <p className="counter-bill__search-empty">{t('admin.counterBillNoProductsFound')}</p>
-                ) : (
-                  autocompleteProducts.map((product) => (
-                    <button
-                      key={product.id}
-                      type="button"
-                      className="counter-bill__search-option"
-                      onPointerDown={(e) => {
-                        e.preventDefault();
-                        addProduct(product);
-                      }}
-                      role="option"
-                    >
-                      <span>
-                        <strong>{product.name}</strong>
-                        <small>{product.category || product.brand || `#${product.id}`}</small>
-                      </span>
-                      <b>{formatPrice(salePrice(product))}</b>
-                    </button>
-                  ))
-                )}
-              </div>
-            ) : null}
+          <div
+            className="counter-bill__search-slot"
+            style={searchFocused && searchSlotH > 0 ? { minHeight: searchSlotH } : undefined}
+          >
+            <div
+              className={`counter-bill__search-wrap${searchFocused ? ' counter-bill__search-wrap--lifted' : ''}`}
+              id="counter-bill-search"
+            >
+              <label className="counter-bill__search">
+                <span>{t('admin.counterBillSearch')}</span>
+                <input
+                  ref={searchRef}
+                  type="search"
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  onFocus={() => {
+                    const wrap = document.getElementById('counter-bill-search');
+                    if (wrap && !wrap.classList.contains('counter-bill__search-wrap--lifted')) {
+                      const h = Math.ceil(wrap.getBoundingClientRect().height);
+                      if (h > 0) setSearchSlotH(h);
+                    }
+                    setSearchFocused(true);
+                    setDockFocus('search');
+                  }}
+                  onBlur={() => {
+                    setSearchFocused(false);
+                    setDockFocus((cur) => (cur === 'search' ? null : cur));
+                  }}
+                  onKeyDown={handleSearchKeyDown}
+                  placeholder={t('admin.counterBillSearchPh')}
+                  autoComplete="off"
+                  aria-autocomplete="list"
+                  aria-expanded={showSearchDropdown}
+                  aria-controls="counter-bill-search-results"
+                />
+                <small>{t('admin.counterBillSearchHint')}</small>
+              </label>
+              {showSearchDropdown ? (
+                <div className="counter-bill__search-results" id="counter-bill-search-results" role="listbox">
+                  {autocompleteProducts.length === 0 ? (
+                    <p className="counter-bill__search-empty">{t('admin.counterBillNoProductsFound')}</p>
+                  ) : (
+                    autocompleteProducts.map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        className="counter-bill__search-option"
+                        onPointerDown={(e) => {
+                          e.preventDefault();
+                          addProduct(product);
+                        }}
+                        role="option"
+                      >
+                        <span>
+                          <strong>{product.name}</strong>
+                          <small>{product.category || product.brand || `#${product.id}`}</small>
+                        </span>
+                        <b>{formatPrice(salePrice(product))}</b>
+                      </button>
+                    ))
+                  )}
+                </div>
+              ) : null}
+            </div>
           </div>
 
           {!productPanelCollapsed ? (
@@ -3026,11 +3103,11 @@ export default function AdminCounterBill({
           ) : null}
 
           <div className="counter-bill__quick-actions" aria-label={t('admin.counterBillQuickActions')}>
-            <button type="button" onClick={() => document.getElementById('counter-bill-discount')?.scrollIntoView({ behavior: 'smooth', block: 'center' })}>
+            <button type="button" onClick={jumpToDiscount}>
               <span aria-hidden="true">%</span>
               {t('admin.counterBillToolbarDiscount')}
             </button>
-            <button type="button" onClick={() => setShowCustomerDetails(true)}>
+            <button type="button" onClick={jumpToCustomer}>
               <span aria-hidden="true">+</span>
               {t('admin.counterBillToolbarCustomer')}
             </button>
@@ -3215,14 +3292,14 @@ export default function AdminCounterBill({
             <label className="counter-bill__discount-input">
               <span>{discountType === 'percent' ? 'Discount percent' : 'Discount amount'}</span>
               <input
-                type="number"
-                min="0"
-                max={discountType === 'percent' ? 100 : subtotal}
-                step={discountType === 'percent' ? '0.01' : '1'}
+                type="text"
                 inputMode="decimal"
+                pattern="[0-9]*[.,]?[0-9]*"
                 value={discountValue}
-                onChange={(e) => setDiscountValue(e.target.value)}
+                onChange={(e) => setDiscountValue(e.target.value.replace(/[^\d.,]/g, ''))}
                 placeholder="0"
+                autoComplete="off"
+                enterKeyHint="done"
               />
             </label>
             {discountNeedsOverride ? (
@@ -3232,34 +3309,41 @@ export default function AdminCounterBill({
             ) : null}
           </div>
 
-          <div className="counter-bill__customer-toggle">
-            <button type="button" onClick={() => setShowCustomerDetails((value) => !value)}>
-              {showCustomerDetails ? t('admin.counterBillHideCustomer') : t('admin.counterBillAddCustomer')}
-            </button>
-          </div>
-
-          {showCustomerDetails ? (
-            <div className="counter-bill__customer" id="counter-bill-customer">
-              <label>
-                <span>{t('admin.counterBillCustomer')}</span>
-                <input
-                  value={customerName}
-                  onChange={(e) => setCustomerName(e.target.value)}
-                  placeholder={t('admin.counterBillCustomerPh')}
-                  maxLength={120}
-                />
-              </label>
-              <label>
-                <span>{t('admin.counterBillPhone')}</span>
-                <input
-                  value={customerPhone}
-                  onChange={(e) => setCustomerPhone(e.target.value)}
-                  placeholder={t('admin.counterBillPhonePh')}
-                  maxLength={30}
-                />
-              </label>
+          <div id="counter-bill-customer" className="counter-bill__customer-anchor">
+            <div className="counter-bill__customer-toggle">
+              <button type="button" onClick={() => setShowCustomerDetails((value) => !value)}>
+                {showCustomerDetails ? t('admin.counterBillHideCustomer') : t('admin.counterBillAddCustomer')}
+              </button>
             </div>
-          ) : null}
+
+            {showCustomerDetails ? (
+              <div className="counter-bill__customer">
+                <label>
+                  <span>{t('admin.counterBillCustomer')}</span>
+                  <input
+                    value={customerName}
+                    onChange={(e) => setCustomerName(e.target.value)}
+                    placeholder={t('admin.counterBillCustomerPh')}
+                    maxLength={120}
+                    autoComplete="off"
+                    enterKeyHint="next"
+                  />
+                </label>
+                <label>
+                  <span>{t('admin.counterBillPhone')}</span>
+                  <input
+                    value={customerPhone}
+                    onChange={(e) => setCustomerPhone(e.target.value)}
+                    placeholder={t('admin.counterBillPhonePh')}
+                    maxLength={30}
+                    inputMode="tel"
+                    autoComplete="off"
+                    enterKeyHint="done"
+                  />
+                </label>
+              </div>
+            ) : null}
+          </div>
 
           <div className="counter-bill__payment">
             <span>{t('admin.counterBillPayment')}</span>
@@ -3433,6 +3517,7 @@ export default function AdminCounterBill({
       {typeof document !== 'undefined'
         ? createPortal(
           <div
+            ref={stickyDockRef}
             className={`counter-bill__pos-dock${cartFlashKey ? ' counter-bill__pos-dock--flash' : ''}${
               lines.length > 0 ? ' counter-bill__pos-dock--cart' : ' counter-bill__pos-dock--idle'
             }`}
@@ -3440,8 +3525,8 @@ export default function AdminCounterBill({
             aria-label={t('admin.counterBillSummary')}
           >
             <div className="counter-bill__pos-dock-total">
-              <span>
-                {t('admin.counterBillGrandTotal')}
+              <div className="counter-bill__pos-dock-meta">
+                <span className="counter-bill__pos-dock-label">{t('admin.counterBillGrandTotal')}</span>
                 {selectedItemCount > 0 ? (
                   <button
                     type="button"
@@ -3449,11 +3534,10 @@ export default function AdminCounterBill({
                     onClick={jumpToCartPanel}
                     title={t('admin.counterBillCart')}
                   >
-                    {' · '}
                     {t('admin.counterBillSelectedCount', { count: selectedItemCount })}
                   </button>
                 ) : null}
-              </span>
+              </div>
               <button
                 type="button"
                 className="counter-bill__pos-dock-amount"
@@ -3518,7 +3602,8 @@ export default function AdminCounterBill({
                 <button
                   type="button"
                   className={`counter-bill__pos-dock-jump${dockFocus === 'search' ? ' counter-bill__pos-dock-jump--active' : ''}`}
-                  onClick={jumpToSearch}
+                  onPointerDown={onSearchDockPointerDown}
+                  onClick={onSearchDockClick}
                 >
                   {t('admin.counterBillSearch')}
                 </button>

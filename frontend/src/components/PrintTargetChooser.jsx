@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useTranslation } from '../context/LanguageContext';
 import {
   defaultPrintTarget,
@@ -14,6 +15,7 @@ const LOCAL_TARGETS = new Set(['direct', 'local']);
 /**
  * Modal to pick Direct / local share vs remote thermal print station.
  * Same options on laptop and phone (Direct = system print on laptop, Share on phone).
+ * Portaled to body above POS dock; dock is hidden while open (body.pos-modal-open).
  */
 export default function PrintTargetChooser({
   open,
@@ -51,7 +53,26 @@ export default function PrintTargetChooser({
     };
   }, [open, initialTarget]);
 
-  if (!open) return null;
+  useEffect(() => {
+    if (!open || typeof document === 'undefined') return undefined;
+    const { body, documentElement } = document;
+    const prevOverflow = body.style.overflow;
+    body.classList.add('pos-modal-open');
+    documentElement.classList.add('pos-modal-open');
+    body.style.overflow = 'hidden';
+    const onKey = (e) => {
+      if (e.key === 'Escape') onClose?.();
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      body.classList.remove('pos-modal-open');
+      documentElement.classList.remove('pos-modal-open');
+      body.style.overflow = prevOverflow;
+      window.removeEventListener('keydown', onKey);
+    };
+  }, [open, onClose]);
+
+  if (!open || typeof document === 'undefined') return null;
 
   const androidOnline = Boolean(stations?.android?.online);
   const laptopOnline = Boolean(stations?.laptop?.online);
@@ -105,7 +126,7 @@ export default function PrintTargetChooser({
     onSelect?.(target, { stations });
   };
 
-  return (
+  return createPortal(
     <div className="print-target-chooser" role="dialog" aria-modal="true" aria-label={t('admin.printTargetTitle')}>
       <button type="button" className="print-target-chooser__backdrop" aria-label={t('admin.printTargetCancel')} onClick={onClose} />
       <div className="print-target-chooser__card glass-card">
@@ -169,6 +190,7 @@ export default function PrintTargetChooser({
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

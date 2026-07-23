@@ -61,6 +61,16 @@
   color: #b42318 !important;
 }
 
+[data-theme='light'] .counter-sales__returned-badge {
+  border-color: color-mix(in srgb, #b42318 45%, transparent);
+  background: color-mix(in srgb, #b42318 10%, #fff);
+  color: #b42318;
+}
+
+[data-theme='light'] .counter-sales__net-amount {
+  color: #475569;
+}
+
 [data-theme='light'] .counter-bill__discount-warning {
   color: #a16207;
 }
@@ -112,6 +122,9 @@
   color: var(--pos-text);
   display: flex;
   flex-direction: column;
+  /* pan-y: finger scroll must work on Android WebView (manipulation was too aggressive) */
+  touch-action: pan-y;
+  overscroll-behavior-y: auto;
 }
 
 .counter-shell .wp-admin-page-title {
@@ -170,11 +183,12 @@
   padding-bottom: 0.75rem;
   overflow-x: clip;
   overflow-y: auto;
-  overscroll-behavior: contain;
+  overscroll-behavior-y: auto;
   box-sizing: border-box;
   flex: 1 1 auto;
   min-height: 0;
   -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
 }
 
 .counter-boot {
@@ -311,6 +325,17 @@
   border-radius: 14px;
   background: var(--pos-surface);
   flex: 0 0 auto;
+  scroll-margin-top: 12px;
+  scroll-margin-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
+}
+
+.counter-sales--return-focus {
+  box-shadow: 0 0 0 2px var(--pos-accent-soft), 0 8px 24px rgba(0, 0, 0, 0.18);
+  border-color: var(--pos-accent);
+}
+
+.counter-sales--return-focus .counter-sales__return {
+  box-shadow: 0 0 0 2px color-mix(in srgb, #b42318 35%, transparent);
 }
 
 .counter-printer-modal {
@@ -525,6 +550,47 @@
   gap: 0.35rem;
 }
 
+.counter-sales__total-cell {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 7.5rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.counter-sales__total-original {
+  display: block;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--pos-text);
+}
+
+.counter-sales__returned-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.12rem 0.4rem;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #b42318 55%, transparent);
+  background: color-mix(in srgb, #b42318 16%, transparent);
+  color: #fca5a5;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
+}
+
+.counter-sales__net-amount {
+  display: block;
+  color: var(--pos-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.counter-sales__row--returned td {
+  vertical-align: top;
+}
+
 .counter-sales__return {
   border-color: #b42318 !important;
   color: #fca5a5 !important;
@@ -533,11 +599,12 @@
 .counter-return-modal {
   position: fixed;
   inset: 0;
-  z-index: 1000;
+  z-index: 14000;
   display: grid;
   place-items: center;
   padding: 1rem;
   background: rgba(0, 0, 0, 0.65);
+  pointer-events: auto;
 }
 
 .counter-return-modal__card {
@@ -847,9 +914,41 @@
   color: var(--pos-muted);
 }
 
+.counter-bill__search-slot {
+  position: relative;
+  z-index: 40;
+}
+
 .counter-bill__search-wrap {
   position: relative;
   z-index: 40;
+}
+
+/*
+ * While search is focused: lift the field to the top of the visual viewport.
+ * Avoids window.scrollTo (which dismisses the Android keyboard) while keeping
+ * the input easy to see above the sticky dock + soft keyboard.
+ */
+.counter-bill__search-wrap--lifted {
+  position: fixed;
+  top: calc(var(--pos-vv-top, 0px) + max(0.4rem, env(safe-area-inset-top, 0px)));
+  left: max(0.55rem, env(safe-area-inset-left, 0px));
+  right: max(0.55rem, env(safe-area-inset-right, 0px));
+  z-index: 1250;
+  padding: 0.55rem 0.65rem 0.5rem;
+  border: 1px solid var(--pos-border-strong);
+  border-radius: 14px;
+  background: var(--pos-surface);
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.38);
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+.counter-bill__search-wrap--lifted .counter-bill__search-results {
+  max-height: min(260px, calc(100dvh - var(--pos-vv-bottom, 0px) - 11.5rem));
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
 }
 
 .counter-bill__search {
@@ -875,10 +974,18 @@
   padding: 0.45rem 0.65rem;
   font: inherit;
   /* ≥16px prevents iOS/Android focus zoom that shoves the dock into the keyboard */
-  font-size: 16px;
+  font-size: 16px !important;
+  touch-action: manipulation;
   background: var(--pos-bg);
   color: var(--pos-text);
   outline: none;
+}
+
+#counter-bill-search,
+#counter-bill-discount,
+#counter-bill-customer {
+  scroll-margin-top: 0.75rem;
+  scroll-margin-bottom: calc(7.25rem + var(--pos-vv-bottom, 0px) + env(safe-area-inset-bottom, 0px));
 }
 
 .counter-bill__search input::placeholder,
@@ -1952,18 +2059,18 @@ html.pos-keyboard-open #counter-bill-search {
 
 .counter-bill-print__rule {
   border-top: 1px dashed #111;
-  margin: 0.35rem 0;
+  margin: 0.12rem 0;
 }
 
 .counter-bill-print__items {
   display: grid;
-  gap: 0.25rem;
+  gap: 0.18rem;
 }
 
 .counter-bill-print__item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.08rem 0.45rem;
+  gap: 0.04rem 0.45rem;
 }
 
 .counter-bill-print__item strong {
@@ -1978,7 +2085,8 @@ html.pos-keyboard-open #counter-bill-search {
 .counter-bill-print__totals {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.15rem 0.6rem;
+  gap: 0 0.5rem;
+  align-items: baseline;
 }
 
 .counter-bill-print__totals strong {
@@ -1987,19 +2095,19 @@ html.pos-keyboard-open #counter-bill-search {
 
 .counter-bill-print__grand-label,
 .counter-bill-print__grand {
-  margin-top: 0.28rem;
-  padding-top: 0.35rem;
-  padding-right: 0.2rem;
-  border-top: 1px solid #111;
+  margin: 0;
+  padding: 0 0.15rem 0 0;
+  border: 0;
   font-family: Arial, sans-serif;
-  font-size: 16px;
-  font-weight: 900;
-  letter-spacing: 0.06em;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.05;
 }
 
 .counter-bill-print__grand {
-  letter-spacing: 0.08em;
-  padding-right: 0.35em;
+  letter-spacing: 0.06em;
+  padding-right: 0.25em;
 }
 
 .counter-bill-print__thanks,
@@ -2054,7 +2162,9 @@ html.pos-keyboard-open #counter-bill-search {
   backdrop-filter: blur(10px);
   transform: translateZ(0);
   -webkit-transform: translateZ(0);
+  /* Only the dock itself captures taps — no oversized invisible hit layer */
   pointer-events: auto;
+  touch-action: manipulation;
   transition: bottom 0.12s ease-out;
 }
 
@@ -2064,17 +2174,21 @@ html.pos-keyboard-open #counter-bill-search {
 
 .counter-bill__pos-dock-jump {
   min-height: 44px;
+  min-width: 0;
   border: 1px solid var(--pos-border-strong);
   border-radius: 12px;
-  padding: 0.35rem 0.4rem;
+  padding: 0.4rem 0.35rem;
   background: var(--pos-surface-2);
   color: var(--pos-text);
   cursor: pointer;
   font: inherit;
-  font-size: 0.7rem;
+  font-size: 0.72rem;
   font-weight: 800;
   line-height: 1.15;
   text-align: center;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
 }
 
 .counter-bill__pos-dock-jump:hover {
@@ -2098,8 +2212,24 @@ html.pos-keyboard-open #counter-bill-search {
 
 .counter-bill__pos-dock-total {
   display: grid;
-  gap: 0.05rem;
+  gap: 0.28rem;
   min-width: 0;
+}
+
+.counter-bill__pos-dock-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+  flex-wrap: wrap;
+}
+
+.counter-bill__pos-dock-label {
+  color: var(--pos-muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .counter-bill__pos-dock-total span {
@@ -2111,36 +2241,46 @@ html.pos-keyboard-open #counter-bill-search {
 }
 
 .counter-bill__pos-dock-count {
-  display: inline;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
   margin: 0;
-  padding: 0;
-  border: 0;
-  background: transparent;
+  margin-inline-start: 0.1rem;
+  padding: 0.25rem 0.55rem;
+  border: 1px solid var(--pos-border-strong);
+  border-radius: 10px;
+  background: var(--pos-surface-2);
   font: inherit;
   font-style: normal;
+  font-size: 0.72rem;
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: none;
   color: var(--pos-text);
   cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 2px;
+  text-decoration: none;
+  flex: 0 0 auto;
+  touch-action: manipulation;
 }
 
 .counter-bill__pos-dock-count:hover {
   color: var(--pos-accent);
+  border-color: var(--pos-accent);
 }
 
 .counter-bill__pos-dock-amount {
   display: block;
   width: 100%;
   margin: 0;
-  padding: 0;
+  padding: 0.2rem 0.15rem 0.15rem 0;
   border: 0;
   background: transparent;
   text-align: left;
   cursor: pointer;
   font: inherit;
+  min-height: 40px;
+  touch-action: manipulation;
 }
 
 .counter-bill__pos-dock-amount:hover strong,
@@ -2224,25 +2364,57 @@ html.pos-keyboard-open #counter-bill-search {
   background: #15803d;
 }
 
+/*
+ * Hide sticky POS dock while any POS modal is open (print chooser, payment QR,
+ * return modal, native printer picker). Lives here so POS always gets the rule
+ * even if print-target-chooser.css load order differs.
+ */
+body.pos-modal-open .counter-bill__pos-dock,
+html.pos-modal-open .counter-bill__pos-dock,
+body:has(.print-target-chooser) .counter-bill__pos-dock,
+body:has(.counter-printer-modal) .counter-bill__pos-dock {
+  display: none !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+  opacity: 0 !important;
+}
+
 .counter-bill,
 .counter-content {
   padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
 }
 
 @media (max-width: 900px) {
+  /*
+   * Restore soft page scroll on Android POS.
+   * mobile-performance.css sets body { touch-action: manipulation; overscroll-behavior-y: none }
+   * which makes the counter feel stuck — prefer pan-y on the POS route only.
+   */
+  html:has(.counter-shell),
+  body:has(.counter-shell) {
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
+  }
+
   .wp-admin-shell.counter-shell,
   .counter-shell.wp-admin-shell {
     height: auto;
     max-height: none;
     overflow: visible;
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
   }
 
   .counter-content {
     overflow: visible;
+    touch-action: pan-y;
+    overscroll-behavior-y: auto;
+    -webkit-overflow-scrolling: touch;
   }
 
   .counter-bill {
     min-height: 0;
+    touch-action: pan-y;
   }
 
   .counter-bill__grid,
@@ -2268,7 +2440,7 @@ html.pos-keyboard-open #counter-bill-search {
     max-height: none;
     overflow: visible;
     overscroll-behavior: auto;
-    touch-action: auto;
+    touch-action: pan-y;
     background: var(--pos-surface);
     box-shadow: none;
   }
@@ -2276,6 +2448,7 @@ html.pos-keyboard-open #counter-bill-search {
   .counter-bill__products {
     max-height: none;
     overflow: visible;
+    touch-action: pan-y;
   }
 
   .counter-bill__cart-lines {
