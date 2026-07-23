@@ -2219,22 +2219,52 @@ export default function AdminCounterBill({
     setHighlightProductId(id);
     window.setTimeout(() => {
       const input = sellRateRefs.current[id];
+      const row = document.getElementById(`counter-cart-row-${id}`);
+      (row || input)?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
       if (!input) return;
-      input.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' });
-      try {
-        input.focus({ preventScroll: true });
-      } catch {
-        input.focus?.();
-      }
-      try {
-        input.select?.();
-      } catch {
-        /* select unsupported on some number inputs */
-      }
-    }, 30);
+      window.setTimeout(() => {
+        try {
+          input.focus({ preventScroll: true });
+        } catch {
+          input.focus?.();
+        }
+        try {
+          input.select?.();
+        } catch {
+          /* select unsupported on some number inputs */
+        }
+      }, 120);
+    }, 40);
     window.setTimeout(() => {
       setHighlightProductId((current) => (current === id ? null : current));
     }, 2200);
+  }, []);
+
+  /** Dock “N items” → scroll to cart / bill items panel. */
+  const jumpToCartPanel = useCallback(() => {
+    setProductPanelCollapsed(false);
+    window.setTimeout(() => {
+      document.getElementById('counter-bill-cart')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start',
+      });
+    }, 30);
+  }, []);
+
+  const blurSearchKeyboard = useCallback(() => {
+    setSearchFocused(false);
+    try {
+      searchRef.current?.blur();
+    } catch {
+      /* ignore */
+    }
+    try {
+      if (typeof document !== 'undefined' && document.activeElement?.blur) {
+        document.activeElement.blur();
+      }
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const addProduct = (product) => {
@@ -2253,8 +2283,8 @@ export default function AdminCounterBill({
       return [...prev, { product, qty: 1, unitPrice: salePrice(product) }];
     });
     setQuery('');
-    setSearchFocused(false);
-    window.setTimeout(() => searchRef.current?.focus(), 0);
+    /* Never re-focus search after add — that opens the mobile keyboard on every tap */
+    blurSearchKeyboard();
   };
 
   const handleSearchKeyDown = (e) => {
@@ -2766,7 +2796,10 @@ export default function AdminCounterBill({
           ) : null}
         </section>
 
-        <section className={`counter-bill__panel counter-bill__panel--cart${cartFlashKey ? ' counter-bill__panel--flash' : ''}`}>
+        <section
+          id="counter-bill-cart"
+          className={`counter-bill__panel counter-bill__panel--cart${cartFlashKey ? ' counter-bill__panel--flash' : ''}`}
+        >
           <div className="counter-bill__panel-head">
             <h4>{t('admin.counterBillCart')}</h4>
             <span>{lines.length} {t('admin.counterBillCartItems')}</span>
@@ -2874,6 +2907,7 @@ export default function AdminCounterBill({
                 const rateInputValue = rateDraft !== undefined ? rateDraft : String(unit);
                 return (
                   <article
+                    id={`counter-cart-row-${line.product.id}`}
                     className={`counter-bill__cart-row${isFocused ? ' counter-bill__cart-row--focus' : ''}`}
                     key={line.product.id}
                   >
@@ -2889,9 +2923,9 @@ export default function AdminCounterBill({
                     </button>
                     <div
                       className="counter-bill__cart-rate"
-                      onClick={(e) => {
-                        /* Clicking rate chrome (not qty/name) focuses the sell-rate input */
+                      onPointerDown={(e) => {
                         if (e.target.closest('input')) return;
+                        e.preventDefault();
                         focusSellRate(line.product.id);
                       }}
                     >
@@ -3204,7 +3238,15 @@ export default function AdminCounterBill({
               <span>
                 {t('admin.counterBillGrandTotal')}
                 {selectedItemCount > 0 ? (
-                  <em className="counter-bill__pos-dock-count"> · {t('admin.counterBillSelectedCount', { count: selectedItemCount })}</em>
+                  <button
+                    type="button"
+                    className="counter-bill__pos-dock-count"
+                    onClick={jumpToCartPanel}
+                    title={t('admin.counterBillCart')}
+                  >
+                    {' · '}
+                    {t('admin.counterBillSelectedCount', { count: selectedItemCount })}
+                  </button>
                 ) : null}
               </span>
               <strong key={`dock-total-${total}-${selectedItemCount}`}>{formatPrice(total)}</strong>

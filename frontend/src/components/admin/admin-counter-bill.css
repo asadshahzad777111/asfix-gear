@@ -1980,11 +1980,24 @@
 }
 
 .counter-bill__pos-dock-count {
+  display: inline;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font: inherit;
   font-style: normal;
   font-weight: 800;
   letter-spacing: 0.02em;
   text-transform: none;
   color: var(--pos-text);
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.counter-bill__pos-dock-count:hover {
+  color: var(--pos-accent);
 }
 
 .counter-bill__pos-dock-total strong {
