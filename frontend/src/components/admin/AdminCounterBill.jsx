@@ -199,9 +199,19 @@ function amountText(amount) {
   return `Rs. ${Number(amount || 0).toLocaleString('en-PK', { maximumFractionDigits: 0 })}`;
 }
 
-/** Compact amount for 58mm thermal — short, but with a space after Rs for clarity. */
+/** Compact amount for 58mm thermal — comma groups + space after Rs so digits aren’t glued. */
 function thermalAmountText(amount) {
-  return `Rs. ${Math.round(Number(amount || 0))}`;
+  const n = Math.round(Number(amount || 0));
+  const abs = Math.abs(n).toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  return `Rs. ${n < 0 ? `-${abs}` : abs}`;
+}
+
+/**
+ * ESC Z / Mate / PNG QR module size — must fit printable dots.
+ * Mag 12 @ 58mm (~29 modules) overflows ~384-dot rolls and printers skip the QR.
+ */
+function thermalQrModuleSize(thermalWidth = '58mm') {
+  return normalizeThermalWidth(thermalWidth) === '80mm' ? 12 : 10;
 }
 
 export function buildThermalReceiptText(order, thermalWidth = '58mm') {
@@ -223,7 +233,7 @@ function bytesToBase64(bytes) {
 /**
  * Full-width ESC/POS receipt for laptop, native AsFix app, and remote stations.
  * QR uses Zijiang/vendor ESC Z (from 58mm kit SDK) — Epson GS (k is ignored on these clones.
- * Mag 12 @ 58mm / 14 @ 80mm — large scannable QR within ~384-dot roll.
+ * Mag 10 @ 58mm / 12 @ 80mm — large scannable QR that still fits the roll.
  */
 export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
   if (!order || typeof TextEncoder === 'undefined' || typeof btoa !== 'function') return '';
@@ -246,8 +256,7 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
       const qr = encoder.encode(line.value || RECEIPT_SITE_URL);
       const version = 0;
       const ecc = 3; /* vendor max 0–3 */
-      /* Large QR for scan; mag 12 ≈ wide on 58mm without overflowing 384 dots */
-      const mag = width === '80mm' ? 14 : 12;
+      const mag = thermalQrModuleSize(width);
       push(0x1b, 0x61, 0x01); // center
       /* ESC Z nVersion nEcc nMag nL nH data — Zijiang BT-POS / 58mm kit */
       push(0x1b, 0x5a, version, ecc, mag, qr.length & 0xff, (qr.length >> 8) & 0xff);
@@ -274,8 +283,8 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
     push(0x1b, 0x45, 0x00);
   }
   push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00, 0x1b, 0x4d, 0x00);
-  /* 2 line feeds — short tail before cut */
-  push(0x0a, 0x0a);
+  /* Extra feed so cutter does not eat Scan/QR */
+  push(0x0a, 0x0a, 0x0a);
   push(0x1d, 0x56, 0x42, 0x00); // GS V B 0 — partial cut, no extra feed
 
   const size = parts.reduce((sum, part) => sum + part.length, 0);
@@ -320,8 +329,8 @@ function buildMateThermalMarkup(order) {
     return `<${bold}${align}${format}>${text}`;
   });
   parts.push('<110>Scan');
-  /* Mate QR: align#moduleSize#payload — match ESC/PNG large QR */
-  parts.push(`<QR>1#12#${RECEIPT_SITE_URL}`);
+  /* Mate QR: align#moduleSize#payload — match ESC/PNG (fit 58mm) */
+  parts.push(`<QR>1#${thermalQrModuleSize('58mm')}#${RECEIPT_SITE_URL}`);
   parts.push(`<110>${RECEIPT_SITE}`);
   return parts.join('');
 }
@@ -440,11 +449,18 @@ function buildReceiptLines(order, maxChars = 18) {
   const money = (label, value, options = {}) => {
     let right = thermalAmountText(value);
     const left = String(label);
-    if (left.length + 1 + right.length > maxChars) {
-      right = String(Math.round(Number(value || 0)));
+    /* Leave 1–2 cols on the right so TOTAL isn’t flush to the paper edge */
+    const budget = Math.max(8, maxChars - (options.grand ? 2 : 1));
+    if (left.length + 1 + right.length > budget) {
+      right = thermalAmountText(value).replace(/^Rs\.\s*/, 'Rs.');
     }
-    const gap = Math.max(1, maxChars - left.length - right.length);
-    push(`${left}${' '.repeat(gap)}${right}`, {
+    if (left.length + 1 + right.length > budget) {
+      const n = Math.round(Number(value || 0));
+      right = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+    }
+    const gap = Math.max(1, budget - left.length - right.length);
+    const padRight = Math.max(0, maxChars - budget);
+    push(`${left}${' '.repeat(gap)}${right}${' '.repeat(padRight)}`, {
       ...options,
       columns: { left, right },
     });
@@ -505,7 +521,7 @@ function buildReceiptLines(order, maxChars = 18) {
 
 /**
  * Thermal PNG for Direct Print / share (384 dots @ 58mm, 576 @ 80mm).
- * Fill-only glyphs, safe side margins, QR sized like ESC Z mag 12/14.
+ * Fill-only glyphs, safe side margins, QR sized like ESC Z (fits roll).
  */
 export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
   const pageWidth = normalizeThermalWidth(thermalWidth);
@@ -513,10 +529,10 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const printerDots = pageWidth === '80mm' ? 576 : 384;
   const widthPx = printerDots;
   /* Extra side pad so Windows POS-58 driver margins do not crop Bill#/prices */
-  const padX = pageWidth === '80mm' ? 28 : 22;
-  /* Extra top pad so double-tall brand is not clipped; short bottom */
+  const padX = pageWidth === '80mm' ? 30 : 26;
+  /* Extra top pad so double-tall brand is not clipped; room under QR for cutter */
   const padTop = 22;
-  const padBottom = 8;
+  const padBottom = 24;
   const maxChars = pageWidth === '80mm' ? 42 : 28;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
@@ -615,11 +631,11 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const lineHFor = (size) => Math.ceil(size * 1.1);
   const ruleH = Math.ceil(fontSize * 0.55);
   /*
-   * QR: match ESC Z mag (12 @ 58mm / 14 @ 80mm). Near-full usable width.
+   * QR: match ESC Z mag (10 @ 58mm / 12 @ 80mm). Fit usable width with quiet zone.
    * Mag N ≈ N dots per module; version auto for https://asfixgear.com.
    */
-  const qrMag = pageWidth === '80mm' ? 14 : 12;
-  const qrMarginModules = 1;
+  const qrMag = thermalQrModuleSize(pageWidth);
+  const qrMarginModules = 2;
   let qrModules = 29;
   try {
     const qrModel = QRCode.create(RECEIPT_SITE_URL, { errorCorrectionLevel: 'M' });
@@ -628,7 +644,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     /* keep default */
   }
   const qrSize = (qrModules + qrMarginModules * 2) * qrMag;
-  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.98));
+  /* Keep QR large but never wider than printable band (overflow = missing scanner) */
+  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.92));
 
   let heightPx = padTop + padBottom + 4;
   lines.forEach((line) => {
@@ -637,7 +654,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       return;
     }
     if (line.qr) {
-      heightPx += qrDrawSize + 6;
+      heightPx += qrDrawSize + 14;
       return;
     }
     const size = lineSize(line);
@@ -684,7 +701,9 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     if (align === 'center') x = anchorX - totalW / 2;
     if (align === 'right') x = anchorX - totalW;
     if (x < padX) x = padX;
-    if (x + totalW > widthPx - padX) x = Math.max(padX, widthPx - padX - totalW);
+    /* Extra right inset so TOTAL digits aren’t flush to the paper edge */
+    const rightInset = padX + 6;
+    if (x + totalW > widthPx - rightInset) x = Math.max(padX, widthPx - rightInset - totalW);
     ctx.fillText(value, Math.round(x), Math.round(y));
   };
 
@@ -714,7 +733,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     if (line.qr) {
       const qrX = Math.round((widthPx - qrDrawSize) / 2);
       await drawCrispQr(line.value || RECEIPT_SITE_URL, qrX, y, qrDrawSize);
-      y += qrDrawSize + 4;
+      y += qrDrawSize + 10;
       continue;
     }
 
@@ -726,20 +745,22 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       let left = String(line.columns.left ?? '');
       let right = String(line.columns.right ?? '');
       const gapMin = 8;
+      const rightEdge = widthPx - padX - (line.grand ? 8 : 4);
+      const colUsable = rightEdge - padX;
       while (
-        measureText(left, size, heavy) + gapMin + measureText(right, size, heavy) > usable
+        measureText(left, size, heavy) + gapMin + measureText(right, size, heavy) > colUsable
         && right.length > 1
       ) {
         right = right.slice(0, -1);
       }
       while (
-        measureText(left, size, heavy) + gapMin + measureText(right, size, heavy) > usable
+        measureText(left, size, heavy) + gapMin + measureText(right, size, heavy) > colUsable
         && left.length > 1
       ) {
         left = left.slice(0, -1);
       }
       drawText(left, padX, y, size, 'left', heavy);
-      drawText(right, widthPx - padX, y, size, 'right', heavy);
+      drawText(right, rightEdge, y, size, 'right', heavy);
       y += lh;
     } else {
       const align = line.align === 'center' ? 'center' : line.align === 'right' ? 'right' : 'left';
@@ -1006,12 +1027,12 @@ html, body {
 .r-totals { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; font-size: 13px; font-weight: 400; }
 .r-totals > * { min-width: 0; }
 .r-totals strong { text-align: right; white-space: nowrap; font-weight: 400; }
-.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; align-items: baseline; margin: 2px 0; }
+.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 1px 10px; align-items: baseline; margin: 2px 0; padding-right: 2mm; }
 .r-grand-label { font-size: 14px; font-weight: 700; letter-spacing: 0.06em; }
-.r-grand { font-size: 16px; font-weight: 700; letter-spacing: 0.04em; text-align: right; white-space: nowrap; }
+.r-grand { font-size: 16px; font-weight: 700; letter-spacing: 0.08em; text-align: right; white-space: nowrap; padding-right: 1mm; }
 .r-thanks, .r-site { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 400; }
-.r-scan { text-align: center; margin: 3px 0 2px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
-.r-qr { display: block; width: 84%; max-width: 84%; height: auto; margin: 2px auto 0; }
+.r-scan { text-align: center; margin: 4px 0 3px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-qr { display: block; width: 72%; max-width: 72%; height: auto; margin: 2px auto 4px; }
 `.trim();
 
   const qrBlock = qrDataUrl
@@ -1069,7 +1090,7 @@ function buildThermalPngPrintHtml(dataUrl, widthMm, heightMm) {
    * a 58mm sheet, and forced img height caused progressive scale-down on reprints.
    * Image uses width + height:auto so aspect stays 1:1 with printer dots (203dpi).
    */
-  const contentH = Math.max(40, Math.min(220, Number(heightMm) || 120));
+  const contentH = Math.max(40, Math.min(280, Number(heightMm) || 120));
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
 <meta name="viewport" content="width=${paperW}, initial-scale=1, maximum-scale=1" />
 <title>AsFix receipt</title>
@@ -1092,10 +1113,10 @@ body {
   width: ${paperW}mm !important;
   max-width: ${paperW}mm !important;
   min-width: ${paperW}mm !important;
-  height: ${contentH}mm !important;
+  height: auto !important;
   min-height: 0 !important;
-  max-height: ${contentH}mm !important;
-  overflow: hidden !important;
+  max-height: none !important;
+  overflow: visible !important;
   zoom: 1 !important;
   transform: none !important;
   background: #fff !important;
@@ -1157,7 +1178,7 @@ function lockThermalPageToContent(doc, widthMm = 58, forcedHeightMm = null) {
   const w = widthMm === 80 ? 80 : 58;
   let heightMm;
   if (forcedHeightMm != null && Number.isFinite(Number(forcedHeightMm))) {
-    heightMm = Math.max(40, Math.min(220, Math.ceil(Number(forcedHeightMm))));
+    heightMm = Math.max(40, Math.min(280, Math.ceil(Number(forcedHeightMm))));
   } else {
     const node = doc.querySelector('.receipt') || doc.body;
     const px = Math.max(
@@ -1168,7 +1189,7 @@ function lockThermalPageToContent(doc, widthMm = 58, forcedHeightMm = null) {
     );
     /* CSS px → mm @ 96dpi; +2mm padding; clamp away from tall-roll / A4 */
     heightMm = Math.ceil((px * 25.4) / 96) + 2;
-    heightMm = Math.max(40, Math.min(heightMm, 220));
+    heightMm = Math.max(40, Math.min(heightMm, 280));
   }
 
   let style = doc.getElementById('asfix-thermal-page-lock');
@@ -1385,7 +1406,7 @@ export async function printDirectSystemReceipt({
     /* 1px = 1 printer dot — same visual scale as Android BT / share / download PNG */
     const heightMm = Math.max(
       40,
-      Math.min(220, (Math.max(1, dims.height) / printerDots) * widthMm),
+      Math.min(280, Math.ceil((Math.max(1, dims.height) / printerDots) * widthMm) + 4),
     );
     const html = buildThermalPngPrintHtml(dataUrl, widthMm, heightMm);
     const printed = await printViaIframe(html, inFlightRef, widthMm, heightMm);
@@ -1496,7 +1517,7 @@ export async function printActiveCounterReceipt({
       const dims = await loadImageNaturalSize(dataUrl);
       const heightMm = Math.max(
         40,
-        Math.min(220, (Math.max(1, dims.height) / printerDots) * widthMm),
+        Math.min(280, Math.ceil((Math.max(1, dims.height) / printerDots) * widthMm) + 4),
       );
       const html = buildThermalPngPrintHtml(dataUrl, widthMm, heightMm);
       const printed = await printViaIframe(html, inFlightRef, widthMm, heightMm);
@@ -1600,6 +1621,26 @@ export async function shareCounterInvoicePdf(order, thermalWidth = readThermalRe
 
 export function CounterBillReceipt({ order, printable = false, thermalWidth = '58mm' }) {
   const { t } = useTranslation();
+  const [qrDataUrl, setQrDataUrl] = useState('');
+
+  useEffect(() => {
+    if (!order) {
+      setQrDataUrl('');
+      return undefined;
+    }
+    let cancelled = false;
+    buildWebsiteQrDataUrl(240)
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrDataUrl('');
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [order]);
+
   if (!order) return null;
 
   const paymentNote = counterPaymentNote(order);
@@ -1655,6 +1696,12 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
       </div>
       <p className="counter-bill-print__thanks">{t('admin.counterBillThanks')}</p>
       <p className="counter-bill-print__site">{RECEIPT_SITE}</p>
+      <p className="counter-bill-print__scan">Scan</p>
+      {qrDataUrl ? (
+        <img className="counter-bill-print__qr" src={qrDataUrl} alt="asfixgear.com QR" width="180" height="180" />
+      ) : (
+        <p className="counter-bill-print__site">{RECEIPT_SITE_URL}</p>
+      )}
     </div>
   );
 }
@@ -1707,8 +1754,30 @@ export default function AdminCounterBill({
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [receiptOrder, setReceiptOrder] = useState(null);
+  const [dockTucked, setDockTucked] = useState(false);
   /* Thermer CTA only in Android browser — native app prints via AsfixThermalPrint */
   const showMateThermalLink = !nativePos && typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    let lastY = window.scrollY || 0;
+    let ticking = false;
+    const onScroll = () => {
+      if (ticking) return;
+      ticking = true;
+      window.requestAnimationFrame(() => {
+        const y = window.scrollY || 0;
+        const delta = y - lastY;
+        /* Tuck slightly on scroll-down; bring total back on scroll-up */
+        if (delta > 12 && y > 64) setDockTucked(true);
+        else if (delta < -8) setDockTucked(false);
+        lastY = y;
+        ticking = false;
+      });
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
 
   useEffect(() => {
     if (!nativePos) return undefined;
@@ -1973,6 +2042,7 @@ export default function AdminCounterBill({
   const addProduct = (product) => {
     setReceiptOrder(null);
     setFeedback(null);
+    setDockTucked(false);
     setCartFlashKey(Date.now());
     setLines((prev) => {
       const existing = prev.find((line) => line.product.id === product.id);
@@ -2004,6 +2074,8 @@ export default function AdminCounterBill({
 
   const setQty = (productId, value) => {
     setReceiptOrder(null);
+    setDockTucked(false);
+    setCartFlashKey(Date.now());
     const raw = Number(value);
     setLines((prev) =>
       prev.map((line) => {
@@ -2741,7 +2813,7 @@ export default function AdminCounterBill({
           ) : null}
 
           <div className="counter-bill__footer">
-            <div className="counter-bill__summary-card" aria-label={t('admin.counterBillSummary')}>
+            <div className={`counter-bill__summary-card${cartFlashKey ? ' counter-bill__summary-card--flash' : ''}`} aria-label={t('admin.counterBillSummary')}>
               <div>
                 <span>{t('admin.counterBillSubtotal')}</span>
                 <strong>{formatPrice(subtotal)}</strong>
@@ -2758,7 +2830,7 @@ export default function AdminCounterBill({
               </div>
               <div className="counter-bill__summary-total">
                 <span>{t('admin.counterBillGrandTotal')}</span>
-                <strong>{formatPrice(total)}</strong>
+                <strong key={`total-${total}-${lines.length}`}>{formatPrice(total)}</strong>
               </div>
             </div>
 
@@ -2798,6 +2870,45 @@ export default function AdminCounterBill({
             </div>
           </div>
         </section>
+      </div>
+
+      <div
+        className={`counter-bill__pos-dock${dockTucked ? ' counter-bill__pos-dock--tucked' : ''}${cartFlashKey ? ' counter-bill__pos-dock--flash' : ''}`}
+        role="region"
+        aria-label={t('admin.counterBillSummary')}
+      >
+        <div className="counter-bill__pos-dock-total">
+          <span>{t('admin.counterBillGrandTotal')}</span>
+          <strong key={`dock-total-${total}-${lines.length}`}>{formatPrice(total)}</strong>
+        </div>
+        <button
+          type="button"
+          className="counter-bill__pos-dock-sales"
+          onClick={() => {
+            setDockTucked(false);
+            onJumpToSales?.();
+          }}
+        >
+          {t('counter.mySalesToday')}
+        </button>
+        <button
+          type="button"
+          className="counter-bill__pos-dock-print"
+          onClick={() => {
+            setDockTucked(false);
+            void printReceipt();
+          }}
+          disabled={!receiptOrder}
+          aria-label={t('admin.counterBillPrintNow')}
+          title={t('admin.counterBillPrintNow')}
+        >
+          <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+            <path
+              fill="currentColor"
+              d="M6 9V3h12v6h2a2 2 0 0 1 2 2v6h-4v4H6v-4H2v-6a2 2 0 0 1 2-2h2zm2-4v4h8V5H8zm-2 12v2h12v-2H6zm-2-2h16v-4H4v4zm2-2.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"
+            />
+          </svg>
+        </button>
       </div>
 
       {receiptOrder ? (
