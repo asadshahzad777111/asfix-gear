@@ -1682,6 +1682,30 @@
   border-top: 1px solid var(--pos-border);
 }
 
+.counter-bill__summary-total--jump {
+  display: flex;
+  width: 100%;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.75rem;
+  margin: 0.1rem 0 0;
+  padding: 0.5rem 0 0;
+  border: 0;
+  border-top: 1px solid var(--pos-border);
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.counter-bill__summary-total--jump:hover strong,
+.counter-bill__summary-total--jump:focus-visible strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
 .counter-bill__summary-total span {
   font-size: 0.9rem;
   text-transform: uppercase;
@@ -1998,6 +2022,24 @@
 
 .counter-bill__pos-dock-count:hover {
   color: var(--pos-accent);
+}
+
+.counter-bill__pos-dock-amount {
+  display: block;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font: inherit;
+}
+
+.counter-bill__pos-dock-amount:hover strong,
+.counter-bill__pos-dock-amount:focus-visible strong {
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .counter-bill__pos-dock-total strong {
