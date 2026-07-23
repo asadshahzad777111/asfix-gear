@@ -2026,13 +2026,13 @@ html.pos-keyboard-open #counter-bill-search {
   background: #fff;
   font-family: "Courier New", Courier, monospace;
   font-size: 12px;
-  line-height: 1.3;
+  line-height: 1.32;
   padding: 3mm 2.5mm;
 }
 
 .counter-bill-print__shop {
   text-align: center;
-  margin-bottom: 0.35rem;
+  margin-bottom: 0.4rem;
 }
 
 .counter-bill-print__logo {
@@ -2040,38 +2040,46 @@ html.pos-keyboard-open #counter-bill-search {
   width: 42%;
   max-width: 140px;
   height: auto;
-  margin: 0 auto 0.25rem;
+  margin: 0 auto 0.3rem;
+}
+
+.counter-bill-print__brand {
+  display: block;
+  margin: 0.15rem 0 0.25rem;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
 }
 
 .counter-bill-print__shop p,
 .counter-bill-print__thanks,
 .counter-bill-print__visit,
 .counter-bill-print__site {
-  margin: 0.1rem 0;
+  margin: 0.15rem 0;
   font-size: 10px;
 }
 
 .counter-bill-print__meta {
   display: grid;
-  gap: 0.12rem;
-  margin: 0.35rem 0;
+  gap: 0.18rem;
+  margin: 0.4rem 0;
   font-size: 10px;
 }
 
 .counter-bill-print__rule {
   border-top: 1px dashed #111;
-  margin: 0.12rem 0;
+  margin: 0.22rem 0;
 }
 
 .counter-bill-print__items {
   display: grid;
-  gap: 0.18rem;
+  gap: 0.28rem;
 }
 
 .counter-bill-print__item {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
-  gap: 0.04rem 0.45rem;
+  gap: 0.06rem 0.45rem;
 }
 
 .counter-bill-print__item strong {
@@ -2096,14 +2104,14 @@ html.pos-keyboard-open #counter-bill-search {
 
 .counter-bill-print__grand-label,
 .counter-bill-print__grand {
-  margin: 0;
+  margin: 0.08rem 0;
   padding: 0 0.15rem 0 0;
   border: 0;
   font-family: Arial, sans-serif;
   font-size: 14px;
   font-weight: 800;
   letter-spacing: 0.04em;
-  line-height: 1.05;
+  line-height: 1.12;
 }
 
 .counter-bill-print__grand {
@@ -2126,7 +2134,7 @@ html.pos-keyboard-open #counter-bill-search {
 }
 
 .counter-bill-print__site {
-  margin-top: 0.1rem;
+  margin-top: 0.12rem;
   font-weight: 900;
 }
 
@@ -2140,10 +2148,10 @@ html.pos-keyboard-open #counter-bill-search {
 
 .counter-bill-print__qr {
   display: block;
-  width: 68%;
-  max-width: 168px;
+  width: 74%;
+  max-width: 184px;
   height: auto;
-  margin: 0.25rem auto 0.4rem;
+  margin: 0.15rem auto 0.25rem;
   image-rendering: pixelated;
 }
 

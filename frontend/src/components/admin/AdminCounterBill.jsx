@@ -224,20 +224,20 @@ function thermalAmountText(amount) {
 /**
  * ESC Z / Mate / PNG QR module size — must fit printable dots.
  * Mag 10–12 @ 58mm overflowed some rolls (printers skip the QR).
- * Prefer medium mag 6–8: slightly larger than early receipts, always visible.
+ * Mag 7/9: a bit larger for scanners, still within 58mm printable band.
  */
 function thermalQrModuleSize(thermalWidth = '58mm') {
-  return normalizeThermalWidth(thermalWidth) === '80mm' ? 8 : 6;
+  return normalizeThermalWidth(thermalWidth) === '80mm' ? 9 : 7;
 }
 
 /**
  * Universal ESC/POS QR via GS v 0 raster (works on clones that ignore Epson GS (k).
- * Sized ~65% of printable dots — scannable without overflowing the roll.
+ * Sized ~72% of printable dots — scannable without overflowing the roll.
  */
 function buildEscPosQrRasterBytes(payload, thermalWidth = '58mm') {
   const width = normalizeThermalWidth(thermalWidth);
   const printableDots = width === '80mm' ? 576 : 384;
-  const targetDots = Math.max(120, Math.floor(printableDots * 0.65));
+  const targetDots = Math.max(120, Math.floor(printableDots * 0.72));
   let model;
   try {
     model = QRCode.create(String(payload || RECEIPT_SITE_URL), { errorCorrectionLevel: 'M' });
@@ -297,8 +297,8 @@ function bytesToBase64(bytes) {
 
 /**
  * Full-width ESC/POS receipt for laptop, native AsFix app, and remote stations.
- * Header: mono logo raster (GS v 0). QR uses GS v 0 (~65% width).
- * Mag 6/8 also used for Mate <QR> sizing — not huge, always fits 58mm.
+ * Header: mono logo raster (GS v 0). QR uses GS v 0 (~72% width).
+ * Mag 7/9 for Mate <QR> — slightly larger scan target, still fits 58mm.
  */
 export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
   if (!order || typeof TextEncoder === 'undefined' || typeof btoa !== 'function') return '';
@@ -312,8 +312,8 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
 
   push(0x1b, 0x40); // ESC @
   push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm / ~32 cols @ 384 dots)
-  /* Compact leading — TOTAL sits flush to dashed rules */
-  push(0x1b, 0x33, 24);
+  /* Classic readable leading (~pre-Subtotal rhythm), not ultra-compressed */
+  push(0x1b, 0x33, 32);
   /* Top feed so logo is not clipped by cutter/head */
   push(0x1b, 0x4a, 40);
 
@@ -321,7 +321,8 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
   if (logoRaster.length) {
     push(0x1b, 0x61, 0x01); // center
     parts.push(logoRaster);
-    push(0x0a);
+    /* Small gap before brand text */
+    push(0x1b, 0x4a, 10);
   }
 
   for (const line of lines) {
@@ -345,23 +346,23 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
     }
 
     if (line.spacer) {
-      /* Small footer breath — not a full blank line */
-      push(0x1b, 0x4a, 8);
+      /* Item gap vs footer breath — slight only, not a full blank band */
+      push(0x1b, 0x4a, line.itemGap ? 6 : 12);
       continue;
     }
     push(0x1b, 0x61, line.align === 'center' ? 0x01 : line.align === 'right' ? 0x02 : 0x00);
     const useBold = Boolean(line.title || line.grand);
     push(0x1b, 0x45, useBold ? 0x01 : 0x00);
     push(0x1b, 0x4d, 0x00);
-    /* Grand: bold only (no double-H) — avoids large vertical gap around TOTAL */
+    /* Grand: bold only (no double-H) — tight vs old huge TOTAL band, not glued */
     const size = line.title ? 0x01 : 0x00;
-    if (line.grand) push(0x1b, 0x33, 18);
+    if (line.grand) push(0x1b, 0x33, 28);
     push(0x1d, 0x21, size);
     text(line.value);
     push(0x0a);
     push(0x1d, 0x21, 0x00);
     push(0x1b, 0x45, 0x00);
-    if (line.grand) push(0x1b, 0x33, 24);
+    if (line.grand) push(0x1b, 0x33, 32);
   }
   push(0x1b, 0x61, 0x00, 0x1b, 0x45, 0x00, 0x1b, 0x4d, 0x00);
   /* Extra feed so cutter does not eat Scan/QR */
@@ -412,7 +413,11 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
       parts.push(`<010>${'-'.repeat(maxChars)}`);
       return;
     }
-    /* Skip blank spacers — keeps TOTAL band tight on Thermer */
+    if (line.spacer) {
+      /* Tiny blank for item/footer rhythm (Thermer has no partial feed) */
+      parts.push('<010> ');
+      return;
+    }
     if (!text) return;
     const bold = line.weight === 'bold' || line.title || line.grand || line.totalLabel ? '1' : '0';
     const align = line.align === 'center' ? '1' : line.align === 'right' ? '2' : '0';
@@ -420,10 +425,8 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
     const format = line.title ? '3' : '0';
     parts.push(`<${bold}${align}${format}>${text}`);
   });
-  parts.push('<110>Scan');
-  /* Mate QR: align#moduleSize#payload — match ESC/PNG (fit 58mm) */
+  /* Scan + QR already in buildReceiptLines; keep Mate QR sizing in sync */
   parts.push(`<QR>1#${thermalQrModuleSize('58mm')}#${RECEIPT_SITE_URL}`);
-  parts.push(`<110>${RECEIPT_SITE}`);
   return parts.join('');
 }
 
@@ -566,8 +569,9 @@ function buildReceiptLines(order, maxChars = 18) {
 
   const { date: billDate, time: billTime } = shortReceiptDateParts(order);
 
-  /* Logo mark only — no “AS FIX & GEAR” / BILL / tagline text in header */
+  /* Logo → brand → city → phone (small readable gaps via leading, not blank bands) */
   push('', { logo: true, align: 'center' });
+  push('AS FIX & GEAR', { align: 'center', weight: 'bold', title: true, shopHeader: true });
   wrap(SHOP.addressLine2, { align: 'center', small: true });
   wrap(SHOP.phone, { align: 'center', small: true });
   rule();
@@ -584,7 +588,7 @@ function buildReceiptLines(order, maxChars = 18) {
   if (!rows.length) {
     push('No items');
   } else {
-    rows.forEach((item) => {
+    rows.forEach((item, idx) => {
       const qty = Number(item.qty) || 1;
       const unit = Number(item.price) || 0;
       wrap(item.name || 'Item', { weight: 'bold' });
@@ -596,10 +600,12 @@ function buildReceiptLines(order, maxChars = 18) {
       }
       const gap = Math.max(1, maxChars - left.length - right.length);
       push(`${left}${' '.repeat(gap)}${right}`, { columns: { left, right } });
+      /* Tiny gap between items so names are not glued (classic rhythm, not a blank band) */
+      if (idx < rows.length - 1) push('', { spacer: true, itemGap: true });
     });
   }
 
-  /* Items → rule → [Discount] → TOTAL → rule (no Subtotal; no blank spacers) */
+  /* Items → rule → [Discount] → TOTAL → rule (no Subtotal; TOTAL stays compact) */
   rule();
   if (discount) money('Discount', discount);
   money('TOTAL AMOUNT', grandTotal, { weight: 'bold', grand: true });
@@ -607,11 +613,12 @@ function buildReceiptLines(order, maxChars = 18) {
   if (note) wrap(`Note: ${note}`, { small: true });
   rule();
   push('Thank You', { align: 'center', weight: 'bold' });
-  /* Small footer breath only — TOTAL band stays tight above */
+  /* Small footer breath — Thank You → Visit again */
   push('', { align: 'center', spacer: true });
   push('Visit again', { align: 'center', small: true });
   push(RECEIPT_SITE, { align: 'center', small: true });
-  /* Proportional to body — not a second title; no extra rule before QR */
+  /* Light dashed rule before Scan helps separate footer from QR */
+  rule();
   push('Scan', { align: 'center', small: true });
   push(RECEIPT_SITE_URL, { align: 'center', qr: true });
   return lines;
@@ -725,12 +732,12 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return chunks.length ? chunks : [''];
   };
 
-  /* Aggressive tight leading — rules sit flush against TOTAL */
-  const lineHFor = (size) => Math.ceil(size * 1.02);
-  const ruleH = Math.ceil(fontSize * 0.34);
+  /* Classic readable leading (~1.18) + ~1% — not ultra-compressed 1.02 */
+  const lineHFor = (size) => Math.ceil(size * 1.19);
+  const ruleH = Math.ceil(fontSize * 0.48);
   /*
-   * QR: medium size (~68% of printable band) — scannable, not oversized.
-   * Mag 6–8 dots/module; never exceed roll width or printers drop the block.
+   * QR: slightly larger (~74% of printable band) for easier scanning.
+   * Mag 7–9 dots/module; never exceed roll width or printers drop the block.
    */
   const qrMag = thermalQrModuleSize(pageWidth);
   const qrMarginModules = 2;
@@ -742,7 +749,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     /* keep default */
   }
   const qrSize = (qrModules + qrMarginModules * 2) * qrMag;
-  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.68));
+  const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.74));
 
   /* Estimate logo height (~square mark at ~76% width) */
   const logoEstimate = Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10;
@@ -752,7 +759,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     if (line.logo) return;
     if (line.rule) {
       const nearGrand = Boolean(lines[idx - 1]?.grand || lines[idx + 1]?.grand);
-      heightPx += ruleH + (nearGrand ? 0 : 1);
+      /* Slight rule breath; TOTAL stays compact (not old blank-band TOTAL) */
+      heightPx += ruleH + (nearGrand ? 1 : 2);
       return;
     }
     if (line.qr) {
@@ -760,15 +768,16 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       return;
     }
     if (line.spacer) {
-      heightPx += Math.max(4, Math.round(fontSize * 0.35));
+      heightPx += Math.max(line.itemGap ? 3 : 5, Math.round(fontSize * (line.itemGap ? 0.28 : 0.5)));
       return;
     }
     const size = lineSize(line);
-    const lh = line.grand ? size : lineHFor(size);
+    const lh = line.grand ? Math.ceil(size * 1.08) : lineHFor(size);
     if (line.columns) {
       heightPx += lh;
     } else {
       heightPx += chunkAtSize(line.value, size, isHeavy(line)).length * lh;
+      if (line.shopHeader) heightPx += 3;
     }
   });
 
@@ -843,7 +852,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     if (line.rule) {
       drawRuleLine(y);
       const nearGrand = Boolean(lines[i - 1]?.grand || lines[i + 1]?.grand);
-      y += ruleH + (nearGrand ? 0 : 1);
+      y += ruleH + (nearGrand ? 1 : 2);
       continue;
     }
 
@@ -855,14 +864,14 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     }
 
     if (line.spacer) {
-      y += Math.max(4, Math.round(fontSize * 0.35));
+      y += Math.max(line.itemGap ? 3 : 5, Math.round(fontSize * (line.itemGap ? 0.28 : 0.5)));
       continue;
     }
 
     const heavy = isHeavy(line);
     const size = lineSize(line);
-    /* Grand leading = glyph size — no extra air above/below TOTAL */
-    const lh = line.grand ? size : lineHFor(size);
+    /* Grand slightly airier than glyph — readable vs rules, not old huge TOTAL band */
+    const lh = line.grand ? Math.ceil(size * 1.08) : lineHFor(size);
 
     if (line.columns) {
       let left = String(line.columns.left ?? '');
@@ -897,6 +906,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
         drawText(chunk, anchor, y, size, align, heavy);
         y += lh;
       });
+      if (line.shopHeader) y += 3;
     }
   }
 
@@ -946,7 +956,7 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const marginBottom = pdfPointsFromMillimeters(1.2);
   const maxChars = pageWidth === '80mm' ? 26 : 18;
   const bodySize = pageWidth === '80mm' ? 13 : 12;
-  const bodyLeading = pageWidth === '80mm' ? 15 : 14;
+  const bodyLeading = pageWidth === '80mm' ? 18 : 17;
   const receiptLines = buildReceiptLines(order, maxChars)
     .filter((line) => !line.qr && !line.logo)
     .map((line) => ({
@@ -958,15 +968,15 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
           : line.small
             ? bodySize - 0.5
             : bodySize,
-      /* Grand leading ≈ glyph — no extra air around TOTAL; spacer = footer breath only */
+      /* Classic body leading; TOTAL compact; spacer = footer/item breath only */
       leading: line.spacer
-        ? Math.max(4, bodyLeading * 0.35)
+        ? Math.max(line.itemGap ? 3 : 5, bodyLeading * (line.itemGap ? 0.28 : 0.5))
         : line.grand
-          ? bodySize + 3
+          ? bodySize + 4
           : line.title
             ? bodyLeading + 2
             : line.rule
-              ? Math.max(8, bodyLeading - 4)
+              ? Math.max(9, bodyLeading - 3)
               : bodyLeading,
       align: line.align || 'left',
       font: line.weight === 'bold' || line.title || line.grand ? 'F2' : 'F1',
@@ -1157,36 +1167,37 @@ html, body {
   font-family: "Courier New", Courier, monospace !important;
   font-size: 14px !important;
   font-weight: 400 !important;
-  line-height: 1.18 !important;
+  line-height: 1.29 !important;
   letter-spacing: 0.04em !important;
   page-break-after: avoid !important;
   page-break-inside: avoid !important;
 }
-.r-shop { text-align: center; margin-bottom: 3px; }
-.r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 0 auto 2px; }
-.r-shop p { margin: 1px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
-.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; margin: 2px 0; font-size: 13px; font-weight: 400; }
+.r-shop { text-align: center; margin-bottom: 5px; }
+.r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 0 auto 3px; }
+.r-shop .r-brand { margin: 2px 0 3px; font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
+.r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 4px 0; font-size: 13px; font-weight: 400; }
 .r-meta span:last-child { text-align: right; }
-.r-rule { border: 0; border-top: 1px dashed #000; margin: 0; padding: 0; }
-.r-item { margin: 0 0 2px; }
+.r-rule { border: 0; border-top: 1px dashed #000; margin: 3px 0; padding: 0; }
+.r-item { margin: 0 0 3px; }
 .r-item strong { display: block; font-size: 13px; font-weight: 400; letter-spacing: 0.04em; }
 .r-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 400; }
-.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; font-size: 13px; font-weight: 400; margin: 0; padding: 0; line-height: 1; }
+.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 0 8px; font-size: 13px; font-weight: 400; margin: 0; padding: 0; line-height: 1.15; }
 .r-totals > * { min-width: 0; }
 .r-totals strong { text-align: right; white-space: nowrap; font-weight: 400; }
-.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; align-items: baseline; margin: 0; padding: 0 2mm 0 0; line-height: 1; }
-.r-grand-label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
-.r-grand { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-align: right; white-space: nowrap; padding-right: 1mm; line-height: 1; }
-.r-thanks { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 700; }
+.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; align-items: baseline; margin: 1px 0; padding: 0 2mm 0 0; line-height: 1.12; }
+.r-grand-label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.12; }
+.r-grand { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-align: right; white-space: nowrap; padding-right: 1mm; line-height: 1.12; }
+.r-thanks { text-align: center; margin: 3px 0 0; font-size: 12px; font-weight: 700; }
 .r-visit { text-align: center; margin: 5px 0 0; font-size: 11px; font-weight: 400; }
 .r-site { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 400; }
 .r-scan { text-align: center; margin: 4px 0 2px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
-.r-qr { display: block; width: 68%; max-width: 68%; height: auto; margin: 2px auto 4px; }
+.r-qr { display: block; width: 74%; max-width: 74%; height: auto; margin: 2px auto 4px; }
 `.trim();
 
   const qrBlock = qrDataUrl
     ? `<p class="r-scan">Scan</p>
-  <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="240" height="240" />`
+  <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="260" height="260" />`
     : '';
 
   const logoBlock = logoDataUrl
@@ -1200,6 +1211,7 @@ html, body {
 <main class="receipt">
   <div class="r-shop">
     ${logoBlock}
+    <p class="r-brand">AS FIX &amp; GEAR</p>
     <p>${escapeHtml(SHOP.addressLine2)}</p>
     <p>${escapeHtml(SHOP.phone)}</p>
   </div>
@@ -1224,6 +1236,7 @@ html, body {
   <p class="r-thanks">Thank You</p>
   <p class="r-visit">Visit again</p>
   <p class="r-site">${escapeHtml(RECEIPT_SITE)}</p>
+  <hr class="r-rule" />
   ${qrBlock}
 </main>
 </body></html>`;
@@ -1789,7 +1802,7 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
       return undefined;
     }
     let cancelled = false;
-    buildWebsiteQrDataUrl(240)
+    buildWebsiteQrDataUrl(280)
       .then((url) => {
         if (!cancelled) setQrDataUrl(url);
       })
@@ -1821,8 +1834,9 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
           height="120"
           decoding="async"
         />
-        <p>{SHOP.addressLine1}</p>
-        <p>{SHOP.addressLine2} | {SHOP.phone}</p>
+        <strong className="counter-bill-print__brand">AS FIX & GEAR</strong>
+        <p>{SHOP.addressLine2}</p>
+        <p>{SHOP.phone}</p>
       </div>
       <div className="counter-bill-print__meta">
         <span>{t('admin.counterBillNo')}: {order.order_id || order.id}</span>
@@ -1862,9 +1876,10 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
       <p className="counter-bill-print__thanks">{t('admin.counterBillThanks')}</p>
       <p className="counter-bill-print__visit">Visit again</p>
       <p className="counter-bill-print__site">{RECEIPT_SITE}</p>
+      <div className="counter-bill-print__rule" />
       <p className="counter-bill-print__scan">Scan</p>
       {qrDataUrl ? (
-        <img className="counter-bill-print__qr" src={qrDataUrl} alt="asfixgear.com QR" width="168" height="168" />
+        <img className="counter-bill-print__qr" src={qrDataUrl} alt="asfixgear.com QR" width="184" height="184" />
       ) : (
         <p className="counter-bill-print__site">{RECEIPT_SITE_URL}</p>
       )}
