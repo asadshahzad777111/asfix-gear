@@ -2,13 +2,13 @@ import { startTransition, useRef, useState } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
-import { useWishlistIds } from '../hooks/useWishlist';
+import { useTranslation } from '../context/LanguageContext';
 import MorphIcon from './nav/MorphIcon';
 import {
   IconCart,
   IconCartReady,
-  IconHeart,
-  IconHeartFilled,
+  IconHome,
+  IconHomeFilled,
   IconRepair,
   IconRepairBolt,
   IconShop,
@@ -20,25 +20,29 @@ import './mobile-bottom-nav.css';
 
 /** Warm route chunks on press so navigation feels instant. */
 function prefetchRoute(path) {
-  if (path.startsWith('/shop')) import('../pages/Shop');
-  else if (path.startsWith('/wishlist')) import('../pages/Wishlist');
+  if (path === '/') import('../pages/Home');
+  else if (path.startsWith('/shop')) import('../pages/Shop');
   else if (path.startsWith('/repair')) import('../pages/Repair');
   else if (path.startsWith('/account')) import('../pages/Account');
 }
 
 function activeKey(pathname) {
+  if (pathname === '/') return 'home';
   if (pathname === '/shop' || pathname.startsWith('/shop/')) return 'shop';
-  if (pathname.startsWith('/wishlist')) return 'wishlist';
   if (pathname.startsWith('/repair')) return 'repair';
   if (pathname.startsWith('/account')) return 'account';
   return null;
 }
 
+/**
+ * Mobile/tablet bottom pill dock.
+ * Active tab expands (icon + label + underline); inactive tabs stay icon-only.
+ */
 export default function MobileBottomNav() {
+  const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
   const { count: cartCount, setOpen: setCartOpen, open: cartOpen } = useCart();
-  const { count: wishlistCount } = useWishlistIds();
   const { isCustomer } = useAuth();
 
   const active = activeKey(location.pathname);
@@ -64,6 +68,7 @@ export default function MobileBottomNav() {
     [
       'mobile-bottom-nav__item',
       'mobile-bottom-nav__item--morph',
+      'mobile-bottom-nav__item--pill',
       markedKey === key ? 'is-marked' : '',
       active === key ? 'is-active' : '',
     ]
@@ -79,17 +84,16 @@ export default function MobileBottomNav() {
       ]
         .filter(Boolean)
         .join(' ')}
-      aria-label="Quick navigation"
+      aria-label={t('nav.floatingNav')}
       aria-hidden={cartOpen ? 'true' : undefined}
     >
-      {/* Repair nestled in the saddle cutout — part of the navbar composition */}
       <NavLink
         to="/repair"
         className={() =>
           `mobile-bottom-nav__fab mobile-bottom-nav__item--morph${active === 'repair' ? ' is-active' : ''}`
         }
         tabIndex={cartOpen ? -1 : undefined}
-        aria-label="Repair"
+        aria-label={t('nav.repair')}
         onPointerDown={() => prefetchRoute('/repair')}
       >
         <span className="mobile-bottom-nav__fab-orb">
@@ -99,7 +103,7 @@ export default function MobileBottomNav() {
             hover={<IconRepairBolt size={22} />}
           />
         </span>
-        <span className="mobile-bottom-nav__fab-label">Repair</span>
+        <span className="mobile-bottom-nav__fab-label">{t('nav.repair')}</span>
       </NavLink>
 
       <div className="mobile-bottom-nav__dock">
@@ -127,6 +131,27 @@ export default function MobileBottomNav() {
 
         <div className="mobile-bottom-nav__items">
           <NavLink
+            to="/"
+            end
+            className={() => tabClass('home')}
+            tabIndex={cartOpen ? -1 : undefined}
+            ref={(el) => {
+              tabRefs.current.home = el;
+            }}
+            onPointerDown={() => prefetchRoute('/')}
+          >
+            <span className="mobile-bottom-nav__icon">
+              <MorphIcon
+                className="mobile-bottom-nav__morph"
+                idle={<IconHome size={22} />}
+                hover={<IconHomeFilled size={22} />}
+              />
+            </span>
+            <span className="mobile-bottom-nav__label">{t('nav.home')}</span>
+            <span className="mobile-bottom-nav__underline" aria-hidden="true" />
+          </NavLink>
+
+          <NavLink
             to="/shop"
             className={() => tabClass('shop')}
             tabIndex={cartOpen ? -1 : undefined}
@@ -142,29 +167,8 @@ export default function MobileBottomNav() {
                 hover={<IconShopBag size={22} />}
               />
             </span>
-            <span className="mobile-bottom-nav__label">Shop</span>
-          </NavLink>
-
-          <NavLink
-            to="/wishlist"
-            className={() => tabClass('wishlist')}
-            tabIndex={cartOpen ? -1 : undefined}
-            ref={(el) => {
-              tabRefs.current.wishlist = el;
-            }}
-            onPointerDown={() => prefetchRoute('/wishlist')}
-          >
-            <span className="mobile-bottom-nav__icon-wrap mobile-bottom-nav__icon">
-              <MorphIcon
-                className="mobile-bottom-nav__morph"
-                idle={<IconHeart size={22} />}
-                hover={<IconHeartFilled size={22} />}
-              />
-              {wishlistCount > 0 && (
-                <span className="mobile-bottom-nav__badge">{wishlistCount > 99 ? '99+' : wishlistCount}</span>
-              )}
-            </span>
-            <span className="mobile-bottom-nav__label">Wishlist</span>
+            <span className="mobile-bottom-nav__label">{t('nav.shop')}</span>
+            <span className="mobile-bottom-nav__underline" aria-hidden="true" />
           </NavLink>
 
           <div className="mobile-bottom-nav__fab-slot" aria-hidden="true" />
@@ -176,7 +180,11 @@ export default function MobileBottomNav() {
               flashCart();
               setCartOpen(true);
             }}
-            aria-label={cartCount ? `Cart, ${cartCount} items` : 'Cart'}
+            aria-label={
+              cartCount
+                ? t('cart.openCart', { count: cartCount })
+                : t('nav.cart')
+            }
             tabIndex={cartOpen ? -1 : undefined}
             ref={(el) => {
               tabRefs.current.cart = el;
@@ -192,7 +200,8 @@ export default function MobileBottomNav() {
                 <span className="mobile-bottom-nav__badge">{cartCount > 99 ? '99+' : cartCount}</span>
               )}
             </span>
-            <span className="mobile-bottom-nav__label">Cart</span>
+            <span className="mobile-bottom-nav__label">{t('nav.cart')}</span>
+            <span className="mobile-bottom-nav__underline" aria-hidden="true" />
           </button>
 
           <button
@@ -203,6 +212,7 @@ export default function MobileBottomNav() {
             ref={(el) => {
               tabRefs.current.account = el;
             }}
+            aria-label={t('nav.myAccount')}
           >
             <span className="mobile-bottom-nav__icon">
               <MorphIcon
@@ -211,7 +221,8 @@ export default function MobileBottomNav() {
                 hover={<IconUserFilled size={22} />}
               />
             </span>
-            <span className="mobile-bottom-nav__label">Account</span>
+            <span className="mobile-bottom-nav__label">{t('nav.profile')}</span>
+            <span className="mobile-bottom-nav__underline" aria-hidden="true" />
           </button>
         </div>
       </div>

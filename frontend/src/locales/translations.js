@@ -77,6 +77,10 @@ export const translations = {
       profile: 'Profile',
       settings: 'Settings',
       myOrders: 'My Orders',
+      cart: 'Cart',
+      floatingNav: 'Quick navigation',
+      floatingOpen: 'Open quick navigation',
+      floatingClose: 'Close quick navigation',
     },
     brandDrawer: {
       title: 'Select {brand} model',
@@ -1486,6 +1490,10 @@ export const translations = {
       profile: 'Meri Profile',
       settings: 'Settings',
       myOrders: 'Meray Orders',
+      cart: 'Cart',
+      floatingNav: 'Jaldi navigation',
+      floatingOpen: 'Jaldi navigation kholein',
+      floatingClose: 'Jaldi navigation band karein',
     },
     brandDrawer: {
       title: '{brand} model select karein',

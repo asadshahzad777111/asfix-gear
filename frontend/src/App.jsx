@@ -11,6 +11,7 @@ import FloatingCart from './components/premium/FloatingCart';
 import FloatingRepairButton from './components/FloatingRepairButton';
 import FlyToCart from './components/premium/FlyToCart';
 import MobileBottomNav from './components/MobileBottomNav';
+import FloatingNavRail from './components/FloatingNavRail';
 import GuestWelcomeBanner from './components/GuestWelcomeBanner';
 import SectionScrollStrap from './components/SectionScrollStrap';
 import AuthTopBar from './components/auth/AuthTopBar';
@@ -46,6 +47,7 @@ function AppContent() {
   const showShopChrome = !isAdminRoute && !isAuthRoute;
   const showCart = showShopChrome;
   const showBottomNav = showShopChrome && !isGamingPage;
+  const showFloatingNav = showShopChrome && !isGamingPage;
 
   return (
     <div
@@ -74,6 +76,7 @@ function AppContent() {
       {showShopChrome && !isGamingPage && <FloatingRepairButton />}
       {showCart && <FloatingCart />}
       {showBottomNav && <MobileBottomNav />}
+      {showFloatingNav && <FloatingNavRail />}
       {showShopChrome && <FlyToCart />}
       <ExitGamingButton />
       <GamingTransition />

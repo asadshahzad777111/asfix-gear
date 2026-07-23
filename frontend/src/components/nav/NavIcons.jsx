@@ -17,6 +17,53 @@ export function IconSearch({ size = 18 }) {
   );
 }
 
+export function IconHome({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
+      <path d="M4.5 11.2 12 4.8l7.5 6.4" />
+      <path d="M7 10.8V19a1 1 0 0 0 1 1h3.2v-4.2h1.6V20H16a1 1 0 0 0 1-1v-8.2" />
+    </svg>
+  );
+}
+
+export function IconHomeFilled({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <path
+        fill="currentColor"
+        d="M11.4 4.35a1 1 0 0 1 1.2 0l7.2 5.7a1 1 0 0 1 .35.76V19a1.5 1.5 0 0 1-1.5 1.5h-4.1a.9.9 0 0 1-.9-.9v-4.1h-2.5v4.1a.9.9 0 0 1-.9.9H5.75A1.5 1.5 0 0 1 4.25 19v-8.19a1 1 0 0 1 .35-.76l6.8-5.7Z"
+      />
+    </svg>
+  );
+}
+
+export function IconClose({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
+      <path d="M7 7l10 10M17 7 7 17" />
+    </svg>
+  );
+}
+
+export function IconMail({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...stroke}>
+      <rect x="3.5" y="5.5" width="17" height="13" rx="2" />
+      <path d="m4.5 7.5 7.5 6 7.5-6" />
+    </svg>
+  );
+}
+
+export function IconNavDots({ size = 20 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true">
+      <circle cx="12" cy="6" r="1.65" fill="currentColor" />
+      <circle cx="12" cy="12" r="1.65" fill="currentColor" />
+      <circle cx="12" cy="18" r="1.65" fill="currentColor" />
+    </svg>
+  );
+}
+
 export function IconShop({ size = 20 }) {
   return (
     <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" {...stroke}>

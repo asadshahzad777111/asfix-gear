@@ -623,11 +623,14 @@
 }
 
 .dx-slimline-brand img {
-  width: 22px;
-  height: 22px;
+  width: 24px;
+  height: 24px;
   object-fit: contain;
   flex-shrink: 0;
-  border-radius: 6px;
+  border-radius: 8px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--hdr-accent, #ff6a2b) 28%, transparent),
+    0 4px 12px rgba(0, 0, 0, 0.18);
 }
 
 .dx-slimline-wordmark {

@@ -1,0 +1,222 @@
+/* Floating nav rail — laptop/desktop only while header is scroll-hidden.
+   Left mid-edge so Repair / Chat (right) and Cart (bottom-left) stay clear. */
+
+.fnav-rail {
+  --fnav-size: 2.65rem;
+  --fnav-gap: 0.28rem;
+  --fnav-accent: var(--primary, #ff6a2b);
+  --fnav-muted: color-mix(in srgb, var(--text, #14141a) 48%, transparent);
+  --fnav-surface: color-mix(in srgb, var(--bg-card, #fff) 88%, transparent);
+  --fnav-solid: var(--bg-card, #fff);
+  --fnav-shadow:
+    0 14px 36px rgba(20, 12, 8, 0.16),
+    0 2px 8px rgba(20, 12, 8, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.35);
+
+  display: none;
+  position: fixed;
+  left: max(0.85rem, env(safe-area-inset-left, 0px));
+  top: 42%;
+  transform: translate3d(-12px, -50%, 0);
+  z-index: 980;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 0.32s ease,
+    visibility 0.32s ease,
+    transform 0.42s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+[data-theme='dark'] .fnav-rail {
+  --fnav-muted: color-mix(in srgb, var(--text, #f4f4f5) 52%, transparent);
+  --fnav-surface: color-mix(in srgb, var(--bg-card, #14141a) 86%, transparent);
+  --fnav-solid: var(--bg-card, #14141a);
+  --fnav-shadow:
+    0 16px 40px rgba(0, 0, 0, 0.48),
+    0 2px 10px rgba(0, 0, 0, 0.28),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+@media (min-width: 1025px) {
+  .fnav-rail {
+    display: block;
+  }
+
+  .fnav-rail.is-visible {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translate3d(0, -50%, 0);
+  }
+}
+
+body.nav-open .fnav-rail,
+body.cart-open .fnav-rail {
+  opacity: 0 !important;
+  visibility: hidden !important;
+  pointer-events: none !important;
+}
+
+.fnav-rail__fab {
+  display: grid;
+  place-items: center;
+  width: var(--fnav-size);
+  height: var(--fnav-size);
+  margin: 0;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--fnav-accent) 28%, transparent);
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      155deg,
+      color-mix(in srgb, var(--fnav-accent) 18%, var(--fnav-surface)) 0%,
+      var(--fnav-surface) 55%
+    );
+  backdrop-filter: blur(18px) saturate(1.4);
+  -webkit-backdrop-filter: blur(18px) saturate(1.4);
+  color: var(--fnav-accent);
+  box-shadow: var(--fnav-shadow);
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease,
+    color 0.2s ease;
+}
+
+.fnav-rail__fab:hover,
+.fnav-rail__fab:focus-visible {
+  transform: scale(1.06);
+  color: #fff;
+  background: linear-gradient(145deg, #ff8a4c 0%, var(--fnav-accent) 55%, #e85a1a 100%);
+  outline: none;
+  box-shadow:
+    0 12px 28px rgba(255, 106, 43, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.fnav-rail__stack {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fnav-gap);
+  padding: 0.42rem 0.38rem;
+  border-radius: 999px;
+  background:
+    linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--fnav-accent) 10%, var(--fnav-surface)) 0%,
+      var(--fnav-surface) 42%,
+      var(--fnav-surface) 100%
+    );
+  backdrop-filter: blur(20px) saturate(1.5);
+  -webkit-backdrop-filter: blur(20px) saturate(1.5);
+  border: 1px solid color-mix(in srgb, var(--fnav-accent) 22%, transparent);
+  box-shadow: var(--fnav-shadow);
+  /* Soft scalloped silhouette via uneven button radii + outer pill */
+  isolation: isolate;
+}
+
+@supports not ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .fnav-rail__fab,
+  .fnav-rail__stack {
+    background: var(--fnav-solid);
+  }
+}
+
+.fnav-rail__btn {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--fnav-muted);
+  text-decoration: none;
+  cursor: pointer;
+  font: inherit;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    color 0.22s ease,
+    background 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.28s cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 0.28s ease;
+}
+
+.fnav-rail__btn:nth-child(odd) {
+  border-radius: 42% 58% 48% 52%;
+}
+
+.fnav-rail__btn:nth-child(even) {
+  border-radius: 55% 45% 58% 42%;
+}
+
+.fnav-rail__btn:hover,
+.fnav-rail__btn:focus-visible {
+  color: var(--fnav-accent);
+  background: color-mix(in srgb, var(--fnav-accent) 12%, transparent);
+  outline: none;
+  transform: scale(1.05);
+}
+
+.fnav-rail__btn.is-active {
+  color: #fff;
+  background: linear-gradient(145deg, #ff8a4c 0%, var(--fnav-accent) 55%, #e85a1a 100%);
+  box-shadow:
+    0 6px 16px rgba(255, 106, 43, 0.35),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  transform: scale(1.06);
+}
+
+.fnav-rail__btn--close {
+  color: color-mix(in srgb, var(--fnav-muted) 80%, var(--fnav-accent));
+}
+
+.fnav-rail__btn--close:hover,
+.fnav-rail__btn--close:focus-visible {
+  color: #fff;
+  background: color-mix(in srgb, var(--text, #14141a) 72%, var(--fnav-accent));
+}
+
+.fnav-rail__morph.dx-morph {
+  width: 1.15rem;
+  height: 1.15rem;
+}
+
+.fnav-rail__btn:hover .dx-morph__face--idle,
+.fnav-rail__btn:focus-visible .dx-morph__face--idle,
+.fnav-rail__btn.is-active .dx-morph__face--idle {
+  opacity: 0;
+  transform: scale(0.42) rotate(18deg);
+}
+
+.fnav-rail__btn:hover .dx-morph__face--hover,
+.fnav-rail__btn:focus-visible .dx-morph__face--hover,
+.fnav-rail__btn.is-active .dx-morph__face--hover {
+  opacity: 1;
+  transform: scale(1) rotate(0deg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .fnav-rail,
+  .fnav-rail__fab,
+  .fnav-rail__btn,
+  .fnav-rail__morph .dx-morph__face {
+    transition: none !important;
+  }
+
+  .fnav-rail.is-visible {
+    transform: translate3d(0, -50%, 0);
+  }
+
+  .fnav-rail__fab:hover,
+  .fnav-rail__btn:hover,
+  .fnav-rail__btn.is-active {
+    transform: none;
+  }
+}
