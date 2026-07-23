@@ -175,10 +175,15 @@ function createCounterSaleFromPayload({ user, body }) {
     if (!product) {
       throw new store.StockError(`Product not found: ${productId}`);
     }
+    /* Optional staff sell-rate override (negotiate / discount). Catalog price if omitted. */
+    const override = Number(item?.price);
+    const unitPrice = Number.isFinite(override) && override >= 0
+      ? Math.round(override)
+      : salePrice(product);
     return {
       product_id: productId,
       qty,
-      price: salePrice(product),
+      price: unitPrice,
     };
   });
   const subtotal = orderItems.reduce((sum, item) => sum + Number(item.price || 0) * Number(item.qty || 1), 0);

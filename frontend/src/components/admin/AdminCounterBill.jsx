@@ -16,6 +16,13 @@ import {
   tryNativeThermalPrint,
 } from '../../utils/nativePosPrint';
 import { useSmartThermalPrint } from '../../hooks/useSmartThermalPrint';
+import {
+  buildReceiptLogoEscPosRaster,
+  drawReceiptLogoOnCanvas,
+  getReceiptLogoMonoDataUrl,
+  receiptLogoTargetDots,
+  RECEIPT_LOGO_PATH,
+} from '../../utils/receiptLogo';
 import './admin-counter-bill.css';
 
 const COUNTER_BILL_DRAFT_KEY = 'asfix_counter_bill_draft_v1';
@@ -126,6 +133,13 @@ function salePrice(product) {
   if (!Number.isFinite(price) || price < 0) return 0;
   const discount = Math.min(90, Math.max(0, Number(product.discount_percent) || 0));
   return Math.round(price * (1 - discount / 100));
+}
+
+/** Cart line unit — staff sell-rate override, else catalog sale price. */
+function lineUnitPrice(line) {
+  const override = Number(line?.unitPrice);
+  if (Number.isFinite(override) && override >= 0) return Math.round(override);
+  return salePrice(line?.product);
 }
 
 function matchesQuery(product, query) {
@@ -266,7 +280,10 @@ export function buildThermalReceiptText(order, thermalWidth = '58mm') {
   if (!order) return '';
   /* Match ESC/POS 58mm (~32) / 80mm (~48) so plain-text fallbacks fill the roll */
   const maxChars = normalizeThermalWidth(thermalWidth) === '80mm' ? 48 : 32;
-  return `${buildReceiptLines(order, maxChars).map((line) => line.value).join('\n')}\n`;
+  return `${buildReceiptLines(order, maxChars)
+    .filter((line) => !line.logo && !line.qr)
+    .map((line) => line.value)
+    .join('\n')}\n`;
 }
 
 function bytesToBase64(bytes) {
@@ -280,10 +297,10 @@ function bytesToBase64(bytes) {
 
 /**
  * Full-width ESC/POS receipt for laptop, native AsFix app, and remote stations.
- * QR uses GS v 0 raster (~65% width) so clones that ignore Epson GS (k still print a scanner.
+ * Header: mono logo raster (GS v 0). QR uses GS v 0 (~65% width).
  * Mag 6/8 also used for Mate <QR> sizing — not huge, always fits 58mm.
  */
-export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
+export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
   if (!order || typeof TextEncoder === 'undefined' || typeof btoa !== 'function') return '';
   const width = normalizeThermalWidth(thermalWidth);
   const maxChars = width === '80mm' ? 48 : 32;
@@ -295,11 +312,20 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
 
   push(0x1b, 0x40); // ESC @
   push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm / ~32 cols @ 384 dots)
-  /* Compact leading — save paper around rules / totals */
-  push(0x1b, 0x33, 28);
-  /* Top feed so double-H brand “AS FIX & GEAR” is not clipped by cutter/head */
-  push(0x1b, 0x4a, 48);
+  /* Slightly airier leading — still compact for paper */
+  push(0x1b, 0x33, 32);
+  /* Top feed so logo is not clipped by cutter/head */
+  push(0x1b, 0x4a, 40);
+
+  const logoRaster = await buildReceiptLogoEscPosRaster(width);
+  if (logoRaster.length) {
+    push(0x1b, 0x61, 0x01); // center
+    parts.push(logoRaster);
+    push(0x0a, 0x0a);
+  }
+
   for (const line of lines) {
+    if (line.logo) continue;
     if (line.qr) {
       const qrPayload = line.value || RECEIPT_SITE_URL;
       push(0x1b, 0x61, 0x01); // center
@@ -319,12 +345,12 @@ export function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
     }
 
     push(0x1b, 0x61, line.align === 'center' ? 0x01 : line.align === 'right' ? 0x02 : 0x00);
-    /* Bold shop title + grand total; grand slightly larger (double H) with room around digits */
+    /* Bold grand total; grand slightly larger (double H) with room around digits */
     const useBold = Boolean(line.title || line.grand);
     push(0x1b, 0x45, useBold ? 0x01 : 0x00);
     /* Always Font A — Font B looks tiny and leaves empty right margin feel */
     push(0x1b, 0x4d, 0x00);
-    /* Shop header: double H; grand TOTAL: double H (clearer amounts, not W+H blob) */
+    /* Grand TOTAL: double H (clearer amounts, not W+H blob) */
     const size = line.grand || line.title
       ? 0x01
       : 0x00;
@@ -367,20 +393,32 @@ function sanitizeMatePlain(value) {
   return String(value ?? '').replace(/[<>]/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-/** Build Thermer Intent EXTRA_TEXT with Mate <BAF> markup + QR (better than raw lines). */
-function buildMateThermalMarkup(order) {
+/** Build Thermer Intent EXTRA_TEXT with Mate <BAF> markup + logo IMAGE + QR. */
+async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
   if (!order) return '';
   /* ~32 cols so Thermer fills 58mm like ESC/POS Font A */
   const maxChars = 32;
-  const lines = buildReceiptLines(order, maxChars).filter((line) => !line.qr);
-  const parts = lines.map((line) => {
+  const lines = buildReceiptLines(order, maxChars).filter((line) => !line.qr && !line.logo);
+  const parts = [];
+  const logoDataUrl = await getReceiptLogoMonoDataUrl(thermalWidth);
+  if (logoDataUrl) {
+    const raw = logoDataUrl.replace(/^data:image\/\w+;base64,/, '');
+    if (raw) parts.push(`<IMAGE>1#${raw}`);
+  }
+  lines.forEach((line) => {
     const text = sanitizeMatePlain(line.value);
-    if (line.rule) return `<010>${'-'.repeat(maxChars)}`;
-    if (!text) return '<010> ';
+    if (line.rule) {
+      parts.push(`<010>${'-'.repeat(maxChars)}`);
+      return;
+    }
+    if (!text) {
+      parts.push('<010> ');
+      return;
+    }
     const bold = line.weight === 'bold' || line.title || line.grand || line.totalLabel ? '1' : '0';
     const align = line.align === 'center' ? '1' : line.align === 'right' ? '2' : '0';
     const format = line.grand ? '1' : line.title ? '3' : '0';
-    return `<${bold}${align}${format}>${text}`;
+    parts.push(`<${bold}${align}${format}>${text}`);
   });
   parts.push('<110>Scan');
   /* Mate QR: align#moduleSize#payload — match ESC/PNG (fit 58mm) */
@@ -389,19 +427,25 @@ function buildMateThermalMarkup(order) {
   return parts.join('');
 }
 
-function mateThermalTextHref(order) {
-  const text = buildMateThermalMarkup(order) || buildThermalReceiptText(order);
+function mateThermalTextHrefFromMarkup(markup) {
   return (
     `intent:#Intent;action=android.intent.action.SEND;type=text/plain;`
     + `package=${MATE_THERMAL_PACKAGE};`
-    + `S.android.intent.extra.TEXT=${encodeURIComponent(text)};end`
+    + `S.android.intent.extra.TEXT=${encodeURIComponent(markup)};end`
   );
 }
 
-function openMateThermalText(order) {
+async function openMateThermalText(order, thermalWidth = '58mm') {
   if (!order || typeof window === 'undefined' || typeof document === 'undefined') return false;
+  let markup = '';
+  try {
+    markup = (await buildMateThermalMarkup(order, thermalWidth))
+      || buildThermalReceiptText(order, thermalWidth);
+  } catch {
+    markup = buildThermalReceiptText(order, thermalWidth);
+  }
   const anchor = document.createElement('a');
-  anchor.href = mateThermalTextHref(order);
+  anchor.href = mateThermalTextHrefFromMarkup(markup);
   anchor.rel = 'noopener';
   anchor.style.display = 'none';
   document.body.appendChild(anchor);
@@ -522,9 +566,8 @@ function buildReceiptLines(order, maxChars = 18) {
 
   const { date: billDate, time: billTime } = shortReceiptDateParts(order);
 
-  push('AS FIX & GEAR', { align: 'center', weight: 'bold', title: true, shopHeader: true });
-  push('BILL', { align: 'center', weight: 'bold', title: true });
-  /* No “Mobile Repair / accessories” tagline — brand + address + phone only */
+  /* Logo mark only — no “AS FIX & GEAR” / BILL / tagline text in header */
+  push('', { logo: true, align: 'center' });
   wrap(SHOP.addressLine2, { align: 'center', small: true });
   wrap(SHOP.phone, { align: 'center', small: true });
   rule();
@@ -586,9 +629,9 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const widthPx = printerDots;
   /* Extra side pad so Windows POS-58 driver margins do not crop Bill#/prices */
   const padX = pageWidth === '80mm' ? 30 : 26;
-  /* Extra top pad so double-tall brand is not clipped; room under QR for cutter */
-  const padTop = 22;
-  const padBottom = 24;
+  /* Top pad for logo; room under QR for cutter */
+  const padTop = 28;
+  const padBottom = 28;
   const maxChars = pageWidth === '80mm' ? 42 : 28;
   const lines = buildReceiptLines(order, maxChars);
   const canvas = document.createElement('canvas');
@@ -621,7 +664,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   }
 
   const lineSize = (line) => {
-    /* Grand TOTAL slightly larger + airy; shop header tallest */
+    /* Grand TOTAL slightly larger + airy */
     if (line.grand) return Math.round(fontSize * 1.4);
     if (line.shopHeader) return Math.round(fontSize * 1.34);
     if (line.title) return Math.round(fontSize * 1.15);
@@ -683,8 +726,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     return chunks.length ? chunks : [''];
   };
 
-  /* Compact leading — less paper waste around items / separators */
-  const lineHFor = (size) => Math.ceil(size * 1.1);
+  /* Slightly airier leading — polish without wasting paper */
+  const lineHFor = (size) => Math.ceil(size * 1.18);
   const ruleH = Math.ceil(fontSize * 0.55);
   /*
    * QR: medium size (~68% of printable band) — scannable, not oversized.
@@ -702,10 +745,14 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const qrSize = (qrModules + qrMarginModules * 2) * qrMag;
   const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.68));
 
-  let heightPx = padTop + padBottom + 4;
+  /* Estimate logo height (~square mark at ~76% width) */
+  const logoEstimate = Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10;
+
+  let heightPx = padTop + padBottom + 4 + logoEstimate;
   lines.forEach((line) => {
+    if (line.logo) return;
     if (line.rule) {
-      heightPx += ruleH + 3;
+      heightPx += ruleH + 4;
       return;
     }
     if (line.qr) {
@@ -718,7 +765,6 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       heightPx += lh;
     } else {
       heightPx += chunkAtSize(line.value, size, isHeavy(line)).length * lh;
-      if (line.shopHeader) heightPx += 2;
     }
   });
 
@@ -778,10 +824,20 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   };
 
   let y = padTop;
+  const logoH = await drawReceiptLogoOnCanvas(ctx, {
+    canvasWidth: widthPx,
+    padX,
+    y,
+    thermalWidth: pageWidth,
+  });
+  if (logoH) y += logoH;
+  else y += 4;
+
   for (const line of lines) {
+    if (line.logo) continue;
     if (line.rule) {
       drawRuleLine(y);
-      y += ruleH + 3;
+      y += ruleH + 4;
       continue;
     }
 
@@ -829,7 +885,27 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
         drawText(chunk, anchor, y, size, align, heavy);
         y += lh;
       });
-      if (line.shopHeader) y += 2;
+    }
+  }
+
+  /* Trim unused bottom if logo estimate was high */
+  const usedH = Math.min(heightPx, Math.ceil(y + padBottom));
+  if (usedH < heightPx) {
+    const trimmed = document.createElement('canvas');
+    trimmed.width = widthPx;
+    trimmed.height = usedH;
+    const tctx = trimmed.getContext('2d', { alpha: false });
+    if (tctx) {
+      tctx.fillStyle = '#ffffff';
+      tctx.fillRect(0, 0, widthPx, usedH);
+      tctx.drawImage(canvas, 0, 0);
+      return new Promise((resolve, reject) => {
+        trimmed.toBlob(
+          (blob) => (blob ? resolve(blob) : reject(new Error('PNG encode failed'))),
+          'image/png',
+          1
+        );
+      });
     }
   }
 
@@ -860,7 +936,7 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
   const bodySize = pageWidth === '80mm' ? 13 : 12;
   const bodyLeading = pageWidth === '80mm' ? 18 : 17;
   const receiptLines = buildReceiptLines(order, maxChars)
-    .filter((line) => !line.qr)
+    .filter((line) => !line.qr && !line.logo)
     .map((line) => ({
       value: line.value,
       size: line.grand
@@ -1025,7 +1101,7 @@ function prefersThermalPngShare() {
  * driver's max roll (often 58×3276mm) → meters of blank paper.
  * printViaIframe measures content and locks an exact short @page size.
  */
-function buildThermalReceiptHtml(order, thermalWidth = '58mm', qrDataUrl = '') {
+function buildThermalReceiptHtml(order, thermalWidth = '58mm', qrDataUrl = '', logoDataUrl = '') {
   const widthMm = thermalWidth === '80mm' ? 80 : 58;
   const { subtotal, discount, grandTotal } = receiptTotals(order);
   const paymentNote = counterPaymentNote(order);
@@ -1069,24 +1145,23 @@ html, body {
   page-break-after: avoid !important;
   page-break-inside: avoid !important;
 }
-.r-shop { text-align: center; margin-bottom: 3px; }
-.r-shop h1 { margin: 0 0 2px; font-size: 17px; font-weight: 700; letter-spacing: 0.08em; }
-.r-shop .r-bill { margin: 0 0 3px; font-size: 15px; font-weight: 700; letter-spacing: 0.1em; }
-.r-shop p { margin: 1px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
-.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 1px 8px; margin: 3px 0; font-size: 13px; font-weight: 400; }
+.r-shop { text-align: center; margin-bottom: 5px; }
+.r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 0 auto 4px; }
+.r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 4px 0; font-size: 13px; font-weight: 400; }
 .r-meta span:last-child { text-align: right; }
-.r-rule { border: 0; border-top: 1px dashed #000; margin: 3px 0; }
-.r-item { margin: 0 0 2px; }
+.r-rule { border: 0; border-top: 1px dashed #000; margin: 4px 0; }
+.r-item { margin: 0 0 3px; }
 .r-item strong { display: block; font-size: 13px; font-weight: 400; letter-spacing: 0.04em; }
 .r-row { display: flex; justify-content: space-between; gap: 8px; font-size: 13px; font-weight: 400; }
-.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 1px 8px; font-size: 13px; font-weight: 400; }
+.r-totals { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; font-size: 13px; font-weight: 400; }
 .r-totals > * { min-width: 0; }
 .r-totals strong { text-align: right; white-space: nowrap; font-weight: 400; }
-.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; margin: 5px 0 4px; padding: 3px 2.5mm 3px 0; }
+.r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 2px 12px; align-items: baseline; margin: 6px 0 5px; padding: 3px 2.5mm 3px 0; }
 .r-grand-label { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
 .r-grand { font-size: 18px; font-weight: 700; letter-spacing: 0.1em; text-align: right; white-space: nowrap; padding-right: 1.5mm; }
-.r-thanks, .r-site { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 400; }
-.r-scan { text-align: center; margin: 4px 0 3px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-thanks, .r-site { text-align: center; margin: 3px 0 0; font-size: 12px; font-weight: 400; }
+.r-scan { text-align: center; margin: 5px 0 3px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
 .r-qr { display: block; width: 68%; max-width: 68%; height: auto; margin: 2px auto 4px; }
 `.trim();
 
@@ -1095,14 +1170,17 @@ html, body {
   <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="240" height="240" />`
     : '';
 
+  const logoBlock = logoDataUrl
+    ? `<img class="r-logo" src="${logoDataUrl}" alt="" width="280" height="280" />`
+    : `<img class="r-logo" src="${RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`;
+
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
 <meta name="viewport" content="width=${widthMm}, initial-scale=1" />
 <title>AsFix ${escapeHtml(receiptNumber(order))}</title>
 <style>${css}</style></head><body>
 <main class="receipt">
   <div class="r-shop">
-    <h1>AS FIX &amp; GEAR</h1>
-    <p class="r-bill">BILL</p>
+    ${logoBlock}
     <p>${escapeHtml(SHOP.addressLine2)}</p>
     <p>${escapeHtml(SHOP.phone)}</p>
   </div>
@@ -1408,7 +1486,7 @@ export async function printDirectSystemReceipt({
     /* Native POS already has BT printer — use ESC/POS path */
     if (isNativePosApp()) {
       const text = buildThermalReceiptText(order, thermalWidth);
-      const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
+      const dataBase64 = await buildThermalReceiptEscPosBase64(order, thermalWidth);
       const native = await tryNativeThermalPrint(text, { dataBase64 });
       finishPrintJob(inFlightRef);
       return native?.ok
@@ -1505,7 +1583,7 @@ export async function printActiveCounterReceipt({
     /* Native AsFix POS app: Bluetooth SPP ESC/POS — replaces Thermer happy path */
     if (isNativePosApp()) {
       const text = buildThermalReceiptText(order, thermalWidth);
-      const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
+      const dataBase64 = await buildThermalReceiptEscPosBase64(order, thermalWidth);
       const native = await tryNativeThermalPrint(text, { dataBase64 });
       finishPrintJob(inFlightRef);
       /* Always return structured result so UI can show Select printer / BT errors */
@@ -1539,18 +1617,18 @@ export async function printActiveCounterReceipt({
           finishPrintJob(inFlightRef);
           return { ok: false, reason: 'cancelled' };
         }
-        openMateThermalText(order);
+        await openMateThermalText(order, thermalWidth);
         finishPrintJob(inFlightRef);
         return { ok: true };
       }
-      openMateThermalText(order);
+      await openMateThermalText(order, thermalWidth);
       finishPrintJob(inFlightRef);
       return { ok: true };
     }
 
-    /* Laptop: full ESC/POS (32-col + QR + bold title) via COM bridge or Web Bluetooth */
+    /* Laptop: full ESC/POS (32-col + QR + logo) via COM bridge or Web Bluetooth */
     try {
-      const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
+      const dataBase64 = await buildThermalReceiptEscPosBase64(order, thermalWidth);
       const text = buildThermalReceiptText(order, thermalWidth);
       const direct = await tryLaptopThermalPrint(text, { dataBase64 });
       if (direct.ok) {
@@ -1578,12 +1656,18 @@ export async function printActiveCounterReceipt({
       return printed ? { ok: true } : { ok: false, reason: 'print_failed', message: 'Browser print failed' };
     } catch {
       let qrDataUrl = '';
+      let logoDataUrl = '';
       try {
         qrDataUrl = await buildWebsiteQrDataUrl(280);
       } catch {
         qrDataUrl = '';
       }
-      const html = buildThermalReceiptHtml(order, width, qrDataUrl);
+      try {
+        logoDataUrl = await getReceiptLogoMonoDataUrl(width);
+      } catch {
+        logoDataUrl = '';
+      }
+      const html = buildThermalReceiptHtml(order, width, qrDataUrl, logoDataUrl);
       const printed = await printViaIframe(html, inFlightRef, widthMm);
       return printed ? { ok: true } : { ok: false, reason: 'print_failed', message: 'Browser print failed' };
     }
@@ -1598,10 +1682,16 @@ export async function printActiveCounterReceipt({
 }
 
 /** Open Thermer (Mate Bluetooth Print) with Mate markup Intent (Android). */
-export function openMateThermalReceipt(order) {
+export async function openMateThermalReceipt(order, thermalWidth = readThermalReceiptWidth()) {
   if (!order || typeof window === 'undefined') return false;
   if (!claimPrintSlot(order)) return false;
-  return openMateThermalText(order);
+  return openMateThermalText(order, thermalWidth);
+}
+
+function mateThermalTextHref(order) {
+  /* Sync fallback for rare <a href> — logo-less text; prefer openMateThermalText */
+  const text = buildThermalReceiptText(order);
+  return mateThermalTextHrefFromMarkup(text);
 }
 
 export { MATE_THERMAL_PACKAGE, MATE_PLAY_STORE_URL, mateThermalTextHref };
@@ -1655,7 +1745,7 @@ export async function shareCounterInvoicePdf(order, thermalWidth = readThermalRe
       throw err;
     }
     if (result.method === 'share') return true;
-    if (isAndroidDevice() && !isNativePosApp()) openMateThermalText(order);
+    if (isAndroidDevice() && !isNativePosApp()) void openMateThermalText(order);
     return false;
   } catch (err) {
     if (err?.name === 'AbortError') throw err;
@@ -1707,7 +1797,14 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
       aria-label={t('admin.counterBillReceipt')}
     >
       <div className="counter-bill-print__shop">
-        <h2>ASFIX &amp; GEAR</h2>
+        <img
+          className="counter-bill-print__logo"
+          src={RECEIPT_LOGO_PATH}
+          alt=""
+          width="120"
+          height="120"
+          decoding="async"
+        />
         <p>{SHOP.addressLine1}</p>
         <p>{SHOP.addressLine2} | {SHOP.phone}</p>
       </div>
@@ -1806,6 +1903,9 @@ export default function AdminCounterBill({
   const [posSettings, setPosSettings] = useState(DEFAULT_POS_SETTINGS);
   const [cashReceived, setCashReceived] = useState('');
   const [cartFlashKey, setCartFlashKey] = useState(0);
+  const [highlightProductId, setHighlightProductId] = useState(null);
+  const [focusedLineId, setFocusedLineId] = useState(null);
+  const sellRateRefs = useRef({});
   const [submitting, setSubmitting] = useState(false);
   const [feedback, setFeedback] = useState(null);
   const [receiptOrder, setReceiptOrder] = useState(null);
@@ -1869,7 +1969,7 @@ export default function AdminCounterBill({
     if (!orderKey || autoPrintedOrderRef.current === orderKey) return;
     autoPrintedOrderRef.current = orderKey;
     const text = buildThermalReceiptText(order, thermalWidth);
-    const dataBase64 = buildThermalReceiptEscPosBase64(order, thermalWidth);
+    const dataBase64 = await buildThermalReceiptEscPosBase64(order, thermalWidth);
     const result = await autoPrintCounterReceiptIfNative(text, { dataBase64 });
     if (result.ok) {
       setFeedback({ type: 'success', text: t('admin.counterBillNativePrinted') });
@@ -1959,7 +2059,7 @@ export default function AdminCounterBill({
 
   const showSearchDropdown = searchFocused && query.trim().length > 0;
 
-  const subtotal = lines.reduce((sum, line) => sum + salePrice(line.product) * line.qty, 0);
+  const subtotal = lines.reduce((sum, line) => sum + lineUnitPrice(line) * line.qty, 0);
   const discountAmount = clampDiscountAmount({ subtotal, type: discountType, value: discountValue });
   const effectiveDiscountPercent = subtotal > 0 && discountAmount > 0
     ? Number(((discountAmount / subtotal) * 100).toFixed(2))
@@ -1976,6 +2076,7 @@ export default function AdminCounterBill({
     lines: lines.map((line) => ({
       product: line.product,
       qty: line.qty,
+      unitPrice: lineUnitPrice(line),
     })),
     customerName,
     customerPhone,
@@ -2074,6 +2175,7 @@ export default function AdminCounterBill({
       lines: lines.map((line) => ({
         product: line.product,
         qty: line.qty,
+        unitPrice: lineUnitPrice(line),
       })),
       customerName,
       customerPhone,
@@ -2084,6 +2186,26 @@ export default function AdminCounterBill({
       updatedAt: new Date().toISOString(),
     });
   }, [lines, customerName, customerPhone, paymentMode, paymentNote, discountType, discountValue]);
+
+  const jumpToCartProduct = useCallback((productId, { focusRate = false } = {}) => {
+    const id = Number(productId);
+    if (!Number.isFinite(id)) return;
+    setProductPanelCollapsed(false);
+    setQuery('');
+    setSelectedCategory(ALL_CATEGORIES);
+    setFocusedLineId(id);
+    setHighlightProductId(id);
+    window.setTimeout(() => {
+      document.getElementById(`counter-product-${id}`)?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+      if (focusRate) sellRateRefs.current[id]?.focus?.();
+    }, 60);
+    window.setTimeout(() => {
+      setHighlightProductId((current) => (current === id ? null : current));
+    }, 2200);
+  }, []);
 
   const addProduct = (product) => {
     setReceiptOrder(null);
@@ -2098,7 +2220,7 @@ export default function AdminCounterBill({
             : line
         );
       }
-      return [...prev, { product, qty: 1 }];
+      return [...prev, { product, qty: 1, unitPrice: salePrice(product) }];
     });
     setQuery('');
     setSearchFocused(false);
@@ -2134,6 +2256,22 @@ export default function AdminCounterBill({
   const removeLine = (productId) => {
     setReceiptOrder(null);
     setLines((prev) => prev.filter((line) => line.product.id !== productId));
+    setFocusedLineId((current) => (current === productId ? null : current));
+  };
+
+  const setUnitPrice = (productId, value) => {
+    setReceiptOrder(null);
+    setCartFlashKey(Date.now());
+    const raw = Number(value);
+    setLines((prev) =>
+      prev.map((line) => {
+        if (line.product.id !== productId) return line;
+        if (!Number.isFinite(raw) || raw < 0) {
+          return { ...line, unitPrice: salePrice(line.product) };
+        }
+        return { ...line, unitPrice: Math.round(raw) };
+      })
+    );
   };
 
   const resetBill = () => {
@@ -2207,7 +2345,7 @@ export default function AdminCounterBill({
         items: lines.map((line) => ({
           product_id: line.product.id,
           qty: line.qty,
-          price: salePrice(line.product),
+          price: lineUnitPrice(line),
         })),
       });
       clearBillFields();
@@ -2223,7 +2361,15 @@ export default function AdminCounterBill({
   const draftSnapshot = (draft) => ({
     lines: (draft.items || []).map((item) => {
       const latestProduct = products.find((product) => Number(product.id) === Number(item.product_id));
-      return latestProduct ? { product: latestProduct, qty: Number(item.qty) || 1 } : null;
+      if (!latestProduct) return null;
+      const savedPrice = Number(item.price);
+      return {
+        product: latestProduct,
+        qty: Number(item.qty) || 1,
+        unitPrice: Number.isFinite(savedPrice) && savedPrice >= 0
+          ? Math.round(savedPrice)
+          : salePrice(latestProduct),
+      };
     }).filter(Boolean),
     customerName: draft.customer_name === 'Walk-in Customer' ? '' : draft.customer_name || '',
     customerPhone: draft.phone || '',
@@ -2356,6 +2502,7 @@ export default function AdminCounterBill({
         items: lines.map((line) => ({
           product_id: line.product.id,
           qty: line.qty,
+          price: lineUnitPrice(line),
         })),
       });
       setReceiptOrder(result.order);
@@ -2541,8 +2688,11 @@ export default function AdminCounterBill({
               {filteredProducts.map((product) => (
                 <button
                   key={product.id}
+                  id={`counter-product-${product.id}`}
                   type="button"
-                  className="counter-bill__product-tile"
+                  className={`counter-bill__product-tile${
+                    highlightProductId === product.id ? ' counter-bill__product-tile--jump' : ''
+                  }`}
                   onClick={() => addProduct(product)}
                 >
                   <span className="counter-bill__product-media">
@@ -2663,14 +2813,54 @@ export default function AdminCounterBill({
               <p className="counter-bill__empty counter-bill__empty--cart">{t('admin.counterBillEmptyState')}</p>
             ) : (
               lines.map((line, index) => {
-                const unit = salePrice(line.product);
+                const actual = salePrice(line.product);
+                const unit = lineUnitPrice(line);
                 const stock = Number(line.product.stock) || 1;
+                const cost = Math.max(0, Number(line.product.cost_price) || 0);
+                const rateWarn = unit < actual || (cost > 0 && unit < cost);
+                const isFocused = focusedLineId === line.product.id;
                 return (
-                  <article className="counter-bill__cart-row" key={line.product.id}>
+                  <article
+                    className={`counter-bill__cart-row${isFocused ? ' counter-bill__cart-row--focus' : ''}`}
+                    key={line.product.id}
+                  >
                     <span className="counter-bill__cart-index">{index + 1}</span>
-                    <div className="counter-bill__cart-item">
+                    <button
+                      type="button"
+                      className="counter-bill__cart-item"
+                      onClick={() => jumpToCartProduct(line.product.id, { focusRate: true })}
+                      title={t('admin.counterBillGoToItem')}
+                    >
                       <strong>{line.product.name}</strong>
-                      <small>{formatPrice(unit)} each · {t('admin.stockLabel', { count: stock })}</small>
+                      <small>{t('admin.stockLabel', { count: stock })}</small>
+                    </button>
+                    <div className="counter-bill__cart-rate">
+                      <label className="counter-bill__cart-rate-label">
+                        <span>{t('admin.counterBillSellRate')}</span>
+                        <input
+                          ref={(el) => {
+                            if (el) sellRateRefs.current[line.product.id] = el;
+                            else delete sellRateRefs.current[line.product.id];
+                          }}
+                          type="number"
+                          min="0"
+                          step="1"
+                          inputMode="numeric"
+                          value={unit}
+                          onFocus={() => {
+                            setFocusedLineId(line.product.id);
+                            jumpToCartProduct(line.product.id);
+                          }}
+                          onChange={(e) => setUnitPrice(line.product.id, e.target.value)}
+                          aria-label={`${line.product.name} ${t('admin.counterBillSellRate')}`}
+                        />
+                      </label>
+                      <small className="counter-bill__cart-actual">
+                        {t('admin.counterBillActualPrice', { price: formatPrice(actual) })}
+                      </small>
+                      {rateWarn ? (
+                        <small className="counter-bill__cart-rate-warn">{t('admin.counterBillRateLowWarn')}</small>
+                      ) : null}
                     </div>
                     <div className="counter-bill__qty-stepper">
                       <button type="button" onClick={() => adjustQty(line.product.id, -1)} disabled={line.qty <= 1}>
@@ -3014,9 +3204,13 @@ export default function AdminCounterBill({
                 {t('admin.counterBillSharePdf')}
               </button>
               {showMateThermalLink ? (
-                <a className="wp-button counter-bill__mate-cta" href={mateThermalTextHref(receiptOrder)}>
+                <button
+                  type="button"
+                  className="wp-button counter-bill__mate-cta"
+                  onClick={() => void openMateThermalText(receiptOrder, thermalWidth)}
+                >
                   {t('admin.counterBillOpenMate')}
-                </a>
+                </button>
               ) : null}
             </div>
           </div>

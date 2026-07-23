@@ -898,11 +898,15 @@ function prepareCounterDraftItems(rawItems, products) {
     if (!isPublishedProduct(product)) {
       throw new StockError(`"${product.name}" is no longer available`);
     }
+    const override = Number(item?.price);
+    const unitPrice = Number.isFinite(override) && override >= 0
+      ? Math.round(override)
+      : currentSalePrice(product);
     normalized.push({
       product_id: productId,
       name: String(product.name || item.name || 'Item').trim(),
       qty,
-      price: currentSalePrice(product),
+      price: unitPrice,
       cost_price: Math.max(0, Number(product.cost_price) || 0),
     });
   }
