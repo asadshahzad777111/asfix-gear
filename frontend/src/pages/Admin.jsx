@@ -19,7 +19,6 @@ import AdminSalesReport from '../components/AdminSalesReport';
 import AdminOrderCard, { ORDER_STATUSES } from '../components/AdminOrderCard';
 import AdminStockManager from '../components/AdminStockManager';
 import AdminProductsSheet from '../components/admin/AdminProductsSheet';
-import AdminCounterBill from '../components/admin/AdminCounterBill';
 import AdminAuditLog from '../components/admin/AdminAuditLog';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
@@ -32,7 +31,7 @@ import { startVisibilityPoll } from '../utils/visibilityPoll';
 import useLiveUpdates from '../hooks/useLiveUpdates';
 
 const VALID_TABS = new Set([
-  'dashboard', 'products', 'add', 'categories', 'stock', 'sheet', 'bill', 'orders', 'customers',
+  'dashboard', 'products', 'add', 'categories', 'stock', 'sheet', 'orders', 'customers',
   'bookings', 'messages', 'feedback', 'sales', 'audit', 'admins', 'settings', 'payments', 'ads', 'hero',
 ]);
 
@@ -62,9 +61,10 @@ export default function Admin() {
   const [searchParams, setSearchParams] = useSearchParams();
   const initialTab = searchParams.get('tab');
   const initialStockFilter = searchParams.get('filter');
-  const [tab, setTabState] = useState(
-    initialTab && VALID_TABS.has(initialTab) ? initialTab : 'dashboard'
-  );
+  const [tab, setTabState] = useState(() => {
+    if (initialTab === 'bill') return 'products'; /* Counter Bill removed — use /pos */
+    return initialTab && VALID_TABS.has(initialTab) ? initialTab : 'dashboard';
+  });
   const [stockFilter, setStockFilter] = useState(
     initialStockFilter && STOCK_FILTERS.has(initialStockFilter) ? initialStockFilter : 'all'
   );
@@ -518,15 +518,6 @@ export default function Admin() {
     }
   };
 
-  const handleCounterBillCreated = (order) => {
-    if (order?.id) {
-      setOrders((prev) => [order, ...prev.filter((o) => o.id !== order.id)]);
-    }
-    api.getProducts({ status: 'all' })
-      .then(setProducts)
-      .catch(console.error);
-  };
-
   const pageTitle = (() => {
     if (tab === 'dashboard') return 'Dashboard';
     if (tab === 'add') return editingProduct ? 'Edit product' : 'Add new product';
@@ -534,7 +525,6 @@ export default function Admin() {
     if (tab === 'categories') return 'Categories';
     if (tab === 'stock') return 'Stock';
     if (tab === 'sheet') return 'Products Sheet';
-    if (tab === 'bill') return t('admin.counterBillTitle');
     if (tab === 'orders') return 'Orders';
     if (tab === 'customers') return 'Customers';
     if (tab === 'bookings') return 'Repair Intake';
@@ -780,11 +770,6 @@ export default function Admin() {
               onProductUpdated={(updated) =>
                 setProducts((prev) => prev.map((p) => (p.id === updated.id ? updated : p)))
               }
-            />
-          ) : tab === 'bill' ? (
-            <AdminCounterBill
-              products={products}
-              onBillCreated={handleCounterBillCreated}
             />
           ) : tab === 'products' ? (
             <>

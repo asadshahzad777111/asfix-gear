@@ -1064,16 +1064,14 @@ html, body {
 function buildThermalPngPrintHtml(dataUrl, widthMm, heightMm) {
   const paperW = Number(widthMm) || 58;
   /*
-   * Page MUST be exactly 58mm (or 80mm) wide so Chrome / POS-58 destination
-   * fills the thermal frame — not a skinny strip on a letter/A4-looking preview.
-   * Image fills ~100% of paper (1mm side pad) so cut/fit matches the roll.
-   * Safe crop margins live inside the PNG (padX), not as a centered narrow sheet.
+   * Full paper width (58/80mm). Side crop lives inside the PNG (padX), not as a
+   * narrower centered strip — Chrome "fit to page" was shrinking a 56mm image on
+   * a 58mm sheet, and forced img height caused progressive scale-down on reprints.
+   * Image uses width + height:auto so aspect stays 1:1 with printer dots (203dpi).
    */
-  const contentW = paperW === 80 ? 78 : 56;
-  const sidePad = Math.max(0, (paperW - contentW) / 2);
   const contentH = Math.max(40, Math.min(220, Number(heightMm) || 120));
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
-<meta name="viewport" content="width=${paperW}, initial-scale=1" />
+<meta name="viewport" content="width=${paperW}, initial-scale=1, maximum-scale=1" />
 <title>AsFix receipt</title>
 <style>
 @page { size: ${paperW}mm ${contentH}mm; margin: 0; }
@@ -1084,11 +1082,13 @@ html {
   max-width: ${paperW}mm !important;
   min-width: ${paperW}mm !important;
   height: ${contentH}mm !important;
+  zoom: 1 !important;
+  transform: none !important;
   background: #fff !important;
 }
 body {
   margin: 0 !important;
-  padding: 0 ${sidePad}mm !important;
+  padding: 0 !important;
   width: ${paperW}mm !important;
   max-width: ${paperW}mm !important;
   min-width: ${paperW}mm !important;
@@ -1096,23 +1096,35 @@ body {
   min-height: 0 !important;
   max-height: ${contentH}mm !important;
   overflow: hidden !important;
+  zoom: 1 !important;
+  transform: none !important;
   background: #fff !important;
   box-sizing: border-box !important;
 }
 img {
   display: block !important;
-  width: ${contentW}mm !important;
-  max-width: 100% !important;
-  height: ${contentH}mm !important;
+  width: ${paperW}mm !important;
+  max-width: none !important;
+  min-width: ${paperW}mm !important;
+  height: auto !important;
+  max-height: none !important;
   margin: 0 !important;
   padding: 0 !important;
   border: 0 !important;
+  zoom: 1 !important;
+  transform: none !important;
   image-rendering: pixelated !important;
   image-rendering: crisp-edges !important;
   -ms-interpolation-mode: nearest-neighbor !important;
 }
+@media print {
+  html, body, img {
+    zoom: 1 !important;
+    transform: none !important;
+  }
+}
 </style></head><body>
-<img src="${dataUrl}" alt="AsFix receipt" />
+<img src="${dataUrl}" alt="AsFix receipt" width="${paperW === 80 ? 576 : 384}" />
 </body></html>`;
 }
 
@@ -1170,12 +1182,22 @@ function lockThermalPageToContent(doc, widthMm = 58, forcedHeightMm = null) {
 html, body {
   width: ${w}mm !important;
   max-width: ${w}mm !important;
+  min-width: ${w}mm !important;
   height: ${heightMm}mm !important;
   min-height: 0 !important;
   max-height: ${heightMm}mm !important;
   overflow: hidden !important;
   margin: 0 !important;
   padding: 0 !important;
+  zoom: 1 !important;
+  transform: none !important;
+}
+img {
+  width: ${w}mm !important;
+  max-width: none !important;
+  height: auto !important;
+  zoom: 1 !important;
+  transform: none !important;
 }
 `;
   return heightMm;
@@ -1351,19 +1373,19 @@ export async function printDirectSystemReceipt({
 
     /*
      * Laptop Direct Print: content-height PNG HTML only — NEVER createCounterInvoicePdfBlob.
-     * Exact @page 58mm×Nmm from image aspect ratio so POS-58 cannot spool 3276mm.
+     * Exact @page 58mm×Nmm from printer-dot aspect (384px = 58mm @ 203dpi) so POS-58
+     * cannot spool 3276mm and Chrome cannot "fit" a narrower strip into a smaller scale.
      */
     const width = normalizeThermalWidth(thermalWidth);
     const widthMm = width === '80mm' ? 80 : 58;
-    /* Match buildThermalPngPrintHtml — nearly full paper width (not 52mm strip) */
-    const contentWmm = widthMm === 80 ? 78 : 56;
+    const printerDots = widthMm === 80 ? 576 : 384;
     const blob = await createCounterReceiptPngBlob(order, width);
     const dataUrl = await blobToDataUrl(blob);
     const dims = await loadImageNaturalSize(dataUrl);
-    /* PNG is 1px = 1 printer dot; height from aspect at printable content width */
+    /* 1px = 1 printer dot — same visual scale as Android BT / share / download PNG */
     const heightMm = Math.max(
       40,
-      Math.min(220, Math.ceil((dims.height / Math.max(1, dims.width)) * contentWmm) + 1),
+      Math.min(220, (Math.max(1, dims.height) / printerDots) * widthMm),
     );
     const html = buildThermalPngPrintHtml(dataUrl, widthMm, heightMm);
     const printed = await printViaIframe(html, inFlightRef, widthMm, heightMm);
@@ -1465,15 +1487,31 @@ export async function printActiveCounterReceipt({
     }
 
     const width = normalizeThermalWidth(thermalWidth);
-    let qrDataUrl = '';
+    const widthMm = width === '80mm' ? 80 : 58;
+    const printerDots = widthMm === 80 ? 576 : 384;
+    /* Same PNG Direct Print path as laptop — consistent 58mm scale (no HTML text shrink) */
     try {
-      qrDataUrl = await buildWebsiteQrDataUrl(280);
+      const blob = await createCounterReceiptPngBlob(order, width);
+      const dataUrl = await blobToDataUrl(blob);
+      const dims = await loadImageNaturalSize(dataUrl);
+      const heightMm = Math.max(
+        40,
+        Math.min(220, (Math.max(1, dims.height) / printerDots) * widthMm),
+      );
+      const html = buildThermalPngPrintHtml(dataUrl, widthMm, heightMm);
+      const printed = await printViaIframe(html, inFlightRef, widthMm, heightMm);
+      return printed ? { ok: true } : { ok: false, reason: 'print_failed', message: 'Browser print failed' };
     } catch {
-      qrDataUrl = '';
+      let qrDataUrl = '';
+      try {
+        qrDataUrl = await buildWebsiteQrDataUrl(280);
+      } catch {
+        qrDataUrl = '';
+      }
+      const html = buildThermalReceiptHtml(order, width, qrDataUrl);
+      const printed = await printViaIframe(html, inFlightRef, widthMm);
+      return printed ? { ok: true } : { ok: false, reason: 'print_failed', message: 'Browser print failed' };
     }
-    const html = buildThermalReceiptHtml(order, width, qrDataUrl);
-    const printed = await printViaIframe(html, inFlightRef, width === '80mm' ? 80 : 58);
-    return printed ? { ok: true } : { ok: false, reason: 'print_failed', message: 'Browser print failed' };
   } catch (err) {
     finishPrintJob(inFlightRef);
     return {

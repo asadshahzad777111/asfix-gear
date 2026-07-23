@@ -21,6 +21,8 @@ import { resolvePrintAgentStation, startPrintJobAgent } from '../utils/printJobA
 export function useSmartThermalPrint({ thermalWidth = '58mm', agentReady = true } = {}) {
   const [chooserOpen, setChooserOpen] = useState(false);
   const [chooserBusy, setChooserBusy] = useState(false);
+  const [chooserMode, setChooserMode] = useState('print'); /* print | configure */
+  const [targetVersion, setTargetVersion] = useState(0);
   const pendingRef = useRef(null);
   const inFlightRef = useRef(false);
 
@@ -44,6 +46,7 @@ export function useSmartThermalPrint({ thermalWidth = '58mm', agentReady = true 
     pendingRef.current = null;
     setChooserOpen(false);
     setChooserBusy(false);
+    setChooserMode('print');
     pending?.resolve(result);
   }, []);
 
@@ -64,21 +67,41 @@ export function useSmartThermalPrint({ thermalWidth = '58mm', agentReady = true 
 
     return new Promise((resolve) => {
       pendingRef.current = { resolve, order, thermalWidth: width, inFlightRef: flight };
+      setChooserMode('print');
       setChooserOpen(true);
     });
   }, [thermalWidth]);
 
-  const onChooserClose = useCallback(() => {
-    finishChooser({ ok: false, reason: 'cancelled' });
-  }, [finishChooser]);
+  /** Open printer / station picker without printing (website + iOS status). */
+  const openPrintSetup = useCallback(() => {
+    pendingRef.current = null;
+    setChooserBusy(false);
+    setChooserMode('configure');
+    setChooserOpen(true);
+  }, []);
 
-  const onChooserSelect = useCallback(async (target) => {
-    const pending = pendingRef.current;
-    if (!pending) {
+  const onChooserClose = useCallback(() => {
+    if (chooserMode === 'configure' || !pendingRef.current) {
       setChooserOpen(false);
+      setChooserBusy(false);
+      setChooserMode('print');
       return;
     }
+    finishChooser({ ok: false, reason: 'cancelled' });
+  }, [chooserMode, finishChooser]);
+
+  const onChooserSelect = useCallback(async (target) => {
     writePrintTarget(target);
+    setTargetVersion((n) => n + 1);
+
+    if (chooserMode === 'configure' || !pendingRef.current) {
+      setChooserOpen(false);
+      setChooserBusy(false);
+      setChooserMode('print');
+      return;
+    }
+
+    const pending = pendingRef.current;
     setChooserBusy(true);
 
     try {
@@ -122,17 +145,18 @@ export function useSmartThermalPrint({ thermalWidth = '58mm', agentReady = true 
         message: err?.message || 'Print failed',
       });
     }
-  }, [finishChooser]);
+  }, [chooserMode, finishChooser]);
 
   const chooser = (
     <PrintTargetChooser
       open={chooserOpen}
       busy={chooserBusy}
+      mode={chooserMode}
       initialTarget={defaultPrintTarget()}
       onClose={onChooserClose}
       onSelect={onChooserSelect}
     />
   );
 
-  return { printSmart, chooser, chooserOpen };
+  return { printSmart, openPrintSetup, chooser, chooserOpen, targetVersion };
 }

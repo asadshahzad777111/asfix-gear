@@ -18,6 +18,13 @@ import {
   listBondedPrinters,
   savePrinter,
 } from '../utils/nativePosPrint';
+import {
+  defaultPrintTarget,
+  fetchPrintStations,
+  isAppleMobileDevice,
+  isDesktopDevice,
+  readPrintTarget,
+} from '../utils/remoteThermalPrint';
 import '../components/admin/admin-wp.css';
 import '../components/admin/admin-counter-bill.css';
 
@@ -29,6 +36,36 @@ function counterSaleDate(sale, fallbackDate) {
   if (!sale?.created_at) return fallbackDate;
   const timestamp = new Date(sale.created_at);
   return Number.isNaN(timestamp.getTime()) ? fallbackDate : timestamp.toISOString().slice(0, 10);
+}
+
+function describeWebPrintStatus(target, stations, t) {
+  const androidOnline = Boolean(stations?.android?.online);
+  const laptopOnline = Boolean(stations?.laptop?.online);
+  if (target === 'android') {
+    return androidOnline
+      ? t('admin.printStationAndroidConnected')
+      : t('admin.printStationAndroidOffline');
+  }
+  if (target === 'laptop') {
+    return laptopOnline
+      ? t('admin.printStationLaptopConnected')
+      : t('admin.printStationLaptopOffline');
+  }
+  if (target === 'any') {
+    if (androidOnline || laptopOnline) return t('admin.printStationConnected');
+    return t('admin.printStationOffline');
+  }
+  if (target === 'direct') {
+    return isDesktopDevice()
+      ? t('admin.printStationDirectReady')
+      : t('admin.printStationDirectMobile');
+  }
+  if (target === 'local') {
+    return isAppleMobileDevice()
+      ? t('admin.printStationLocalIos')
+      : t('admin.printStationLocalReady');
+  }
+  return t('admin.printStationNotSet');
 }
 
 const DEFAULT_POS_SETTINGS = {
@@ -59,15 +96,21 @@ export default function Counter() {
   const [nativePrinters, setNativePrinters] = useState([]);
   const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
   const [nativePickerOpen, setNativePickerOpen] = useState(false);
+  const [printTarget, setPrintTarget] = useState(() => defaultPrintTarget());
+  const [printStations, setPrintStations] = useState({
+    android: { online: false },
+    laptop: { online: false },
+  });
   const printInFlightRef = useRef(false);
   const salesSectionRef = useRef(null);
   const printerBarRef = useRef(null);
-  const { printSmart, chooser: printChooser } = useSmartThermalPrint({
+  const { printSmart, openPrintSetup, chooser: printChooser, targetVersion } = useSmartThermalPrint({
     thermalWidth,
     agentReady: !nativePos || Boolean(nativePrinter?.address),
   });
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
+  const isIos = isAppleMobileDevice();
 
   useEffect(() => {
     if (!nativePos) return undefined;
@@ -80,6 +123,24 @@ export default function Counter() {
       cancelled = true;
     };
   }, [nativePos]);
+
+  useEffect(() => {
+    if (nativePos) return undefined;
+    let cancelled = false;
+    const refresh = async () => {
+      const target = readPrintTarget() || defaultPrintTarget();
+      const stations = await fetchPrintStations();
+      if (cancelled) return;
+      setPrintTarget(target);
+      setPrintStations(stations);
+    };
+    refresh();
+    const timer = window.setInterval(refresh, 12_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(timer);
+    };
+  }, [nativePos, targetVersion]);
 
   const openNativePrinterPicker = useCallback(async () => {
     if (!nativePos) return;
@@ -410,20 +471,32 @@ export default function Counter() {
             ) : null}
           </div>
         ) : (
-          <div className="counter-bt-printer-bar counter-pos-download-bar">
+          <div className="counter-bt-printer-bar" ref={printerBarRef}>
             <div className="counter-bt-printer-bar__main">
               <div className="counter-bt-printer-bar__info">
-                <strong>{t('counter.downloadPosApk')}</strong>
-                <small>{t('counter.downloadPosApkHint')}</small>
+                <strong>{t('admin.printStationBarTitle')}</strong>
+                <span>{describeWebPrintStatus(printTarget, printStations, t)}</span>
+                <small>
+                  {isIos ? t('admin.printStationIosHint') : t('admin.printStationWebHint')}
+                </small>
               </div>
               <div className="counter-bt-printer-bar__actions">
-                <a
+                <button
+                  type="button"
                   className="wp-button counter-bt-printer-bar__select"
-                  href="/downloads/AsFix-POS.apk"
-                  download="AsFix-POS.apk"
+                  onClick={() => openPrintSetup()}
                 >
-                  {t('counter.downloadPosApk')}
-                </a>
+                  {t('admin.counterBillNativeRefresh')}
+                </button>
+                {isAndroid ? (
+                  <a
+                    className="wp-button wp-button--secondary"
+                    href="/downloads/AsFix-POS.apk"
+                    download="AsFix-POS.apk"
+                  >
+                    {t('counter.downloadPosApk')}
+                  </a>
+                ) : null}
               </div>
             </div>
           </div>

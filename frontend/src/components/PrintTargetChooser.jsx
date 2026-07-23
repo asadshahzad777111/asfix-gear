@@ -21,6 +21,7 @@ export default function PrintTargetChooser({
   onSelect,
   busy = false,
   initialTarget = null,
+  mode = 'print', /* print | configure */
 }) {
   const { t } = useTranslation();
   const [target, setTarget] = useState(() => initialTarget || defaultPrintTarget());
@@ -31,6 +32,7 @@ export default function PrintTargetChooser({
   const [loadingStations, setLoadingStations] = useState(false);
   const ios = isAppleMobileDevice();
   const desktop = isDesktopDevice();
+  const configuring = mode === 'configure';
 
   useEffect(() => {
     if (!open) return undefined;
@@ -108,8 +110,8 @@ export default function PrintTargetChooser({
       <button type="button" className="print-target-chooser__backdrop" aria-label={t('admin.printTargetCancel')} onClick={onClose} />
       <div className="print-target-chooser__card glass-card">
         <div className="print-target-chooser__head">
-          <h3>{t('admin.printTargetTitle')}</h3>
-          <p>{t('admin.printTargetSub')}</p>
+          <h3>{configuring ? t('admin.printStationBarTitle') : t('admin.printTargetTitle')}</h3>
+          <p>{configuring ? (ios ? t('admin.printStationIosHint') : t('admin.printStationWebHint')) : t('admin.printTargetSub')}</p>
         </div>
 
         <div className="print-target-chooser__options" role="radiogroup" aria-label={t('admin.printTargetTitle')}>
@@ -159,7 +161,11 @@ export default function PrintTargetChooser({
             {t('admin.printTargetCancel')}
           </button>
           <button type="button" className="btn btn-primary" onClick={confirm} disabled={busy}>
-            {busy ? t('admin.printTargetSending') : t('admin.printTargetConfirm')}
+            {busy
+              ? t('admin.printTargetSending')
+              : configuring
+                ? t('admin.printStationSave')
+                : t('admin.printTargetConfirm')}
           </button>
         </div>
       </div>

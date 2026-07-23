@@ -6,7 +6,6 @@ import { canManageProducts, roleLabel } from '../../config/permissions';
 const PRODUCT_SUB = [
   { id: 'products', label: 'All Products' },
   { id: 'sheet', label: 'Products Sheet' },
-  { id: 'bill', label: 'Counter Bill' },
   { id: 'add', label: 'Add new product', managerOnly: true },
   { id: 'categories', label: 'Categories', managerOnly: true },
   { id: 'stock', label: 'Stock', managerOnly: true },
@@ -100,10 +99,10 @@ export default function AdminLayout({
           <div className="wp-menu-section">
             {navItem('dashboard', 'Dashboard')}
             <p className="wp-menu-heading">Shop</p>
-            <div className={`wp-menu-item ${['products', 'sheet', 'bill', 'add', 'stock', 'categories'].includes(tab) ? 'is-open' : ''}`}>
+            <div className={`wp-menu-item ${['products', 'sheet', 'add', 'stock', 'categories'].includes(tab) ? 'is-open' : ''}`}>
               <button
                 type="button"
-                className={`wp-menu-link wp-menu-link--parent ${['products', 'sheet', 'bill', 'add', 'stock', 'categories'].includes(tab) ? 'is-active' : ''}`}
+                className={`wp-menu-link wp-menu-link--parent ${['products', 'sheet', 'add', 'stock', 'categories'].includes(tab) ? 'is-active' : ''}`}
                 onClick={() => goTab('products')}
               >
                 <span className="wp-menu-text">Products</span>
