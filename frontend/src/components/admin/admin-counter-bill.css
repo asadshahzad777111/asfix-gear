@@ -2045,6 +2045,7 @@ html.pos-keyboard-open #counter-bill-search {
 
 .counter-bill-print__shop p,
 .counter-bill-print__thanks,
+.counter-bill-print__visit,
 .counter-bill-print__site {
   margin: 0.1rem 0;
   font-size: 10px;
@@ -2111,10 +2112,17 @@ html.pos-keyboard-open #counter-bill-search {
 }
 
 .counter-bill-print__thanks,
+.counter-bill-print__visit,
 .counter-bill-print__site,
 .counter-bill-print__scan {
   margin-top: 0.45rem;
   text-align: center;
+}
+
+.counter-bill-print__visit {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  font-weight: 400;
 }
 
 .counter-bill-print__site {

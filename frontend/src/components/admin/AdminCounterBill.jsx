@@ -344,6 +344,11 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
       continue;
     }
 
+    if (line.spacer) {
+      /* Small footer breath — not a full blank line */
+      push(0x1b, 0x4a, 8);
+      continue;
+    }
     push(0x1b, 0x61, line.align === 'center' ? 0x01 : line.align === 'right' ? 0x02 : 0x00);
     const useBold = Boolean(line.title || line.grand);
     push(0x1b, 0x45, useBold ? 0x01 : 0x00);
@@ -602,7 +607,10 @@ function buildReceiptLines(order, maxChars = 18) {
   if (note) wrap(`Note: ${note}`, { small: true });
   rule();
   push('Thank You', { align: 'center', weight: 'bold' });
-  push(RECEIPT_SITE, { align: 'center', weight: 'bold', small: true });
+  /* Small footer breath only — TOTAL band stays tight above */
+  push('', { align: 'center', spacer: true });
+  push('Visit again', { align: 'center', small: true });
+  push(RECEIPT_SITE, { align: 'center', small: true });
   /* Proportional to body — not a second title; no extra rule before QR */
   push('Scan', { align: 'center', small: true });
   push(RECEIPT_SITE_URL, { align: 'center', qr: true });
@@ -751,6 +759,10 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       heightPx += qrDrawSize + 14;
       return;
     }
+    if (line.spacer) {
+      heightPx += Math.max(4, Math.round(fontSize * 0.35));
+      return;
+    }
     const size = lineSize(line);
     const lh = line.grand ? size : lineHFor(size);
     if (line.columns) {
@@ -839,6 +851,11 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       const qrX = Math.round((widthPx - qrDrawSize) / 2);
       await drawCrispQr(line.value || RECEIPT_SITE_URL, qrX, y, qrDrawSize);
       y += qrDrawSize + 10;
+      continue;
+    }
+
+    if (line.spacer) {
+      y += Math.max(4, Math.round(fontSize * 0.35));
       continue;
     }
 
@@ -941,14 +958,16 @@ export function createCounterInvoicePdfBlob(order, thermalWidth = '58mm') {
           : line.small
             ? bodySize - 0.5
             : bodySize,
-      /* Grand leading ≈ glyph — no extra air around TOTAL */
-      leading: line.grand
-        ? bodySize + 3
-        : line.title
-          ? bodyLeading + 2
-          : line.rule
-            ? Math.max(8, bodyLeading - 4)
-            : bodyLeading,
+      /* Grand leading ≈ glyph — no extra air around TOTAL; spacer = footer breath only */
+      leading: line.spacer
+        ? Math.max(4, bodyLeading * 0.35)
+        : line.grand
+          ? bodySize + 3
+          : line.title
+            ? bodyLeading + 2
+            : line.rule
+              ? Math.max(8, bodyLeading - 4)
+              : bodyLeading,
       align: line.align || 'left',
       font: line.weight === 'bold' || line.title || line.grand ? 'F2' : 'F1',
     }));
@@ -1158,7 +1177,9 @@ html, body {
 .r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; align-items: baseline; margin: 0; padding: 0 2mm 0 0; line-height: 1; }
 .r-grand-label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; line-height: 1; }
 .r-grand { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-align: right; white-space: nowrap; padding-right: 1mm; line-height: 1; }
-.r-thanks, .r-site { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 400; }
+.r-thanks { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 700; }
+.r-visit { text-align: center; margin: 5px 0 0; font-size: 11px; font-weight: 400; }
+.r-site { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 400; }
 .r-scan { text-align: center; margin: 4px 0 2px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
 .r-qr { display: block; width: 68%; max-width: 68%; height: auto; margin: 2px auto 4px; }
 `.trim();
@@ -1201,6 +1222,7 @@ html, body {
   </div>
   <hr class="r-rule" />
   <p class="r-thanks">Thank You</p>
+  <p class="r-visit">Visit again</p>
   <p class="r-site">${escapeHtml(RECEIPT_SITE)}</p>
   ${qrBlock}
 </main>
@@ -1838,6 +1860,7 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
         <strong className="counter-bill-print__grand">{formatPrice(grandTotal)}</strong>
       </div>
       <p className="counter-bill-print__thanks">{t('admin.counterBillThanks')}</p>
+      <p className="counter-bill-print__visit">Visit again</p>
       <p className="counter-bill-print__site">{RECEIPT_SITE}</p>
       <p className="counter-bill-print__scan">Scan</p>
       {qrDataUrl ? (
