@@ -314,14 +314,14 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
   push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm / ~32 cols @ 384 dots)
   /* Classic readable leading (~pre-Subtotal rhythm), not ultra-compressed */
   push(0x1b, 0x33, 32);
-  /* Top feed so logo is not clipped by cutter/head */
-  push(0x1b, 0x4a, 40);
+  /* Top feed so logo sits slightly lower (not top-cramped without name text) */
+  push(0x1b, 0x4a, 52);
 
   const logoRaster = await buildReceiptLogoEscPosRaster(width);
   if (logoRaster.length) {
     push(0x1b, 0x61, 0x01); // center
     parts.push(logoRaster);
-    /* Small gap before brand text */
+    /* Small gap before address / phone */
     push(0x1b, 0x4a, 10);
   }
 
@@ -569,9 +569,8 @@ function buildReceiptLines(order, maxChars = 18) {
 
   const { date: billDate, time: billTime } = shortReceiptDateParts(order);
 
-  /* Logo → brand → city → phone (small readable gaps via leading, not blank bands) */
+  /* Logo → city → phone (no text shop name — graphic logo already has brand) */
   push('', { logo: true, align: 'center' });
-  push('AS FIX & GEAR', { align: 'center', weight: 'bold', title: true, shopHeader: true });
   wrap(SHOP.addressLine2, { align: 'center', small: true });
   wrap(SHOP.phone, { align: 'center', small: true });
   rule();
@@ -612,13 +611,11 @@ function buildReceiptLines(order, maxChars = 18) {
   const note = counterPaymentNote(order);
   if (note) wrap(`Note: ${note}`, { small: true });
   rule();
+  /* Footer: Thank You → dashed line → Visit again → site → Scan → QR */
   push('Thank You', { align: 'center', weight: 'bold' });
-  /* Small footer breath — Thank You → Visit again */
-  push('', { align: 'center', spacer: true });
+  rule();
   push('Visit again', { align: 'center', small: true });
   push(RECEIPT_SITE, { align: 'center', small: true });
-  /* Light dashed rule before Scan helps separate footer from QR */
-  rule();
   push('Scan', { align: 'center', small: true });
   push(RECEIPT_SITE_URL, { align: 'center', qr: true });
   return lines;
@@ -635,8 +632,8 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const widthPx = printerDots;
   /* Extra side pad so Windows POS-58 driver margins do not crop Bill#/prices */
   const padX = pageWidth === '80mm' ? 30 : 26;
-  /* Top pad for logo; room under QR for cutter */
-  const padTop = 28;
+  /* Top pad for logo — slightly more so header isn’t cramped without name text */
+  const padTop = 40;
   const padBottom = 28;
   const maxChars = pageWidth === '80mm' ? 42 : 28;
   const lines = buildReceiptLines(order, maxChars);
@@ -1163,7 +1160,7 @@ html, body {
   height: auto !important;
   min-height: 0 !important;
   margin: 0 !important;
-  padding: 5mm 2.5mm 2mm !important;
+  padding: 6.5mm 2.5mm 2mm !important;
   font-family: "Courier New", Courier, monospace !important;
   font-size: 14px !important;
   font-weight: 400 !important;
@@ -1173,8 +1170,7 @@ html, body {
   page-break-inside: avoid !important;
 }
 .r-shop { text-align: center; margin-bottom: 5px; }
-.r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 0 auto 3px; }
-.r-shop .r-brand { margin: 2px 0 3px; font-size: 15px; font-weight: 700; letter-spacing: 0.06em; }
+.r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 2px auto 4px; }
 .r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
 .r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 4px 0; font-size: 13px; font-weight: 400; }
 .r-meta span:last-child { text-align: right; }
@@ -1188,8 +1184,8 @@ html, body {
 .r-grand-row { display: grid; grid-template-columns: 1fr auto; gap: 0 10px; align-items: baseline; margin: 1px 0; padding: 0 2mm 0 0; line-height: 1.12; }
 .r-grand-label { font-size: 13px; font-weight: 700; letter-spacing: 0.04em; line-height: 1.12; }
 .r-grand { font-size: 15px; font-weight: 700; letter-spacing: 0.06em; text-align: right; white-space: nowrap; padding-right: 1mm; line-height: 1.12; }
-.r-thanks { text-align: center; margin: 3px 0 0; font-size: 12px; font-weight: 700; }
-.r-visit { text-align: center; margin: 5px 0 0; font-size: 11px; font-weight: 400; }
+.r-thanks { text-align: center; margin: 3px 0 2px; font-size: 12px; font-weight: 700; }
+.r-visit { text-align: center; margin: 3px 0 0; font-size: 11px; font-weight: 400; }
 .r-site { text-align: center; margin: 2px 0 0; font-size: 12px; font-weight: 400; }
 .r-scan { text-align: center; margin: 4px 0 2px; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
 .r-qr { display: block; width: 74%; max-width: 74%; height: auto; margin: 2px auto 4px; }
@@ -1211,7 +1207,6 @@ html, body {
 <main class="receipt">
   <div class="r-shop">
     ${logoBlock}
-    <p class="r-brand">AS FIX &amp; GEAR</p>
     <p>${escapeHtml(SHOP.addressLine2)}</p>
     <p>${escapeHtml(SHOP.phone)}</p>
   </div>
@@ -1234,9 +1229,9 @@ html, body {
   </div>
   <hr class="r-rule" />
   <p class="r-thanks">Thank You</p>
+  <hr class="r-rule" />
   <p class="r-visit">Visit again</p>
   <p class="r-site">${escapeHtml(RECEIPT_SITE)}</p>
-  <hr class="r-rule" />
   ${qrBlock}
 </main>
 </body></html>`;
@@ -1834,7 +1829,6 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
           height="120"
           decoding="async"
         />
-        <strong className="counter-bill-print__brand">AS FIX & GEAR</strong>
         <p>{SHOP.addressLine2}</p>
         <p>{SHOP.phone}</p>
       </div>
@@ -1874,9 +1868,9 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
         <strong className="counter-bill-print__grand">{formatPrice(grandTotal)}</strong>
       </div>
       <p className="counter-bill-print__thanks">{t('admin.counterBillThanks')}</p>
+      <div className="counter-bill-print__rule" />
       <p className="counter-bill-print__visit">Visit again</p>
       <p className="counter-bill-print__site">{RECEIPT_SITE}</p>
-      <div className="counter-bill-print__rule" />
       <p className="counter-bill-print__scan">Scan</p>
       {qrDataUrl ? (
         <img className="counter-bill-print__qr" src={qrDataUrl} alt="asfixgear.com QR" width="184" height="184" />
