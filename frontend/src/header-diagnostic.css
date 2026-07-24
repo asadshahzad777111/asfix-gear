@@ -1633,7 +1633,6 @@
   .navbar.navbar--dx {
     transition:
       transform 280ms cubic-bezier(0.22, 1, 0.36, 1),
-      box-shadow var(--hdr-ease),
       background var(--hdr-ease) !important;
   }
 }
@@ -1642,8 +1641,7 @@
   transform: translate3d(0, -100%, 0);
   pointer-events: none;
   transition:
-    transform 0.5s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow var(--hdr-ease),
+    transform 0.35s cubic-bezier(0.16, 1, 0.3, 1),
     background var(--hdr-ease) !important;
 }
 

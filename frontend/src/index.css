@@ -137,7 +137,7 @@ img { max-width: 100%; height: auto; display: block; }
   animation-name: ambientDotDrift;
   animation-timing-function: ease-in-out;
   animation-iteration-count: infinite;
-  will-change: transform, opacity;
+  /* Avoid will-change on dozens of dots — promotes too many layers */
 }
 
 .grid-overlay {
@@ -677,6 +677,13 @@ body.is-page-transitioning .ambient-bg .ambient-dot {
   display: flex;
   width: max-content;
   animation: marquee 28s linear infinite;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+.marquee-wrap.is-offscreen .marquee-track {
+  animation-play-state: paused;
+  will-change: auto;
 }
 
 .marquee-wrap:hover .marquee-track {
@@ -696,8 +703,8 @@ body.is-page-transitioning .ambient-bg .ambient-dot {
 .marquee-dot { color: var(--primary); margin-left: 1.5rem; }
 
 @keyframes marquee {
-  from { transform: translateX(0); }
-  to { transform: translateX(-50%); }
+  from { transform: translate3d(0, 0, 0); }
+  to { transform: translate3d(-50%, 0, 0); }
 }
 
 /* Hero bento */

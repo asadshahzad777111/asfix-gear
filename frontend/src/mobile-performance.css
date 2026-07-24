@@ -95,7 +95,7 @@
     background: var(--drawer-bg) !important;
   }
 
-  /* Mobile ambient — keep classic blooms + fewer drifting dots */
+  /* Mobile ambient — softer blooms (less GPU filter cost) + fewer dots */
   .ambient-bg {
     display: block !important;
   }
@@ -109,20 +109,27 @@
   }
 
   .ambient-bg .orb {
-    filter: blur(56px) !important;
-    opacity: calc(var(--orb-strength) * 0.85);
-    animation-duration: 7s !important;
+    /* Prefer cheaper blur; keep transform-only keyframes */
+    filter: blur(40px) !important;
+    opacity: calc(var(--orb-strength) * 0.75);
+    animation-duration: 10s !important;
+    will-change: transform;
   }
 
   .ambient-bg .orb-2 {
-    animation-duration: 8s !important;
+    animation-duration: 12s !important;
   }
 
   .ambient-bg .orb-3 {
-    animation-duration: 7.2s !important;
+    animation-duration: 11s !important;
   }
 
-  .ambient-bg .ambient-dot:nth-child(n + 25) {
+  .ambient-bg .ambient-dot {
+    will-change: auto;
+    box-shadow: none !important;
+  }
+
+  .ambient-bg .ambient-dot:nth-child(n + 16) {
     display: none !important;
   }
 
@@ -131,10 +138,23 @@
     background-image: none !important;
   }
 
-  /* Keep ambient drift; pause heavier loops */
-  .marquee-track,
+  /*
+   * Keep CSS marquee (transform translateX) — it is compositor-friendly and
+   * reads smoothly on 120Hz. Pause when offscreen via .is-offscreen.
+   * Phone mockup float is heavier; leave that paused on mobile.
+   */
   .phone-mockup {
     animation: none !important;
+  }
+
+  .marquee-wrap.is-offscreen .marquee-track {
+    animation-play-state: paused !important;
+  }
+
+  .marquee-track {
+    /* Ensure GPU layer for the infinite scroll strip */
+    transform: translate3d(0, 0, 0);
+    backface-visibility: hidden;
   }
 
   /* Mobile chat FAB: fixed above bottom nav — see chat-assistant.css */
@@ -315,6 +335,10 @@
   .page-transition-page {
     animation: none !important;
     transition: none !important;
+  }
+
+  .marquee-track {
+    will-change: auto !important;
   }
 }
 

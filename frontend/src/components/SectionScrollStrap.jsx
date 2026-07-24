@@ -26,7 +26,9 @@ export default function SectionScrollStrap() {
   }, [pathname]);
 
   useEffect(() => {
+    let measureRaf = 0;
     const measure = () => {
+      measureRaf = 0;
       const slim = document.querySelector('.dx-slimline');
       const slimOn = !!(slim && slim.classList.contains('is-visible'));
       setUnderSlim(slimOn);
@@ -41,21 +43,28 @@ export default function SectionScrollStrap() {
       document.documentElement.style.setProperty('--section-strap-offset', `${headerH + slimH}px`);
     };
 
+    const scheduleMeasure = () => {
+      if (measureRaf) return;
+      measureRaf = window.requestAnimationFrame(measure);
+    };
+
     measure();
-    const mo = new MutationObserver(measure);
+    const mo = new MutationObserver(scheduleMeasure);
     const slim = document.querySelector('.dx-slimline');
     const header = document.querySelector('header.navbar.navbar--dx');
     if (slim) mo.observe(slim, { attributes: true, attributeFilter: ['class'] });
     if (header) mo.observe(header, { attributes: true, attributeFilter: ['class'] });
-    window.addEventListener('resize', measure, { passive: true });
+    window.addEventListener('resize', scheduleMeasure, { passive: true });
     return () => {
       mo.disconnect();
-      window.removeEventListener('resize', measure);
+      window.removeEventListener('resize', scheduleMeasure);
+      if (measureRaf) window.cancelAnimationFrame(measureRaf);
     };
   }, [pathname]);
 
   useEffect(() => {
     const update = () => {
+      rafRef.current = 0;
       const nodes = Array.from(document.querySelectorAll('[data-section-strap]'));
       if (!nodes.length) {
         setVisible(false);
@@ -111,7 +120,7 @@ export default function SectionScrollStrap() {
     };
 
     const onScroll = () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (rafRef.current) return;
       rafRef.current = requestAnimationFrame(update);
     };
 

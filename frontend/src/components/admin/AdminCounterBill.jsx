@@ -1959,7 +1959,9 @@ export default function AdminCounterBill({
   useEffect(() => {
     if (typeof window === 'undefined' || typeof document === 'undefined') return undefined;
     const root = document.documentElement;
-    const sync = () => {
+    let raf = 0;
+    const apply = () => {
+      raf = 0;
       const vv = window.visualViewport;
       let inset = 0;
       let top = 0;
@@ -1971,7 +1973,12 @@ export default function AdminCounterBill({
       root.style.setProperty('--pos-vv-top', `${top}px`);
       root.classList.toggle('pos-keyboard-open', inset > 72);
     };
-    sync();
+    /* Coalesce visualViewport churn to one paint per frame (120Hz-friendly). */
+    const sync = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(apply);
+    };
+    apply();
     const vv = window.visualViewport;
     vv?.addEventListener('resize', sync);
     vv?.addEventListener('scroll', sync);
@@ -1979,6 +1986,7 @@ export default function AdminCounterBill({
     document.addEventListener('focusin', sync);
     document.addEventListener('focusout', sync);
     return () => {
+      if (raf) window.cancelAnimationFrame(raf);
       vv?.removeEventListener('resize', sync);
       vv?.removeEventListener('scroll', sync);
       window.removeEventListener('resize', sync);

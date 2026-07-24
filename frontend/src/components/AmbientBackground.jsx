@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 /** Classic AsFix atmosphere: orange / violet / mint blooms + drifting dots. */
 
-const DOT_COUNT = 56;
+const DOT_COUNT = 24;
 
 /** Deterministic layout so SSR/hydration stays stable */
 function buildDots(count) {
@@ -27,6 +27,19 @@ export default function AmbientBackground() {
   useEffect(() => {
     const root = rootRef.current;
     if (!root) return undefined;
+
+    /* Skip scroll-linked CSS var updates on touch — invalidates blurred orb layers. */
+    const coarse =
+      typeof window !== 'undefined'
+      && window.matchMedia('(hover: none), (pointer: coarse)').matches;
+    const reduce =
+      typeof window !== 'undefined'
+      && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (coarse || reduce) {
+      root.style.setProperty('--ambient-parallax-y', '0px');
+      root.style.setProperty('--ambient-parallax-x', '0px');
+      return undefined;
+    }
 
     let raf = 0;
     const syncParallax = () => {

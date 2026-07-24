@@ -83,12 +83,20 @@ export default function ShopMegaMenu() {
       return undefined;
     }
     updatePanelPos();
-    const sync = () => updatePanelPos();
+    let raf = 0;
+    const sync = () => {
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        updatePanelPos();
+      });
+    };
     window.addEventListener('scroll', sync, true);
     window.addEventListener('resize', sync);
     return () => {
       window.removeEventListener('scroll', sync, true);
       window.removeEventListener('resize', sync);
+      if (raf) window.cancelAnimationFrame(raf);
     };
   }, [open, level, updatePanelPos]);
 

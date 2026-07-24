@@ -18,6 +18,7 @@ export const pageExit = {
 };
 
 export const pageTransition = {
+  type: 'tween',
   duration: 0.22,
   ease: PAGE_EASE,
 };
@@ -27,7 +28,8 @@ export const pageEnterMobile = { opacity: 0 };
 export const pageCenterMobile = { opacity: 1 };
 export const pageExitMobile = { opacity: 0 };
 export const pageTransitionMobile = {
-  duration: 0.18,
+  type: 'tween',
+  duration: 0.16,
   ease: 'easeOut',
 };
 

@@ -181,6 +181,15 @@ export default function TextParticle({
       return undefined;
     }
 
+    /*
+     * Touch / coarse: static label only. Continuous canvas + idle drift at
+     * 120Hz with hundreds of particles tanks Android WebViews (storefront + POS APKs).
+     */
+    if (isCoarsePointer()) {
+      setFallback(true);
+      return undefined;
+    }
+
     const ctx = canvas.getContext('2d');
     if (!ctx) {
       setFallback(true);
@@ -188,7 +197,7 @@ export default function TextParticle({
     }
 
     setFallback(false);
-    const coarse = isCoarsePointer();
+    const coarse = false;
     let running = false;
     let visible = true;
     let disposed = false;
