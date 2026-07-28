@@ -25,7 +25,7 @@ import { useTranslation } from '../../context/LanguageContext';
 import { isNativePosApp, getSavedPrinter } from '../../utils/nativePosPrint';
 import { normalizePrintResult } from './AdminCounterBill';
 
-const STORAGE_KEY = 'asfix_pos_custom_bill_v2';
+const STORAGE_KEY = 'asfix_pos_custom_bill_v3';
 const WORK_TYPE_MOBILE = 'mobile';
 const WORK_TYPE_OTHER = 'other';
 
@@ -35,23 +35,13 @@ function normalizeWorkType(value, fallback = WORK_TYPE_MOBILE) {
   return fallback;
 }
 
-const DEFAULT_ITEMS_ASFIX = [
-  { id: '1', name: 'Body + Body Structure', rate: 2500, qty: 1 },
-  { id: '2', name: 'SIM Jack', rate: 200, qty: 1 },
-  { id: '3', name: 'Button', rate: 200, qty: 1 },
-  { id: '4', name: 'Mobile Panel A+ (1st copy)', rate: 2800, qty: 1 },
-  { id: '5', name: '', rate: '', qty: '' },
-  { id: '6', name: '', rate: '', qty: '' },
-];
-
-const DEFAULT_ITEMS_ASFIN = [
-  { id: '1', name: 'Plywood sheet', rate: '', qty: '' },
-  { id: '2', name: 'Laminate', rate: '', qty: '' },
-  { id: '3', name: 'Edge banding', rate: '', qty: '' },
-  { id: '4', name: '', rate: '', qty: '' },
-  { id: '5', name: '', rate: '', qty: '' },
-  { id: '6', name: '', rate: '', qty: '' },
-];
+/** Blank rows only — user fills name/qty/rate via Add item. */
+function emptyDefaultItems() {
+  return [
+    { id: '1', name: '', rate: '', qty: '' },
+    { id: '2', name: '', rate: '', qty: '' },
+  ];
+}
 
 function tomorrowLocalParts() {
   const d = new Date();
@@ -81,7 +71,8 @@ function formatReceiptTimeLabel(timeInput) {
 
 function loadSavedDraft() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('asfix_pos_custom_bill_v1');
+    /* v3 only — ignore v1/v2 drafts that had sample parts/rates prefilled */
+    const raw = localStorage.getItem(STORAGE_KEY);
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return null;
@@ -147,9 +138,7 @@ function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
         ? normalized.customBillAsfin
         : normalized.customBillOther;
   const media = loadCustomBillMedia(id);
-  const items = (
-    id === CUSTOM_BILL_PROFILE_ASFIN ? DEFAULT_ITEMS_ASFIN : DEFAULT_ITEMS_ASFIX
-  ).map((row) => ({ ...row }));
+  const items = emptyDefaultItems();
   const workType = id === CUSTOM_BILL_PROFILE_ASFIN ? WORK_TYPE_OTHER : WORK_TYPE_MOBILE;
   return {
     profileId: id,
@@ -407,10 +396,7 @@ export default function PosCustomBill({
       mobileName: nextWorkType === WORK_TYPE_MOBILE
         ? (keepItems ? draft.mobileName : 'Infinix Smart 5')
         : (keepItems ? draft.mobileName : ''),
-      items: keepItems
-        ? draft.items
-        : (id === CUSTOM_BILL_PROFILE_ASFIN ? DEFAULT_ITEMS_ASFIN : DEFAULT_ITEMS_ASFIX)
-          .map((row) => ({ ...row })),
+      items: keepItems ? draft.items : emptyDefaultItems(),
     });
   }, [draft, persist]);
 
