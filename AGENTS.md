@@ -62,3 +62,13 @@ Do **not** force-push. Do **not** commit `.env`, `.env.txt`, or `backend/data/da
 
 - Short, direct; Roman Urdu + English OK.
 - After deploy: give exact next tap on phone (refresh / Select printer / Print).
+
+## Cursor Cloud specific instructions
+
+Dev environment is Node-only; deps are auto-installed on VM startup via the update script (`npm run install:all`). No DB, `.env`, or cloud creds are needed for local dev — the backend defaults to a JSON file store when `MONGODB_URI` is unset.
+
+- Seed first: `npm run seed` creates the gitignored `backend/data/data.json` (8 products, gaming items, repair rates) plus a default admin (`asad` / `AsFix2026!`). A fresh Cloud VM has no data until you seed, so run this before expecting products/login to work. Re-seeding overwrites the local store.
+- Run: `npm run dev` starts backend on `:5000` and Vite frontend on `:5173` together. Open `http://localhost:5173`. Vite proxies `/api` → `127.0.0.1:5000`, so no CORS/env setup is needed locally.
+- Build/checks (standard commands, see root `package.json`): `npm run build --prefix frontend`, `npm run check:i18n` (if strings changed).
+- `npm run check:secrets` reports a known false positive on `mobile/asfix-pos/android/gradlew` — ignore it (already noted in "Before claiming done").
+- `mobile/asfix-pos/` (Capacitor Android) is not part of web dev — it just wraps the live `/pos` route and needs the Android SDK, which is not set up here.
