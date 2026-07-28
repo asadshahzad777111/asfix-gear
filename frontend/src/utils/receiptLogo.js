@@ -110,14 +110,14 @@ export async function getReceiptLogoMonoDataUrl(thermalWidth = '58mm') {
 }
 
 /** ASPLYWOOD / ASFIN brand mark — wide hex only (photo-mono). */
-export const ASFIN_LOGO_PATH = '/asfin-logo.png?v=10';
+export const ASFIN_LOGO_PATH = '/asfin-logo.png?v=11';
 
 let asfinLogoImagePromise = null;
 
-/** Near-full paper width so the hex box reads large on 58mm. */
+/** Compact wide hex — readable type, not edge-to-edge on 58mm. */
 export function asfinLogoTargetDots(thermalWidth = '58mm') {
   const printable = thermalWidth === '80mm' ? 576 : 384;
-  return Math.max(96, Math.floor((printable * 0.96) / 8) * 8);
+  return Math.max(96, Math.floor((printable * 0.88) / 8) * 8);
 }
 
 export function loadAsfinLogoImage() {

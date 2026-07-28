@@ -934,7 +934,7 @@ export async function createCounterReceiptPngBlob(orderInput, thermalWidth = '58
   const asfinLogoOnlyEstimate = isCustomReceipt(order) && customLogoMode(order) === 'asfin';
   const logoEstimate = lines.some((line) => line.logo)
     ? (asfinLogoOnlyEstimate
-      ? Math.round(Math.min(asfinLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) * 0.42) + 12
+      ? Math.round(Math.min(asfinLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) * 0.45) + 12
       : Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10)
     : (isCustomReceipt(order) && customLogoMode(order) !== 'none'
       ? Math.floor(usable * 0.55) + 10
@@ -1419,7 +1419,7 @@ html, body {
 }
 .r-shop { text-align: center; margin-bottom: 5px; }
 .r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 2px auto 4px; }
-.r-shop .r-logo--asfin { width: 96%; max-width: 96%; margin: 6px auto 4px; }
+.r-shop .r-logo--asfin { width: 88%; max-width: 88%; margin: 6px auto 4px; }
 .r-shop .r-shop-name { display: block; margin: 2px 0 4px; font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
 .r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 4px 0; font-size: 13px; font-weight: 400; }
@@ -1463,7 +1463,7 @@ html, body {
   const logoBlock = custom
     ? (logoMode === 'asfin'
       /* Logo sits where ASPLYWOOD/Lahore text used to be — no duplicate brand lines */
-      ? `${`<img class="r-logo r-logo--asfin" src="${logoDataUrl || ASFIN_LOGO_PATH}" alt="" width="360" height="152" />`}
+      ? `${`<img class="r-logo r-logo--asfin" src="${logoDataUrl || ASFIN_LOGO_PATH}" alt="" width="340" height="152" />`}
     ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`
       : `${logoMode === 'own'
         ? `<img class="r-logo" src="${logoDataUrl || RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`
