@@ -433,6 +433,35 @@
   border-radius: 10px;
 }
 
+.pos-custom-bill__media-title {
+  display: block;
+  font-weight: 650;
+  font-size: 0.9rem;
+  margin-bottom: 0.4rem;
+}
+
+.pos-custom-bill__source {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.pos-custom-bill__source-opt {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  min-height: 40px;
+  font-size: 0.86rem;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.pos-custom-bill__source-opt input {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex-shrink: 0;
+}
+
 .pos-custom-bill__check {
   display: flex;
   align-items: center;

@@ -4,12 +4,19 @@ import { SHOP } from './shop.js';
 export const CUSTOM_BILL_PROFILE_OWN = 'own';
 export const CUSTOM_BILL_PROFILE_OTHER = 'other';
 
+/** Logo / scanner source on Custom bill */
+export const CUSTOM_BILL_MEDIA_NONE = 'none';
+export const CUSTOM_BILL_MEDIA_OWN = 'own';
+export const CUSTOM_BILL_MEDIA_CUSTOM = 'custom';
+
 export const DEFAULT_CUSTOM_BILL_OWN = {
   shopName: SHOP.name || 'AsFix & Gear',
   shopPlace: SHOP.city || 'Lahore',
   shopPhone: SHOP.phone || '',
-  includeLogo: false,
-  includeQr: false,
+  logoSource: CUSTOM_BILL_MEDIA_OWN,
+  scannerSource: CUSTOM_BILL_MEDIA_OWN,
+  includeLogo: true,
+  includeQr: true,
   qrPayload: '',
 };
 
@@ -17,6 +24,8 @@ export const DEFAULT_CUSTOM_BILL_OTHER = {
   shopName: 'Osama Center',
   shopPlace: 'Trade World',
   shopPhone: '',
+  logoSource: CUSTOM_BILL_MEDIA_NONE,
+  scannerSource: CUSTOM_BILL_MEDIA_NONE,
   includeLogo: false,
   includeQr: false,
   qrPayload: '',
@@ -29,14 +38,43 @@ function clampStr(value, max) {
   return String(value ?? '').trim().slice(0, max);
 }
 
+export function normalizeMediaSource(value, fallback = CUSTOM_BILL_MEDIA_NONE) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === CUSTOM_BILL_MEDIA_OWN || raw === CUSTOM_BILL_MEDIA_CUSTOM || raw === CUSTOM_BILL_MEDIA_NONE) {
+    return raw;
+  }
+  return fallback;
+}
+
+/** Migrate old includeLogo / includeQr booleans → source selectors. */
+export function resolveLogoSource(src = {}, fallback = CUSTOM_BILL_MEDIA_NONE) {
+  if (src.logoSource != null && String(src.logoSource).trim() !== '') {
+    return normalizeMediaSource(src.logoSource, fallback);
+  }
+  if (src.includeLogo) return CUSTOM_BILL_MEDIA_CUSTOM;
+  return normalizeMediaSource(fallback, CUSTOM_BILL_MEDIA_NONE);
+}
+
+export function resolveScannerSource(src = {}, fallback = CUSTOM_BILL_MEDIA_NONE) {
+  if (src.scannerSource != null && String(src.scannerSource).trim() !== '') {
+    return normalizeMediaSource(src.scannerSource, fallback);
+  }
+  if (src.includeQr) return CUSTOM_BILL_MEDIA_CUSTOM;
+  return normalizeMediaSource(fallback, CUSTOM_BILL_MEDIA_NONE);
+}
+
 export function normalizeCustomBillProfile(raw, fallback = DEFAULT_CUSTOM_BILL_OTHER) {
   const src = raw && typeof raw === 'object' ? raw : {};
+  const logoSource = resolveLogoSource(src, fallback.logoSource);
+  const scannerSource = resolveScannerSource(src, fallback.scannerSource);
   return {
     shopName: clampStr(src.shopName ?? fallback.shopName, 80) || fallback.shopName,
     shopPlace: clampStr(src.shopPlace ?? fallback.shopPlace, 80),
     shopPhone: clampStr(src.shopPhone ?? fallback.shopPhone, 40),
-    includeLogo: Boolean(src.includeLogo),
-    includeQr: Boolean(src.includeQr),
+    logoSource,
+    scannerSource,
+    includeLogo: logoSource !== CUSTOM_BILL_MEDIA_NONE,
+    includeQr: scannerSource !== CUSTOM_BILL_MEDIA_NONE,
     qrPayload: clampStr(src.qrPayload ?? fallback.qrPayload, 500),
   };
 }

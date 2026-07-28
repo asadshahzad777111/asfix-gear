@@ -46,8 +46,10 @@ const DEFAULT_CUSTOM_BILL_OWN = {
   shopName: 'AsFix & Gear',
   shopPlace: 'Lahore',
   shopPhone: '',
-  includeLogo: false,
-  includeQr: false,
+  logoSource: 'own',
+  scannerSource: 'own',
+  includeLogo: true,
+  includeQr: true,
   qrPayload: '',
 };
 
@@ -55,6 +57,8 @@ const DEFAULT_CUSTOM_BILL_OTHER = {
   shopName: 'Osama Center',
   shopPlace: 'Trade World',
   shopPhone: '',
+  logoSource: 'none',
+  scannerSource: 'none',
   includeLogo: false,
   includeQr: false,
   qrPayload: '',
@@ -65,14 +69,40 @@ function clampPosStr(value, max, fallback = '') {
   return text || fallback;
 }
 
+function normalizeMediaSource(value, fallback = 'none') {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === 'own' || raw === 'custom' || raw === 'none') return raw;
+  return fallback;
+}
+
+function resolveLogoSource(src = {}, fallback = 'none') {
+  if (src.logoSource != null && String(src.logoSource).trim() !== '') {
+    return normalizeMediaSource(src.logoSource, fallback);
+  }
+  if (src.includeLogo) return 'custom';
+  return normalizeMediaSource(fallback, 'none');
+}
+
+function resolveScannerSource(src = {}, fallback = 'none') {
+  if (src.scannerSource != null && String(src.scannerSource).trim() !== '') {
+    return normalizeMediaSource(src.scannerSource, fallback);
+  }
+  if (src.includeQr) return 'custom';
+  return normalizeMediaSource(fallback, 'none');
+}
+
 function normalizeCustomBillProfile(raw, fallback) {
   const src = raw && typeof raw === 'object' ? raw : {};
+  const logoSource = resolveLogoSource(src, fallback.logoSource);
+  const scannerSource = resolveScannerSource(src, fallback.scannerSource);
   return {
     shopName: clampPosStr(src.shopName ?? fallback.shopName, 80, fallback.shopName),
     shopPlace: clampPosStr(src.shopPlace ?? fallback.shopPlace, 80),
     shopPhone: clampPosStr(src.shopPhone ?? fallback.shopPhone, 40),
-    includeLogo: Boolean(src.includeLogo),
-    includeQr: Boolean(src.includeQr),
+    logoSource,
+    scannerSource,
+    includeLogo: logoSource !== 'none',
+    includeQr: scannerSource !== 'none',
     qrPayload: clampPosStr(src.qrPayload ?? fallback.qrPayload, 500),
   };
 }

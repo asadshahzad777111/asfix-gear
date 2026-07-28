@@ -320,14 +320,19 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
   /* Top feed so logo sits slightly lower (not top-cramped without name text) */
   push(0x1b, 0x4a, 52);
 
-  const logoRaster = isCustomReceipt(order)
-    ? (order.custom_logo_data_url
-      ? await buildCustomImageEscPosRaster(order.custom_logo_data_url, width, 0.72)
-      : new Uint8Array())
-    : await buildReceiptLogoEscPosRaster(width);
-  if (logoRaster.length) {
+  const logoRaster = (() => {
+    if (!isCustomReceipt(order)) return buildReceiptLogoEscPosRaster(width);
+    const mode = customLogoMode(order);
+    if (mode === 'own') return buildReceiptLogoEscPosRaster(width);
+    if (mode === 'custom' && order.custom_logo_data_url) {
+      return buildCustomImageEscPosRaster(order.custom_logo_data_url, width, 0.72);
+    }
+    return Promise.resolve(new Uint8Array());
+  })();
+  const logoBytes = await logoRaster;
+  if (logoBytes.length) {
     push(0x1b, 0x61, 0x01); // center
-    parts.push(logoRaster);
+    parts.push(logoBytes);
     /* Small gap before address / phone */
     push(0x1b, 0x4a, 10);
   }
@@ -419,7 +424,14 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
   const lines = buildReceiptLines(order, maxChars).filter((line) => !line.qr && !line.logo && !line.qrImage);
   const parts = [];
   if (isCustomReceipt(order)) {
-    if (order.custom_logo_data_url) {
+    const logoMode = customLogoMode(order);
+    if (logoMode === 'own') {
+      const logoDataUrl = await getReceiptLogoMonoDataUrl(thermalWidth);
+      if (logoDataUrl) {
+        const raw = logoDataUrl.replace(/^data:image\/\w+;base64,/, '');
+        if (raw) parts.push(`<IMAGE>1#${raw}`);
+      }
+    } else if (logoMode === 'custom' && order.custom_logo_data_url) {
       const logoDataUrl = await getCustomImageMonoDataUrl(order.custom_logo_data_url, thermalWidth, 0.72);
       if (logoDataUrl) {
         const raw = logoDataUrl.replace(/^data:image\/\w+;base64,/, '');
@@ -453,13 +465,16 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
   });
   /* Scan + QR already in buildReceiptLines; keep Mate QR sizing in sync */
   if (isCustomReceipt(order)) {
-    if (order.include_qr && order.custom_qr_image_data_url) {
+    const qrMode = customQrMode(order);
+    if (qrMode === 'own') {
+      parts.push(`<QR>1#${thermalQrModuleSize('58mm')}#${RECEIPT_SITE_URL}`);
+    } else if (qrMode === 'custom' && order.custom_qr_image_data_url) {
       const qrImg = await getCustomImageMonoDataUrl(order.custom_qr_image_data_url, thermalWidth, 0.62);
       if (qrImg) {
         const raw = qrImg.replace(/^data:image\/\w+;base64,/, '');
         if (raw) parts.push(`<IMAGE>1#${raw}`);
       }
-    } else if (order.include_qr && order.custom_qr_payload) {
+    } else if (qrMode === 'custom' && order.custom_qr_payload) {
       parts.push(`<QR>1#${thermalQrModuleSize('58mm')}#${sanitizeMatePlain(order.custom_qr_payload)}`);
     }
   } else {
@@ -537,6 +552,21 @@ const RECEIPT_MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 
 /** Shared receipt lines — tall glyphs, fewer cols so letters stay large. */
 function isCustomReceipt(order) {
   return Boolean(order?.custom_receipt);
+}
+
+function customLogoMode(order) {
+  if (!isCustomReceipt(order)) return 'none';
+  if (order.use_own_logo || order.logo_source === 'own') return 'own';
+  if (order.custom_logo_data_url) return 'custom';
+  return 'none';
+}
+
+function customQrMode(order) {
+  if (!isCustomReceipt(order)) return 'none';
+  if (order.use_own_qr || order.scanner_source === 'own') return 'own';
+  if (order.include_qr && (order.custom_qr_image_data_url || order.custom_qr_payload)) return 'custom';
+  if (order.include_qr && order.scanner_source === 'custom') return 'custom';
+  return 'none';
 }
 
 function shortReceiptDateParts(order) {
@@ -619,8 +649,8 @@ function buildReceiptLines(order, maxChars = 18) {
   const custom = isCustomReceipt(order);
 
   if (custom) {
-    /* Freeform / trade bill — optional custom logo, then text shop header */
-    if (order.custom_logo_data_url) {
+    /* Freeform / trade bill — optional AsFix or custom logo, then text shop header */
+    if (customLogoMode(order) !== 'none') {
       push('', { logo: true, align: 'center' });
     }
     wrap(order.shop_name || 'Shop', { align: 'center', weight: 'bold', title: true });
@@ -680,12 +710,19 @@ function buildReceiptLines(order, maxChars = 18) {
     push(RECEIPT_SITE, { align: 'center', small: true });
     push('Scan', { align: 'center', small: true });
     push(RECEIPT_SITE_URL, { align: 'center', qr: true });
-  } else if (order.include_qr) {
-    push('Scan', { align: 'center', small: true });
-    if (order.custom_qr_image_data_url) {
-      push(order.custom_qr_image_data_url, { align: 'center', qrImage: true });
-    } else if (order.custom_qr_payload) {
-      push(String(order.custom_qr_payload), { align: 'center', qr: true });
+  } else {
+    const qrMode = customQrMode(order);
+    if (qrMode === 'own') {
+      push(RECEIPT_SITE, { align: 'center', small: true });
+      push('Scan', { align: 'center', small: true });
+      push(RECEIPT_SITE_URL, { align: 'center', qr: true });
+    } else if (qrMode === 'custom') {
+      push('Scan', { align: 'center', small: true });
+      if (order.custom_qr_image_data_url) {
+        push(order.custom_qr_image_data_url, { align: 'center', qrImage: true });
+      } else if (order.custom_qr_payload) {
+        push(String(order.custom_qr_payload), { align: 'center', qr: true });
+      }
     }
   }
   return lines;
@@ -821,7 +858,7 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   /* Estimate logo height (~square mark at ~76% width) */
   const logoEstimate = lines.some((line) => line.logo)
     ? Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10
-    : (isCustomReceipt(order) && order.custom_logo_data_url
+    : (isCustomReceipt(order) && customLogoMode(order) !== 'none'
       ? Math.floor(usable * 0.55) + 10
       : 0);
 
@@ -913,7 +950,17 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
 
   let y = padTop;
   if (isCustomReceipt(order)) {
-    if (order.custom_logo_data_url) {
+    const logoMode = customLogoMode(order);
+    if (logoMode === 'own') {
+      const logoH = await drawReceiptLogoOnCanvas(ctx, {
+        canvasWidth: widthPx,
+        padX,
+        y,
+        thermalWidth: pageWidth,
+      });
+      if (logoH) y += logoH;
+      else y += 4;
+    } else if (logoMode === 'custom' && order.custom_logo_data_url) {
       const logoH = await drawCustomImageOnCanvas(ctx, {
         src: order.custom_logo_data_url,
         canvasWidth: widthPx,
@@ -1302,21 +1349,32 @@ html, body {
 .r-qr { display: block; width: 74%; max-width: 74%; height: auto; margin: 2px auto 4px; }
 `.trim();
 
+  const qrMode = custom ? customQrMode(order) : 'sale';
   const qrBlock = custom
-    ? (order.include_qr
-      ? (order.custom_qr_image_data_url
-        ? `<p class="r-scan">Scan</p><img class="r-qr" src="${order.custom_qr_image_data_url}" alt="QR" width="260" height="260" />`
-        : (order.custom_qr_payload && qrDataUrl
-          ? `<p class="r-scan">Scan</p><img class="r-qr" src="${qrDataUrl}" alt="QR" width="260" height="260" />`
-          : ''))
-      : '')
+    ? (qrMode === 'own'
+      ? (qrDataUrl
+        ? `<p class="r-scan">Scan</p>
+  <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="260" height="260" />`
+        : '')
+      : (qrMode === 'custom'
+        ? (order.custom_qr_image_data_url
+          ? `<p class="r-scan">Scan</p><img class="r-qr" src="${order.custom_qr_image_data_url}" alt="QR" width="260" height="260" />`
+          : (order.custom_qr_payload && qrDataUrl
+            ? `<p class="r-scan">Scan</p><img class="r-qr" src="${qrDataUrl}" alt="QR" width="260" height="260" />`
+            : ''))
+        : ''))
     : (qrDataUrl
       ? `<p class="r-scan">Scan</p>
   <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="260" height="260" />`
       : '');
 
+  const logoMode = custom ? customLogoMode(order) : 'sale';
   const logoBlock = custom
-    ? `${order.custom_logo_data_url ? `<img class="r-logo" src="${order.custom_logo_data_url}" alt="" width="280" height="280" />` : ''}
+    ? `${logoMode === 'own'
+      ? `<img class="r-logo" src="${logoDataUrl || RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`
+      : (logoMode === 'custom' && order.custom_logo_data_url
+        ? `<img class="r-logo" src="${order.custom_logo_data_url}" alt="" width="280" height="280" />`
+        : '')}
     <strong class="r-shop-name">${escapeHtml(order.shop_name || 'Shop')}</strong>
     ${order.shop_place ? `<p>${escapeHtml(order.shop_place)}</p>` : ''}
     ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`
@@ -1814,9 +1872,12 @@ export async function printActiveCounterReceipt({
       let logoDataUrl = '';
       try {
         if (isCustomReceipt(order)) {
-          if (order.include_qr && order.custom_qr_image_data_url) {
+          const qrMode = customQrMode(order);
+          if (qrMode === 'own') {
+            qrDataUrl = await buildWebsiteQrDataUrl(280);
+          } else if (qrMode === 'custom' && order.custom_qr_image_data_url) {
             qrDataUrl = order.custom_qr_image_data_url;
-          } else if (order.include_qr && order.custom_qr_payload) {
+          } else if (qrMode === 'custom' && order.custom_qr_payload) {
             qrDataUrl = await buildWebsiteQrDataUrl(280, order.custom_qr_payload);
           }
         } else {
@@ -1827,9 +1888,14 @@ export async function printActiveCounterReceipt({
       }
       try {
         if (isCustomReceipt(order)) {
-          logoDataUrl = order.custom_logo_data_url
-            ? await getCustomImageMonoDataUrl(order.custom_logo_data_url, width, 0.72)
-            : '';
+          const logoMode = customLogoMode(order);
+          if (logoMode === 'own') {
+            logoDataUrl = await getReceiptLogoMonoDataUrl(width);
+          } else if (logoMode === 'custom' && order.custom_logo_data_url) {
+            logoDataUrl = await getCustomImageMonoDataUrl(order.custom_logo_data_url, width, 0.72);
+          } else {
+            logoDataUrl = '';
+          }
         } else {
           logoDataUrl = await getReceiptLogoMonoDataUrl(width);
         }

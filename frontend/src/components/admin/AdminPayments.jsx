@@ -9,6 +9,9 @@ import {
   mergePosPaymentQrCards,
 } from '../../config/posPaymentQr';
 import {
+  CUSTOM_BILL_MEDIA_CUSTOM,
+  CUSTOM_BILL_MEDIA_NONE,
+  CUSTOM_BILL_MEDIA_OWN,
   CUSTOM_BILL_PROFILE_OTHER,
   CUSTOM_BILL_PROFILE_OWN,
   DEFAULT_CUSTOM_BILL_OTHER,
@@ -477,22 +480,50 @@ export default function AdminPayments() {
                     />
                   </label>
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.65rem' }}>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.88rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(profile.includeLogo)}
-                      onChange={(e) => setProfileField('includeLogo', e.target.checked)}
-                    />
-                    Logo on by default
+                <div className="wp-payments-grid" style={{ marginTop: '0.65rem' }}>
+                  <label className="wp-payments-field">
+                    <span>Logo default</span>
+                    <select
+                      value={profile.logoSource || CUSTOM_BILL_MEDIA_NONE}
+                      onChange={(e) => {
+                        const logoSource = e.target.value;
+                        setPosSettings((p) => ({
+                          ...p,
+                          [key]: {
+                            ...defaults,
+                            ...(p[key] || {}),
+                            logoSource,
+                            includeLogo: logoSource !== CUSTOM_BILL_MEDIA_NONE,
+                          },
+                        }));
+                      }}
+                    >
+                      <option value={CUSTOM_BILL_MEDIA_NONE}>No logo</option>
+                      <option value={CUSTOM_BILL_MEDIA_OWN}>Your own logo (AsFix)</option>
+                      <option value={CUSTOM_BILL_MEDIA_CUSTOM}>Upload other logo</option>
+                    </select>
                   </label>
-                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.88rem' }}>
-                    <input
-                      type="checkbox"
-                      checked={Boolean(profile.includeQr)}
-                      onChange={(e) => setProfileField('includeQr', e.target.checked)}
-                    />
-                    Scanner / QR on by default
+                  <label className="wp-payments-field">
+                    <span>Scanner default</span>
+                    <select
+                      value={profile.scannerSource || CUSTOM_BILL_MEDIA_NONE}
+                      onChange={(e) => {
+                        const scannerSource = e.target.value;
+                        setPosSettings((p) => ({
+                          ...p,
+                          [key]: {
+                            ...defaults,
+                            ...(p[key] || {}),
+                            scannerSource,
+                            includeQr: scannerSource !== CUSTOM_BILL_MEDIA_NONE,
+                          },
+                        }));
+                      }}
+                    >
+                      <option value={CUSTOM_BILL_MEDIA_NONE}>No scanner</option>
+                      <option value={CUSTOM_BILL_MEDIA_OWN}>Your own scanner (asfixgear.com)</option>
+                      <option value={CUSTOM_BILL_MEDIA_CUSTOM}>Other scanner / QR</option>
+                    </select>
                   </label>
                 </div>
               </div>

@@ -2,12 +2,17 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../../api/client';
 import {
   CUSTOM_BILL_MAX_IMAGE_CHARS,
+  CUSTOM_BILL_MEDIA_CUSTOM,
+  CUSTOM_BILL_MEDIA_NONE,
+  CUSTOM_BILL_MEDIA_OWN,
   CUSTOM_BILL_PROFILE_OTHER,
   CUSTOM_BILL_PROFILE_OWN,
   DEFAULT_CUSTOM_BILL_OTHER,
   DEFAULT_CUSTOM_BILL_OWN,
   loadCustomBillMedia,
   normalizeCustomBillSettings,
+  resolveLogoSource,
+  resolveScannerSource,
   saveCustomBillMedia,
 } from '../../config/posCustomBillProfiles';
 import { useTranslation } from '../../context/LanguageContext';
@@ -81,13 +86,30 @@ function newItem() {
 }
 
 function profileIdentityFields(profile) {
+  const logoSource = resolveLogoSource(profile, profile.logoSource || CUSTOM_BILL_MEDIA_NONE);
+  const scannerSource = resolveScannerSource(profile, profile.scannerSource || CUSTOM_BILL_MEDIA_NONE);
   return {
     shopName: profile.shopName,
     shopPlace: profile.shopPlace,
     shopPhone: profile.shopPhone,
-    includeLogo: Boolean(profile.includeLogo),
-    includeQr: Boolean(profile.includeQr),
+    logoSource,
+    scannerSource,
+    includeLogo: logoSource !== CUSTOM_BILL_MEDIA_NONE,
+    includeQr: scannerSource !== CUSTOM_BILL_MEDIA_NONE,
     qrPayload: profile.qrPayload || '',
+  };
+}
+
+function migrateDraftMediaSources(draft) {
+  if (!draft || typeof draft !== 'object') return draft;
+  const logoSource = resolveLogoSource(draft, CUSTOM_BILL_MEDIA_NONE);
+  const scannerSource = resolveScannerSource(draft, CUSTOM_BILL_MEDIA_NONE);
+  return {
+    ...draft,
+    logoSource,
+    scannerSource,
+    includeLogo: logoSource !== CUSTOM_BILL_MEDIA_NONE,
+    includeQr: scannerSource !== CUSTOM_BILL_MEDIA_NONE,
   };
 }
 
@@ -141,6 +163,13 @@ export function buildCustomBillOrder(draft) {
     return Number.isNaN(iso.getTime()) ? new Date().toISOString() : iso.toISOString();
   })();
 
+  const logoSource = resolveLogoSource(draft, CUSTOM_BILL_MEDIA_NONE);
+  const scannerSource = resolveScannerSource(draft, CUSTOM_BILL_MEDIA_NONE);
+  const useOwnLogo = logoSource === CUSTOM_BILL_MEDIA_OWN;
+  const useCustomLogo = logoSource === CUSTOM_BILL_MEDIA_CUSTOM;
+  const useOwnQr = scannerSource === CUSTOM_BILL_MEDIA_OWN;
+  const useCustomQr = scannerSource === CUSTOM_BILL_MEDIA_CUSTOM;
+
   return {
     order_id: `CB-${Date.now().toString(36).toUpperCase()}`,
     id: undefined,
@@ -156,10 +185,14 @@ export function buildCustomBillOrder(draft) {
     shop_name: String(draft.shopName || '').trim() || 'Shop',
     shop_place: String(draft.shopPlace || '').trim(),
     shop_phone: String(draft.shopPhone || '').trim(),
-    custom_logo_data_url: draft.includeLogo && draft.logoDataUrl ? draft.logoDataUrl : '',
-    include_qr: Boolean(draft.includeQr),
-    custom_qr_payload: draft.includeQr ? String(draft.qrPayload || '').trim() : '',
-    custom_qr_image_data_url: draft.includeQr && draft.qrImageDataUrl ? draft.qrImageDataUrl : '',
+    logo_source: logoSource,
+    scanner_source: scannerSource,
+    use_own_logo: useOwnLogo,
+    use_own_qr: useOwnQr,
+    custom_logo_data_url: useCustomLogo && draft.logoDataUrl ? draft.logoDataUrl : '',
+    include_qr: useOwnQr || useCustomQr,
+    custom_qr_payload: useCustomQr ? String(draft.qrPayload || '').trim() : '',
+    custom_qr_image_data_url: useCustomQr && draft.qrImageDataUrl ? draft.qrImageDataUrl : '',
     items,
     total_amount: total,
     discount_amount: 0,
@@ -183,7 +216,7 @@ export default function PosCustomBill({
       null,
     );
     if (!saved) return base;
-    return {
+    return migrateDraftMediaSources({
       ...base,
       ...saved,
       items: saved.items?.length ? saved.items : base.items,
@@ -191,7 +224,7 @@ export default function PosCustomBill({
         saved.profileId === CUSTOM_BILL_PROFILE_OWN
           ? CUSTOM_BILL_PROFILE_OWN
           : CUSTOM_BILL_PROFILE_OTHER,
-    };
+    });
   });
   const [busy, setBusy] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
@@ -319,8 +352,10 @@ export default function PosCustomBill({
       shopName: draft.shopName,
       shopPlace: draft.shopPlace,
       shopPhone: draft.shopPhone,
-      includeLogo: Boolean(draft.includeLogo),
-      includeQr: Boolean(draft.includeQr),
+      logoSource: resolveLogoSource(draft, CUSTOM_BILL_MEDIA_NONE),
+      scannerSource: resolveScannerSource(draft, CUSTOM_BILL_MEDIA_NONE),
+      includeLogo: resolveLogoSource(draft, CUSTOM_BILL_MEDIA_NONE) !== CUSTOM_BILL_MEDIA_NONE,
+      includeQr: resolveScannerSource(draft, CUSTOM_BILL_MEDIA_NONE) !== CUSTOM_BILL_MEDIA_NONE,
       qrPayload: draft.qrPayload || '',
     };
     saveCustomBillMedia(profileId, {
@@ -496,15 +531,32 @@ export default function PosCustomBill({
 
       <div className="pos-custom-bill__media">
         <div className="pos-custom-bill__media-block">
-          <label className="pos-custom-bill__check">
-            <input
-              type="checkbox"
-              checked={Boolean(draft.includeLogo)}
-              onChange={(e) => updateField('includeLogo', e.target.checked)}
-            />
-            <span>{t('counter.customBillLogo')}</span>
-          </label>
-          {draft.includeLogo ? (
+          <strong className="pos-custom-bill__media-title">{t('counter.customBillLogo')}</strong>
+          <div className="pos-custom-bill__source" role="radiogroup" aria-label={t('counter.customBillLogo')}>
+            {[
+              { id: CUSTOM_BILL_MEDIA_NONE, label: t('counter.customBillLogoOff') },
+              { id: CUSTOM_BILL_MEDIA_OWN, label: t('counter.customBillLogoOwn') },
+              { id: CUSTOM_BILL_MEDIA_CUSTOM, label: t('counter.customBillLogoCustom') },
+            ].map((opt) => (
+              <label key={opt.id} className="pos-custom-bill__source-opt">
+                <input
+                  type="radio"
+                  name="custom-bill-logo-source"
+                  checked={(draft.logoSource || CUSTOM_BILL_MEDIA_NONE) === opt.id}
+                  onChange={() => persist({
+                    ...draft,
+                    logoSource: opt.id,
+                    includeLogo: opt.id !== CUSTOM_BILL_MEDIA_NONE,
+                  })}
+                />
+                <span>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+          {draft.logoSource === CUSTOM_BILL_MEDIA_OWN ? (
+            <small className="pos-custom-bill__media-hint">{t('counter.customBillLogoOwnHint')}</small>
+          ) : null}
+          {draft.logoSource === CUSTOM_BILL_MEDIA_CUSTOM ? (
             <div className="pos-custom-bill__media-row">
               <input
                 ref={logoInputRef}
@@ -541,15 +593,32 @@ export default function PosCustomBill({
         </div>
 
         <div className="pos-custom-bill__media-block">
-          <label className="pos-custom-bill__check">
-            <input
-              type="checkbox"
-              checked={Boolean(draft.includeQr)}
-              onChange={(e) => updateField('includeQr', e.target.checked)}
-            />
-            <span>{t('counter.customBillScanner')}</span>
-          </label>
-          {draft.includeQr ? (
+          <strong className="pos-custom-bill__media-title">{t('counter.customBillScanner')}</strong>
+          <div className="pos-custom-bill__source" role="radiogroup" aria-label={t('counter.customBillScanner')}>
+            {[
+              { id: CUSTOM_BILL_MEDIA_NONE, label: t('counter.customBillScannerOff') },
+              { id: CUSTOM_BILL_MEDIA_OWN, label: t('counter.customBillScannerOwn') },
+              { id: CUSTOM_BILL_MEDIA_CUSTOM, label: t('counter.customBillScannerCustom') },
+            ].map((opt) => (
+              <label key={opt.id} className="pos-custom-bill__source-opt">
+                <input
+                  type="radio"
+                  name="custom-bill-scanner-source"
+                  checked={(draft.scannerSource || CUSTOM_BILL_MEDIA_NONE) === opt.id}
+                  onChange={() => persist({
+                    ...draft,
+                    scannerSource: opt.id,
+                    includeQr: opt.id !== CUSTOM_BILL_MEDIA_NONE,
+                  })}
+                />
+                <span>{opt.label}</span>
+              </label>
+            ))}
+          </div>
+          {draft.scannerSource === CUSTOM_BILL_MEDIA_OWN ? (
+            <small className="pos-custom-bill__media-hint">{t('counter.customBillScannerOwnHint')}</small>
+          ) : null}
+          {draft.scannerSource === CUSTOM_BILL_MEDIA_CUSTOM ? (
             <div className="pos-custom-bill__media-col">
               <label>
                 <span>{t('counter.customBillQrLink')}</span>
