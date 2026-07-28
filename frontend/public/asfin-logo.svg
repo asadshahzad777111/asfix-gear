@@ -1,68 +1,53 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none" role="img" aria-label="ASP — Is The Name Of Trust · ASPLYWOOD · ASFINS.COM">
-  <!-- Dark field -->
-  <rect width="512" height="512" fill="#0a0a0a"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="ASP — Is The Name Of Trust — ASFINS.COM">
+  <!-- Shop-banner ASP mark: yellow hexagon + website (no email) -->
+  <rect width="640" height="640" fill="#000000"/>
 
-  <!-- Tall yellow hexagon badge (banner-style) -->
+  <!-- Tall yellow hexagon (banner badge) -->
   <path
-    d="M256 36 L348 88 L348 300 L256 352 L164 300 L164 88 Z"
-    fill="#FFD400"
+    d="M320 48 L430 112 L430 392 L320 456 L210 392 L210 112 Z"
+    fill="#FFCC00"
     stroke="#111111"
-    stroke-width="10"
+    stroke-width="8"
     stroke-linejoin="round"
   />
-  <path
-    d="M256 52 L334 98 L334 290 L256 336 L178 290 L178 98 Z"
-    fill="none"
-    stroke="#0a0a0a"
-    stroke-width="3"
-    opacity="0.35"
-  />
 
-  <!-- ASP stacked -->
-  <g fill="#0a0a0a" font-family="Arial Black, Impact, Arial, Helvetica, sans-serif" font-weight="900" text-anchor="middle">
-    <text x="236" y="140" font-size="78" letter-spacing="-2">A</text>
-    <text x="236" y="214" font-size="78" letter-spacing="-2">S</text>
-    <text x="236" y="288" font-size="78" letter-spacing="-2">P</text>
+  <!-- ASP stacked (main logo letters) -->
+  <g fill="#000000" font-family="Arial Black, Impact, Helvetica, Arial, sans-serif" font-weight="900" text-anchor="middle">
+    <text x="292" y="178" font-size="96">A</text>
+    <text x="292" y="278" font-size="96">S</text>
+    <text x="292" y="378" font-size="96">P</text>
   </g>
 
-  <!-- Slogan beside ASP (reads as Name of Trust) -->
-  <g fill="#0a0a0a" font-family="Arial, Helvetica, sans-serif" font-weight="700" text-anchor="start">
-    <text transform="translate(292 118) rotate(90)" font-size="13" letter-spacing="1.2">IS THE NAME OF TRUST</text>
-  </g>
-
-  <!-- Website — not email -->
+  <!-- Slogan: Is The Name Of Trust (beside ASP, vertical) -->
   <text
-    x="256"
-    y="392"
-    fill="#FFD400"
-    font-family="Arial Black, Impact, Arial, Helvetica, sans-serif"
-    font-size="28"
+    transform="translate(368 130) rotate(90)"
+    fill="#000000"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="18"
+    font-weight="700"
+    letter-spacing="1.6"
+  >IS THE NAME OF TRUST</text>
+
+  <!-- Website replaces email -->
+  <text
+    x="320"
+    y="520"
+    fill="#FFCC00"
+    font-family="Arial Black, Impact, Helvetica, Arial, sans-serif"
+    font-size="36"
     font-weight="800"
-    letter-spacing="2.5"
+    letter-spacing="3"
     text-anchor="middle"
   >ASFINS.COM</text>
 
   <text
-    x="256"
-    y="430"
-    fill="#ffffff"
-    opacity="0.88"
+    x="320"
+    y="566"
+    fill="#FFFFFF"
     font-family="Arial, Helvetica, sans-serif"
-    font-size="18"
+    font-size="22"
     font-weight="700"
-    letter-spacing="4"
+    letter-spacing="5"
     text-anchor="middle"
   >ASPLYWOOD</text>
-
-  <text
-    x="256"
-    y="458"
-    fill="#ffffff"
-    opacity="0.55"
-    font-family="Arial, Helvetica, sans-serif"
-    font-size="12"
-    font-weight="600"
-    letter-spacing="2"
-    text-anchor="middle"
-  >ASFIN</text>
 </svg>
