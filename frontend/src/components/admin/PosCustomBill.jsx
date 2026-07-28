@@ -21,6 +21,11 @@ import {
   saveCustomBillMedia,
 } from '../../config/posCustomBillProfiles';
 import { ASFIN } from '../../config/asfin';
+import {
+  filterAsfinCatalog,
+  loadAsfinItemHistory,
+  rememberAsfinItemName,
+} from '../../config/asfinCatalog';
 import { useTranslation } from '../../context/LanguageContext';
 import { isNativePosApp, getSavedPrinter } from '../../utils/nativePosPrint';
 import { normalizePrintResult } from './AdminCounterBill';
@@ -341,6 +346,9 @@ export default function PosCustomBill({
   const [savingSettings, setSavingSettings] = useState(false);
   const [savingDb, setSavingDb] = useState(false);
   const [feedback, setFeedback] = useState(null);
+  /** Which item-row name field shows ASFIN typeahead (ASPLYWOOD profile). */
+  const [suggestRowId, setSuggestRowId] = useState(null);
+  const [asfinHistory, setAsfinHistory] = useState(() => loadAsfinItemHistory());
 
   const subtotal = useMemo(
     () => (draft.items || []).reduce((sum, row) => {
@@ -437,7 +445,17 @@ export default function PosCustomBill({
       ...draft,
       items: draft.items.length <= 1 ? draft.items : draft.items.filter((row) => row.id !== id),
     });
+    setSuggestRowId((cur) => (cur === id ? null : cur));
   }, [draft, persist]);
+
+  const pickAsfinSuggestion = useCallback((id, name) => {
+    const clean = String(name || '').trim();
+    if (!clean) return;
+    updateItem(id, { name: clean });
+    rememberAsfinItemName(clean);
+    setAsfinHistory(loadAsfinItemHistory());
+    setSuggestRowId(null);
+  }, [updateItem]);
 
   const switchProfile = useCallback((profileId) => {
     const id = normalizeProfileId(profileId, CUSTOM_BILL_PROFILE_OTHER);
@@ -616,6 +634,8 @@ export default function PosCustomBill({
       const result = normalizePrintResult(await onPrintOrder?.(order));
       if (result.ok) {
         if (isAsfinCustomBill({ ...draft, ...order })) {
+          order.items.forEach((item) => rememberAsfinItemName(item.name));
+          setAsfinHistory(loadAsfinItemHistory());
           try {
             await api.createAsfinBill({
               bill_id: order.order_id,
@@ -657,6 +677,13 @@ export default function PosCustomBill({
 
   const profileOwn = draft.profileId === CUSTOM_BILL_PROFILE_OWN;
   const profileAsfin = draft.profileId === CUSTOM_BILL_PROFILE_ASFIN;
+  const suggestRow = profileAsfin && suggestRowId
+    ? (draft.items || []).find((row) => row.id === suggestRowId)
+    : null;
+  const asfinSuggestions = useMemo(() => {
+    if (!profileAsfin || !suggestRow) return [];
+    return filterAsfinCatalog(suggestRow.name, { history: asfinHistory });
+  }, [profileAsfin, suggestRow?.name, asfinHistory]);
   const showSaveFields = Boolean(draft.saveToDbOnPrint);
   const actionsLocked = busy || savingSettings || savingDb;
 
@@ -967,12 +994,70 @@ export default function PosCustomBill({
             return (
               <li key={row.id} className={showSaveFields && hasName ? 'pos-custom-bill__item--save' : undefined}>
                 <div className="pos-custom-bill__item-main">
-                  <input
-                    className="pos-custom-bill__item-name"
-                    value={row.name}
-                    onChange={(e) => updateItem(row.id, { name: e.target.value })}
-                    placeholder={t('counter.customBillItemName')}
-                  />
+                  <div className="pos-custom-bill__name-wrap">
+                    <input
+                      className="pos-custom-bill__item-name"
+                      value={row.name}
+                      onChange={(e) => {
+                        updateItem(row.id, { name: e.target.value });
+                        if (profileAsfin) setSuggestRowId(row.id);
+                      }}
+                      onFocus={() => {
+                        if (profileAsfin) setSuggestRowId(row.id);
+                      }}
+                      onBlur={() => {
+                        /* delay so suggestion tap registers */
+                        window.setTimeout(() => {
+                          setSuggestRowId((cur) => (cur === row.id ? null : cur));
+                        }, 160);
+                      }}
+                      onKeyDown={(e) => {
+                        if (!profileAsfin) return;
+                        if (e.key === 'Escape') {
+                          setSuggestRowId(null);
+                          return;
+                        }
+                        if (e.key === 'Enter' && asfinSuggestions[0] && suggestRowId === row.id) {
+                          e.preventDefault();
+                          pickAsfinSuggestion(row.id, asfinSuggestions[0].name);
+                        }
+                      }}
+                      placeholder={
+                        profileAsfin
+                          ? t('counter.customBillItemNameAsfinPh')
+                          : t('counter.customBillItemName')
+                      }
+                      autoComplete="off"
+                      aria-autocomplete={profileAsfin ? 'list' : undefined}
+                      aria-expanded={profileAsfin && suggestRowId === row.id && asfinSuggestions.length > 0}
+                      aria-controls={
+                        profileAsfin && suggestRowId === row.id
+                          ? `asfin-item-suggest-${row.id}`
+                          : undefined
+                      }
+                    />
+                    {profileAsfin && suggestRowId === row.id && asfinSuggestions.length > 0 ? (
+                      <div
+                        className="pos-custom-bill__suggest"
+                        id={`asfin-item-suggest-${row.id}`}
+                        role="listbox"
+                      >
+                        {asfinSuggestions.map((hit) => (
+                          <button
+                            key={hit.name}
+                            type="button"
+                            role="option"
+                            className="pos-custom-bill__suggest-option"
+                            onMouseDown={(e) => e.preventDefault()}
+                            onPointerDown={(e) => e.preventDefault()}
+                            onClick={() => pickAsfinSuggestion(row.id, hit.name)}
+                          >
+                            <span>{hit.name}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
+                  </div>
                   <input
                     className="pos-custom-bill__item-qty"
                     type="number"

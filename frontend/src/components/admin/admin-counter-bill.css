@@ -411,6 +411,62 @@
   align-items: center;
 }
 
+.pos-custom-bill__name-wrap {
+  position: relative;
+  min-width: 0;
+  z-index: 2;
+}
+
+.pos-custom-bill__name-wrap:focus-within {
+  z-index: 30;
+}
+
+.pos-custom-bill__suggest {
+  position: absolute;
+  top: calc(100% + 0.2rem);
+  left: 0;
+  right: 0;
+  z-index: 40;
+  display: grid;
+  max-height: min(240px, 40vh);
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border: 1px solid var(--pos-border-strong, var(--wp-border, #bbb));
+  border-radius: 10px;
+  background: var(--pos-surface-2, var(--wp-surface, #fff));
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.28);
+  -webkit-overflow-scrolling: touch;
+}
+
+.pos-custom-bill__suggest-option {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 0.55rem 0.7rem;
+  border: 0;
+  border-bottom: 1px solid color-mix(in srgb, var(--pos-border, #ccc) 70%, transparent);
+  background: transparent;
+  color: var(--pos-text, inherit);
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.pos-custom-bill__suggest-option:last-child {
+  border-bottom: 0;
+}
+
+.pos-custom-bill__suggest-option:hover,
+.pos-custom-bill__suggest-option:focus-visible {
+  background: color-mix(in srgb, var(--pos-accent, #2271b1) 16%, transparent);
+  outline: none;
+}
+
 .pos-custom-bill__items-labels {
   display: grid;
   grid-template-columns: 1fr 64px 88px 32px;
