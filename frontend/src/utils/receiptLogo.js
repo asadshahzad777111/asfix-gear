@@ -110,7 +110,7 @@ export async function getReceiptLogoMonoDataUrl(thermalWidth = '58mm') {
 }
 
 /** ASPLYWOOD / ASFIN brand mark — same mono pipeline as AsFix logo. */
-export const ASFIN_LOGO_PATH = '/asfin-logo.png?v=8';
+export const ASFIN_LOGO_PATH = '/asfin-logo.png?v=9';
 
 let asfinLogoImagePromise = null;
 

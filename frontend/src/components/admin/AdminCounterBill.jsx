@@ -326,7 +326,8 @@ export async function buildThermalReceiptEscPosBase64(orderInput, thermalWidth =
   /* Classic readable leading (~pre-Subtotal rhythm), not ultra-compressed */
   push(0x1b, 0x33, 32);
   /* Top feed so logo sits slightly lower (not top-cramped without name text) */
-  push(0x1b, 0x4a, 52);
+  const asfinLogoOnly = isCustomReceipt(order) && customLogoMode(order) === 'asfin';
+  push(0x1b, 0x4a, asfinLogoOnly ? 64 : 52);
 
   const logoRaster = (() => {
     if (!isCustomReceipt(order)) return buildReceiptLogoEscPosRaster(width);
@@ -710,13 +711,19 @@ function buildReceiptLines(orderInput, maxChars = 18) {
   const custom = isCustomReceipt(order);
 
   if (custom) {
-    /* Freeform / trade bill — optional AsFix or custom logo, then text shop header */
-    if (customLogoMode(order) !== 'none') {
+    /* Freeform / trade bill — optional logo, then text shop header */
+    const logoMode = customLogoMode(order);
+    if (logoMode !== 'none') {
       push('', { logo: true, align: 'center' });
     }
-    wrap(order.shop_name || 'Shop', { align: 'center', weight: 'bold', title: true });
-    if (order.shop_place) wrap(order.shop_place, { align: 'center', small: true });
-    if (order.shop_phone) wrap(order.shop_phone, { align: 'center', small: true });
+    if (logoMode === 'asfin') {
+      /* ASFIN graphic already has ASPLYWOOD brand — skip duplicate name/place */
+      if (order.shop_phone) wrap(order.shop_phone, { align: 'center', small: true });
+    } else {
+      wrap(order.shop_name || 'Shop', { align: 'center', weight: 'bold', title: true });
+      if (order.shop_place) wrap(order.shop_place, { align: 'center', small: true });
+      if (order.shop_phone) wrap(order.shop_phone, { align: 'center', small: true });
+    }
   } else {
     /* Logo → city → phone (no text shop name — graphic logo already has brand) */
     push('', { logo: true, align: 'center' });
@@ -805,8 +812,9 @@ export async function createCounterReceiptPngBlob(orderInput, thermalWidth = '58
   const widthPx = printerDots;
   /* Extra side pad so Windows POS-58 driver margins do not crop Bill#/prices */
   const padX = pageWidth === '80mm' ? 30 : 26;
-  /* Top pad for logo — slightly more so header isn’t cramped without name text */
-  const padTop = 40;
+  /* Top pad — ASFIN logo alone (no ASPLYWOOD text) sits a bit lower in the header */
+  const asfinLogoOnly = isCustomReceipt(order) && customLogoMode(order) === 'asfin';
+  const padTop = asfinLogoOnly ? 56 : 40;
   const padBottom = 28;
   const maxChars = pageWidth === '80mm' ? 42 : 28;
   const lines = buildReceiptLines(order, maxChars);
@@ -1371,6 +1379,9 @@ function buildThermalReceiptHtml(orderInput, thermalWidth = '58mm', qrDataUrl = 
     </div>`;
   }).join('');
 
+  const logoMode = custom ? customLogoMode(order) : 'sale';
+  const receiptPadTop = logoMode === 'asfin' ? '8mm' : '6.5mm';
+
   const css = `
 /* Placeholder — overwritten with measured content height before print */
 @page { size: ${widthMm}mm 120mm; margin: 0; }
@@ -1393,7 +1404,7 @@ html, body {
   height: auto !important;
   min-height: 0 !important;
   margin: 0 !important;
-  padding: 6.5mm 2.5mm 2mm !important;
+  padding: ${receiptPadTop} 2.5mm 2mm !important;
   font-family: "Courier New", Courier, monospace !important;
   font-size: 14px !important;
   font-weight: 400 !important;
@@ -1404,6 +1415,7 @@ html, body {
 }
 .r-shop { text-align: center; margin-bottom: 5px; }
 .r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 2px auto 4px; }
+.r-shop .r-logo--asfin { width: 82%; max-width: 82%; margin: 4px auto 2px; }
 .r-shop .r-shop-name { display: block; margin: 2px 0 4px; font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
 .r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 4px 0; font-size: 13px; font-weight: 400; }
@@ -1444,18 +1456,19 @@ html, body {
   <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="260" height="260" />`
       : '');
 
-  const logoMode = custom ? customLogoMode(order) : 'sale';
   const logoBlock = custom
-    ? `${logoMode === 'own'
-      ? `<img class="r-logo" src="${logoDataUrl || RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`
-      : (logoMode === 'asfin'
-        ? `<img class="r-logo" src="${logoDataUrl || ASFIN_LOGO_PATH}" alt="" width="280" height="280" />`
+    ? (logoMode === 'asfin'
+      /* Logo sits where ASPLYWOOD/Lahore text used to be — no duplicate brand lines */
+      ? `${`<img class="r-logo r-logo--asfin" src="${logoDataUrl || ASFIN_LOGO_PATH}" alt="" width="280" height="280" />`}
+    ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`
+      : `${logoMode === 'own'
+        ? `<img class="r-logo" src="${logoDataUrl || RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`
         : (logoMode === 'custom' && order.custom_logo_data_url
           ? `<img class="r-logo" src="${order.custom_logo_data_url}" alt="" width="280" height="280" />`
-          : ''))}
+          : '')}
     <strong class="r-shop-name">${escapeHtml(order.shop_name || 'Shop')}</strong>
     ${order.shop_place ? `<p>${escapeHtml(order.shop_place)}</p>` : ''}
-    ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`
+    ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`)
     : (logoDataUrl
       ? `<img class="r-logo" src="${logoDataUrl}" alt="" width="280" height="280" />`
       : `<img class="r-logo" src="${RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`)

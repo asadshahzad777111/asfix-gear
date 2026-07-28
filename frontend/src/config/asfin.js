@@ -10,6 +10,6 @@ export const ASFIN = {
   mark: 'ASP',
   site: 'asfins.com',
   siteUrl: 'https://asfins.com',
-  logoPath: '/asfin-logo.png?v=8',
+  logoPath: '/asfin-logo.png?v=9',
   tagline: 'Is The Name Of Trust',
 };
