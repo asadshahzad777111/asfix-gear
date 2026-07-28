@@ -127,3 +127,96 @@ export async function drawReceiptLogoOnCanvas(ctx, {
   ctx.drawImage(mono, x, Math.round(y));
   return mono.height + 6;
 }
+
+/** Load any image URL / data-URL (custom shop logo or QR pic). */
+export function loadImageFromSrc(src) {
+  if (!src || typeof Image === 'undefined') return Promise.resolve(null);
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.decoding = 'async';
+    img.onload = () => resolve(img);
+    img.onerror = () => resolve(null);
+    img.src = src;
+  });
+}
+
+/**
+ * Mono for photos / dark-on-white logos / QR pics (dark = ink).
+ * Different from brand mark (bright orange = ink).
+ */
+export function renderPhotoMonoCanvas(img, targetWidthDots) {
+  if (!img?.naturalWidth) return null;
+  const tw = Math.max(8, Math.floor(Number(targetWidthDots) / 8) * 8);
+  const th = Math.max(8, Math.round((img.naturalHeight / img.naturalWidth) * tw));
+  const canvas = document.createElement('canvas');
+  canvas.width = tw;
+  canvas.height = th;
+  const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
+  if (!ctx) return null;
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, tw, th);
+  ctx.imageSmoothingEnabled = true;
+  ctx.drawImage(img, 0, 0, tw, th);
+  const imageData = ctx.getImageData(0, 0, tw, th);
+  const { data } = imageData;
+  for (let i = 0; i < data.length; i += 4) {
+    const a = data[i + 3];
+    const lum = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    const isInk = a > 24 && lum < 168;
+    const v = isInk ? 0 : 255;
+    data[i] = v;
+    data[i + 1] = v;
+    data[i + 2] = v;
+    data[i + 3] = 255;
+  }
+  ctx.putImageData(imageData, 0, 0);
+  return canvas;
+}
+
+export async function buildCustomImageEscPosRaster(src, thermalWidth = '58mm', widthRatio = 0.76) {
+  const img = await loadImageFromSrc(src);
+  if (!img) return new Uint8Array(0);
+  const printable = thermalWidth === '80mm' ? 576 : 384;
+  const target = Math.max(64, Math.floor((printable * widthRatio) / 8) * 8);
+  const canvas = renderPhotoMonoCanvas(img, target);
+  return canvasToEscPosRasterBytes(canvas);
+}
+
+export async function getCustomImageMonoDataUrl(src, thermalWidth = '58mm', widthRatio = 0.76) {
+  const img = await loadImageFromSrc(src);
+  if (!img) return '';
+  const printable = thermalWidth === '80mm' ? 576 : 384;
+  const target = Math.max(64, Math.floor((printable * widthRatio) / 8) * 8);
+  const canvas = renderPhotoMonoCanvas(img, target);
+  if (!canvas) return '';
+  try {
+    return canvas.toDataURL('image/png');
+  } catch {
+    return '';
+  }
+}
+
+/** Draw custom mono image centered. Returns height used. */
+export async function drawCustomImageOnCanvas(ctx, {
+  src,
+  canvasWidth,
+  padX,
+  y,
+  thermalWidth = '58mm',
+  widthRatio = 0.76,
+} = {}) {
+  const img = await loadImageFromSrc(src);
+  if (!img || !ctx) return 0;
+  const usable = Math.max(8, (canvasWidth || 0) - (padX || 0) * 2);
+  const printable = thermalWidth === '80mm' ? 576 : 384;
+  const target = Math.min(
+    Math.max(64, Math.floor((printable * widthRatio) / 8) * 8),
+    Math.floor(usable / 8) * 8,
+  );
+  const mono = renderPhotoMonoCanvas(img, target);
+  if (!mono) return 0;
+  const x = Math.round(((canvasWidth || mono.width) - mono.width) / 2);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(mono, x, Math.round(y));
+  return mono.height + 6;
+}

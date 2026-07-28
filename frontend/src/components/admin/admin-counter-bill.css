@@ -377,9 +377,90 @@
 
 .pos-custom-bill__items li {
   display: grid;
-  grid-template-columns: 1fr 88px 32px;
+  grid-template-columns: 1fr 64px 88px 32px;
   gap: 0.35rem;
   align-items: center;
+}
+
+.pos-custom-bill__items-labels {
+  display: grid;
+  grid-template-columns: 1fr 64px 88px 32px;
+  gap: 0.35rem;
+  font-size: 0.72rem;
+  opacity: 0.7;
+  margin-bottom: 0.25rem;
+  padding: 0 0.1rem;
+}
+
+.pos-custom-bill__item-qty,
+.pos-custom-bill__item-rate {
+  text-align: right;
+}
+
+.pos-custom-bill__media {
+  margin-top: 0.85rem;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.pos-custom-bill__media-block {
+  padding: 0.55rem 0.65rem;
+  border: 1px dashed var(--wp-border, #ccc);
+  border-radius: 10px;
+}
+
+.pos-custom-bill__check {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.pos-custom-bill__media-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  align-items: center;
+  margin-top: 0.45rem;
+}
+
+.pos-custom-bill__media-col {
+  display: grid;
+  gap: 0.45rem;
+  margin-top: 0.45rem;
+}
+
+.pos-custom-bill__media-col label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.pos-custom-bill__media-col input[type="text"],
+.pos-custom-bill__media-col input:not([type]) {
+  width: 100%;
+  border: 1px solid var(--wp-border, #ccc);
+  border-radius: 8px;
+  padding: 0.45rem 0.55rem;
+  font: inherit;
+  background: var(--wp-surface, #fff);
+  color: inherit;
+}
+
+.pos-custom-bill__thumb {
+  width: 48px;
+  height: 48px;
+  object-fit: contain;
+  border-radius: 8px;
+  border: 1px solid var(--wp-border, #ccc);
+  background: #fff;
+}
+
+.pos-custom-bill__media-hint {
+  opacity: 0.7;
+  font-size: 0.75rem;
 }
 
 .pos-custom-bill__remove {

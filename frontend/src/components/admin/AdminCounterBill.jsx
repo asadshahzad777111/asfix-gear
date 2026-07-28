@@ -17,8 +17,11 @@ import {
 } from '../../utils/nativePosPrint';
 import { useSmartThermalPrint } from '../../hooks/useSmartThermalPrint';
 import {
+  buildCustomImageEscPosRaster,
   buildReceiptLogoEscPosRaster,
+  drawCustomImageOnCanvas,
   drawReceiptLogoOnCanvas,
+  getCustomImageMonoDataUrl,
   getReceiptLogoMonoDataUrl,
   receiptLogoTargetDots,
   RECEIPT_LOGO_PATH,
@@ -41,8 +44,8 @@ const RECEIPT_SITE_URL = `https://${RECEIPT_SITE}`;
 const THERMAL_PAGE_STYLE_ID = 'thermal-page-size';
 const PRINT_ROOT_ID = 'counter-receipt-print-root';
 
-async function buildWebsiteQrDataUrl(size = 280) {
-  return QRCode.toDataURL(RECEIPT_SITE_URL, {
+async function buildWebsiteQrDataUrl(size = 280, payload = RECEIPT_SITE_URL) {
+  return QRCode.toDataURL(String(payload || RECEIPT_SITE_URL), {
     width: size,
     margin: 1,
     errorCorrectionLevel: 'M',
@@ -281,7 +284,7 @@ export function buildThermalReceiptText(order, thermalWidth = '58mm') {
   /* Match ESC/POS 58mm (~32) / 80mm (~48) so plain-text fallbacks fill the roll */
   const maxChars = normalizeThermalWidth(thermalWidth) === '80mm' ? 48 : 32;
   return `${buildReceiptLines(order, maxChars)
-    .filter((line) => !line.logo && !line.qr)
+    .filter((line) => !line.logo && !line.qr && !line.qrImage)
     .map((line) => line.value)
     .join('\n')}\n`;
 }
@@ -317,7 +320,11 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
   /* Top feed so logo sits slightly lower (not top-cramped without name text) */
   push(0x1b, 0x4a, 52);
 
-  const logoRaster = isCustomReceipt(order) ? new Uint8Array() : await buildReceiptLogoEscPosRaster(width);
+  const logoRaster = isCustomReceipt(order)
+    ? (order.custom_logo_data_url
+      ? await buildCustomImageEscPosRaster(order.custom_logo_data_url, width, 0.72)
+      : new Uint8Array())
+    : await buildReceiptLogoEscPosRaster(width);
   if (logoRaster.length) {
     push(0x1b, 0x61, 0x01); // center
     parts.push(logoRaster);
@@ -327,6 +334,15 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
 
   for (const line of lines) {
     if (line.logo) continue;
+    if (line.qrImage && line.value) {
+      push(0x1b, 0x61, 0x01);
+      const raster = await buildCustomImageEscPosRaster(line.value, width, 0.62);
+      if (raster.length) {
+        parts.push(raster);
+        push(0x0a);
+      }
+      continue;
+    }
     if (line.qr) {
       const qrPayload = line.value || RECEIPT_SITE_URL;
       push(0x1b, 0x61, 0x01); // center
@@ -400,9 +416,17 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
   if (!order) return '';
   /* ~32 cols so Thermer fills 58mm like ESC/POS Font A */
   const maxChars = 32;
-  const lines = buildReceiptLines(order, maxChars).filter((line) => !line.qr && !line.logo);
+  const lines = buildReceiptLines(order, maxChars).filter((line) => !line.qr && !line.logo && !line.qrImage);
   const parts = [];
-  if (!isCustomReceipt(order)) {
+  if (isCustomReceipt(order)) {
+    if (order.custom_logo_data_url) {
+      const logoDataUrl = await getCustomImageMonoDataUrl(order.custom_logo_data_url, thermalWidth, 0.72);
+      if (logoDataUrl) {
+        const raw = logoDataUrl.replace(/^data:image\/\w+;base64,/, '');
+        if (raw) parts.push(`<IMAGE>1#${raw}`);
+      }
+    }
+  } else {
     const logoDataUrl = await getReceiptLogoMonoDataUrl(thermalWidth);
     if (logoDataUrl) {
       const raw = logoDataUrl.replace(/^data:image\/\w+;base64,/, '');
@@ -428,7 +452,17 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
     parts.push(`<${bold}${align}${format}>${text}`);
   });
   /* Scan + QR already in buildReceiptLines; keep Mate QR sizing in sync */
-  if (!isCustomReceipt(order)) {
+  if (isCustomReceipt(order)) {
+    if (order.include_qr && order.custom_qr_image_data_url) {
+      const qrImg = await getCustomImageMonoDataUrl(order.custom_qr_image_data_url, thermalWidth, 0.62);
+      if (qrImg) {
+        const raw = qrImg.replace(/^data:image\/\w+;base64,/, '');
+        if (raw) parts.push(`<IMAGE>1#${raw}`);
+      }
+    } else if (order.include_qr && order.custom_qr_payload) {
+      parts.push(`<QR>1#${thermalQrModuleSize('58mm')}#${sanitizeMatePlain(order.custom_qr_payload)}`);
+    }
+  } else {
     parts.push(`<QR>1#${thermalQrModuleSize('58mm')}#${RECEIPT_SITE_URL}`);
   }
   return parts.join('');
@@ -585,7 +619,10 @@ function buildReceiptLines(order, maxChars = 18) {
   const custom = isCustomReceipt(order);
 
   if (custom) {
-    /* Freeform / trade bill — text shop header, no AsFix logo */
+    /* Freeform / trade bill — optional custom logo, then text shop header */
+    if (order.custom_logo_data_url) {
+      push('', { logo: true, align: 'center' });
+    }
     wrap(order.shop_name || 'Shop', { align: 'center', weight: 'bold', title: true });
     if (order.shop_place) wrap(order.shop_place, { align: 'center', small: true });
     if (order.shop_phone) wrap(order.shop_phone, { align: 'center', small: true });
@@ -643,6 +680,13 @@ function buildReceiptLines(order, maxChars = 18) {
     push(RECEIPT_SITE, { align: 'center', small: true });
     push('Scan', { align: 'center', small: true });
     push(RECEIPT_SITE_URL, { align: 'center', qr: true });
+  } else if (order.include_qr) {
+    push('Scan', { align: 'center', small: true });
+    if (order.custom_qr_image_data_url) {
+      push(order.custom_qr_image_data_url, { align: 'center', qrImage: true });
+    } else if (order.custom_qr_payload) {
+      push(String(order.custom_qr_payload), { align: 'center', qr: true });
+    }
   }
   return lines;
 }
@@ -777,7 +821,9 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   /* Estimate logo height (~square mark at ~76% width) */
   const logoEstimate = lines.some((line) => line.logo)
     ? Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10
-    : 0;
+    : (isCustomReceipt(order) && order.custom_logo_data_url
+      ? Math.floor(usable * 0.55) + 10
+      : 0);
 
   let heightPx = padTop + padBottom + 4 + logoEstimate;
   lines.forEach((line, idx) => {
@@ -786,6 +832,10 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       const nearGrand = Boolean(lines[idx - 1]?.grand || lines[idx + 1]?.grand);
       /* Slight rule breath; TOTAL stays compact (not old blank-band TOTAL) */
       heightPx += ruleH + (nearGrand ? 1 : 2);
+      return;
+    }
+    if (line.qrImage) {
+      heightPx += Math.floor(usable * 0.62) + 14;
       return;
     }
     if (line.qr) {
@@ -862,14 +912,31 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   };
 
   let y = padTop;
-  const logoH = await drawReceiptLogoOnCanvas(ctx, {
-    canvasWidth: widthPx,
-    padX,
-    y,
-    thermalWidth: pageWidth,
-  });
-  if (logoH) y += logoH;
-  else y += 4;
+  if (isCustomReceipt(order)) {
+    if (order.custom_logo_data_url) {
+      const logoH = await drawCustomImageOnCanvas(ctx, {
+        src: order.custom_logo_data_url,
+        canvasWidth: widthPx,
+        padX,
+        y,
+        thermalWidth: pageWidth,
+        widthRatio: 0.72,
+      });
+      if (logoH) y += logoH;
+      else y += 4;
+    } else {
+      y += 4;
+    }
+  } else {
+    const logoH = await drawReceiptLogoOnCanvas(ctx, {
+      canvasWidth: widthPx,
+      padX,
+      y,
+      thermalWidth: pageWidth,
+    });
+    if (logoH) y += logoH;
+    else y += 4;
+  }
 
   for (let i = 0; i < lines.length; i += 1) {
     const line = lines[i];
@@ -878,6 +945,19 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
       drawRuleLine(y);
       const nearGrand = Boolean(lines[i - 1]?.grand || lines[i + 1]?.grand);
       y += ruleH + (nearGrand ? 1 : 2);
+      continue;
+    }
+
+    if (line.qrImage && line.value) {
+      const imgH = await drawCustomImageOnCanvas(ctx, {
+        src: line.value,
+        canvasWidth: widthPx,
+        padX,
+        y,
+        thermalWidth: pageWidth,
+        widthRatio: 0.62,
+      });
+      y += (imgH || Math.round(qrDrawSize * 0.8)) + 8;
       continue;
     }
 
@@ -1222,13 +1302,22 @@ html, body {
 .r-qr { display: block; width: 74%; max-width: 74%; height: auto; margin: 2px auto 4px; }
 `.trim();
 
-  const qrBlock = !custom && qrDataUrl
-    ? `<p class="r-scan">Scan</p>
+  const qrBlock = custom
+    ? (order.include_qr
+      ? (order.custom_qr_image_data_url
+        ? `<p class="r-scan">Scan</p><img class="r-qr" src="${order.custom_qr_image_data_url}" alt="QR" width="260" height="260" />`
+        : (order.custom_qr_payload && qrDataUrl
+          ? `<p class="r-scan">Scan</p><img class="r-qr" src="${qrDataUrl}" alt="QR" width="260" height="260" />`
+          : ''))
+      : '')
+    : (qrDataUrl
+      ? `<p class="r-scan">Scan</p>
   <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="260" height="260" />`
-    : '';
+      : '');
 
   const logoBlock = custom
-    ? `<strong class="r-shop-name">${escapeHtml(order.shop_name || 'Shop')}</strong>
+    ? `${order.custom_logo_data_url ? `<img class="r-logo" src="${order.custom_logo_data_url}" alt="" width="280" height="280" />` : ''}
+    <strong class="r-shop-name">${escapeHtml(order.shop_name || 'Shop')}</strong>
     ${order.shop_place ? `<p>${escapeHtml(order.shop_place)}</p>` : ''}
     ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`
     : (logoDataUrl
@@ -1724,12 +1813,26 @@ export async function printActiveCounterReceipt({
       let qrDataUrl = '';
       let logoDataUrl = '';
       try {
-        qrDataUrl = await buildWebsiteQrDataUrl(280);
+        if (isCustomReceipt(order)) {
+          if (order.include_qr && order.custom_qr_image_data_url) {
+            qrDataUrl = order.custom_qr_image_data_url;
+          } else if (order.include_qr && order.custom_qr_payload) {
+            qrDataUrl = await buildWebsiteQrDataUrl(280, order.custom_qr_payload);
+          }
+        } else {
+          qrDataUrl = await buildWebsiteQrDataUrl(280);
+        }
       } catch {
         qrDataUrl = '';
       }
       try {
-        logoDataUrl = await getReceiptLogoMonoDataUrl(width);
+        if (isCustomReceipt(order)) {
+          logoDataUrl = order.custom_logo_data_url
+            ? await getCustomImageMonoDataUrl(order.custom_logo_data_url, width, 0.72)
+            : '';
+        } else {
+          logoDataUrl = await getReceiptLogoMonoDataUrl(width);
+        }
       } catch {
         logoDataUrl = '';
       }

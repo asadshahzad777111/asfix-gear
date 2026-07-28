@@ -1,17 +1,21 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 import { formatPrice } from '../../api/client';
 import { useTranslation } from '../../context/LanguageContext';
 import { isNativePosApp, getSavedPrinter } from '../../utils/nativePosPrint';
 import { normalizePrintResult } from './AdminCounterBill';
 
-const STORAGE_KEY = 'asfix_pos_custom_bill_v1';
+const STORAGE_KEY = 'asfix_pos_custom_bill_v2';
 
 const DEFAULT_ITEMS = [
-  { id: '1', name: 'Body + Body Structure', rate: 2500 },
-  { id: '2', name: 'SIM Jack', rate: 200 },
-  { id: '3', name: 'Button', rate: 200 },
-  { id: '4', name: 'Mobile Panel A+ (1st copy)', rate: 2800 },
+  { id: '1', name: 'Body + Body Structure', rate: 2500, qty: 1 },
+  { id: '2', name: 'SIM Jack', rate: 200, qty: 1 },
+  { id: '3', name: 'Button', rate: 200, qty: 1 },
+  { id: '4', name: 'Mobile Panel A+ (1st copy)', rate: 2800, qty: 1 },
+  { id: '5', name: '', rate: '', qty: '' },
+  { id: '6', name: '', rate: '', qty: '' },
 ];
+
+const MAX_IMAGE_CHARS = 900_000; /* ~keep localStorage safe */
 
 function tomorrowLocalParts() {
   const d = new Date();
@@ -41,10 +45,18 @@ function formatReceiptTimeLabel(timeInput) {
 
 function loadSavedDraft() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('asfix_pos_custom_bill_v1');
     if (!raw) return null;
     const parsed = JSON.parse(raw);
     if (!parsed || typeof parsed !== 'object') return null;
+    if (Array.isArray(parsed.items)) {
+      parsed.items = parsed.items.map((row, idx) => ({
+        id: row.id || String(idx + 1),
+        name: row.name ?? '',
+        rate: row.rate ?? '',
+        qty: row.qty === undefined || row.qty === null || row.qty === '' ? '' : row.qty,
+      }));
+    }
     return parsed;
   } catch {
     return null;
@@ -52,7 +64,12 @@ function loadSavedDraft() {
 }
 
 function newItem() {
-  return { id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`, name: '', rate: '' };
+  return {
+    id: `${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    name: '',
+    rate: '',
+    qty: '',
+  };
 }
 
 function buildDefaults() {
@@ -66,18 +83,34 @@ function buildDefaults() {
     mobileName: 'Infinix Smart 5',
     customerName: '',
     notes: '',
+    includeLogo: false,
+    logoDataUrl: '',
+    includeQr: false,
+    qrPayload: '',
+    qrImageDataUrl: '',
     items: DEFAULT_ITEMS.map((row) => ({ ...row })),
   };
 }
 
+function readFileAsDataUrl(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result || ''));
+    reader.onerror = () => reject(new Error('Could not read image'));
+    reader.readAsDataURL(file);
+  });
+}
+
 export function buildCustomBillOrder(draft) {
   const items = (draft.items || [])
-    .map((row) => ({
-      name: String(row.name || '').trim() || 'Item',
-      qty: 1,
-      price: Math.max(0, Number(row.rate) || 0),
-    }))
-    .filter((row) => row.name || row.price > 0);
+    .map((row) => {
+      const name = String(row.name || '').trim();
+      const qty = Math.max(1, Number(row.qty) || 1);
+      const price = Math.max(0, Number(row.rate) || 0);
+      return { name, qty, price };
+    })
+    /* Empty name boxes are ignored — fill name (+ rate/qty) to print */
+    .filter((row) => row.name);
 
   const total = items.reduce((sum, row) => sum + row.price * row.qty, 0);
   const dateLabel = formatReceiptDateLabel(draft.dateInput);
@@ -102,6 +135,10 @@ export function buildCustomBillOrder(draft) {
     shop_name: String(draft.shopName || '').trim() || 'Shop',
     shop_place: String(draft.shopPlace || '').trim(),
     shop_phone: String(draft.shopPhone || '').trim(),
+    custom_logo_data_url: draft.includeLogo && draft.logoDataUrl ? draft.logoDataUrl : '',
+    include_qr: Boolean(draft.includeQr),
+    custom_qr_payload: draft.includeQr ? String(draft.qrPayload || '').trim() : '',
+    custom_qr_image_data_url: draft.includeQr && draft.qrImageDataUrl ? draft.qrImageDataUrl : '',
     items,
     total_amount: total,
     discount_amount: 0,
@@ -114,15 +151,23 @@ export default function PosCustomBill({
 }) {
   const { t } = useTranslation();
   const nativePos = isNativePosApp();
+  const logoInputRef = useRef(null);
+  const qrInputRef = useRef(null);
   const [draft, setDraft] = useState(() => {
     const saved = loadSavedDraft();
-    return saved ? { ...buildDefaults(), ...saved, items: saved.items?.length ? saved.items : buildDefaults().items } : buildDefaults();
+    return saved
+      ? { ...buildDefaults(), ...saved, items: saved.items?.length ? saved.items : buildDefaults().items }
+      : buildDefaults();
   });
   const [busy, setBusy] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   const total = useMemo(
-    () => (draft.items || []).reduce((sum, row) => sum + (Number(row.rate) || 0), 0),
+    () => (draft.items || []).reduce((sum, row) => {
+      if (!String(row.name || '').trim()) return sum;
+      const qty = Math.max(1, Number(row.qty) || 1);
+      return sum + (Number(row.rate) || 0) * qty;
+    }, 0),
     [draft.items],
   );
 
@@ -131,7 +176,7 @@ export default function PosCustomBill({
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
     } catch {
-      /* ignore quota */
+      /* ignore quota — large images may fail; keep UI state */
     }
   }, []);
 
@@ -162,6 +207,25 @@ export default function PosCustomBill({
     persist(next);
     setFeedback({ type: 'ok', text: t('counter.customBillResetOk') });
   }, [persist, t]);
+
+  const onPickImage = useCallback(async (file, field) => {
+    if (!file) return;
+    if (!String(file.type || '').startsWith('image/')) {
+      setFeedback({ type: 'error', text: t('counter.customBillImageType') });
+      return;
+    }
+    try {
+      const dataUrl = await readFileAsDataUrl(file);
+      if (dataUrl.length > MAX_IMAGE_CHARS) {
+        setFeedback({ type: 'error', text: t('counter.customBillImageBig') });
+        return;
+      }
+      persist({ ...draft, [field]: dataUrl });
+      setFeedback({ type: 'ok', text: t('counter.customBillImageOk') });
+    } catch (err) {
+      setFeedback({ type: 'error', text: err?.message || t('counter.customBillImageFail') });
+    }
+  }, [draft, persist, t]);
 
   const printBill = useCallback(async () => {
     const order = buildCustomBillOrder(draft);
@@ -261,12 +325,121 @@ export default function PosCustomBill({
         </label>
       </div>
 
+      <div className="pos-custom-bill__media">
+        <div className="pos-custom-bill__media-block">
+          <label className="pos-custom-bill__check">
+            <input
+              type="checkbox"
+              checked={Boolean(draft.includeLogo)}
+              onChange={(e) => updateField('includeLogo', e.target.checked)}
+            />
+            <span>{t('counter.customBillLogo')}</span>
+          </label>
+          {draft.includeLogo ? (
+            <div className="pos-custom-bill__media-row">
+              <input
+                ref={logoInputRef}
+                type="file"
+                accept="image/*"
+                hidden
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  void onPickImage(file, 'logoDataUrl');
+                  e.target.value = '';
+                }}
+              />
+              <button
+                type="button"
+                className="wp-button wp-button--secondary"
+                onClick={() => logoInputRef.current?.click()}
+              >
+                {t('counter.customBillPickLogo')}
+              </button>
+              {draft.logoDataUrl ? (
+                <>
+                  <img className="pos-custom-bill__thumb" src={draft.logoDataUrl} alt="" />
+                  <button
+                    type="button"
+                    className="wp-button wp-button--secondary"
+                    onClick={() => updateField('logoDataUrl', '')}
+                  >
+                    {t('counter.customBillClearImage')}
+                  </button>
+                </>
+              ) : null}
+            </div>
+          ) : null}
+        </div>
+
+        <div className="pos-custom-bill__media-block">
+          <label className="pos-custom-bill__check">
+            <input
+              type="checkbox"
+              checked={Boolean(draft.includeQr)}
+              onChange={(e) => updateField('includeQr', e.target.checked)}
+            />
+            <span>{t('counter.customBillScanner')}</span>
+          </label>
+          {draft.includeQr ? (
+            <div className="pos-custom-bill__media-col">
+              <label>
+                <span>{t('counter.customBillQrLink')}</span>
+                <input
+                  value={draft.qrPayload}
+                  onChange={(e) => updateField('qrPayload', e.target.value)}
+                  placeholder="https://… or WhatsApp link"
+                />
+              </label>
+              <div className="pos-custom-bill__media-row">
+                <input
+                  ref={qrInputRef}
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    void onPickImage(file, 'qrImageDataUrl');
+                    e.target.value = '';
+                  }}
+                />
+                <button
+                  type="button"
+                  className="wp-button wp-button--secondary"
+                  onClick={() => qrInputRef.current?.click()}
+                >
+                  {t('counter.customBillPickQr')}
+                </button>
+                {draft.qrImageDataUrl ? (
+                  <>
+                    <img className="pos-custom-bill__thumb" src={draft.qrImageDataUrl} alt="" />
+                    <button
+                      type="button"
+                      className="wp-button wp-button--secondary"
+                      onClick={() => updateField('qrImageDataUrl', '')}
+                    >
+                      {t('counter.customBillClearImage')}
+                    </button>
+                  </>
+                ) : null}
+              </div>
+              <small className="pos-custom-bill__media-hint">{t('counter.customBillScannerHint')}</small>
+            </div>
+          ) : null}
+        </div>
+      </div>
+
       <div className="pos-custom-bill__items">
         <div className="pos-custom-bill__items-head">
           <strong>{t('counter.customBillItems')}</strong>
           <button type="button" className="wp-button wp-button--secondary" onClick={addItem}>
             + {t('counter.customBillAddItem')}
           </button>
+        </div>
+        <div className="pos-custom-bill__items-labels" aria-hidden="true">
+          <span>{t('counter.customBillItemName')}</span>
+          <span>{t('counter.customBillQty')}</span>
+          <span>{t('counter.customBillRate')}</span>
+          <span />
         </div>
         <ul>
           {draft.items.map((row) => (
@@ -276,6 +449,15 @@ export default function PosCustomBill({
                 value={row.name}
                 onChange={(e) => updateItem(row.id, { name: e.target.value })}
                 placeholder={t('counter.customBillItemName')}
+              />
+              <input
+                className="pos-custom-bill__item-qty"
+                type="number"
+                min="1"
+                step="1"
+                value={row.qty}
+                onChange={(e) => updateItem(row.id, { qty: e.target.value })}
+                placeholder="1"
               />
               <input
                 className="pos-custom-bill__item-rate"
