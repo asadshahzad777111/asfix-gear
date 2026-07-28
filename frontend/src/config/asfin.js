@@ -2,8 +2,9 @@
 export const ASFIN = {
   shopName: 'ASPLYWOOD',
   brand: 'ASFIN',
+  mark: 'ASP',
   site: 'asfins.com',
   siteUrl: 'https://asfins.com',
   logoPath: '/asfin-logo.png',
-  tagline: 'Wood · Sheet · Finish',
+  tagline: 'Is The Name Of Trust',
 };
