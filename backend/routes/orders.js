@@ -482,10 +482,29 @@ router.post('/counter-sale', requireAuth, requireRole(...COUNTER_SELLERS), (req,
 });
 
 /** Custom bill → upsert POS Custom products (cost + sale) + counter sale. */
+/**
+ * Custom bill → stock & sales.
+ * Persists only item name / qty / cost (actual rate) / sale price + a normal counter sale.
+ * Never accepts or stores logo, QR, shop images, or custom_receipt branding —
+ * those stay print-only on the client Custom bill (custom_receipt orders).
+ * AsFix Sale bill receipts remain fully separate (AsFix logo + asfixgear.com QR).
+ */
 router.post('/custom-bill-save', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
   try {
     const body = req.body && typeof req.body === 'object' ? req.body : {};
-    const rawItems = Array.isArray(body.items) ? body.items : [];
+    /* Ignore any client-sent branding fields — isolation from AsFix sale receipts */
+    const {
+      logo_data_url: _logo,
+      qr_image_data_url: _qrImg,
+      qr_payload: _qrPayload,
+      custom_logo_data_url: _cLogo,
+      custom_qr_image_data_url: _cQrImg,
+      custom_qr_payload: _cQr,
+      custom_receipt: _customReceipt,
+      shop_name: _shopName,
+      ...safeBody
+    } = body;
+    const rawItems = Array.isArray(safeBody.items) ? safeBody.items : [];
     if (rawItems.length === 0 || rawItems.length > MAX_ITEMS) {
       return res.status(400).json({ error: 'Bill must include 1-20 items' });
     }
@@ -517,18 +536,18 @@ router.post('/custom-bill-save', requireAuth, requireRole(...COUNTER_SELLERS), (
 
     const noteParts = [
       'Custom bill → stock & sales',
-      String(body.notes || '').trim(),
+      String(safeBody.notes || '').trim(),
     ].filter(Boolean);
 
     const order = createCounterSaleFromPayload({
       user: req.auth.user,
       body: {
-        customer_name: body.customer_name,
-        phone: body.phone,
-        payment_mode: body.payment_mode || 'cash',
+        customer_name: safeBody.customer_name,
+        phone: safeBody.phone,
+        payment_mode: safeBody.payment_mode || 'cash',
         payment_note: noteParts.join(' — ').slice(0, MAX_NOTES),
         discount_type: 'fixed',
-        discount_amount: body.discount_amount,
+        discount_amount: safeBody.discount_amount,
         items: prepared,
       },
     });

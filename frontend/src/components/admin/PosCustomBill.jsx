@@ -29,6 +29,13 @@ const STORAGE_KEY = 'asfix_pos_custom_bill_v3';
 const WORK_TYPE_MOBILE = 'mobile';
 const WORK_TYPE_OTHER = 'other';
 
+/** Draft text/settings only — logo/QR PIC stay in media localStorage (never sale-bill path). */
+function draftForStorage(draft) {
+  if (!draft || typeof draft !== 'object') return draft;
+  const { logoDataUrl: _logo, qrImageDataUrl: _qr, ...rest } = draft;
+  return rest;
+}
+
 function normalizeWorkType(value, fallback = WORK_TYPE_MOBILE) {
   const raw = String(value || '').trim().toLowerCase();
   if (raw === WORK_TYPE_MOBILE || raw === WORK_TYPE_OTHER) return raw;
@@ -353,10 +360,11 @@ export default function PosCustomBill({
   const persist = useCallback((next) => {
     setDraft(next);
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(draftForStorage(next)));
     } catch {
       /* ignore quota — large images may fail; keep UI state */
     }
+    /* Images only in custom-bill media key — never mixed into AsFix sale receipt storage */
     saveCustomBillMedia(next.profileId || CUSTOM_BILL_PROFILE_OTHER, {
       logoDataUrl: next.logoDataUrl,
       qrImageDataUrl: next.qrImageDataUrl,
@@ -391,7 +399,7 @@ export default function PosCustomBill({
             qrImageDataUrl: prev.qrImageDataUrl || media.qrImageDataUrl,
           };
           try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(draftForStorage(next)));
           } catch {
             /* ignore */
           }
@@ -789,6 +797,9 @@ export default function PosCustomBill({
       </div>
 
       <div className="pos-custom-bill__media">
+        <p className="pos-custom-bill__media-hint pos-custom-bill__media-isolate">
+          {t('counter.customBillMediaIsolate')}
+        </p>
         <div className="pos-custom-bill__media-block">
           <strong className="pos-custom-bill__media-title">{t('counter.customBillLogo')}</strong>
           <div className="pos-custom-bill__source" role="radiogroup" aria-label={t('counter.customBillLogo')}>
@@ -1040,7 +1051,9 @@ export default function PosCustomBill({
       </label>
       {showSaveFields ? (
         <p className="pos-custom-bill__save-hint">{t('counter.customBillSaveHint')}</p>
-      ) : null}
+      ) : (
+        <p className="pos-custom-bill__save-hint">{t('counter.customBillSaveSeparate')}</p>
+      )}
 
       <label className="pos-custom-bill__notes">
         <span>{t('counter.customBillNotes')}</span>

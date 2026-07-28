@@ -559,6 +559,15 @@
   font-size: 0.75rem;
 }
 
+.pos-custom-bill__media-isolate {
+  margin: 0 0 0.55rem;
+  padding: 0.45rem 0.55rem;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.04);
+  opacity: 0.9;
+  line-height: 1.35;
+}
+
 .pos-custom-bill__remove {
   border: 0;
   background: transparent;

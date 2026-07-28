@@ -419,7 +419,8 @@ export default function AdminPayments() {
         <div className="wp-postbox-head">POS Custom bill — shop identity</div>
         <div className="wp-postbox-body">
           <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
-            Laptop + phone POS pe same shop names. <strong>AsFix</strong>, <strong>ASPLYWOOD (ASFIN)</strong>, ya <strong>Someone else</strong>. ASFIN bills alag sheet mein save hoti hain.
+            Laptop + phone POS pe same shop names. <strong>AsFix</strong>, <strong>ASPLYWOOD (ASFIN)</strong>, ya <strong>Someone else</strong>.
+            Logo/scanner defaults sirf Custom bill print pe — AsFix Sale bill receipts alag rehti hain.
           </p>
           <label className="wp-payments-field" style={{ display: 'block', marginBottom: '0.85rem' }}>
             <span>Default profile on Custom bill</span>

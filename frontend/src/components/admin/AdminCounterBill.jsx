@@ -290,7 +290,7 @@ export function buildThermalReceiptText(order, thermalWidth = '58mm') {
   if (!order) return '';
   /* Match ESC/POS 58mm (~32) / 80mm (~48) so plain-text fallbacks fill the roll */
   const maxChars = normalizeThermalWidth(thermalWidth) === '80mm' ? 48 : 32;
-  return `${buildReceiptLines(order, maxChars)
+  return `${buildReceiptLines(isolateReceiptOrder(order), maxChars)
     .filter((line) => !line.logo && !line.qr && !line.qrImage)
     .map((line) => line.value)
     .join('\n')}\n`;
@@ -310,7 +310,8 @@ function bytesToBase64(bytes) {
  * Header: mono logo raster (GS v 0). QR uses GS v 0 (~72% width).
  * Mag 7/9 for Mate <QR> — slightly larger scan target, still fits 58mm.
  */
-export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58mm') {
+export async function buildThermalReceiptEscPosBase64(orderInput, thermalWidth = '58mm') {
+  const order = isolateReceiptOrder(orderInput);
   if (!order || typeof TextEncoder === 'undefined' || typeof btoa !== 'function') return '';
   const width = normalizeThermalWidth(thermalWidth);
   const maxChars = width === '80mm' ? 48 : 32;
@@ -425,7 +426,8 @@ function sanitizeMatePlain(value) {
 }
 
 /** Build Thermer Intent EXTRA_TEXT with Mate <BAF> markup + logo IMAGE + QR. */
-async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
+async function buildMateThermalMarkup(orderInput, thermalWidth = '58mm') {
+  const order = isolateReceiptOrder(orderInput);
   if (!order) return '';
   /* ~32 cols so Thermer fills 58mm like ESC/POS Font A */
   const maxChars = 32;
@@ -565,16 +567,54 @@ function approximatePdfTextWidth(value, size) {
 
 const RECEIPT_MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
+/**
+ * Custom-bill logo/QR apply only when custom_receipt === true.
+ * Sale / counter reprints always use AsFix branding — strip any leaked custom media.
+ */
+function isolateReceiptOrder(order) {
+  if (!order || typeof order !== 'object') return order;
+  if (order.custom_receipt === true) return order;
+  const hasCustomMedia = Boolean(
+    order.custom_logo_data_url
+    || order.custom_qr_payload
+    || order.custom_qr_image_data_url
+    || order.logo_source
+    || order.scanner_source
+    || order.include_qr
+    || order.use_own_logo
+    || order.use_asfin_logo
+    || order.use_own_qr
+    || order.use_asfin_qr
+    || order.custom_receipt,
+  );
+  if (!hasCustomMedia) return order;
+  return {
+    ...order,
+    custom_receipt: false,
+    custom_logo_data_url: '',
+    custom_qr_payload: '',
+    custom_qr_image_data_url: '',
+    logo_source: undefined,
+    scanner_source: undefined,
+    include_qr: false,
+    use_own_logo: false,
+    use_asfin_logo: false,
+    use_own_qr: false,
+    use_asfin_qr: false,
+  };
+}
+
 /** Shared receipt lines — tall glyphs, fewer cols so letters stay large. */
 function isCustomReceipt(order) {
-  return Boolean(order?.custom_receipt);
+  /* Strict true only — never treat truthy strings / 1 as custom freeform bill */
+  return order?.custom_receipt === true;
 }
 
 function customLogoMode(order) {
   if (!isCustomReceipt(order)) return 'none';
   if (order.use_asfin_logo || order.logo_source === 'asfin') return 'asfin';
   if (order.use_own_logo || order.logo_source === 'own') return 'own';
-  if (order.custom_logo_data_url || order.logo_source === 'custom') return 'custom';
+  if (order.logo_source === 'custom' || order.custom_logo_data_url) return 'custom';
   return 'none';
 }
 
@@ -582,8 +622,10 @@ function customQrMode(order) {
   if (!isCustomReceipt(order)) return 'none';
   if (order.use_asfin_qr || order.scanner_source === 'asfin') return 'asfin';
   if (order.use_own_qr || order.scanner_source === 'own') return 'own';
-  if (order.include_qr && (order.custom_qr_image_data_url || order.custom_qr_payload)) return 'custom';
-  if (order.include_qr && order.scanner_source === 'custom') return 'custom';
+  if (order.scanner_source === 'custom'
+    || (order.include_qr && (order.custom_qr_image_data_url || order.custom_qr_payload))) {
+    return 'custom';
+  }
   return 'none';
 }
 
@@ -615,7 +657,8 @@ function shortReceiptDate(order) {
   return `${date} ${time}`;
 }
 
-function buildReceiptLines(order, maxChars = 18) {
+function buildReceiptLines(orderInput, maxChars = 18) {
+  const order = isolateReceiptOrder(orderInput);
   const { discount, grandTotal } = receiptTotals(order);
   const rows = order?.items || [];
   const lines = [];
@@ -754,7 +797,8 @@ function buildReceiptLines(order, maxChars = 18) {
  * Thermal PNG for Direct Print / share (384 dots @ 58mm, 576 @ 80mm).
  * Fill-only glyphs, safe side margins, QR sized like ESC Z (fits roll).
  */
-export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') {
+export async function createCounterReceiptPngBlob(orderInput, thermalWidth = '58mm') {
+  const order = isolateReceiptOrder(orderInput);
   const pageWidth = normalizeThermalWidth(thermalWidth);
   /* 1px = 1 printer dot — avoids Chrome→POS-58 downscale mush */
   const printerDots = pageWidth === '80mm' ? 576 : 384;
@@ -1311,7 +1355,8 @@ function prefersThermalPngShare() {
  * driver's max roll (often 58×3276mm) → meters of blank paper.
  * printViaIframe measures content and locks an exact short @page size.
  */
-function buildThermalReceiptHtml(order, thermalWidth = '58mm', qrDataUrl = '', logoDataUrl = '') {
+function buildThermalReceiptHtml(orderInput, thermalWidth = '58mm', qrDataUrl = '', logoDataUrl = '') {
+  const order = isolateReceiptOrder(orderInput);
   const widthMm = thermalWidth === '80mm' ? 80 : 58;
   const custom = isCustomReceipt(order);
   const { discount, grandTotal } = receiptTotals(order);
