@@ -529,14 +529,61 @@
   margin-top: 0.75rem;
 }
 
+.pos-custom-bill__work-type {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.pos-custom-bill__work-type > span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--wp-muted, #666);
+}
+
+.pos-custom-bill__totals {
+  margin-top: 0.85rem;
+  padding-top: 0.65rem;
+  border-top: 1px dashed var(--wp-border, #ccc);
+  display: grid;
+  gap: 0.4rem;
+}
+
+.pos-custom-bill__less {
+  display: grid;
+  gap: 0.25rem;
+  max-width: 14rem;
+}
+
+.pos-custom-bill__less span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--wp-muted, #666);
+}
+
+.pos-custom-bill__less input {
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--wp-border, #ccc);
+  border-radius: 4px;
+  font: inherit;
+  background: var(--wp-input-bg, #fff);
+  color: inherit;
+}
+
 .pos-custom-bill__total {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
-  margin-top: 0.85rem;
-  padding-top: 0.65rem;
-  border-top: 1px dashed var(--wp-border, #ccc);
   font-size: 1.05rem;
+}
+
+.pos-custom-bill__total--sub {
+  font-size: 0.92rem;
+  color: var(--wp-muted, #555);
+}
+
+.pos-custom-bill__total--sub strong {
+  font-weight: 600;
 }
 
 .pos-custom-bill__feedback {

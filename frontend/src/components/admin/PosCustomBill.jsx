@@ -26,6 +26,14 @@ import { isNativePosApp, getSavedPrinter } from '../../utils/nativePosPrint';
 import { normalizePrintResult } from './AdminCounterBill';
 
 const STORAGE_KEY = 'asfix_pos_custom_bill_v2';
+const WORK_TYPE_MOBILE = 'mobile';
+const WORK_TYPE_OTHER = 'other';
+
+function normalizeWorkType(value, fallback = WORK_TYPE_MOBILE) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (raw === WORK_TYPE_MOBILE || raw === WORK_TYPE_OTHER) return raw;
+  return fallback;
+}
 
 const DEFAULT_ITEMS_ASFIX = [
   { id: '1', name: 'Body + Body Structure', rate: 2500, qty: 1 },
@@ -142,6 +150,7 @@ function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
   const items = (
     id === CUSTOM_BILL_PROFILE_ASFIN ? DEFAULT_ITEMS_ASFIN : DEFAULT_ITEMS_ASFIX
   ).map((row) => ({ ...row }));
+  const workType = id === CUSTOM_BILL_PROFILE_ASFIN ? WORK_TYPE_OTHER : WORK_TYPE_MOBILE;
   return {
     profileId: id,
     ...profileIdentityFields(profile),
@@ -149,8 +158,11 @@ function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
     qrImageDataUrl: media.qrImageDataUrl,
     dateInput: t.dateInput,
     timeInput: t.timeInput,
-    mobileName: id === CUSTOM_BILL_PROFILE_ASFIN ? '' : 'Infinix Smart 5',
+    workType,
+    mobileName: workType === WORK_TYPE_MOBILE ? 'Infinix Smart 5' : '',
     customerName: '',
+    customerPhone: '',
+    lessAmount: '',
     notes: '',
     items,
   };
@@ -176,7 +188,19 @@ export function buildCustomBillOrder(draft) {
     /* Empty name boxes are ignored — fill name (+ rate/qty) to print */
     .filter((row) => row.name);
 
-  const total = items.reduce((sum, row) => sum + row.price * row.qty, 0);
+  const subtotal = items.reduce((sum, row) => sum + row.price * row.qty, 0);
+  const discountAmount = Math.min(
+    subtotal,
+    Math.max(0, Math.round(Number(draft.lessAmount) || 0)),
+  );
+  const grandTotal = Math.max(0, subtotal - discountAmount);
+  const workType = normalizeWorkType(
+    draft.workType,
+    draft.profileId === CUSTOM_BILL_PROFILE_ASFIN ? WORK_TYPE_OTHER : WORK_TYPE_MOBILE,
+  );
+  const deviceName = workType === WORK_TYPE_MOBILE
+    ? String(draft.mobileName || '').trim()
+    : '';
   const dateLabel = formatReceiptDateLabel(draft.dateInput);
   const timeLabel = formatReceiptTimeLabel(draft.timeInput);
   const createdAt = (() => {
@@ -200,9 +224,9 @@ export function buildCustomBillOrder(draft) {
     receipt_date: dateLabel,
     receipt_time: timeLabel,
     customer_name: String(draft.customerName || '').trim() || 'Walk-in',
-    phone: '',
+    phone: String(draft.customerPhone || '').trim(),
     payment_mode: 'cash',
-    device_name: String(draft.mobileName || '').trim(),
+    device_name: deviceName,
     notes: String(draft.notes || '').trim(),
     custom_receipt: true,
     brand: draft.profileId === CUSTOM_BILL_PROFILE_ASFIN ? 'asfin' : 'asfix',
@@ -221,8 +245,10 @@ export function buildCustomBillOrder(draft) {
     custom_qr_payload: useCustomQr ? String(draft.qrPayload || '').trim() : '',
     custom_qr_image_data_url: useCustomQr && draft.qrImageDataUrl ? draft.qrImageDataUrl : '',
     items,
-    total_amount: total,
-    discount_amount: 0,
+    subtotal,
+    discount_amount: discountAmount,
+    total_amount: grandTotal,
+    grand_total: grandTotal,
   };
 }
 
@@ -243,24 +269,37 @@ export default function PosCustomBill({
       null,
     );
     if (!saved) return base;
+    const profileId = normalizeProfileId(saved.profileId, CUSTOM_BILL_PROFILE_OTHER);
+    const workTypeFallback = profileId === CUSTOM_BILL_PROFILE_ASFIN
+      ? WORK_TYPE_OTHER
+      : WORK_TYPE_MOBILE;
     return migrateDraftMediaSources({
       ...base,
       ...saved,
       items: saved.items?.length ? saved.items : base.items,
-      profileId: normalizeProfileId(saved.profileId, CUSTOM_BILL_PROFILE_OTHER),
+      profileId,
+      workType: normalizeWorkType(saved.workType, workTypeFallback),
+      customerPhone: saved.customerPhone ?? '',
+      lessAmount: saved.lessAmount ?? '',
     });
   });
   const [busy, setBusy] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
-  const total = useMemo(
+  const subtotal = useMemo(
     () => (draft.items || []).reduce((sum, row) => {
       if (!String(row.name || '').trim()) return sum;
       const qty = Math.max(1, Number(row.qty) || 1);
       return sum + (Number(row.rate) || 0) * qty;
     }, 0),
     [draft.items],
+  );
+  const lessAmount = Math.min(subtotal, Math.max(0, Math.round(Number(draft.lessAmount) || 0)));
+  const netTotal = Math.max(0, subtotal - lessAmount);
+  const workType = normalizeWorkType(
+    draft.workType,
+    draft.profileId === CUSTOM_BILL_PROFILE_ASFIN ? WORK_TYPE_OTHER : WORK_TYPE_MOBILE,
   );
 
   const persist = useCallback((next) => {
@@ -355,13 +394,19 @@ export default function PosCustomBill({
           : settings.customBillOther;
     const media = loadCustomBillMedia(id);
     const keepItems = draft.profileId === id;
+    const nextWorkType = id === CUSTOM_BILL_PROFILE_ASFIN
+      ? WORK_TYPE_OTHER
+      : (keepItems ? normalizeWorkType(draft.workType, WORK_TYPE_MOBILE) : WORK_TYPE_MOBILE);
     persist({
       ...draft,
       profileId: id,
       ...profileIdentityFields(profile),
       logoDataUrl: media.logoDataUrl,
       qrImageDataUrl: media.qrImageDataUrl,
-      mobileName: id === CUSTOM_BILL_PROFILE_ASFIN ? (keepItems ? draft.mobileName : '') : draft.mobileName,
+      workType: nextWorkType,
+      mobileName: nextWorkType === WORK_TYPE_MOBILE
+        ? (keepItems ? draft.mobileName : 'Infinix Smart 5')
+        : (keepItems ? draft.mobileName : ''),
       items: keepItems
         ? draft.items
         : (id === CUSTOM_BILL_PROFILE_ASFIN ? DEFAULT_ITEMS_ASFIN : DEFAULT_ITEMS_ASFIX)
@@ -463,11 +508,14 @@ export default function PosCustomBill({
               shop_place: order.shop_place,
               shop_phone: order.shop_phone,
               customer_name: order.customer_name,
+              phone: order.phone,
               device_name: order.device_name,
               notes: order.notes,
               receipt_date: order.receipt_date,
               receipt_time: order.receipt_time,
               items: order.items,
+              discount_amount: order.discount_amount,
+              total_amount: order.total_amount,
             });
           } catch {
             /* print succeeded — sheet save is best-effort */
@@ -572,20 +620,56 @@ export default function PosCustomBill({
             onChange={(e) => updateField('timeInput', e.target.value)}
           />
         </label>
+        <div className="pos-custom-bill__full pos-custom-bill__work-type">
+          <span>{t('counter.customBillWorkType')}</span>
+          <div className="pos-custom-bill__source" role="radiogroup" aria-label={t('counter.customBillWorkType')}>
+            <label className="pos-custom-bill__source-opt">
+              <input
+                type="radio"
+                name="custom-bill-work-type"
+                checked={workType === WORK_TYPE_MOBILE}
+                onChange={() => updateField('workType', WORK_TYPE_MOBILE)}
+              />
+              <span>{t('counter.customBillWorkMobile')}</span>
+            </label>
+            <label className="pos-custom-bill__source-opt">
+              <input
+                type="radio"
+                name="custom-bill-work-type"
+                checked={workType === WORK_TYPE_OTHER}
+                onChange={() => updateField('workType', WORK_TYPE_OTHER)}
+              />
+              <span>{t('counter.customBillWorkOther')}</span>
+            </label>
+          </div>
+        </div>
+        {workType === WORK_TYPE_MOBILE ? (
+          <label className="pos-custom-bill__full">
+            <span>{t('counter.customBillMobile')}</span>
+            <input
+              value={draft.mobileName}
+              onChange={(e) => updateField('mobileName', e.target.value)}
+              placeholder="Infinix Smart 5"
+            />
+          </label>
+        ) : null}
         <label>
-          <span>{t('counter.customBillMobile')}</span>
-          <input
-            value={draft.mobileName}
-            onChange={(e) => updateField('mobileName', e.target.value)}
-            placeholder="Infinix Smart 5"
-          />
-        </label>
-        <label className="pos-custom-bill__full">
           <span>{t('admin.counterBillCustomer')}</span>
           <input
             value={draft.customerName}
             onChange={(e) => updateField('customerName', e.target.value)}
             placeholder={t('admin.counterBillCustomerPh')}
+            autoComplete="name"
+          />
+        </label>
+        <label>
+          <span>{t('admin.counterBillPhone')}</span>
+          <input
+            value={draft.customerPhone || ''}
+            onChange={(e) => updateField('customerPhone', e.target.value)}
+            placeholder={t('admin.counterBillPhonePh')}
+            inputMode="tel"
+            autoComplete="tel"
           />
         </label>
       </div>
@@ -802,9 +886,34 @@ export default function PosCustomBill({
         />
       </label>
 
-      <div className="pos-custom-bill__total">
-        <span>{t('admin.counterBillTotal')}</span>
-        <strong>{formatPrice(total)}</strong>
+      <div className="pos-custom-bill__totals">
+        <label className="pos-custom-bill__less">
+          <span>{t('counter.customBillLess')}</span>
+          <input
+            type="number"
+            min="0"
+            step="1"
+            value={draft.lessAmount}
+            onChange={(e) => updateField('lessAmount', e.target.value)}
+            placeholder={t('counter.customBillLessPh')}
+          />
+        </label>
+        {lessAmount > 0 ? (
+          <div className="pos-custom-bill__total pos-custom-bill__total--sub">
+            <span>{t('admin.counterBillSubtotal')}</span>
+            <strong>{formatPrice(subtotal)}</strong>
+          </div>
+        ) : null}
+        {lessAmount > 0 ? (
+          <div className="pos-custom-bill__total pos-custom-bill__total--sub">
+            <span>{t('admin.counterBillDiscount')}</span>
+            <strong>−{formatPrice(lessAmount)}</strong>
+          </div>
+        ) : null}
+        <div className="pos-custom-bill__total">
+          <span>{t('admin.counterBillTotal')}</span>
+          <strong>{formatPrice(netTotal)}</strong>
+        </div>
       </div>
 
       {feedback ? (
@@ -829,7 +938,7 @@ export default function PosCustomBill({
           type="button"
           className="wp-button counter-bill__print-cta pos-custom-bill__print"
           onClick={() => void printBill()}
-          disabled={busy || savingSettings || total <= 0}
+          disabled={busy || savingSettings || subtotal <= 0}
         >
           {busy ? t('common.loading') : t('counter.customBillPrint')}
         </button>
