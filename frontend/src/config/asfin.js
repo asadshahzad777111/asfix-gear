@@ -1,7 +1,7 @@
 /** ASPLYWOOD shop + ASFIN website (separate from AsFix & Gear).
- * Print logo layout (top→bottom inside yellow hexagon):
- * ASP → line → Is The Name Of Trust → line → ASFINS.COM
- * Extra margin around the box; Urdu shop name اے ایس پلائی وڈ above.
+ * Print logo: WIDE yellow hexagon (width > height), extra outer margin.
+ * Inside top→bottom: ASP (wide spacing) → line → Is The Name Of Trust → line → ASFINS.COM
+ * No duplicate ASFINS.COM outside the box. Urdu اے ایس پلائی وڈ above.
  */
 export const ASFIN = {
   shopName: 'ASPLYWOOD',

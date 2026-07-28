@@ -1,97 +1,88 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="?? ??? ????? ?? — ASP — Is The Name Of Trust — ASFINS.COM">
-  <!-- Print-first: more outer margin, ASP on top, lines, trust, ASFINS.COM -->
+  <!-- Wide box (width > height), ASP spaced wide, ASFINS.COM only inside, extra outer margin -->
   <rect width="640" height="640" fill="#000000"/>
 
-  <!-- Urdu shop name (corrected) with diamond dots -->
+  <!-- Urdu shop name above -->
   <g fill="#FFD400">
-    <path d="M308 58 L320 40 L332 58 L320 76 Z"/>
-    <path d="M286 78 L298 60 L310 78 L298 96 Z"/>
-    <path d="M330 78 L342 60 L354 78 L342 96 Z"/>
+    <path d="M308 72 L320 54 L332 72 L320 90 Z"/>
+    <path d="M286 92 L298 74 L310 92 L298 110 Z"/>
+    <path d="M330 92 L342 74 L354 92 L342 110 Z"/>
     <text
       x="320"
-      y="138"
+      y="148"
       direction="rtl"
       text-anchor="middle"
       font-family="'Noto Nastaliq Urdu','Jameel Noori Nastaleeq','Pak Nastaleeq',serif"
-      font-size="42"
+      font-size="40"
       font-weight="700"
     >?? ??? ????? ??</text>
   </g>
 
-  <!-- Compact hexagon with EXTRA outer distance (not near edges) -->
+  <!-- WIDE hexagon: width ~360, height ~210 (width > height), with outer distance -->
   <path
-    d="M320 168
-       L448 242
-       L448 390
-       L320 464
-       L192 390
-       L192 242 Z"
+    d="M320 190
+       L500 255
+       L500 365
+       L320 430
+       L140 365
+       L140 255 Z"
     fill="#FFD400"
     stroke="#111"
     stroke-width="8"
     stroke-linejoin="round"
   />
 
-  <!-- ASP up top -->
+  <!-- ASP up top — wider letter-spacing for wide box -->
   <text
     x="320"
-    y="250"
+    y="255"
     text-anchor="middle"
-    fill="#000"
+    fill="#000000"
     font-family="Arial Black, Impact, Arial, sans-serif"
-    font-size="72"
+    font-size="58"
     font-weight="900"
-    letter-spacing="4"
+    letter-spacing="18"
   >ASP</text>
 
-  <!-- Line under ASP -->
-  <line x1="230" y1="270" x2="410" y2="270" stroke="#000" stroke-width="4"/>
+  <!-- Line under ASP (spans box width) -->
+  <line x1="175" y1="275" x2="465" y2="275" stroke="#000" stroke-width="3.5"/>
 
   <!-- Is The Name Of Trust -->
   <text
     x="320"
     y="312"
     text-anchor="middle"
-    fill="#000"
+    fill="#000000"
     font-family="Arial, Helvetica, sans-serif"
-    font-size="18"
+    font-size="20"
     font-weight="700"
-    letter-spacing="0.5"
+    letter-spacing="1"
   >Is The Name Of Trust</text>
 
   <!-- Line under slogan -->
-  <line x1="230" y1="332" x2="410" y2="332" stroke="#000" stroke-width="4"/>
+  <line x1="175" y1="330" x2="465" y2="330" stroke="#000" stroke-width="3.5"/>
 
-  <!-- ASFINS.COM -->
+  <!-- ASFINS.COM only inside the box (no duplicate outside) -->
   <text
     x="320"
-    y="372"
+    y="375"
     text-anchor="middle"
-    fill="#000"
+    fill="#000000"
     font-family="Arial Black, Impact, Arial, sans-serif"
-    font-size="22"
+    font-size="24"
     font-weight="800"
-    letter-spacing="1.5"
-  >ASFINS.COM</text>
-
-  <!-- Footer for print clarity -->
-  <text
-    x="320"
-    y="520"
-    text-anchor="middle"
-    fill="#FFD400"
-    font-family="Arial Black, Impact, Arial, sans-serif"
-    font-size="28"
     letter-spacing="3"
   >ASFINS.COM</text>
+
+  <!-- Shop English only under box — no ASFINS.COM here -->
   <text
     x="320"
-    y="558"
+    y="490"
     text-anchor="middle"
     fill="#FFFFFF"
     font-family="Arial, Helvetica, sans-serif"
     font-size="18"
     font-weight="700"
-    letter-spacing="4"
+    letter-spacing="5"
   >ASPLYWOOD</text>
 </svg>
