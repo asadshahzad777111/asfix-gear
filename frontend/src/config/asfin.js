@@ -1,6 +1,7 @@
 /** ASPLYWOOD shop + ASFIN website (separate from AsFix & Gear).
- * Logo: compact yellow ASP hexagon (not tall), Urdu shop name اے ایس پلائی وڈ,
- * slogan “Is The Name Of Trust”, website ASFINS.COM (not email).
+ * Print logo layout (top→bottom inside yellow hexagon):
+ * ASP → line → Is The Name Of Trust → line → ASFINS.COM
+ * Extra margin around the box; Urdu shop name اے ایس پلائی وڈ above.
  */
 export const ASFIN = {
   shopName: 'ASPLYWOOD',

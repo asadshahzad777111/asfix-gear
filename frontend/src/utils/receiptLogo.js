@@ -131,14 +131,17 @@ export function loadAsfinLogoImage() {
 export async function buildAsfinLogoEscPosRaster(thermalWidth = '58mm') {
   const img = await loadAsfinLogoImage();
   if (!img) return new Uint8Array(0);
-  const canvas = renderReceiptLogoMonoCanvas(img, receiptLogoTargetDots(thermalWidth));
+  /* Slightly wider than AsFix mark so ASP / lines / ASFINS.COM stay readable on 58mm */
+  const dots = Math.max(receiptLogoTargetDots(thermalWidth), Math.floor((thermalWidth === '80mm' ? 576 : 384) * 0.82 / 8) * 8);
+  const canvas = renderReceiptLogoMonoCanvas(img, dots);
   return canvasToEscPosRasterBytes(canvas);
 }
 
 export async function getAsfinLogoMonoDataUrl(thermalWidth = '58mm') {
   const img = await loadAsfinLogoImage();
   if (!img) return '';
-  const canvas = renderReceiptLogoMonoCanvas(img, receiptLogoTargetDots(thermalWidth));
+  const dots = Math.max(receiptLogoTargetDots(thermalWidth), Math.floor((thermalWidth === '80mm' ? 576 : 384) * 0.82 / 8) * 8);
+  const canvas = renderReceiptLogoMonoCanvas(img, dots);
   if (!canvas) return '';
   try {
     return canvas.toDataURL('image/png');
@@ -156,13 +159,16 @@ export async function drawAsfinLogoOnCanvas(ctx, {
   const img = await loadAsfinLogoImage();
   if (!img || !ctx) return 0;
   const usable = Math.max(8, (canvasWidth || 0) - (padX || 0) * 2);
-  const target = Math.min(receiptLogoTargetDots(thermalWidth), Math.floor(usable / 8) * 8);
+  const target = Math.min(
+    Math.max(receiptLogoTargetDots(thermalWidth), Math.floor(usable * 0.82 / 8) * 8),
+    Math.floor(usable / 8) * 8,
+  );
   const mono = renderReceiptLogoMonoCanvas(img, target);
   if (!mono) return 0;
   const x = Math.round(((canvasWidth || mono.width) - mono.width) / 2);
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(mono, x, Math.round(y));
-  return mono.height + 6;
+  return mono.height + 8;
 }
 
 /** Draw centered mono logo onto an existing receipt canvas context. Returns height used. */
