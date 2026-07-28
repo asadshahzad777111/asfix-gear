@@ -2,6 +2,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { api, formatPrice } from '../../api/client';
+import { ASFIN } from '../../config/asfin';
 import { SHOP } from '../../config/shop';
 import { useAuth } from '../../context/AuthContext';
 import { getDefaultImage } from '../../config/products';
@@ -17,10 +18,14 @@ import {
 } from '../../utils/nativePosPrint';
 import { useSmartThermalPrint } from '../../hooks/useSmartThermalPrint';
 import {
+  ASFIN_LOGO_PATH,
+  buildAsfinLogoEscPosRaster,
   buildCustomImageEscPosRaster,
   buildReceiptLogoEscPosRaster,
+  drawAsfinLogoOnCanvas,
   drawCustomImageOnCanvas,
   drawReceiptLogoOnCanvas,
+  getAsfinLogoMonoDataUrl,
   getCustomImageMonoDataUrl,
   getReceiptLogoMonoDataUrl,
   receiptLogoTargetDots,
@@ -41,6 +46,8 @@ const PAYMENT_OPTIONS = [
 const THERMAL_WIDTH_OPTIONS = ['58mm', '80mm'];
 const RECEIPT_SITE = 'asfixgear.com';
 const RECEIPT_SITE_URL = `https://${RECEIPT_SITE}`;
+const ASFIN_SITE = ASFIN.site;
+const ASFIN_SITE_URL = ASFIN.siteUrl;
 const THERMAL_PAGE_STYLE_ID = 'thermal-page-size';
 const PRINT_ROOT_ID = 'counter-receipt-print-root';
 
@@ -324,6 +331,7 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
     if (!isCustomReceipt(order)) return buildReceiptLogoEscPosRaster(width);
     const mode = customLogoMode(order);
     if (mode === 'own') return buildReceiptLogoEscPosRaster(width);
+    if (mode === 'asfin') return buildAsfinLogoEscPosRaster(width);
     if (mode === 'custom' && order.custom_logo_data_url) {
       return buildCustomImageEscPosRaster(order.custom_logo_data_url, width, 0.72);
     }
@@ -431,6 +439,12 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
         const raw = logoDataUrl.replace(/^data:image\/\w+;base64,/, '');
         if (raw) parts.push(`<IMAGE>1#${raw}`);
       }
+    } else if (logoMode === 'asfin') {
+      const logoDataUrl = await getAsfinLogoMonoDataUrl(thermalWidth);
+      if (logoDataUrl) {
+        const raw = logoDataUrl.replace(/^data:image\/\w+;base64,/, '');
+        if (raw) parts.push(`<IMAGE>1#${raw}`);
+      }
     } else if (logoMode === 'custom' && order.custom_logo_data_url) {
       const logoDataUrl = await getCustomImageMonoDataUrl(order.custom_logo_data_url, thermalWidth, 0.72);
       if (logoDataUrl) {
@@ -468,6 +482,8 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
     const qrMode = customQrMode(order);
     if (qrMode === 'own') {
       parts.push(`<QR>1#${thermalQrModuleSize('58mm')}#${RECEIPT_SITE_URL}`);
+    } else if (qrMode === 'asfin') {
+      parts.push(`<QR>1#${thermalQrModuleSize('58mm')}#${ASFIN_SITE_URL}`);
     } else if (qrMode === 'custom' && order.custom_qr_image_data_url) {
       const qrImg = await getCustomImageMonoDataUrl(order.custom_qr_image_data_url, thermalWidth, 0.62);
       if (qrImg) {
@@ -556,13 +572,15 @@ function isCustomReceipt(order) {
 
 function customLogoMode(order) {
   if (!isCustomReceipt(order)) return 'none';
+  if (order.use_asfin_logo || order.logo_source === 'asfin') return 'asfin';
   if (order.use_own_logo || order.logo_source === 'own') return 'own';
-  if (order.custom_logo_data_url) return 'custom';
+  if (order.custom_logo_data_url || order.logo_source === 'custom') return 'custom';
   return 'none';
 }
 
 function customQrMode(order) {
   if (!isCustomReceipt(order)) return 'none';
+  if (order.use_asfin_qr || order.scanner_source === 'asfin') return 'asfin';
   if (order.use_own_qr || order.scanner_source === 'own') return 'own';
   if (order.include_qr && (order.custom_qr_image_data_url || order.custom_qr_payload)) return 'custom';
   if (order.include_qr && order.scanner_source === 'custom') return 'custom';
@@ -716,6 +734,10 @@ function buildReceiptLines(order, maxChars = 18) {
       push(RECEIPT_SITE, { align: 'center', small: true });
       push('Scan', { align: 'center', small: true });
       push(RECEIPT_SITE_URL, { align: 'center', qr: true });
+    } else if (qrMode === 'asfin') {
+      push(ASFIN_SITE, { align: 'center', small: true });
+      push('Scan', { align: 'center', small: true });
+      push(ASFIN_SITE_URL, { align: 'center', qr: true });
     } else if (qrMode === 'custom') {
       push('Scan', { align: 'center', small: true });
       if (order.custom_qr_image_data_url) {
@@ -953,6 +975,15 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
     const logoMode = customLogoMode(order);
     if (logoMode === 'own') {
       const logoH = await drawReceiptLogoOnCanvas(ctx, {
+        canvasWidth: widthPx,
+        padX,
+        y,
+        thermalWidth: pageWidth,
+      });
+      if (logoH) y += logoH;
+      else y += 4;
+    } else if (logoMode === 'asfin') {
+      const logoH = await drawAsfinLogoOnCanvas(ctx, {
         canvasWidth: widthPx,
         padX,
         y,
@@ -1351,10 +1382,10 @@ html, body {
 
   const qrMode = custom ? customQrMode(order) : 'sale';
   const qrBlock = custom
-    ? (qrMode === 'own'
+    ? ((qrMode === 'own' || qrMode === 'asfin')
       ? (qrDataUrl
         ? `<p class="r-scan">Scan</p>
-  <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="260" height="260" />`
+  <img class="r-qr" src="${qrDataUrl}" alt="QR" width="260" height="260" />`
         : '')
       : (qrMode === 'custom'
         ? (order.custom_qr_image_data_url
@@ -1372,9 +1403,11 @@ html, body {
   const logoBlock = custom
     ? `${logoMode === 'own'
       ? `<img class="r-logo" src="${logoDataUrl || RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`
-      : (logoMode === 'custom' && order.custom_logo_data_url
-        ? `<img class="r-logo" src="${order.custom_logo_data_url}" alt="" width="280" height="280" />`
-        : '')}
+      : (logoMode === 'asfin'
+        ? `<img class="r-logo" src="${logoDataUrl || ASFIN_LOGO_PATH}" alt="" width="280" height="280" />`
+        : (logoMode === 'custom' && order.custom_logo_data_url
+          ? `<img class="r-logo" src="${order.custom_logo_data_url}" alt="" width="280" height="280" />`
+          : ''))}
     <strong class="r-shop-name">${escapeHtml(order.shop_name || 'Shop')}</strong>
     ${order.shop_place ? `<p>${escapeHtml(order.shop_place)}</p>` : ''}
     ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`
@@ -1875,6 +1908,8 @@ export async function printActiveCounterReceipt({
           const qrMode = customQrMode(order);
           if (qrMode === 'own') {
             qrDataUrl = await buildWebsiteQrDataUrl(280);
+          } else if (qrMode === 'asfin') {
+            qrDataUrl = await buildWebsiteQrDataUrl(280, ASFIN_SITE_URL);
           } else if (qrMode === 'custom' && order.custom_qr_image_data_url) {
             qrDataUrl = order.custom_qr_image_data_url;
           } else if (qrMode === 'custom' && order.custom_qr_payload) {
@@ -1891,6 +1926,8 @@ export async function printActiveCounterReceipt({
           const logoMode = customLogoMode(order);
           if (logoMode === 'own') {
             logoDataUrl = await getReceiptLogoMonoDataUrl(width);
+          } else if (logoMode === 'asfin') {
+            logoDataUrl = await getAsfinLogoMonoDataUrl(width);
           } else if (logoMode === 'custom' && order.custom_logo_data_url) {
             logoDataUrl = await getCustomImageMonoDataUrl(order.custom_logo_data_url, width, 0.72);
           } else {

@@ -9,14 +9,18 @@ import {
   mergePosPaymentQrCards,
 } from '../../config/posPaymentQr';
 import {
+  CUSTOM_BILL_MEDIA_ASFIN,
   CUSTOM_BILL_MEDIA_CUSTOM,
   CUSTOM_BILL_MEDIA_NONE,
   CUSTOM_BILL_MEDIA_OWN,
+  CUSTOM_BILL_PROFILE_ASFIN,
   CUSTOM_BILL_PROFILE_OTHER,
   CUSTOM_BILL_PROFILE_OWN,
+  DEFAULT_CUSTOM_BILL_ASFIN,
   DEFAULT_CUSTOM_BILL_OTHER,
   DEFAULT_CUSTOM_BILL_OWN,
   normalizeCustomBillSettings,
+  normalizeProfileId,
 } from '../../config/posCustomBillProfiles';
 import PosPaymentQrPanel from './PosPaymentQrPanel';
 import { printPaymentQrSlip } from '../../utils/paymentQrPrint';
@@ -415,7 +419,7 @@ export default function AdminPayments() {
         <div className="wp-postbox-head">POS Custom bill — shop identity</div>
         <div className="wp-postbox-body">
           <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
-            Laptop + phone POS pe same shop names. <strong>My shop</strong> = AsFix, <strong>Someone else</strong> = dusri shop (e.g. Osama). Logo / scanner PIC device pe local rehti hai — name/phone/QR link yahan sync hoti hai.
+            Laptop + phone POS pe same shop names. <strong>AsFix</strong>, <strong>ASPLYWOOD (ASFIN)</strong>, ya <strong>Someone else</strong>. ASFIN bills alag sheet mein save hoti hain.
           </p>
           <label className="wp-payments-field" style={{ display: 'block', marginBottom: '0.85rem' }}>
             <span>Default profile on Custom bill</span>
@@ -423,17 +427,17 @@ export default function AdminPayments() {
               value={posSettings.customBillActiveProfile || CUSTOM_BILL_PROFILE_OWN}
               onChange={(e) => setPosSettings((p) => ({
                 ...p,
-                customBillActiveProfile: e.target.value === CUSTOM_BILL_PROFILE_OTHER
-                  ? CUSTOM_BILL_PROFILE_OTHER
-                  : CUSTOM_BILL_PROFILE_OWN,
+                customBillActiveProfile: normalizeProfileId(e.target.value, CUSTOM_BILL_PROFILE_OWN),
               }))}
             >
               <option value={CUSTOM_BILL_PROFILE_OWN}>My shop (AsFix)</option>
+              <option value={CUSTOM_BILL_PROFILE_ASFIN}>ASPLYWOOD (ASFIN)</option>
               <option value={CUSTOM_BILL_PROFILE_OTHER}>Someone else</option>
             </select>
           </label>
           {[
             { key: 'customBillOwn', title: 'My shop (AsFix)', defaults: DEFAULT_CUSTOM_BILL_OWN },
+            { key: 'customBillAsfin', title: 'ASPLYWOOD (ASFIN)', defaults: DEFAULT_CUSTOM_BILL_ASFIN },
             { key: 'customBillOther', title: 'Someone else', defaults: DEFAULT_CUSTOM_BILL_OTHER },
           ].map(({ key, title, defaults }) => {
             const profile = { ...defaults, ...(posSettings[key] || {}) };
@@ -500,6 +504,7 @@ export default function AdminPayments() {
                     >
                       <option value={CUSTOM_BILL_MEDIA_NONE}>No logo</option>
                       <option value={CUSTOM_BILL_MEDIA_OWN}>Your own logo (AsFix)</option>
+                      <option value={CUSTOM_BILL_MEDIA_ASFIN}>ASFIN / ASPLYWOOD logo</option>
                       <option value={CUSTOM_BILL_MEDIA_CUSTOM}>Upload other logo</option>
                     </select>
                   </label>
@@ -522,6 +527,7 @@ export default function AdminPayments() {
                     >
                       <option value={CUSTOM_BILL_MEDIA_NONE}>No scanner</option>
                       <option value={CUSTOM_BILL_MEDIA_OWN}>Your own scanner (asfixgear.com)</option>
+                      <option value={CUSTOM_BILL_MEDIA_ASFIN}>ASFIN scanner (asfins.com)</option>
                       <option value={CUSTOM_BILL_MEDIA_CUSTOM}>Other scanner / QR</option>
                     </select>
                   </label>

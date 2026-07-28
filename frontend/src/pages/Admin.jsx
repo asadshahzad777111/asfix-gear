@@ -20,6 +20,7 @@ import AdminOrderCard, { ORDER_STATUSES } from '../components/AdminOrderCard';
 import AdminStockManager from '../components/AdminStockManager';
 import AdminProductsSheet from '../components/admin/AdminProductsSheet';
 import AdminAuditLog from '../components/admin/AdminAuditLog';
+import AdminAsfinBills from '../components/admin/AdminAsfinBills';
 import { useTranslation } from '../context/LanguageContext';
 import { ProductPrice } from '../components/DiscountPicker';
 import { getStockStatus, LOW_STOCK_THRESHOLD, getStockAlertProducts, getLowStockProducts } from '../utils/stock';
@@ -531,6 +532,7 @@ export default function Admin() {
     if (tab === 'messages') return t('admin.messages');
     if (tab === 'feedback') return 'Reviews & Feedback';
     if (tab === 'sales') return t('sales.tab');
+    if (tab === 'asfin') return t('admin.asfinBillsTitle');
     if (tab === 'audit') return t('admin.auditTitle');
     if (tab === 'admins') return t('team.manageTeam');
     if (tab === 'settings') return 'Settings';
@@ -566,7 +568,7 @@ export default function Admin() {
         onViewStock={goToStockAlerts}
         onEditProduct={handleEditProduct}
       />
-      {loading && !['add', 'admins', 'messages', 'feedback', 'sales', 'dashboard', 'settings', 'payments', 'customers', 'ads', 'hero'].includes(tab) ? (
+      {loading && !['add', 'admins', 'messages', 'feedback', 'sales', 'asfin', 'dashboard', 'settings', 'payments', 'customers', 'ads', 'hero'].includes(tab) ? (
         <div className="wp-loading">{t('common.loading')}</div>
       ) : tab === 'dashboard' ? (
         <AdminDashboard onNavigate={navigateAdmin} showShopControl={showShopControl} />
@@ -595,6 +597,8 @@ export default function Admin() {
         <AdminFeedback />
       ) : tab === 'sales' && showSales ? (
         <AdminSalesReport />
+      ) : tab === 'asfin' ? (
+        <AdminAsfinBills />
       ) : tab === 'audit' && showAudit ? (
         <AdminAuditLog />
       ) : tab === 'add' ? (

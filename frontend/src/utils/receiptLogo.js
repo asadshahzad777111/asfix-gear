@@ -109,6 +109,62 @@ export async function getReceiptLogoMonoDataUrl(thermalWidth = '58mm') {
   }
 }
 
+/** ASPLYWOOD / ASFIN brand mark — same mono pipeline as AsFix logo. */
+export const ASFIN_LOGO_PATH = '/asfin-logo.png';
+
+let asfinLogoImagePromise = null;
+
+export function loadAsfinLogoImage() {
+  if (typeof Image === 'undefined') return Promise.resolve(null);
+  if (!asfinLogoImagePromise) {
+    asfinLogoImagePromise = new Promise((resolve) => {
+      const img = new Image();
+      img.decoding = 'async';
+      img.onload = () => resolve(img);
+      img.onerror = () => resolve(null);
+      img.src = ASFIN_LOGO_PATH;
+    });
+  }
+  return asfinLogoImagePromise;
+}
+
+export async function buildAsfinLogoEscPosRaster(thermalWidth = '58mm') {
+  const img = await loadAsfinLogoImage();
+  if (!img) return new Uint8Array(0);
+  const canvas = renderReceiptLogoMonoCanvas(img, receiptLogoTargetDots(thermalWidth));
+  return canvasToEscPosRasterBytes(canvas);
+}
+
+export async function getAsfinLogoMonoDataUrl(thermalWidth = '58mm') {
+  const img = await loadAsfinLogoImage();
+  if (!img) return '';
+  const canvas = renderReceiptLogoMonoCanvas(img, receiptLogoTargetDots(thermalWidth));
+  if (!canvas) return '';
+  try {
+    return canvas.toDataURL('image/png');
+  } catch {
+    return '';
+  }
+}
+
+export async function drawAsfinLogoOnCanvas(ctx, {
+  canvasWidth,
+  padX,
+  y,
+  thermalWidth = '58mm',
+} = {}) {
+  const img = await loadAsfinLogoImage();
+  if (!img || !ctx) return 0;
+  const usable = Math.max(8, (canvasWidth || 0) - (padX || 0) * 2);
+  const target = Math.min(receiptLogoTargetDots(thermalWidth), Math.floor(usable / 8) * 8);
+  const mono = renderReceiptLogoMonoCanvas(img, target);
+  if (!mono) return 0;
+  const x = Math.round(((canvasWidth || mono.width) - mono.width) / 2);
+  ctx.imageSmoothingEnabled = false;
+  ctx.drawImage(mono, x, Math.round(y));
+  return mono.height + 6;
+}
+
 /** Draw centered mono logo onto an existing receipt canvas context. Returns height used. */
 export async function drawReceiptLogoOnCanvas(ctx, {
   canvasWidth,

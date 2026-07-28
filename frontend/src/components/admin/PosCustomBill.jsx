@@ -2,30 +2,45 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, formatPrice } from '../../api/client';
 import {
   CUSTOM_BILL_MAX_IMAGE_CHARS,
+  CUSTOM_BILL_MEDIA_ASFIN,
   CUSTOM_BILL_MEDIA_CUSTOM,
   CUSTOM_BILL_MEDIA_NONE,
   CUSTOM_BILL_MEDIA_OWN,
+  CUSTOM_BILL_PROFILE_ASFIN,
   CUSTOM_BILL_PROFILE_OTHER,
   CUSTOM_BILL_PROFILE_OWN,
+  DEFAULT_CUSTOM_BILL_ASFIN,
   DEFAULT_CUSTOM_BILL_OTHER,
   DEFAULT_CUSTOM_BILL_OWN,
+  isAsfinCustomBill,
   loadCustomBillMedia,
   normalizeCustomBillSettings,
+  normalizeProfileId,
   resolveLogoSource,
   resolveScannerSource,
   saveCustomBillMedia,
 } from '../../config/posCustomBillProfiles';
+import { ASFIN } from '../../config/asfin';
 import { useTranslation } from '../../context/LanguageContext';
 import { isNativePosApp, getSavedPrinter } from '../../utils/nativePosPrint';
 import { normalizePrintResult } from './AdminCounterBill';
 
 const STORAGE_KEY = 'asfix_pos_custom_bill_v2';
 
-const DEFAULT_ITEMS = [
+const DEFAULT_ITEMS_ASFIX = [
   { id: '1', name: 'Body + Body Structure', rate: 2500, qty: 1 },
   { id: '2', name: 'SIM Jack', rate: 200, qty: 1 },
   { id: '3', name: 'Button', rate: 200, qty: 1 },
   { id: '4', name: 'Mobile Panel A+ (1st copy)', rate: 2800, qty: 1 },
+  { id: '5', name: '', rate: '', qty: '' },
+  { id: '6', name: '', rate: '', qty: '' },
+];
+
+const DEFAULT_ITEMS_ASFIN = [
+  { id: '1', name: 'Plywood sheet', rate: '', qty: '' },
+  { id: '2', name: 'Laminate', rate: '', qty: '' },
+  { id: '3', name: 'Edge banding', rate: '', qty: '' },
+  { id: '4', name: '', rate: '', qty: '' },
   { id: '5', name: '', rate: '', qty: '' },
   { id: '6', name: '', rate: '', qty: '' },
 ];
@@ -116,11 +131,17 @@ function migrateDraftMediaSources(draft) {
 function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
   const t = tomorrowLocalParts();
   const normalized = normalizeCustomBillSettings(settings || {});
-  const id =
-    profileId === CUSTOM_BILL_PROFILE_OWN ? CUSTOM_BILL_PROFILE_OWN : CUSTOM_BILL_PROFILE_OTHER;
+  const id = normalizeProfileId(profileId, CUSTOM_BILL_PROFILE_OTHER);
   const profile =
-    id === CUSTOM_BILL_PROFILE_OWN ? normalized.customBillOwn : normalized.customBillOther;
+    id === CUSTOM_BILL_PROFILE_OWN
+      ? normalized.customBillOwn
+      : id === CUSTOM_BILL_PROFILE_ASFIN
+        ? normalized.customBillAsfin
+        : normalized.customBillOther;
   const media = loadCustomBillMedia(id);
+  const items = (
+    id === CUSTOM_BILL_PROFILE_ASFIN ? DEFAULT_ITEMS_ASFIN : DEFAULT_ITEMS_ASFIX
+  ).map((row) => ({ ...row }));
   return {
     profileId: id,
     ...profileIdentityFields(profile),
@@ -128,10 +149,10 @@ function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
     qrImageDataUrl: media.qrImageDataUrl,
     dateInput: t.dateInput,
     timeInput: t.timeInput,
-    mobileName: 'Infinix Smart 5',
+    mobileName: id === CUSTOM_BILL_PROFILE_ASFIN ? '' : 'Infinix Smart 5',
     customerName: '',
     notes: '',
-    items: DEFAULT_ITEMS.map((row) => ({ ...row })),
+    items,
   };
 }
 
@@ -166,8 +187,10 @@ export function buildCustomBillOrder(draft) {
   const logoSource = resolveLogoSource(draft, CUSTOM_BILL_MEDIA_NONE);
   const scannerSource = resolveScannerSource(draft, CUSTOM_BILL_MEDIA_NONE);
   const useOwnLogo = logoSource === CUSTOM_BILL_MEDIA_OWN;
+  const useAsfinLogo = logoSource === CUSTOM_BILL_MEDIA_ASFIN;
   const useCustomLogo = logoSource === CUSTOM_BILL_MEDIA_CUSTOM;
   const useOwnQr = scannerSource === CUSTOM_BILL_MEDIA_OWN;
+  const useAsfinQr = scannerSource === CUSTOM_BILL_MEDIA_ASFIN;
   const useCustomQr = scannerSource === CUSTOM_BILL_MEDIA_CUSTOM;
 
   return {
@@ -182,15 +205,19 @@ export function buildCustomBillOrder(draft) {
     device_name: String(draft.mobileName || '').trim(),
     notes: String(draft.notes || '').trim(),
     custom_receipt: true,
+    brand: draft.profileId === CUSTOM_BILL_PROFILE_ASFIN ? 'asfin' : 'asfix',
+    profileId: draft.profileId,
     shop_name: String(draft.shopName || '').trim() || 'Shop',
     shop_place: String(draft.shopPlace || '').trim(),
     shop_phone: String(draft.shopPhone || '').trim(),
     logo_source: logoSource,
     scanner_source: scannerSource,
     use_own_logo: useOwnLogo,
+    use_asfin_logo: useAsfinLogo,
     use_own_qr: useOwnQr,
+    use_asfin_qr: useAsfinQr,
     custom_logo_data_url: useCustomLogo && draft.logoDataUrl ? draft.logoDataUrl : '',
-    include_qr: useOwnQr || useCustomQr,
+    include_qr: useOwnQr || useAsfinQr || useCustomQr,
     custom_qr_payload: useCustomQr ? String(draft.qrPayload || '').trim() : '',
     custom_qr_image_data_url: useCustomQr && draft.qrImageDataUrl ? draft.qrImageDataUrl : '',
     items,
@@ -220,10 +247,7 @@ export default function PosCustomBill({
       ...base,
       ...saved,
       items: saved.items?.length ? saved.items : base.items,
-      profileId:
-        saved.profileId === CUSTOM_BILL_PROFILE_OWN
-          ? CUSTOM_BILL_PROFILE_OWN
-          : CUSTOM_BILL_PROFILE_OTHER,
+      profileId: normalizeProfileId(saved.profileId, CUSTOM_BILL_PROFILE_OTHER),
     });
   });
   const [busy, setBusy] = useState(false);
@@ -261,15 +285,16 @@ export default function PosCustomBill({
         const normalized = normalizeCustomBillSettings(settings || {});
         settingsRef.current = normalized;
         setDraft((prev) => {
-          const profileId =
-            prev.profileId === CUSTOM_BILL_PROFILE_OWN
-              || prev.profileId === CUSTOM_BILL_PROFILE_OTHER
-              ? prev.profileId
-              : normalized.customBillActiveProfile;
+          const profileId = normalizeProfileId(
+            prev.profileId || normalized.customBillActiveProfile,
+            normalized.customBillActiveProfile,
+          );
           const profile =
             profileId === CUSTOM_BILL_PROFILE_OWN
               ? normalized.customBillOwn
-              : normalized.customBillOther;
+              : profileId === CUSTOM_BILL_PROFILE_ASFIN
+                ? normalized.customBillAsfin
+                : normalized.customBillOther;
           const media = loadCustomBillMedia(profileId);
           const next = {
             ...prev,
@@ -320,18 +345,27 @@ export default function PosCustomBill({
   }, [draft, persist]);
 
   const switchProfile = useCallback((profileId) => {
-    const id =
-      profileId === CUSTOM_BILL_PROFILE_OWN ? CUSTOM_BILL_PROFILE_OWN : CUSTOM_BILL_PROFILE_OTHER;
+    const id = normalizeProfileId(profileId, CUSTOM_BILL_PROFILE_OTHER);
     const settings = settingsRef.current;
     const profile =
-      id === CUSTOM_BILL_PROFILE_OWN ? settings.customBillOwn : settings.customBillOther;
+      id === CUSTOM_BILL_PROFILE_OWN
+        ? settings.customBillOwn
+        : id === CUSTOM_BILL_PROFILE_ASFIN
+          ? settings.customBillAsfin
+          : settings.customBillOther;
     const media = loadCustomBillMedia(id);
+    const keepItems = draft.profileId === id;
     persist({
       ...draft,
       profileId: id,
       ...profileIdentityFields(profile),
       logoDataUrl: media.logoDataUrl,
       qrImageDataUrl: media.qrImageDataUrl,
+      mobileName: id === CUSTOM_BILL_PROFILE_ASFIN ? (keepItems ? draft.mobileName : '') : draft.mobileName,
+      items: keepItems
+        ? draft.items
+        : (id === CUSTOM_BILL_PROFILE_ASFIN ? DEFAULT_ITEMS_ASFIN : DEFAULT_ITEMS_ASFIX)
+          .map((row) => ({ ...row })),
     });
   }, [draft, persist]);
 
@@ -344,10 +378,7 @@ export default function PosCustomBill({
   }, [draft.profileId, persist, t]);
 
   const saveAsSetting = useCallback(async () => {
-    const profileId =
-      draft.profileId === CUSTOM_BILL_PROFILE_OWN
-        ? CUSTOM_BILL_PROFILE_OWN
-        : CUSTOM_BILL_PROFILE_OTHER;
+    const profileId = normalizeProfileId(draft.profileId, CUSTOM_BILL_PROFILE_OTHER);
     const identity = {
       shopName: draft.shopName,
       shopPlace: draft.shopPlace,
@@ -369,7 +400,9 @@ export default function PosCustomBill({
         customBillActiveProfile: profileId,
         ...(profileId === CUSTOM_BILL_PROFILE_OWN
           ? { customBillOwn: identity }
-          : { customBillOther: identity }),
+          : profileId === CUSTOM_BILL_PROFILE_ASFIN
+            ? { customBillAsfin: identity }
+            : { customBillOther: identity }),
       };
       const saved = await api.setPosCustomBillSettings(body);
       settingsRef.current = normalizeCustomBillSettings(saved || {});
@@ -422,6 +455,24 @@ export default function PosCustomBill({
     try {
       const result = normalizePrintResult(await onPrintOrder?.(order));
       if (result.ok) {
+        if (isAsfinCustomBill({ ...draft, ...order })) {
+          try {
+            await api.createAsfinBill({
+              bill_id: order.order_id,
+              shop_name: order.shop_name,
+              shop_place: order.shop_place,
+              shop_phone: order.shop_phone,
+              customer_name: order.customer_name,
+              device_name: order.device_name,
+              notes: order.notes,
+              receipt_date: order.receipt_date,
+              receipt_time: order.receipt_time,
+              items: order.items,
+            });
+          } catch {
+            /* print succeeded — sheet save is best-effort */
+          }
+        }
         setFeedback({ type: 'ok', text: t('counter.customBillPrintOk') });
       } else {
         setFeedback({
@@ -437,6 +488,7 @@ export default function PosCustomBill({
   }, [draft, nativePos, onOpenPrinterSetup, onPrintOrder, t]);
 
   const profileOwn = draft.profileId === CUSTOM_BILL_PROFILE_OWN;
+  const profileAsfin = draft.profileId === CUSTOM_BILL_PROFILE_ASFIN;
 
   return (
     <section className="pos-custom-bill wp-postbox">
@@ -458,8 +510,17 @@ export default function PosCustomBill({
         <button
           type="button"
           role="tab"
-          aria-selected={!profileOwn}
-          className={`wp-button pos-custom-bill__profile-btn${!profileOwn ? ' pos-custom-bill__profile-btn--active' : ''}`}
+          aria-selected={profileAsfin}
+          className={`wp-button pos-custom-bill__profile-btn${profileAsfin ? ' pos-custom-bill__profile-btn--active' : ''}`}
+          onClick={() => switchProfile(CUSTOM_BILL_PROFILE_ASFIN)}
+        >
+          {t('counter.customBillProfileAsfin')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!profileOwn && !profileAsfin}
+          className={`wp-button pos-custom-bill__profile-btn${!profileOwn && !profileAsfin ? ' pos-custom-bill__profile-btn--active' : ''}`}
           onClick={() => switchProfile(CUSTOM_BILL_PROFILE_OTHER)}
         >
           {t('counter.customBillProfileOther')}
@@ -536,6 +597,7 @@ export default function PosCustomBill({
             {[
               { id: CUSTOM_BILL_MEDIA_NONE, label: t('counter.customBillLogoOff') },
               { id: CUSTOM_BILL_MEDIA_OWN, label: t('counter.customBillLogoOwn') },
+              { id: CUSTOM_BILL_MEDIA_ASFIN, label: t('counter.customBillLogoAsfin') },
               { id: CUSTOM_BILL_MEDIA_CUSTOM, label: t('counter.customBillLogoCustom') },
             ].map((opt) => (
               <label key={opt.id} className="pos-custom-bill__source-opt">
@@ -555,6 +617,12 @@ export default function PosCustomBill({
           </div>
           {draft.logoSource === CUSTOM_BILL_MEDIA_OWN ? (
             <small className="pos-custom-bill__media-hint">{t('counter.customBillLogoOwnHint')}</small>
+          ) : null}
+          {draft.logoSource === CUSTOM_BILL_MEDIA_ASFIN ? (
+            <div className="pos-custom-bill__media-row">
+              <img className="pos-custom-bill__thumb" src={ASFIN.logoPath} alt="ASPLYWOOD" />
+              <small className="pos-custom-bill__media-hint">{t('counter.customBillLogoAsfinHint')}</small>
+            </div>
           ) : null}
           {draft.logoSource === CUSTOM_BILL_MEDIA_CUSTOM ? (
             <div className="pos-custom-bill__media-row">
@@ -598,6 +666,7 @@ export default function PosCustomBill({
             {[
               { id: CUSTOM_BILL_MEDIA_NONE, label: t('counter.customBillScannerOff') },
               { id: CUSTOM_BILL_MEDIA_OWN, label: t('counter.customBillScannerOwn') },
+              { id: CUSTOM_BILL_MEDIA_ASFIN, label: t('counter.customBillScannerAsfin') },
               { id: CUSTOM_BILL_MEDIA_CUSTOM, label: t('counter.customBillScannerCustom') },
             ].map((opt) => (
               <label key={opt.id} className="pos-custom-bill__source-opt">
@@ -609,6 +678,7 @@ export default function PosCustomBill({
                     ...draft,
                     scannerSource: opt.id,
                     includeQr: opt.id !== CUSTOM_BILL_MEDIA_NONE,
+                    qrPayload: opt.id === CUSTOM_BILL_MEDIA_ASFIN ? ASFIN.siteUrl : draft.qrPayload,
                   })}
                 />
                 <span>{opt.label}</span>
@@ -617,6 +687,9 @@ export default function PosCustomBill({
           </div>
           {draft.scannerSource === CUSTOM_BILL_MEDIA_OWN ? (
             <small className="pos-custom-bill__media-hint">{t('counter.customBillScannerOwnHint')}</small>
+          ) : null}
+          {draft.scannerSource === CUSTOM_BILL_MEDIA_ASFIN ? (
+            <small className="pos-custom-bill__media-hint">{t('counter.customBillScannerAsfinHint')}</small>
           ) : null}
           {draft.scannerSource === CUSTOM_BILL_MEDIA_CUSTOM ? (
             <div className="pos-custom-bill__media-col">

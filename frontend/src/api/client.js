@@ -620,6 +620,11 @@ export const api = {
     request('/shop/pos-settings', { method: 'PATCH', body: JSON.stringify(body) }),
   setPosCustomBillSettings: (body) =>
     request('/shop/pos-custom-bill-settings', { method: 'PATCH', body: JSON.stringify(body) }),
+  getAsfinBills: () => request('/asfin-bills'),
+  createAsfinBill: (body) =>
+    request('/asfin-bills', { method: 'POST', body: JSON.stringify(body) }),
+  deleteAsfinBill: (id) =>
+    request(`/asfin-bills/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   getStorefrontImages: () =>
     request('/shop/storefront-images', { timeoutMs: COLD_START_TIMEOUT_MS }),
   updateStorefrontImages: (body) =>

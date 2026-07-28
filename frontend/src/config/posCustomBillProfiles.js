@@ -1,12 +1,15 @@
+import { ASFIN } from './asfin.js';
 import { SHOP } from './shop.js';
 
 /** Active shop identity for Custom bill — syncs phone ↔ laptop via POS settings. */
 export const CUSTOM_BILL_PROFILE_OWN = 'own';
+export const CUSTOM_BILL_PROFILE_ASFIN = 'asfin';
 export const CUSTOM_BILL_PROFILE_OTHER = 'other';
 
 /** Logo / scanner source on Custom bill */
 export const CUSTOM_BILL_MEDIA_NONE = 'none';
 export const CUSTOM_BILL_MEDIA_OWN = 'own';
+export const CUSTOM_BILL_MEDIA_ASFIN = 'asfin';
 export const CUSTOM_BILL_MEDIA_CUSTOM = 'custom';
 
 export const DEFAULT_CUSTOM_BILL_OWN = {
@@ -18,6 +21,17 @@ export const DEFAULT_CUSTOM_BILL_OWN = {
   includeLogo: true,
   includeQr: true,
   qrPayload: '',
+};
+
+export const DEFAULT_CUSTOM_BILL_ASFIN = {
+  shopName: ASFIN.shopName,
+  shopPlace: SHOP.city || 'Lahore',
+  shopPhone: '',
+  logoSource: CUSTOM_BILL_MEDIA_ASFIN,
+  scannerSource: CUSTOM_BILL_MEDIA_ASFIN,
+  includeLogo: true,
+  includeQr: true,
+  qrPayload: ASFIN.siteUrl,
 };
 
 export const DEFAULT_CUSTOM_BILL_OTHER = {
@@ -40,7 +54,24 @@ function clampStr(value, max) {
 
 export function normalizeMediaSource(value, fallback = CUSTOM_BILL_MEDIA_NONE) {
   const raw = String(value || '').trim().toLowerCase();
-  if (raw === CUSTOM_BILL_MEDIA_OWN || raw === CUSTOM_BILL_MEDIA_CUSTOM || raw === CUSTOM_BILL_MEDIA_NONE) {
+  if (
+    raw === CUSTOM_BILL_MEDIA_OWN
+    || raw === CUSTOM_BILL_MEDIA_ASFIN
+    || raw === CUSTOM_BILL_MEDIA_CUSTOM
+    || raw === CUSTOM_BILL_MEDIA_NONE
+  ) {
+    return raw;
+  }
+  return fallback;
+}
+
+export function normalizeProfileId(value, fallback = CUSTOM_BILL_PROFILE_OTHER) {
+  const raw = String(value || '').trim().toLowerCase();
+  if (
+    raw === CUSTOM_BILL_PROFILE_OWN
+    || raw === CUSTOM_BILL_PROFILE_ASFIN
+    || raw === CUSTOM_BILL_PROFILE_OTHER
+  ) {
     return raw;
   }
   return fallback;
@@ -80,20 +111,34 @@ export function normalizeCustomBillProfile(raw, fallback = DEFAULT_CUSTOM_BILL_O
 }
 
 export function normalizeCustomBillSettings(input = {}) {
-  const active = String(input.customBillActiveProfile || '').trim().toLowerCase();
+  const active = normalizeProfileId(input.customBillActiveProfile, CUSTOM_BILL_PROFILE_OWN);
   return {
-    customBillActiveProfile:
-      active === CUSTOM_BILL_PROFILE_OTHER ? CUSTOM_BILL_PROFILE_OTHER : CUSTOM_BILL_PROFILE_OWN,
+    customBillActiveProfile: active,
     customBillOwn: normalizeCustomBillProfile(input.customBillOwn, DEFAULT_CUSTOM_BILL_OWN),
+    customBillAsfin: normalizeCustomBillProfile(input.customBillAsfin, DEFAULT_CUSTOM_BILL_ASFIN),
     customBillOther: normalizeCustomBillProfile(input.customBillOther, DEFAULT_CUSTOM_BILL_OTHER),
   };
 }
 
 export function getActiveCustomBillProfile(settings) {
   const normalized = normalizeCustomBillSettings(settings);
-  return normalized.customBillActiveProfile === CUSTOM_BILL_PROFILE_OTHER
-    ? normalized.customBillOther
-    : normalized.customBillOwn;
+  if (normalized.customBillActiveProfile === CUSTOM_BILL_PROFILE_ASFIN) {
+    return normalized.customBillAsfin;
+  }
+  if (normalized.customBillActiveProfile === CUSTOM_BILL_PROFILE_OTHER) {
+    return normalized.customBillOther;
+  }
+  return normalized.customBillOwn;
+}
+
+export function isAsfinCustomBill(draftOrOrder = {}) {
+  const profile = String(draftOrOrder.profileId || draftOrOrder.brand || '').toLowerCase();
+  if (profile === CUSTOM_BILL_PROFILE_ASFIN || profile === 'asplywood') return true;
+  const logo = String(draftOrOrder.logoSource || draftOrOrder.logo_source || '').toLowerCase();
+  const scanner = String(draftOrOrder.scannerSource || draftOrOrder.scanner_source || '').toLowerCase();
+  if (logo === CUSTOM_BILL_MEDIA_ASFIN || scanner === CUSTOM_BILL_MEDIA_ASFIN) return true;
+  const shop = String(draftOrOrder.shopName || draftOrOrder.shop_name || '').trim().toLowerCase();
+  return shop === 'asplywood' || shop.includes('asfin');
 }
 
 /** Device-local logo / QR PIC — not synced (too large for settings JSON). */

@@ -53,6 +53,17 @@ const DEFAULT_CUSTOM_BILL_OWN = {
   qrPayload: '',
 };
 
+const DEFAULT_CUSTOM_BILL_ASFIN = {
+  shopName: 'ASPLYWOOD',
+  shopPlace: 'Lahore',
+  shopPhone: '',
+  logoSource: 'asfin',
+  scannerSource: 'asfin',
+  includeLogo: true,
+  includeQr: true,
+  qrPayload: 'https://asfins.com',
+};
+
 const DEFAULT_CUSTOM_BILL_OTHER = {
   shopName: 'Osama Center',
   shopPlace: 'Trade World',
@@ -71,7 +82,7 @@ function clampPosStr(value, max, fallback = '') {
 
 function normalizeMediaSource(value, fallback = 'none') {
   const raw = String(value || '').trim().toLowerCase();
-  if (raw === 'own' || raw === 'custom' || raw === 'none') return raw;
+  if (raw === 'own' || raw === 'asfin' || raw === 'custom' || raw === 'none') return raw;
   return fallback;
 }
 
@@ -110,8 +121,10 @@ function normalizeCustomBillProfile(raw, fallback) {
 function normalizeCustomBillPosFields(input = {}) {
   const active = String(input.customBillActiveProfile || '').trim().toLowerCase();
   return {
-    customBillActiveProfile: active === 'other' ? 'other' : 'own',
+    customBillActiveProfile:
+      active === 'asfin' ? 'asfin' : active === 'other' ? 'other' : 'own',
     customBillOwn: normalizeCustomBillProfile(input.customBillOwn, DEFAULT_CUSTOM_BILL_OWN),
+    customBillAsfin: normalizeCustomBillProfile(input.customBillAsfin, DEFAULT_CUSTOM_BILL_ASFIN),
     customBillOther: normalizeCustomBillProfile(input.customBillOther, DEFAULT_CUSTOM_BILL_OTHER),
   };
 }
@@ -3664,6 +3677,10 @@ export function setPosCustomBillSettings(input, userId) {
         body.customBillOwn != null
           ? { ...current.customBillOwn, ...body.customBillOwn }
           : current.customBillOwn,
+      customBillAsfin:
+        body.customBillAsfin != null
+          ? { ...current.customBillAsfin, ...body.customBillAsfin }
+          : current.customBillAsfin,
       customBillOther:
         body.customBillOther != null
           ? { ...current.customBillOther, ...body.customBillOther }
@@ -3676,6 +3693,85 @@ export function setPosCustomBillSettings(input, userId) {
     };
     data.settings.pos = payload;
     return payload;
+  });
+}
+
+function nextAsfinBillId(list) {
+  const max = list.reduce((acc, row) => Math.max(acc, Number(row?.id) || 0), 0);
+  return max + 1;
+}
+
+function normalizeAsfinBillItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .slice(0, 80)
+    .map((row) => {
+      const name = String(row?.name || '').trim().slice(0, 120);
+      if (!name) return null;
+      const qty = Math.max(1, Math.min(9999, Math.round(Number(row?.qty) || 1)));
+      const price = Math.max(0, Math.min(10_000_000, Math.round(Number(row?.price ?? row?.rate) || 0)));
+      return { name, qty, price };
+    })
+    .filter(Boolean);
+}
+
+/** Separate sheet for ASPLYWOOD / ASFIN custom bills (not AsFix counter sales). */
+export function listAsfinBills({ limit = 200 } = {}) {
+  const rows = Array.isArray(readData().asfin_bills) ? readData().asfin_bills : [];
+  const capped = Math.max(1, Math.min(500, Number(limit) || 200));
+  return [...rows]
+    .sort((a, b) => String(b.created_at || '').localeCompare(String(a.created_at || '')))
+    .slice(0, capped);
+}
+
+export function createAsfinBill(input = {}, user = {}) {
+  return withData((data) => {
+    if (!Array.isArray(data.asfin_bills)) data.asfin_bills = [];
+    const items = normalizeAsfinBillItems(input.items);
+    if (!items.length) throw new Error('Add at least one item');
+    const total = items.reduce((sum, row) => sum + row.price * row.qty, 0);
+    const id = nextAsfinBillId(data.asfin_bills);
+    const bill = {
+      id,
+      bill_id: String(input.bill_id || input.order_id || `AF-${id}`).trim().slice(0, 40),
+      brand: 'asfin',
+      shop_name: clampPosStr(input.shop_name || 'ASPLYWOOD', 80, 'ASPLYWOOD'),
+      shop_place: clampPosStr(input.shop_place, 80),
+      shop_phone: clampPosStr(input.shop_phone, 40),
+      customer_name: clampPosStr(input.customer_name || 'Walk-in', 80, 'Walk-in'),
+      device_name: clampPosStr(input.device_name, 80),
+      notes: clampPosStr(input.notes, 500),
+      receipt_date: clampPosStr(input.receipt_date, 40),
+      receipt_time: clampPosStr(input.receipt_time, 20),
+      items,
+      total_amount: total,
+      created_at: now(),
+      staff_user_id: user?.id ?? null,
+      staff_name: clampPosStr(user?.username || user?.name || '', 80),
+    };
+    data.asfin_bills.push(bill);
+    appendAuditLog(data, 'asfin_bill.create', {
+      actor: staffAuditUser(user),
+      bill_id: bill.bill_id,
+      total_amount: bill.total_amount,
+    });
+    return bill;
+  });
+}
+
+export function deleteAsfinBill(id, user = {}) {
+  return withData((data) => {
+    if (!Array.isArray(data.asfin_bills)) data.asfin_bills = [];
+    const numId = Number(id);
+    const idx = data.asfin_bills.findIndex((row) => Number(row.id) === numId);
+    if (idx < 0) return null;
+    const [removed] = data.asfin_bills.splice(idx, 1);
+    appendAuditLog(data, 'asfin_bill.delete', {
+      actor: staffAuditUser(user),
+      bill_id: removed?.bill_id,
+      total_amount: removed?.total_amount,
+    });
+    return removed;
   });
 }
 

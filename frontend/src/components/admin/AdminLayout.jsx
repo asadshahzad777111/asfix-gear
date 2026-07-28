@@ -143,6 +143,7 @@ export default function AdminLayout({
             ) : null}
             {navItem('orders', 'Orders', pendingOrders > 0 ? pendingOrders : orders || null)}
             {navItem('customers', 'Customers')}
+            {navItem('asfin', 'ASPLYWOOD / ASFIN')}
             {showAudit && navItem('audit', 'Activity / Audit')}
             {navItem('bookings', 'Repair Intake', repairChatUnread > 0 ? repairChatUnread : (bookings || null))}
             {navItem('messages', t('admin.messages'))}

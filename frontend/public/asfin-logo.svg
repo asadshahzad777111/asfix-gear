@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 520 140" fill="none" role="img" aria-label="ASPLYWOOD  ASFIN">
+  <defs>
+    <linearGradient id="aw" x1="24" y1="20" x2="96" y2="120" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#e8a04a"/>
+      <stop offset="0.55" stop-color="#c4782a"/>
+      <stop offset="1" stop-color="#8f5318"/>
+    </linearGradient>
+  </defs>
+  <!-- Wood plank stack mark -->
+  <g transform="translate(36 28)">
+    <rect x="0" y="0" width="72" height="18" rx="3" fill="url(#aw)"/>
+    <rect x="6" y="22" width="72" height="18" rx="3" fill="url(#aw)" opacity="0.92"/>
+    <rect x="0" y="44" width="72" height="18" rx="3" fill="url(#aw)" opacity="0.84"/>
+    <path d="M8 6 H60 M14 28 H70 M8 50 H62" stroke="#3d2914" stroke-width="1.4" opacity="0.35"/>
+  </g>
+  <text x="128" y="62" font-family="Plus Jakarta Sans, Segoe UI, Arial, Helvetica, sans-serif" font-size="40" font-weight="800" letter-spacing="1.5">
+    <tspan fill="#e8a04a">AS</tspan>
+    <tspan fill="#ffffff" dx="4">PLYWOOD</tspan>
+  </text>
+  <text x="128" y="96" fill="#ffffff" opacity="0.78" font-family="Plus Jakarta Sans, Segoe UI, Arial, Helvetica, sans-serif" font-size="14" font-weight="600" letter-spacing="3">ASFIN · ASFINS.COM</text>
+</svg>
