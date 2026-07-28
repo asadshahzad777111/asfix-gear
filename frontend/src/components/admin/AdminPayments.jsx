@@ -8,6 +8,13 @@ import {
   formatPaymentDisplayNumber,
   mergePosPaymentQrCards,
 } from '../../config/posPaymentQr';
+import {
+  CUSTOM_BILL_PROFILE_OTHER,
+  CUSTOM_BILL_PROFILE_OWN,
+  DEFAULT_CUSTOM_BILL_OTHER,
+  DEFAULT_CUSTOM_BILL_OWN,
+  normalizeCustomBillSettings,
+} from '../../config/posCustomBillProfiles';
 import PosPaymentQrPanel from './PosPaymentQrPanel';
 import { printPaymentQrSlip } from '../../utils/paymentQrPrint';
 
@@ -31,6 +38,7 @@ const DEFAULT_POS_SETTINGS = {
   posReturnWindowHours: 24,
   posDiscountMaxPercentWithoutPin: 10,
   posDiscountMaxAmountWithoutPin: 500,
+  ...normalizeCustomBillSettings({}),
 };
 
 export default function AdminPayments() {
@@ -61,7 +69,11 @@ export default function AdminPayments() {
         setForm(mergePaymentSettings(pay));
         setDelivery(mergeDeliverySettings(del));
         setAddressSettings(mergeAddressSettings(address));
-        setPosSettings({ ...DEFAULT_POS_SETTINGS, ...(pos || {}) });
+        setPosSettings({
+          ...DEFAULT_POS_SETTINGS,
+          ...(pos || {}),
+          ...normalizeCustomBillSettings(pos || {}),
+        });
       })
       .finally(() => setLoading(false));
   }, []);
@@ -127,7 +139,11 @@ export default function AdminPayments() {
     setPosMsg('');
     try {
       const saved = await api.setPosSettings(posSettings);
-      setPosSettings({ ...DEFAULT_POS_SETTINGS, ...(saved || {}) });
+      setPosSettings({
+        ...DEFAULT_POS_SETTINGS,
+        ...(saved || {}),
+        ...normalizeCustomBillSettings(saved || {}),
+      });
       setPosMsg('POS settings saved.');
     } catch (err) {
       setPosMsg(err.message || 'Save failed');
@@ -389,6 +405,104 @@ export default function AdminPayments() {
             </button>
           </div>
           {posMsg ? <p className="wp-payments-msg">{posMsg}</p> : null}
+        </div>
+      </div>
+
+      <div className="wp-postbox" style={{ marginTop: '1.5rem' }}>
+        <div className="wp-postbox-head">POS Custom bill — shop identity</div>
+        <div className="wp-postbox-body">
+          <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
+            Laptop + phone POS pe same shop names. <strong>My shop</strong> = AsFix, <strong>Someone else</strong> = dusri shop (e.g. Osama). Logo / scanner PIC device pe local rehti hai — name/phone/QR link yahan sync hoti hai.
+          </p>
+          <label className="wp-payments-field" style={{ display: 'block', marginBottom: '0.85rem' }}>
+            <span>Default profile on Custom bill</span>
+            <select
+              value={posSettings.customBillActiveProfile || CUSTOM_BILL_PROFILE_OWN}
+              onChange={(e) => setPosSettings((p) => ({
+                ...p,
+                customBillActiveProfile: e.target.value === CUSTOM_BILL_PROFILE_OTHER
+                  ? CUSTOM_BILL_PROFILE_OTHER
+                  : CUSTOM_BILL_PROFILE_OWN,
+              }))}
+            >
+              <option value={CUSTOM_BILL_PROFILE_OWN}>My shop (AsFix)</option>
+              <option value={CUSTOM_BILL_PROFILE_OTHER}>Someone else</option>
+            </select>
+          </label>
+          {[
+            { key: 'customBillOwn', title: 'My shop (AsFix)', defaults: DEFAULT_CUSTOM_BILL_OWN },
+            { key: 'customBillOther', title: 'Someone else', defaults: DEFAULT_CUSTOM_BILL_OTHER },
+          ].map(({ key, title, defaults }) => {
+            const profile = { ...defaults, ...(posSettings[key] || {}) };
+            const setProfileField = (field, value) => {
+              setPosSettings((p) => ({
+                ...p,
+                [key]: { ...defaults, ...(p[key] || {}), [field]: value },
+              }));
+            };
+            return (
+              <div key={key} style={{ marginBottom: '1rem', paddingTop: '0.5rem', borderTop: '1px solid #dcdcde' }}>
+                <strong style={{ display: 'block', marginBottom: '0.5rem' }}>{title}</strong>
+                <div className="wp-payments-grid">
+                  <label className="wp-payments-field">
+                    <span>Shop name</span>
+                    <input
+                      type="text"
+                      value={profile.shopName || ''}
+                      onChange={(e) => setProfileField('shopName', e.target.value)}
+                    />
+                  </label>
+                  <label className="wp-payments-field">
+                    <span>Place / market</span>
+                    <input
+                      type="text"
+                      value={profile.shopPlace || ''}
+                      onChange={(e) => setProfileField('shopPlace', e.target.value)}
+                    />
+                  </label>
+                  <label className="wp-payments-field">
+                    <span>Shop phone</span>
+                    <input
+                      type="text"
+                      value={profile.shopPhone || ''}
+                      onChange={(e) => setProfileField('shopPhone', e.target.value)}
+                    />
+                  </label>
+                  <label className="wp-payments-field">
+                    <span>QR link / text</span>
+                    <input
+                      type="text"
+                      value={profile.qrPayload || ''}
+                      onChange={(e) => setProfileField('qrPayload', e.target.value)}
+                    />
+                  </label>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem', marginTop: '0.65rem' }}>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.88rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(profile.includeLogo)}
+                      onChange={(e) => setProfileField('includeLogo', e.target.checked)}
+                    />
+                    Logo on by default
+                  </label>
+                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem', fontSize: '0.88rem' }}>
+                    <input
+                      type="checkbox"
+                      checked={Boolean(profile.includeQr)}
+                      onChange={(e) => setProfileField('includeQr', e.target.checked)}
+                    />
+                    Scanner / QR on by default
+                  </label>
+                </div>
+              </div>
+            );
+          })}
+          <div className="wp-payments-actions" style={{ marginTop: '0.5rem' }}>
+            <button type="button" className="wp-button" onClick={savePosSettings} disabled={savingPos}>
+              {savingPos ? 'Saving…' : 'Save custom bill settings'}
+            </button>
+          </div>
         </div>
       </div>
 

@@ -42,6 +42,50 @@ const DEFAULT_POS_SETTINGS = {
   posDiscountMaxAmountWithoutPin: 500,
 };
 
+const DEFAULT_CUSTOM_BILL_OWN = {
+  shopName: 'AsFix & Gear',
+  shopPlace: 'Lahore',
+  shopPhone: '',
+  includeLogo: false,
+  includeQr: false,
+  qrPayload: '',
+};
+
+const DEFAULT_CUSTOM_BILL_OTHER = {
+  shopName: 'Osama Center',
+  shopPlace: 'Trade World',
+  shopPhone: '',
+  includeLogo: false,
+  includeQr: false,
+  qrPayload: '',
+};
+
+function clampPosStr(value, max, fallback = '') {
+  const text = value == null ? '' : String(value).trim().slice(0, max);
+  return text || fallback;
+}
+
+function normalizeCustomBillProfile(raw, fallback) {
+  const src = raw && typeof raw === 'object' ? raw : {};
+  return {
+    shopName: clampPosStr(src.shopName ?? fallback.shopName, 80, fallback.shopName),
+    shopPlace: clampPosStr(src.shopPlace ?? fallback.shopPlace, 80),
+    shopPhone: clampPosStr(src.shopPhone ?? fallback.shopPhone, 40),
+    includeLogo: Boolean(src.includeLogo),
+    includeQr: Boolean(src.includeQr),
+    qrPayload: clampPosStr(src.qrPayload ?? fallback.qrPayload, 500),
+  };
+}
+
+function normalizeCustomBillPosFields(input = {}) {
+  const active = String(input.customBillActiveProfile || '').trim().toLowerCase();
+  return {
+    customBillActiveProfile: active === 'other' ? 'other' : 'own',
+    customBillOwn: normalizeCustomBillProfile(input.customBillOwn, DEFAULT_CUSTOM_BILL_OWN),
+    customBillOther: normalizeCustomBillProfile(input.customBillOther, DEFAULT_CUSTOM_BILL_OTHER),
+  };
+}
+
 /** Salable units only — low stock (>0) remains orderable until stock hits 0. */
 export function normalizeProductStock(stock) {
   const n = Number(stock);
@@ -3491,6 +3535,7 @@ function normalizePosSettings(input = {}) {
       Number.isFinite(discountAmount) && discountAmount >= 0 && discountAmount <= 1000000
         ? Math.round(discountAmount)
         : DEFAULT_POS_SETTINGS.posDiscountMaxAmountWithoutPin,
+    ...normalizeCustomBillPosFields(input),
   };
 }
 
@@ -3566,6 +3611,36 @@ export function setPosSettings(input, userId) {
     });
     const payload = {
       ...next,
+      updated_at: now(),
+      updated_by: userId ?? null,
+    };
+    data.settings.pos = payload;
+    return payload;
+  });
+}
+
+/** Counter staff may update Custom-bill shop profiles only (not discount/return limits). */
+export function setPosCustomBillSettings(input, userId) {
+  return withData((data) => {
+    if (!data.settings) data.settings = {};
+    const current = getPosSettings();
+    const body = input && typeof input === 'object' ? input : {};
+    const custom = normalizeCustomBillPosFields({
+      customBillActiveProfile:
+        body.customBillActiveProfile != null
+          ? body.customBillActiveProfile
+          : current.customBillActiveProfile,
+      customBillOwn:
+        body.customBillOwn != null
+          ? { ...current.customBillOwn, ...body.customBillOwn }
+          : current.customBillOwn,
+      customBillOther:
+        body.customBillOther != null
+          ? { ...current.customBillOther, ...body.customBillOther }
+          : current.customBillOther,
+    });
+    const payload = {
+      ...normalizePosSettings({ ...current, ...custom }),
       updated_at: now(),
       updated_by: userId ?? null,
     };

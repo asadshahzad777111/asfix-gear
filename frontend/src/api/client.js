@@ -618,6 +618,8 @@ export const api = {
   getPosSettings: () => request('/shop/pos-settings'),
   setPosSettings: (body) =>
     request('/shop/pos-settings', { method: 'PATCH', body: JSON.stringify(body) }),
+  setPosCustomBillSettings: (body) =>
+    request('/shop/pos-custom-bill-settings', { method: 'PATCH', body: JSON.stringify(body) }),
   getStorefrontImages: () =>
     request('/shop/storefront-images', { timeoutMs: COLD_START_TIMEOUT_MS }),
   updateStorefrontImages: (body) =>

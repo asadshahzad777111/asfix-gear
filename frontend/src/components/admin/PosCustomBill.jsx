@@ -1,5 +1,15 @@
-import { useCallback, useMemo, useRef, useState } from 'react';
-import { formatPrice } from '../../api/client';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { api, formatPrice } from '../../api/client';
+import {
+  CUSTOM_BILL_MAX_IMAGE_CHARS,
+  CUSTOM_BILL_PROFILE_OTHER,
+  CUSTOM_BILL_PROFILE_OWN,
+  DEFAULT_CUSTOM_BILL_OTHER,
+  DEFAULT_CUSTOM_BILL_OWN,
+  loadCustomBillMedia,
+  normalizeCustomBillSettings,
+  saveCustomBillMedia,
+} from '../../config/posCustomBillProfiles';
 import { useTranslation } from '../../context/LanguageContext';
 import { isNativePosApp, getSavedPrinter } from '../../utils/nativePosPrint';
 import { normalizePrintResult } from './AdminCounterBill';
@@ -14,8 +24,6 @@ const DEFAULT_ITEMS = [
   { id: '5', name: '', rate: '', qty: '' },
   { id: '6', name: '', rate: '', qty: '' },
 ];
-
-const MAX_IMAGE_CHARS = 900_000; /* ~keep localStorage safe */
 
 function tomorrowLocalParts() {
   const d = new Date();
@@ -72,22 +80,35 @@ function newItem() {
   };
 }
 
-function buildDefaults() {
-  const t = tomorrowLocalParts();
+function profileIdentityFields(profile) {
   return {
-    shopName: 'Osama Center',
-    shopPlace: 'Trade World',
-    shopPhone: '',
+    shopName: profile.shopName,
+    shopPlace: profile.shopPlace,
+    shopPhone: profile.shopPhone,
+    includeLogo: Boolean(profile.includeLogo),
+    includeQr: Boolean(profile.includeQr),
+    qrPayload: profile.qrPayload || '',
+  };
+}
+
+function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
+  const t = tomorrowLocalParts();
+  const normalized = normalizeCustomBillSettings(settings || {});
+  const id =
+    profileId === CUSTOM_BILL_PROFILE_OWN ? CUSTOM_BILL_PROFILE_OWN : CUSTOM_BILL_PROFILE_OTHER;
+  const profile =
+    id === CUSTOM_BILL_PROFILE_OWN ? normalized.customBillOwn : normalized.customBillOther;
+  const media = loadCustomBillMedia(id);
+  return {
+    profileId: id,
+    ...profileIdentityFields(profile),
+    logoDataUrl: media.logoDataUrl,
+    qrImageDataUrl: media.qrImageDataUrl,
     dateInput: t.dateInput,
     timeInput: t.timeInput,
     mobileName: 'Infinix Smart 5',
     customerName: '',
     notes: '',
-    includeLogo: false,
-    logoDataUrl: '',
-    includeQr: false,
-    qrPayload: '',
-    qrImageDataUrl: '',
     items: DEFAULT_ITEMS.map((row) => ({ ...row })),
   };
 }
@@ -153,13 +174,27 @@ export default function PosCustomBill({
   const nativePos = isNativePosApp();
   const logoInputRef = useRef(null);
   const qrInputRef = useRef(null);
+  const settingsRef = useRef(normalizeCustomBillSettings({}));
+  const [settingsReady, setSettingsReady] = useState(false);
   const [draft, setDraft] = useState(() => {
     const saved = loadSavedDraft();
-    return saved
-      ? { ...buildDefaults(), ...saved, items: saved.items?.length ? saved.items : buildDefaults().items }
-      : buildDefaults();
+    const base = buildDefaults(
+      saved?.profileId || CUSTOM_BILL_PROFILE_OTHER,
+      null,
+    );
+    if (!saved) return base;
+    return {
+      ...base,
+      ...saved,
+      items: saved.items?.length ? saved.items : base.items,
+      profileId:
+        saved.profileId === CUSTOM_BILL_PROFILE_OWN
+          ? CUSTOM_BILL_PROFILE_OWN
+          : CUSTOM_BILL_PROFILE_OTHER,
+    };
   });
   const [busy, setBusy] = useState(false);
+  const [savingSettings, setSavingSettings] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   const total = useMemo(
@@ -178,6 +213,55 @@ export default function PosCustomBill({
     } catch {
       /* ignore quota — large images may fail; keep UI state */
     }
+    saveCustomBillMedia(next.profileId || CUSTOM_BILL_PROFILE_OTHER, {
+      logoDataUrl: next.logoDataUrl,
+      qrImageDataUrl: next.qrImageDataUrl,
+    });
+  }, []);
+
+  /* Load shop identity settings from server (syncs phone ↔ laptop). */
+  useEffect(() => {
+    let cancelled = false;
+    api.getPosSettings()
+      .then((settings) => {
+        if (cancelled) return;
+        const normalized = normalizeCustomBillSettings(settings || {});
+        settingsRef.current = normalized;
+        setDraft((prev) => {
+          const profileId =
+            prev.profileId === CUSTOM_BILL_PROFILE_OWN
+              || prev.profileId === CUSTOM_BILL_PROFILE_OTHER
+              ? prev.profileId
+              : normalized.customBillActiveProfile;
+          const profile =
+            profileId === CUSTOM_BILL_PROFILE_OWN
+              ? normalized.customBillOwn
+              : normalized.customBillOther;
+          const media = loadCustomBillMedia(profileId);
+          const next = {
+            ...prev,
+            profileId,
+            ...profileIdentityFields(profile),
+            logoDataUrl: prev.logoDataUrl || media.logoDataUrl,
+            qrImageDataUrl: prev.qrImageDataUrl || media.qrImageDataUrl,
+          };
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+          } catch {
+            /* ignore */
+          }
+          return next;
+        });
+      })
+      .catch(() => {
+        /* keep local draft */
+      })
+      .finally(() => {
+        if (!cancelled) setSettingsReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const updateField = useCallback((key, value) => {
@@ -202,11 +286,68 @@ export default function PosCustomBill({
     });
   }, [draft, persist]);
 
+  const switchProfile = useCallback((profileId) => {
+    const id =
+      profileId === CUSTOM_BILL_PROFILE_OWN ? CUSTOM_BILL_PROFILE_OWN : CUSTOM_BILL_PROFILE_OTHER;
+    const settings = settingsRef.current;
+    const profile =
+      id === CUSTOM_BILL_PROFILE_OWN ? settings.customBillOwn : settings.customBillOther;
+    const media = loadCustomBillMedia(id);
+    persist({
+      ...draft,
+      profileId: id,
+      ...profileIdentityFields(profile),
+      logoDataUrl: media.logoDataUrl,
+      qrImageDataUrl: media.qrImageDataUrl,
+    });
+  }, [draft, persist]);
+
   const resetDefaults = useCallback(() => {
-    const next = buildDefaults();
+    const id = draft.profileId || CUSTOM_BILL_PROFILE_OTHER;
+    const next = buildDefaults(id, settingsRef.current);
+    /* keep current items when resetting identity only? User expects full reset */
     persist(next);
     setFeedback({ type: 'ok', text: t('counter.customBillResetOk') });
-  }, [persist, t]);
+  }, [draft.profileId, persist, t]);
+
+  const saveAsSetting = useCallback(async () => {
+    const profileId =
+      draft.profileId === CUSTOM_BILL_PROFILE_OWN
+        ? CUSTOM_BILL_PROFILE_OWN
+        : CUSTOM_BILL_PROFILE_OTHER;
+    const identity = {
+      shopName: draft.shopName,
+      shopPlace: draft.shopPlace,
+      shopPhone: draft.shopPhone,
+      includeLogo: Boolean(draft.includeLogo),
+      includeQr: Boolean(draft.includeQr),
+      qrPayload: draft.qrPayload || '',
+    };
+    saveCustomBillMedia(profileId, {
+      logoDataUrl: draft.logoDataUrl,
+      qrImageDataUrl: draft.qrImageDataUrl,
+    });
+    setSavingSettings(true);
+    setFeedback(null);
+    try {
+      const body = {
+        customBillActiveProfile: profileId,
+        ...(profileId === CUSTOM_BILL_PROFILE_OWN
+          ? { customBillOwn: identity }
+          : { customBillOther: identity }),
+      };
+      const saved = await api.setPosCustomBillSettings(body);
+      settingsRef.current = normalizeCustomBillSettings(saved || {});
+      setFeedback({ type: 'ok', text: t('counter.customBillSaveSettingOk') });
+    } catch (err) {
+      setFeedback({
+        type: 'error',
+        text: err?.message || t('counter.customBillSaveSettingFail'),
+      });
+    } finally {
+      setSavingSettings(false);
+    }
+  }, [draft, t]);
 
   const onPickImage = useCallback(async (file, field) => {
     if (!file) return;
@@ -216,7 +357,7 @@ export default function PosCustomBill({
     }
     try {
       const dataUrl = await readFileAsDataUrl(file);
-      if (dataUrl.length > MAX_IMAGE_CHARS) {
+      if (dataUrl.length > CUSTOM_BILL_MAX_IMAGE_CHARS) {
         setFeedback({ type: 'error', text: t('counter.customBillImageBig') });
         return;
       }
@@ -260,12 +401,40 @@ export default function PosCustomBill({
     }
   }, [draft, nativePos, onOpenPrinterSetup, onPrintOrder, t]);
 
+  const profileOwn = draft.profileId === CUSTOM_BILL_PROFILE_OWN;
+
   return (
     <section className="pos-custom-bill wp-postbox">
       <div className="wp-postbox-head pos-custom-bill__head">
         <strong>{t('counter.customBillTitle')}</strong>
         <span>{t('counter.customBillHint')}</span>
       </div>
+
+      <div className="pos-custom-bill__profile" role="tablist" aria-label={t('counter.customBillProfile')}>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={profileOwn}
+          className={`wp-button pos-custom-bill__profile-btn${profileOwn ? ' pos-custom-bill__profile-btn--active' : ''}`}
+          onClick={() => switchProfile(CUSTOM_BILL_PROFILE_OWN)}
+        >
+          {t('counter.customBillProfileOwn')}
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={!profileOwn}
+          className={`wp-button pos-custom-bill__profile-btn${!profileOwn ? ' pos-custom-bill__profile-btn--active' : ''}`}
+          onClick={() => switchProfile(CUSTOM_BILL_PROFILE_OTHER)}
+        >
+          {t('counter.customBillProfileOther')}
+        </button>
+      </div>
+      <p className="pos-custom-bill__profile-hint">
+        {settingsReady
+          ? t('counter.customBillProfileHint')
+          : t('common.loading')}
+      </p>
 
       <div className="pos-custom-bill__grid">
         <label>
@@ -503,14 +672,22 @@ export default function PosCustomBill({
       ) : null}
 
       <div className="pos-custom-bill__actions">
-        <button type="button" className="wp-button wp-button--secondary" onClick={resetDefaults} disabled={busy}>
+        <button type="button" className="wp-button wp-button--secondary" onClick={resetDefaults} disabled={busy || savingSettings}>
           {t('counter.customBillReset')}
+        </button>
+        <button
+          type="button"
+          className="wp-button wp-button--secondary"
+          onClick={() => void saveAsSetting()}
+          disabled={busy || savingSettings}
+        >
+          {savingSettings ? t('common.loading') : t('counter.customBillSaveSetting')}
         </button>
         <button
           type="button"
           className="wp-button counter-bill__print-cta pos-custom-bill__print"
           onClick={() => void printBill()}
-          disabled={busy || total <= 0}
+          disabled={busy || savingSettings || total <= 0}
         >
           {busy ? t('common.loading') : t('counter.customBillPrint')}
         </button>
@@ -518,3 +695,11 @@ export default function PosCustomBill({
     </section>
   );
 }
+
+/* re-export helpers used by tests / docs */
+export {
+  CUSTOM_BILL_PROFILE_OWN,
+  CUSTOM_BILL_PROFILE_OTHER,
+  DEFAULT_CUSTOM_BILL_OWN,
+  DEFAULT_CUSTOM_BILL_OTHER,
+};

@@ -41,16 +41,19 @@ Do **not** force-push. Do **not** commit `.env`, `.env.txt`, or `backend/data/da
 
 ## POS Custom bill
 
-Freeform repair/parts bill on live POS (no inventory sale). Files: `frontend/src/components/admin/PosCustomBill.jsx`, receipt overrides in `AdminCounterBill.jsx`, mono helpers in `frontend/src/utils/receiptLogo.js`.
+Freeform repair/parts bill on live POS (no inventory sale). Files: `frontend/src/components/admin/PosCustomBill.jsx`, receipt overrides in `AdminCounterBill.jsx`, mono helpers in `frontend/src/utils/receiptLogo.js`, shop profiles in `frontend/src/config/posCustomBillProfiles.js`.
 
-- Open: AsFix POS / `/pos` → tab **Custom bill** (next to **Sale bill**).
+- Open: AsFix POS / `/pos` → tab **Custom bill** (next to **Sale bill**). Same screen on **laptop browser** and phone.
+- Shop identity setting: **My shop (AsFix)** vs **Someone else** — name / place / phone / logo / scanner-QR. Tap **Save as setting** to sync text fields phone ↔ laptop (Admin → Payments also has Custom bill profiles).
 - Each line: **Name + Qty + Rate**. Empty name boxes are ignored and do not print.
 - Editable shop name / place / phone / date / time / mobile model / customer / notes.
 - Optional **logo** (image upload) and **scanner/QR** (link text or QR PIC). Custom bills skip AsFix logo/site QR unless those options are on.
 - Print uses the same thermal pipeline as sale receipts (`printSmart` / native BT).
-- Draft persists in `localStorage` (`asfix_pos_custom_bill_v2`).
+- Draft persists in `localStorage` (`asfix_pos_custom_bill_v2`); logo/PIC per profile in `asfix_pos_custom_bill_media_v1`.
 
-Phone after deploy: reopen AsFix POS → `/pos` → **Custom bill** → fill lines → **Print bill**.
+Phone after deploy: reopen AsFix POS → `/pos` → **Custom bill** → pick **My shop** or **Someone else** → fill lines → **Save as setting** (optional) → **Print bill**.
+
+Laptop: open https://asfixgear.com/pos → same **Custom bill** tab.
 
 ## POS + thermal print (short)
 
