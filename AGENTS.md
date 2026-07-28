@@ -33,10 +33,24 @@ Do **not** force-push. Do **not** commit `.env`, `.env.txt`, or `backend/data/da
 |-----------------------------|---------|
 | deploy / live / push / “deploy kr do” | Commit relevant files + `git push origin main` |
 | fix POS / counter / print | `frontend/src/pages/Counter.jsx`, `AdminCounterBill.jsx`, print utils |
+| custom bill / freeform bill / Osama bill / repair parts bill | `/pos` → **Custom bill** tab — see [POS Custom bill](#pos-custom-bill) |
 | remote print / iPhone print | Print queue: `backend/routes/print-jobs.js`, `useSmartThermalPrint`, agents |
 | light/dark theme | ThemeContext + Counter bar (`asfix-theme`) |
 | Android POS app | `mobile/asfix-pos/` — JS fixes often need **website deploy only** (app loads asfixgear.com/pos) |
 | shop phone/address | `frontend/src/config/shop.js` only |
+
+## POS Custom bill
+
+Freeform repair/parts bill on live POS (no inventory sale). Files: `frontend/src/components/admin/PosCustomBill.jsx`, receipt overrides in `AdminCounterBill.jsx`, mono helpers in `frontend/src/utils/receiptLogo.js`.
+
+- Open: AsFix POS / `/pos` → tab **Custom bill** (next to **Sale bill**).
+- Each line: **Name + Qty + Rate**. Empty name boxes are ignored and do not print.
+- Editable shop name / place / phone / date / time / mobile model / customer / notes.
+- Optional **logo** (image upload) and **scanner/QR** (link text or QR PIC). Custom bills skip AsFix logo/site QR unless those options are on.
+- Print uses the same thermal pipeline as sale receipts (`printSmart` / native BT).
+- Draft persists in `localStorage` (`asfix_pos_custom_bill_v2`).
+
+Phone after deploy: reopen AsFix POS → `/pos` → **Custom bill** → fill lines → **Print bill**.
 
 ## POS + thermal print (short)
 
@@ -51,6 +65,7 @@ Do **not** force-push. Do **not** commit `.env`, `.env.txt`, or `backend/data/da
 - Never log tokens/passwords.
 - Never invent Windows kernel printer drivers.
 - Prefer existing patterns in `frontend/` and `backend/`.
+- Cursor **GitHub Connect** UI (`cursor.com/api/auth/connect-github`) may 500/timeout; agents can still `git push` with existing remotes — do not block deploys on ConnectScm.
 
 ## Cursor Cloud specific instructions
 
