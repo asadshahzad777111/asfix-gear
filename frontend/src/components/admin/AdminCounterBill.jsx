@@ -317,7 +317,7 @@ export async function buildThermalReceiptEscPosBase64(order, thermalWidth = '58m
   /* Top feed so logo sits slightly lower (not top-cramped without name text) */
   push(0x1b, 0x4a, 52);
 
-  const logoRaster = await buildReceiptLogoEscPosRaster(width);
+  const logoRaster = isCustomReceipt(order) ? new Uint8Array() : await buildReceiptLogoEscPosRaster(width);
   if (logoRaster.length) {
     push(0x1b, 0x61, 0x01); // center
     parts.push(logoRaster);
@@ -402,10 +402,12 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
   const maxChars = 32;
   const lines = buildReceiptLines(order, maxChars).filter((line) => !line.qr && !line.logo);
   const parts = [];
-  const logoDataUrl = await getReceiptLogoMonoDataUrl(thermalWidth);
-  if (logoDataUrl) {
-    const raw = logoDataUrl.replace(/^data:image\/\w+;base64,/, '');
-    if (raw) parts.push(`<IMAGE>1#${raw}`);
+  if (!isCustomReceipt(order)) {
+    const logoDataUrl = await getReceiptLogoMonoDataUrl(thermalWidth);
+    if (logoDataUrl) {
+      const raw = logoDataUrl.replace(/^data:image\/\w+;base64,/, '');
+      if (raw) parts.push(`<IMAGE>1#${raw}`);
+    }
   }
   lines.forEach((line) => {
     const text = sanitizeMatePlain(line.value);
@@ -426,7 +428,9 @@ async function buildMateThermalMarkup(order, thermalWidth = '58mm') {
     parts.push(`<${bold}${align}${format}>${text}`);
   });
   /* Scan + QR already in buildReceiptLines; keep Mate QR sizing in sync */
-  parts.push(`<QR>1#${thermalQrModuleSize('58mm')}#${RECEIPT_SITE_URL}`);
+  if (!isCustomReceipt(order)) {
+    parts.push(`<QR>1#${thermalQrModuleSize('58mm')}#${RECEIPT_SITE_URL}`);
+  }
   return parts.join('');
 }
 
@@ -497,7 +501,17 @@ function approximatePdfTextWidth(value, size) {
 const RECEIPT_MONTHS = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
 
 /** Shared receipt lines — tall glyphs, fewer cols so letters stay large. */
+function isCustomReceipt(order) {
+  return Boolean(order?.custom_receipt);
+}
+
 function shortReceiptDateParts(order) {
+  if (order?.receipt_date || order?.receipt_time) {
+    return {
+      date: order.receipt_date || '-',
+      time: order.receipt_time || '-',
+    };
+  }
   if (!order?.created_at) return { date: '-', time: '-' };
   const d = new Date(order.created_at);
   if (Number.isNaN(d.getTime())) return { date: '-', time: '-' };
@@ -568,18 +582,27 @@ function buildReceiptLines(order, maxChars = 18) {
   };
 
   const { date: billDate, time: billTime } = shortReceiptDateParts(order);
+  const custom = isCustomReceipt(order);
 
-  /* Logo → city → phone (no text shop name — graphic logo already has brand) */
-  push('', { logo: true, align: 'center' });
-  wrap(SHOP.addressLine2, { align: 'center', small: true });
-  wrap(SHOP.phone, { align: 'center', small: true });
+  if (custom) {
+    /* Freeform / trade bill — text shop header, no AsFix logo */
+    wrap(order.shop_name || 'Shop', { align: 'center', weight: 'bold', title: true });
+    if (order.shop_place) wrap(order.shop_place, { align: 'center', small: true });
+    if (order.shop_phone) wrap(order.shop_phone, { align: 'center', small: true });
+  } else {
+    /* Logo → city → phone (no text shop name — graphic logo already has brand) */
+    push('', { logo: true, align: 'center' });
+    wrap(SHOP.addressLine2, { align: 'center', small: true });
+    wrap(SHOP.phone, { align: 'center', small: true });
+  }
   rule();
   kv('Bill', receiptNumber(order));
   /* Separate Date / Time so HH:mm never truncates (was showing 10:5) */
   kv('Date', billDate);
   kv('Time', billTime);
   /* No Staff line — Bill / Date / Time / Pay / Customer only */
-  kv('Pay', paymentLabel(order?.payment_mode));
+  if (!custom) kv('Pay', paymentLabel(order?.payment_mode));
+  if (order?.device_name) kv('Mobile', String(order.device_name));
   kv('Customer', order?.customer_name || 'Walk-in');
   if (order?.phone) kv('Phone', String(order.phone));
   rule();
@@ -610,14 +633,17 @@ function buildReceiptLines(order, maxChars = 18) {
   money('TOTAL AMOUNT', grandTotal, { weight: 'bold', grand: true });
   const note = counterPaymentNote(order);
   if (note) wrap(`Note: ${note}`, { small: true });
+  if (custom && order?.notes) wrap(`Note: ${order.notes}`, { small: true });
   rule();
   /* Footer: Thank You → dashed line → Visit again → site → Scan → QR */
   push('Thank You', { align: 'center', weight: 'bold' });
   rule();
   push('Visit again', { align: 'center', small: true });
-  push(RECEIPT_SITE, { align: 'center', small: true });
-  push('Scan', { align: 'center', small: true });
-  push(RECEIPT_SITE_URL, { align: 'center', qr: true });
+  if (!custom) {
+    push(RECEIPT_SITE, { align: 'center', small: true });
+    push('Scan', { align: 'center', small: true });
+    push(RECEIPT_SITE_URL, { align: 'center', qr: true });
+  }
   return lines;
 }
 
@@ -749,7 +775,9 @@ export async function createCounterReceiptPngBlob(order, thermalWidth = '58mm') 
   const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.74));
 
   /* Estimate logo height (~square mark at ~76% width) */
-  const logoEstimate = Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10;
+  const logoEstimate = lines.some((line) => line.logo)
+    ? Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10
+    : 0;
 
   let heightPx = padTop + padBottom + 4 + logoEstimate;
   lines.forEach((line, idx) => {
@@ -1127,8 +1155,10 @@ function prefersThermalPngShare() {
  */
 function buildThermalReceiptHtml(order, thermalWidth = '58mm', qrDataUrl = '', logoDataUrl = '') {
   const widthMm = thermalWidth === '80mm' ? 80 : 58;
+  const custom = isCustomReceipt(order);
   const { discount, grandTotal } = receiptTotals(order);
   const paymentNote = counterPaymentNote(order);
+  const dateParts = shortReceiptDateParts(order);
   const items = (order?.items || []).map((item) => {
     const qty = Number(item.qty) || 1;
     const unit = Number(item.price) || 0;
@@ -1171,6 +1201,7 @@ html, body {
 }
 .r-shop { text-align: center; margin-bottom: 5px; }
 .r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 2px auto 4px; }
+.r-shop .r-shop-name { display: block; margin: 2px 0 4px; font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
 .r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 4px 0; font-size: 13px; font-weight: 400; }
 .r-meta span:last-child { text-align: right; }
@@ -1191,31 +1222,41 @@ html, body {
 .r-qr { display: block; width: 74%; max-width: 74%; height: auto; margin: 2px auto 4px; }
 `.trim();
 
-  const qrBlock = qrDataUrl
+  const qrBlock = !custom && qrDataUrl
     ? `<p class="r-scan">Scan</p>
   <img class="r-qr" src="${qrDataUrl}" alt="asfixgear.com QR" width="260" height="260" />`
     : '';
 
-  const logoBlock = logoDataUrl
-    ? `<img class="r-logo" src="${logoDataUrl}" alt="" width="280" height="280" />`
-    : `<img class="r-logo" src="${RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`;
+  const logoBlock = custom
+    ? `<strong class="r-shop-name">${escapeHtml(order.shop_name || 'Shop')}</strong>
+    ${order.shop_place ? `<p>${escapeHtml(order.shop_place)}</p>` : ''}
+    ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`
+    : (logoDataUrl
+      ? `<img class="r-logo" src="${logoDataUrl}" alt="" width="280" height="280" />`
+      : `<img class="r-logo" src="${RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`)
+      + `<p>${escapeHtml(SHOP.addressLine2)}</p><p>${escapeHtml(SHOP.phone)}</p>`;
+
+  const noteBlock = custom && order?.notes
+    ? `<p class="r-visit">Note: ${escapeHtml(order.notes)}</p>`
+    : paymentNote
+      ? `<p class="r-visit">Note: ${escapeHtml(paymentNote)}</p>`
+      : '';
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
 <meta name="viewport" content="width=${widthMm}, initial-scale=1" />
-<title>AsFix ${escapeHtml(receiptNumber(order))}</title>
+<title>${escapeHtml(custom ? (order.shop_name || 'Bill') : 'AsFix')} ${escapeHtml(receiptNumber(order))}</title>
 <style>${css}</style></head><body>
 <main class="receipt">
   <div class="r-shop">
     ${logoBlock}
-    <p>${escapeHtml(SHOP.addressLine2)}</p>
-    <p>${escapeHtml(SHOP.phone)}</p>
   </div>
   <hr class="r-rule" />
   <div class="r-meta">
     <span>Bill</span><span>${escapeHtml(receiptNumber(order))}</span>
-    <span>Date</span><span>${escapeHtml(order?.created_at ? shortReceiptDateParts(order).date : '-')}</span>
-    <span>Time</span><span>${escapeHtml(order?.created_at ? shortReceiptDateParts(order).time : '-')}</span>
-    <span>Pay</span><span>${escapeHtml(paymentLabel(order?.payment_mode))}${paymentNote ? ` (${escapeHtml(paymentNote)})` : ''}</span>
+    <span>Date</span><span>${escapeHtml(dateParts.date)}</span>
+    <span>Time</span><span>${escapeHtml(dateParts.time)}</span>
+    ${custom ? '' : `<span>Pay</span><span>${escapeHtml(paymentLabel(order?.payment_mode))}${paymentNote ? ` (${escapeHtml(paymentNote)})` : ''}</span>`}
+    ${order?.device_name ? `<span>Mobile</span><span>${escapeHtml(String(order.device_name))}</span>` : ''}
     <span>Customer</span><span>${escapeHtml(order?.customer_name || 'Walk-in')}</span>
     ${order?.phone ? `<span>Phone</span><span>${escapeHtml(String(order.phone))}</span>` : ''}
   </div>
@@ -1227,11 +1268,12 @@ html, body {
     <span class="r-grand-label">TOTAL AMOUNT</span>
     <strong class="r-grand">${escapeHtml(thermalAmountText(grandTotal))}</strong>
   </div>
+  ${noteBlock}
   <hr class="r-rule" />
   <p class="r-thanks">Thank You</p>
   <hr class="r-rule" />
   <p class="r-visit">Visit again</p>
-  <p class="r-site">${escapeHtml(RECEIPT_SITE)}</p>
+  ${custom ? '' : `<p class="r-site">${escapeHtml(RECEIPT_SITE)}</p>`}
   ${qrBlock}
 </main>
 </body></html>`;

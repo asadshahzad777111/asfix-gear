@@ -6,6 +6,7 @@ import AdminCounterBill, {
   readThermalReceiptWidth,
   shareCounterInvoicePdf,
 } from '../components/admin/AdminCounterBill';
+import PosCustomBill from '../components/admin/PosCustomBill';
 import PosPaymentQrPanel from '../components/admin/PosPaymentQrPanel';
 import { SHOP } from '../config/shop';
 import ThemeToggle from '../components/ThemeToggle';
@@ -65,6 +66,7 @@ export default function Counter() {
   const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
   const [nativePickerOpen, setNativePickerOpen] = useState(false);
   const [paymentQrOpen, setPaymentQrOpen] = useState(false);
+  const [posMode, setPosMode] = useState('sale'); // 'sale' | 'custom'
   const printInFlightRef = useRef(false);
   const salesSectionRef = useRef(null);
   const { printSmart, openPrintSetup, chooser: printChooser } = useSmartThermalPrint({
@@ -323,6 +325,13 @@ export default function Counter() {
   }, [resolvePrintableCounterSale]);
 
   const printCounterSale = useCallback(async (sale) => {
+    /* Freeform custom bill — already a full printable order, skip API hydrate */
+    if (sale?.custom_receipt && saleHasReceiptItems(sale)) {
+      return printSmart(sale, {
+        thermalWidth,
+        inFlightRef: printInFlightRef,
+      });
+    }
     const order = await loadPrintableCounterSale(sale);
     if (!order) {
       return { ok: false, reason: 'no_order', message: 'Receipt details are still loading' };
@@ -450,6 +459,26 @@ export default function Counter() {
         )}
 
         <div className="counter-pos-tools">
+          <div className="counter-pos-tools__modes" role="tablist" aria-label={t('counter.posModes')}>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={posMode === 'sale'}
+              className={`wp-button counter-pos-tools__mode${posMode === 'sale' ? ' counter-pos-tools__mode--active' : ''}`}
+              onClick={() => setPosMode('sale')}
+            >
+              {t('counter.modeSale')}
+            </button>
+            <button
+              type="button"
+              role="tab"
+              aria-selected={posMode === 'custom'}
+              className={`wp-button counter-pos-tools__mode${posMode === 'custom' ? ' counter-pos-tools__mode--active' : ''}`}
+              onClick={() => setPosMode('custom')}
+            >
+              {t('counter.modeCustomBill')}
+            </button>
+          </div>
           <button
             type="button"
             className="wp-button counter-pos-tools__pay-qr"
@@ -459,19 +488,26 @@ export default function Counter() {
           </button>
         </div>
 
-        {bootstrapping && products.length === 0 ? (
+        {bootstrapping && products.length === 0 && posMode === 'sale' ? (
           <div className="counter-boot">{t('common.loading')}</div>
         ) : null}
 
-        <AdminCounterBill
-          products={products}
-          onBillCreated={() => loadCounterData({ silent: true })}
-          onPrintOrder={printCounterSale}
-          onThermalWidthChange={setThermalWidth}
-          onJumpToSales={jumpToSales}
-          onOpenReturnFlow={openReturnFlow}
-          onOpenPrinterSetup={openPrinterSetup}
-        />
+        {posMode === 'sale' ? (
+          <AdminCounterBill
+            products={products}
+            onBillCreated={() => loadCounterData({ silent: true })}
+            onPrintOrder={printCounterSale}
+            onThermalWidthChange={setThermalWidth}
+            onJumpToSales={jumpToSales}
+            onOpenReturnFlow={openReturnFlow}
+            onOpenPrinterSetup={openPrinterSetup}
+          />
+        ) : (
+          <PosCustomBill
+            onPrintOrder={printCounterSale}
+            onOpenPrinterSetup={openPrinterSetup}
+          />
+        )}
 
         <PosPaymentQrPanel
           open={paymentQrOpen}
