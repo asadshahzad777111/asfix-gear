@@ -1,53 +1,97 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="ASP — Is The Name Of Trust — ASFINS.COM">
-  <!-- Shop-banner ASP mark: yellow hexagon + website (no email) -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 640" role="img" aria-label="?? ??? ????? ?? — ASP Is The Name Of Trust — ASFINS.COM">
+  <!-- Compact banner mark: short hexagon (not tall), Urdu shop name, website not email -->
   <rect width="640" height="640" fill="#000000"/>
 
-  <!-- Tall yellow hexagon (banner badge) -->
+  <!-- Urdu shop name (AS Plywood) — left, yellow calligraphy feel -->
+  <g fill="#FFD400" text-anchor="middle">
+    <!-- three diamond dots -->
+    <path d="M118 118 L128 102 L138 118 L128 134 Z"/>
+    <path d="M98 138 L108 122 L118 138 L108 154 Z"/>
+    <path d="M138 138 L148 122 L158 138 L148 154 Z"/>
+    <text
+      x="128"
+      y="280"
+      direction="rtl"
+      font-family="'Noto Nastaliq Urdu', 'Pak Nastaleeq', 'Jameel Noori Nastaleeq', 'Urdu Typesetting', serif"
+      font-size="54"
+      font-weight="700"
+    >?? ??? ????? ??</text>
+  </g>
+
+  <!-- Compact regular hexagon (short/wide, NOT elongated) -->
   <path
-    d="M320 48 L430 112 L430 392 L320 456 L210 392 L210 112 Z"
-    fill="#FFCC00"
-    stroke="#111111"
-    stroke-width="8"
+    d="M400 150
+       L500 208
+       L500 324
+       L400 382
+       L300 324
+       L300 208 Z"
+    fill="#FFD400"
+    stroke="#111"
+    stroke-width="7"
     stroke-linejoin="round"
   />
 
-  <!-- ASP stacked (main logo letters) -->
-  <g fill="#000000" font-family="Arial Black, Impact, Helvetica, Arial, sans-serif" font-weight="900" text-anchor="middle">
-    <text x="292" y="178" font-size="96">A</text>
-    <text x="292" y="278" font-size="96">S</text>
-    <text x="292" y="378" font-size="96">P</text>
+  <!-- ASP stack -->
+  <g fill="#000" font-family="Arial Black, Impact, Arial, sans-serif" font-weight="900" text-anchor="middle">
+    <text x="372" y="230" font-size="52">A</text>
+    <text x="372" y="282" font-size="52">S</text>
+    <text x="372" y="334" font-size="52">P</text>
   </g>
 
-  <!-- Slogan: Is The Name Of Trust (beside ASP, vertical) -->
-  <text
-    transform="translate(368 130) rotate(90)"
-    fill="#000000"
-    font-family="Arial, Helvetica, sans-serif"
-    font-size="18"
-    font-weight="700"
-    letter-spacing="1.6"
-  >IS THE NAME OF TRUST</text>
+  <!-- Divider -->
+  <line x1="408" y1="190" x2="408" y2="350" stroke="#000" stroke-width="2.5"/>
 
-  <!-- Website replaces email -->
+  <!-- Slogan + website (vertical column) -->
+  <g fill="#000" font-family="Arial, Helvetica, sans-serif" font-weight="700">
+    <text transform="translate(430 198) rotate(90)" font-size="13" letter-spacing="1.1">IS THE NAME OF TRUST</text>
+    <text transform="translate(452 230) rotate(90)" font-size="12" letter-spacing="1.4">ASFINS.COM</text>
+  </g>
+
+  <!-- Red Urdu accent (right) -->
+  <text
+    x="560"
+    y="300"
+    fill="#E31B23"
+    stroke="#fff"
+    stroke-width="0.6"
+    paint-order="stroke"
+    direction="rtl"
+    font-family="'Noto Nastaliq Urdu', 'Pak Nastaleeq', 'Jameel Noori Nastaleeq', serif"
+    font-size="28"
+    font-weight="700"
+    text-anchor="middle"
+    transform="rotate(90 560 300)"
+  >????? ??</text>
+
+  <!-- Footer website -->
   <text
     x="320"
-    y="520"
-    fill="#FFCC00"
-    font-family="Arial Black, Impact, Helvetica, Arial, sans-serif"
-    font-size="36"
-    font-weight="800"
+    y="470"
+    fill="#FFD400"
+    font-family="Arial Black, Impact, Arial, sans-serif"
+    font-size="34"
     letter-spacing="3"
     text-anchor="middle"
   >ASFINS.COM</text>
-
   <text
     x="320"
-    y="566"
-    fill="#FFFFFF"
+    y="510"
+    fill="#fff"
     font-family="Arial, Helvetica, sans-serif"
-    font-size="22"
-    font-weight="700"
-    letter-spacing="5"
+    font-size="18"
+    letter-spacing="4"
     text-anchor="middle"
+    font-weight="700"
   >ASPLYWOOD</text>
+  <text
+    x="320"
+    y="540"
+    fill="#fff"
+    opacity="0.65"
+    font-family="Arial, Helvetica, sans-serif"
+    font-size="13"
+    letter-spacing="2"
+    text-anchor="middle"
+  >Is The Name Of Trust</text>
 </svg>
