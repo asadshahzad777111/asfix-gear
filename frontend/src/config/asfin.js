@@ -1,7 +1,7 @@
 /** ASPLYWOOD shop + ASFIN website (separate from AsFix & Gear).
- * Print logo: WIDE yellow hexagon (width > height), extra outer margin.
- * Inside top→bottom: ASP (wide spacing) → line → Is The Name Of Trust → line → ASFINS.COM
- * No duplicate ASFINS.COM outside the box. Urdu اے ایس پلائی وڈ above.
+ * Print logo (B&W): wide hexagon (width > height), Urdu name,
+ * ASP → line → Is The Name Of Trust → line → ASFINS.COM (+ seal).
+ * Thermal uses photo-mono (dark ink). Cache-bust path when art changes.
  */
 export const ASFIN = {
   shopName: 'ASPLYWOOD',
@@ -10,6 +10,6 @@ export const ASFIN = {
   mark: 'ASP',
   site: 'asfins.com',
   siteUrl: 'https://asfins.com',
-  logoPath: '/asfin-logo.png',
+  logoPath: '/asfin-logo.png?v=7',
   tagline: 'Is The Name Of Trust',
 };
