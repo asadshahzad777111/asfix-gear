@@ -46,6 +46,7 @@ Freeform repair/parts bill on live POS (no inventory sale). Files: `frontend/src
 - Open: AsFix POS / `/pos` → tab **Custom bill** (next to **Sale bill**). Same screen on **laptop browser** and phone.
 - Shop identity setting: **My shop (AsFix)** vs **Someone else** — name / place / phone / logo / scanner-QR. Tap **Save as setting** to sync text fields phone ↔ laptop (Admin → Payments also has Custom bill profiles).
 - Each line: **Name + Qty + Rate**. Empty name boxes are ignored and do not print.
+- Optional **Save to DB when printing** / **Save to stock & sales**: asks **Actual rate (cost)** + **Sale price** per named line, upserts `POS Custom` products, then records a counter sale (`POST /orders/custom-bill-save`). Print-only still works with the checkbox off.
 - Editable shop name / place / phone / date / time / mobile model / customer / notes.
 - Optional **logo** (image upload) and **scanner/QR** (link text or QR PIC). Custom bills skip AsFix logo/site QR unless those options are on.
 - Print uses the same thermal pipeline as sale receipts (`printSmart` / native BT).

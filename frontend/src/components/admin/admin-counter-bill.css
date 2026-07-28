@@ -401,6 +401,11 @@
 
 .pos-custom-bill__items li {
   display: grid;
+  gap: 0.35rem;
+}
+
+.pos-custom-bill__item-main {
+  display: grid;
   grid-template-columns: 1fr 64px 88px 32px;
   gap: 0.35rem;
   align-items: center;
@@ -419,6 +424,44 @@
 .pos-custom-bill__item-qty,
 .pos-custom-bill__item-rate {
   text-align: right;
+}
+
+.pos-custom-bill__item-save {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.45rem;
+  padding: 0.45rem 0.5rem;
+  border: 1px dashed var(--wp-border, #ccc);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--wp-surface, #fff) 88%, #cfe8d8);
+}
+
+.pos-custom-bill__item-save label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.pos-custom-bill__item-save input {
+  width: 100%;
+  border: 1px solid var(--wp-border, #ccc);
+  border-radius: 6px;
+  padding: 0.4rem 0.5rem;
+  font: inherit;
+  background: var(--wp-input-bg, #fff);
+  color: inherit;
+}
+
+.pos-custom-bill__save-toggle {
+  margin-top: 0.75rem;
+}
+
+.pos-custom-bill__save-hint {
+  margin: 0.35rem 0 0;
+  font-size: 0.78rem;
+  opacity: 0.75;
 }
 
 .pos-custom-bill__media {

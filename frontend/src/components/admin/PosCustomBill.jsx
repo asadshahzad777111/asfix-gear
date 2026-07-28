@@ -38,9 +38,58 @@ function normalizeWorkType(value, fallback = WORK_TYPE_MOBILE) {
 /** Blank rows only — user fills name/qty/rate via Add item. */
 function emptyDefaultItems() {
   return [
-    { id: '1', name: '', rate: '', qty: '' },
-    { id: '2', name: '', rate: '', qty: '' },
+    { id: '1', name: '', rate: '', qty: '', costPrice: '', salePrice: '' },
+    { id: '2', name: '', rate: '', qty: '', costPrice: '', salePrice: '' },
   ];
+}
+
+function namedCustomItems(items) {
+  return (items || [])
+    .map((row) => {
+      const name = String(row.name || '').trim();
+      if (!name) return null;
+      const qty = Math.max(1, Math.min(99, Math.trunc(Number(row.qty) || 1)));
+      const rate = Math.max(0, Math.round(Number(row.rate) || 0));
+      const costRaw = row.costPrice;
+      const saleRaw = row.salePrice;
+      const costPrice = costRaw === '' || costRaw == null
+        ? NaN
+        : Math.round(Number(costRaw));
+      const salePrice = saleRaw === '' || saleRaw == null
+        ? rate
+        : Math.round(Number(saleRaw));
+      return {
+        id: row.id,
+        name,
+        qty,
+        rate,
+        costPrice,
+        salePrice,
+      };
+    })
+    .filter(Boolean);
+}
+
+function validateSaveItems(items, t) {
+  const named = namedCustomItems(items);
+  if (!named.length) {
+    return { ok: false, error: t('counter.customBillNeedItems') };
+  }
+  for (const row of named) {
+    if (!Number.isFinite(row.costPrice) || row.costPrice < 0) {
+      return {
+        ok: false,
+        error: t('counter.customBillNeedCost', { name: row.name }),
+      };
+    }
+    if (!Number.isFinite(row.salePrice) || row.salePrice < 0) {
+      return {
+        ok: false,
+        error: t('counter.customBillNeedSale', { name: row.name }),
+      };
+    }
+  }
+  return { ok: true, items: named };
 }
 
 function tomorrowLocalParts() {
@@ -82,7 +131,12 @@ function loadSavedDraft() {
         name: row.name ?? '',
         rate: row.rate ?? '',
         qty: row.qty === undefined || row.qty === null || row.qty === '' ? '' : row.qty,
+        costPrice: row.costPrice ?? '',
+        salePrice: row.salePrice ?? '',
       }));
+    }
+    if (typeof parsed.saveToDbOnPrint !== 'boolean') {
+      parsed.saveToDbOnPrint = false;
     }
     return parsed;
   } catch {
@@ -96,6 +150,8 @@ function newItem() {
     name: '',
     rate: '',
     qty: '',
+    costPrice: '',
+    salePrice: '',
   };
 }
 
@@ -153,6 +209,7 @@ function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
     customerPhone: '',
     lessAmount: '',
     notes: '',
+    saveToDbOnPrint: false,
     items,
   };
 }
@@ -270,10 +327,12 @@ export default function PosCustomBill({
       workType: normalizeWorkType(saved.workType, workTypeFallback),
       customerPhone: saved.customerPhone ?? '',
       lessAmount: saved.lessAmount ?? '',
+      saveToDbOnPrint: Boolean(saved.saveToDbOnPrint),
     });
   });
   const [busy, setBusy] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
+  const [savingDb, setSavingDb] = useState(false);
   const [feedback, setFeedback] = useState(null);
 
   const subtotal = useMemo(
@@ -467,11 +526,66 @@ export default function PosCustomBill({
     }
   }, [draft, persist, t]);
 
+  const runSaveToStock = useCallback(async () => {
+    const checked = validateSaveItems(draft.items, t);
+    if (!checked.ok) {
+      return { ok: false, error: checked.error };
+    }
+    try {
+      const discountAmount = Math.min(
+        checked.items.reduce((sum, row) => sum + row.salePrice * row.qty, 0),
+        Math.max(0, Math.round(Number(draft.lessAmount) || 0)),
+      );
+      const result = await api.saveCustomBillToStock({
+        customer_name: String(draft.customerName || '').trim() || 'Walk-in',
+        phone: String(draft.customerPhone || '').trim(),
+        payment_mode: 'cash',
+        discount_amount: discountAmount,
+        notes: String(draft.notes || '').trim(),
+        items: checked.items.map((row) => ({
+          name: row.name,
+          qty: row.qty,
+          cost_price: row.costPrice,
+          sale_price: row.salePrice,
+        })),
+      });
+      return { ok: true, result };
+    } catch (err) {
+      return {
+        ok: false,
+        error: err?.message || t('counter.customBillSaveDbFail'),
+      };
+    }
+  }, [draft, t]);
+
+  const saveToStockAndSales = useCallback(async () => {
+    setSavingDb(true);
+    setFeedback(null);
+    try {
+      const outcome = await runSaveToStock();
+      if (!outcome.ok) {
+        setFeedback({ type: 'error', text: outcome.error });
+        return null;
+      }
+      setFeedback({ type: 'ok', text: t('counter.customBillSaveDbOk') });
+      return outcome.result;
+    } finally {
+      setSavingDb(false);
+    }
+  }, [runSaveToStock, t]);
+
   const printBill = useCallback(async () => {
     const order = buildCustomBillOrder(draft);
     if (!order.items.length) {
       setFeedback({ type: 'error', text: t('counter.customBillNeedItems') });
       return;
+    }
+    if (draft.saveToDbOnPrint) {
+      const checked = validateSaveItems(draft.items, t);
+      if (!checked.ok) {
+        setFeedback({ type: 'error', text: checked.error });
+        return;
+      }
     }
     if (nativePos) {
       const saved = await getSavedPrinter();
@@ -484,6 +598,13 @@ export default function PosCustomBill({
     setBusy(true);
     setFeedback(null);
     try {
+      if (draft.saveToDbOnPrint) {
+        const savedSale = await runSaveToStock();
+        if (!savedSale.ok) {
+          setFeedback({ type: 'error', text: savedSale.error });
+          return;
+        }
+      }
       const result = normalizePrintResult(await onPrintOrder?.(order));
       if (result.ok) {
         if (isAsfinCustomBill({ ...draft, ...order })) {
@@ -507,7 +628,12 @@ export default function PosCustomBill({
             /* print succeeded — sheet save is best-effort */
           }
         }
-        setFeedback({ type: 'ok', text: t('counter.customBillPrintOk') });
+        setFeedback({
+          type: 'ok',
+          text: draft.saveToDbOnPrint
+            ? t('counter.customBillPrintAndSaveOk')
+            : t('counter.customBillPrintOk'),
+        });
       } else {
         setFeedback({
           type: 'error',
@@ -519,10 +645,12 @@ export default function PosCustomBill({
     } finally {
       setBusy(false);
     }
-  }, [draft, nativePos, onOpenPrinterSetup, onPrintOrder, t]);
+  }, [draft, nativePos, onOpenPrinterSetup, onPrintOrder, runSaveToStock, t]);
 
   const profileOwn = draft.profileId === CUSTOM_BILL_PROFILE_OWN;
   const profileAsfin = draft.profileId === CUSTOM_BILL_PROFILE_ASFIN;
+  const showSaveFields = Boolean(draft.saveToDbOnPrint);
+  const actionsLocked = busy || savingSettings || savingDb;
 
   return (
     <section className="pos-custom-bill wp-postbox">
@@ -823,44 +951,96 @@ export default function PosCustomBill({
           <span />
         </div>
         <ul>
-          {draft.items.map((row) => (
-            <li key={row.id}>
-              <input
-                className="pos-custom-bill__item-name"
-                value={row.name}
-                onChange={(e) => updateItem(row.id, { name: e.target.value })}
-                placeholder={t('counter.customBillItemName')}
-              />
-              <input
-                className="pos-custom-bill__item-qty"
-                type="number"
-                min="1"
-                step="1"
-                value={row.qty}
-                onChange={(e) => updateItem(row.id, { qty: e.target.value })}
-                placeholder="1"
-              />
-              <input
-                className="pos-custom-bill__item-rate"
-                type="number"
-                min="0"
-                step="1"
-                value={row.rate}
-                onChange={(e) => updateItem(row.id, { rate: e.target.value })}
-                placeholder="0"
-              />
-              <button
-                type="button"
-                className="pos-custom-bill__remove"
-                onClick={() => removeItem(row.id)}
-                aria-label="Remove"
-              >
-                ×
-              </button>
-            </li>
-          ))}
+          {draft.items.map((row) => {
+            const hasName = Boolean(String(row.name || '').trim());
+            return (
+              <li key={row.id} className={showSaveFields && hasName ? 'pos-custom-bill__item--save' : undefined}>
+                <div className="pos-custom-bill__item-main">
+                  <input
+                    className="pos-custom-bill__item-name"
+                    value={row.name}
+                    onChange={(e) => updateItem(row.id, { name: e.target.value })}
+                    placeholder={t('counter.customBillItemName')}
+                  />
+                  <input
+                    className="pos-custom-bill__item-qty"
+                    type="number"
+                    min="1"
+                    step="1"
+                    value={row.qty}
+                    onChange={(e) => updateItem(row.id, { qty: e.target.value })}
+                    placeholder="1"
+                  />
+                  <input
+                    className="pos-custom-bill__item-rate"
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={row.rate}
+                    onChange={(e) => {
+                      const nextRate = e.target.value;
+                      const patch = { rate: nextRate };
+                      /* Keep sale price in sync until staff edits it */
+                      if (row.salePrice === '' || row.salePrice == null || String(row.salePrice) === String(row.rate)) {
+                        patch.salePrice = nextRate;
+                      }
+                      updateItem(row.id, patch);
+                    }}
+                    placeholder="0"
+                  />
+                  <button
+                    type="button"
+                    className="pos-custom-bill__remove"
+                    onClick={() => removeItem(row.id)}
+                    aria-label="Remove"
+                  >
+                    ×
+                  </button>
+                </div>
+                {showSaveFields && hasName ? (
+                  <div className="pos-custom-bill__item-save">
+                    <label>
+                      <span>{t('counter.customBillActualRate')}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={row.costPrice ?? ''}
+                        onChange={(e) => updateItem(row.id, { costPrice: e.target.value })}
+                        placeholder={t('counter.customBillActualRatePh')}
+                        required
+                      />
+                    </label>
+                    <label>
+                      <span>{t('counter.customBillSalePrice')}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        step="1"
+                        value={row.salePrice === '' || row.salePrice == null ? (row.rate ?? '') : row.salePrice}
+                        onChange={(e) => updateItem(row.id, { salePrice: e.target.value })}
+                        placeholder={t('counter.customBillSalePricePh')}
+                      />
+                    </label>
+                  </div>
+                ) : null}
+              </li>
+            );
+          })}
         </ul>
       </div>
+
+      <label className="pos-custom-bill__check pos-custom-bill__save-toggle">
+        <input
+          type="checkbox"
+          checked={Boolean(draft.saveToDbOnPrint)}
+          onChange={(e) => updateField('saveToDbOnPrint', e.target.checked)}
+        />
+        <span>{t('counter.customBillSaveOnPrint')}</span>
+      </label>
+      {showSaveFields ? (
+        <p className="pos-custom-bill__save-hint">{t('counter.customBillSaveHint')}</p>
+      ) : null}
 
       <label className="pos-custom-bill__notes">
         <span>{t('counter.customBillNotes')}</span>
@@ -909,24 +1089,41 @@ export default function PosCustomBill({
       ) : null}
 
       <div className="pos-custom-bill__actions">
-        <button type="button" className="wp-button wp-button--secondary" onClick={resetDefaults} disabled={busy || savingSettings}>
+        <button type="button" className="wp-button wp-button--secondary" onClick={resetDefaults} disabled={actionsLocked}>
           {t('counter.customBillReset')}
         </button>
         <button
           type="button"
           className="wp-button wp-button--secondary"
           onClick={() => void saveAsSetting()}
-          disabled={busy || savingSettings}
+          disabled={actionsLocked}
         >
           {savingSettings ? t('common.loading') : t('counter.customBillSaveSetting')}
         </button>
         <button
           type="button"
+          className="wp-button wp-button--secondary"
+          onClick={() => {
+            if (!draft.saveToDbOnPrint) {
+              persist({ ...draft, saveToDbOnPrint: true });
+            }
+            void saveToStockAndSales();
+          }}
+          disabled={actionsLocked || subtotal <= 0}
+        >
+          {savingDb ? t('common.loading') : t('counter.customBillSaveDb')}
+        </button>
+        <button
+          type="button"
           className="wp-button counter-bill__print-cta pos-custom-bill__print"
           onClick={() => void printBill()}
-          disabled={busy || savingSettings || subtotal <= 0}
+          disabled={actionsLocked || subtotal <= 0}
         >
-          {busy ? t('common.loading') : t('counter.customBillPrint')}
+          {busy ? t('common.loading') : (
+            draft.saveToDbOnPrint
+              ? t('counter.customBillPrintAndSave')
+              : t('counter.customBillPrint')
+          )}
         </button>
       </div>
     </section>

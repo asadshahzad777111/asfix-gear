@@ -232,6 +232,95 @@ function sendCounterSaleError(res, err) {
   return res.status(err.status || 400).json({ error: err.message || 'Could not create counter bill' });
 }
 
+const CUSTOM_BILL_CATEGORY = 'POS Custom';
+const CUSTOM_BILL_TAG = 'pos-custom';
+const MAX_CUSTOM_BILL_ITEM_NAME = 120;
+
+function isPosCustomProduct(product) {
+  if (!product) return false;
+  const category = String(product.category || '').trim().toLowerCase();
+  if (category === CUSTOM_BILL_CATEGORY.toLowerCase()) return true;
+  const tags = Array.isArray(product.tags) ? product.tags : [];
+  return tags.some((tag) => String(tag || '').trim().toLowerCase() === CUSTOM_BILL_TAG);
+}
+
+function findPosCustomProductByName(name) {
+  const needle = String(name || '').trim().toLowerCase();
+  if (!needle) return null;
+  return store.getProducts({ status: 'all' }).find((product) => {
+    if (!isPosCustomProduct(product)) return false;
+    return String(product.name || '').trim().toLowerCase() === needle;
+  }) || null;
+}
+
+/**
+ * Upsert a POS Custom catalog row (stock in + cost/sale), then sell via counter bill.
+ * Used by Custom bill "Save to stock & sales" — counter role allowed.
+ */
+function upsertCustomBillProduct({ name, qty, cost_price, sale_price, user }) {
+  const cleanName = String(name || '').trim().slice(0, MAX_CUSTOM_BILL_ITEM_NAME);
+  const units = Math.trunc(Number(qty));
+  const cost = Math.round(Number(cost_price));
+  const price = Math.round(Number(sale_price));
+  if (!cleanName) {
+    const error = new Error('Item name is required');
+    error.status = 400;
+    throw error;
+  }
+  if (!Number.isInteger(units) || units < 1 || units > 99) {
+    const error = new Error('Quantity must be between 1 and 99');
+    error.status = 400;
+    throw error;
+  }
+  if (!Number.isFinite(cost) || cost < 0) {
+    const error = new Error(`Actual rate (cost) required for "${cleanName}"`);
+    error.status = 400;
+    throw error;
+  }
+  if (!Number.isFinite(price) || price < 0) {
+    const error = new Error(`Sale price required for "${cleanName}"`);
+    error.status = 400;
+    throw error;
+  }
+
+  const existing = findPosCustomProductByName(cleanName);
+  if (existing) {
+    const updated = store.updateProduct(existing.id, {
+      price,
+      cost_price: cost,
+      status: 'published',
+      category: CUSTOM_BILL_CATEGORY,
+      tags: store.normalizeTags([...(existing.tags || []), CUSTOM_BILL_TAG]),
+    });
+    const stocked = store.adjustProductStock(existing.id, units, {
+      reason: 'restock',
+      note: 'Custom bill save to stock',
+      staffName: user?.name || user?.username || 'staff',
+      actor: user,
+    });
+    return stocked || updated || existing;
+  }
+
+  return store.createProduct({
+    name: cleanName,
+    category: CUSTOM_BILL_CATEGORY,
+    brand: '',
+    compatible_models: '',
+    price,
+    cost_price: cost,
+    description: 'Added from POS Custom bill',
+    tags: [CUSTOM_BILL_TAG],
+    stock: units,
+    purchase_count: units,
+    featured: 0,
+    discount_percent: 0,
+    warranty: '',
+    status: 'published',
+    created_by: user?.id ?? null,
+    created_by_name: user?.name || user?.username || '',
+  });
+}
+
 router.post('/feedback', (req, res) => {
   const { orderId, phone, rating, comment, product_id } = req.body;
   if (!orderId?.trim() || !phone?.trim()) {
@@ -387,6 +476,73 @@ router.post('/counter-sale', requireAuth, requireRole(...COUNTER_SELLERS), (req,
 
     publishOrderEvent('order_created', order);
     res.status(201).json({ message: 'Counter bill created', order });
+  } catch (err) {
+    sendCounterSaleError(res, err);
+  }
+});
+
+/** Custom bill → upsert POS Custom products (cost + sale) + counter sale. */
+router.post('/custom-bill-save', requireAuth, requireRole(...COUNTER_SELLERS), (req, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const rawItems = Array.isArray(body.items) ? body.items : [];
+    if (rawItems.length === 0 || rawItems.length > MAX_ITEMS) {
+      return res.status(400).json({ error: 'Bill must include 1-20 items' });
+    }
+
+    const prepared = [];
+    for (const row of rawItems) {
+      const name = String(row?.name || '').trim();
+      if (!name) continue;
+      const qty = Math.max(1, Math.min(99, Math.trunc(Number(row?.qty) || 1)));
+      const costRaw = row?.cost_price ?? row?.actual_rate ?? row?.cost;
+      const saleRaw = row?.sale_price ?? row?.price ?? row?.rate;
+      const product = upsertCustomBillProduct({
+        name,
+        qty,
+        cost_price: costRaw,
+        sale_price: saleRaw,
+        user: req.auth.user,
+      });
+      prepared.push({
+        product_id: product.id,
+        qty,
+        price: Math.round(Number(saleRaw)),
+      });
+    }
+
+    if (!prepared.length) {
+      return res.status(400).json({ error: 'Add at least one named item to save' });
+    }
+
+    const noteParts = [
+      'Custom bill → stock & sales',
+      String(body.notes || '').trim(),
+    ].filter(Boolean);
+
+    const order = createCounterSaleFromPayload({
+      user: req.auth.user,
+      body: {
+        customer_name: body.customer_name,
+        phone: body.phone,
+        payment_mode: body.payment_mode || 'cash',
+        payment_note: noteParts.join(' — ').slice(0, MAX_NOTES),
+        discount_type: 'fixed',
+        discount_amount: body.discount_amount,
+        items: prepared,
+      },
+    });
+
+    publishOrderEvent('order_created', order);
+    res.status(201).json({
+      message: 'Custom bill saved to stock & sales',
+      order,
+      products: prepared.map((item) => ({
+        product_id: item.product_id,
+        qty: item.qty,
+        price: item.price,
+      })),
+    });
   } catch (err) {
     sendCounterSaleError(res, err);
   }
