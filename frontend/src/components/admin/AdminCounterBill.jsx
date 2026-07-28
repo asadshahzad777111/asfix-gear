@@ -19,6 +19,7 @@ import {
 import { useSmartThermalPrint } from '../../hooks/useSmartThermalPrint';
 import {
   ASFIN_LOGO_PATH,
+  asfinLogoTargetDots,
   buildAsfinLogoEscPosRaster,
   buildCustomImageEscPosRaster,
   buildReceiptLogoEscPosRaster,
@@ -325,9 +326,9 @@ export async function buildThermalReceiptEscPosBase64(orderInput, thermalWidth =
   push(0x1b, 0x4d, 0x00); // Font A (readable body on 58mm / ~32 cols @ 384 dots)
   /* Classic readable leading (~pre-Subtotal rhythm), not ultra-compressed */
   push(0x1b, 0x33, 32);
-  /* Top feed so logo sits slightly lower (not top-cramped without name text) */
+  /* Top feed — ASFIN wide hex sits a bit lower on the roll */
   const asfinLogoOnly = isCustomReceipt(order) && customLogoMode(order) === 'asfin';
-  push(0x1b, 0x4a, asfinLogoOnly ? 64 : 52);
+  push(0x1b, 0x4a, asfinLogoOnly ? 72 : 52);
 
   const logoRaster = (() => {
     if (!isCustomReceipt(order)) return buildReceiptLogoEscPosRaster(width);
@@ -812,9 +813,9 @@ export async function createCounterReceiptPngBlob(orderInput, thermalWidth = '58
   const widthPx = printerDots;
   /* Extra side pad so Windows POS-58 driver margins do not crop Bill#/prices */
   const padX = pageWidth === '80mm' ? 30 : 26;
-  /* Top pad — ASFIN logo alone (no ASPLYWOOD text) sits a bit lower in the header */
+  /* Top pad — ASFIN wide hex a little lower on the bill */
   const asfinLogoOnly = isCustomReceipt(order) && customLogoMode(order) === 'asfin';
-  const padTop = asfinLogoOnly ? 56 : 40;
+  const padTop = asfinLogoOnly ? 72 : 40;
   const padBottom = 28;
   const maxChars = pageWidth === '80mm' ? 42 : 28;
   const lines = buildReceiptLines(order, maxChars);
@@ -929,9 +930,12 @@ export async function createCounterReceiptPngBlob(orderInput, thermalWidth = '58
   const qrSize = (qrModules + qrMarginModules * 2) * qrMag;
   const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.74));
 
-  /* Estimate logo height (~square mark at ~76% width) */
+  /* Estimate logo height — ASFIN is wide hex (~0.42 aspect), not square */
+  const asfinLogoOnlyEstimate = isCustomReceipt(order) && customLogoMode(order) === 'asfin';
   const logoEstimate = lines.some((line) => line.logo)
-    ? Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10
+    ? (asfinLogoOnlyEstimate
+      ? Math.round(Math.min(asfinLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) * 0.42) + 12
+      : Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10)
     : (isCustomReceipt(order) && customLogoMode(order) !== 'none'
       ? Math.floor(usable * 0.55) + 10
       : 0);
@@ -1380,7 +1384,7 @@ function buildThermalReceiptHtml(orderInput, thermalWidth = '58mm', qrDataUrl = 
   }).join('');
 
   const logoMode = custom ? customLogoMode(order) : 'sale';
-  const receiptPadTop = logoMode === 'asfin' ? '8mm' : '6.5mm';
+  const receiptPadTop = logoMode === 'asfin' ? '10mm' : '6.5mm';
 
   const css = `
 /* Placeholder — overwritten with measured content height before print */
@@ -1415,7 +1419,7 @@ html, body {
 }
 .r-shop { text-align: center; margin-bottom: 5px; }
 .r-shop .r-logo { display: block; width: 76%; max-width: 76%; height: auto; margin: 2px auto 4px; }
-.r-shop .r-logo--asfin { width: 82%; max-width: 82%; margin: 4px auto 2px; }
+.r-shop .r-logo--asfin { width: 96%; max-width: 96%; margin: 6px auto 4px; }
 .r-shop .r-shop-name { display: block; margin: 2px 0 4px; font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
 .r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 4px 0; font-size: 13px; font-weight: 400; }
@@ -1459,7 +1463,7 @@ html, body {
   const logoBlock = custom
     ? (logoMode === 'asfin'
       /* Logo sits where ASPLYWOOD/Lahore text used to be — no duplicate brand lines */
-      ? `${`<img class="r-logo r-logo--asfin" src="${logoDataUrl || ASFIN_LOGO_PATH}" alt="" width="280" height="280" />`}
+      ? `${`<img class="r-logo r-logo--asfin" src="${logoDataUrl || ASFIN_LOGO_PATH}" alt="" width="360" height="152" />`}
     ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`
       : `${logoMode === 'own'
         ? `<img class="r-logo" src="${logoDataUrl || RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`

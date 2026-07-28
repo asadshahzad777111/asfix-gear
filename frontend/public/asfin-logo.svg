@@ -1,28 +1,16 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024" role="img" aria-label="?? ??? ????? ?? — ASP — Is The Name Of Trust — ASFINS.COM">
-  <!-- B&W print mark: wide hex, no seal, equal L/R, Urdu close, trust raised -->
-  <rect width="1024" height="1024" fill="#ffffff"/>
-
-  <text x="500" y="240" text-anchor="middle" direction="rtl"
-    font-family="Noto Nastaliq Urdu, serif" font-size="78" font-weight="700" fill="#000">?? ??? ????? ??</text>
-
-  <path d="M82 270 H782 L852 440 L782 610 H82 L12 440 Z"
-    fill="none" stroke="#000" stroke-width="10" stroke-linejoin="round"/>
-
-  <text x="512" y="370" text-anchor="middle" fill="#000"
-    font-family="Arial Black, Impact, Arial, sans-serif" font-size="84" font-weight="900"
-    letter-spacing="44">ASP</text>
-
-  <line x1="120" y1="400" x2="744" y2="400" stroke="#000" stroke-width="4"/>
-
-  <text x="512" y="436" text-anchor="middle" fill="#000"
-    font-family="Arial, Helvetica, sans-serif" font-size="28" font-weight="600">Is The Name Of Trust</text>
-
-  <line x1="120" y1="480" x2="744" y2="480" stroke="#000" stroke-width="4"/>
-
-  <text x="512" y="540" text-anchor="middle" fill="#000"
-    font-family="Arial Black, Impact, Arial, sans-serif" font-size="32" font-weight="800"
-    letter-spacing="3">ASFINS.COM</text>
-
-  <text x="504" y="710" text-anchor="middle" direction="rtl"
-    font-family="Noto Nastaliq Urdu, serif" font-size="44" font-weight="700" fill="#000">?????? ?? ???</text>
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="420" viewBox="0 0 1000 420" role="img" aria-label="ASP — Is The Name Of Trust — ASFINS.COM">
+  <!-- Wide hex-only print mark (no Urdu). Thermal: near full paper width. -->
+  <rect width="1000" height="420" fill="#ffffff"/>
+  <path d="M110 20 H890 L980 210 L890 400 H110 L20 210 Z"
+    fill="none" stroke="#000" stroke-width="12" stroke-linejoin="round"/>
+  <text x="500" y="145" text-anchor="middle" fill="#000"
+    font-family="Arial Black, Impact, Arial, sans-serif" font-size="96" font-weight="900"
+    letter-spacing="40">ASP</text>
+  <line x1="120" y1="175" x2="880" y2="175" stroke="#000" stroke-width="5"/>
+  <text x="500" y="220" text-anchor="middle" fill="#000"
+    font-family="Arial, Helvetica, sans-serif" font-size="30" font-weight="600">Is The Name Of Trust</text>
+  <line x1="120" y1="255" x2="880" y2="255" stroke="#000" stroke-width="5"/>
+  <text x="500" y="320" text-anchor="middle" fill="#000"
+    font-family="Arial Black, Impact, Arial, sans-serif" font-size="36" font-weight="800"
+    letter-spacing="4">ASFINS.COM</text>
 </svg>

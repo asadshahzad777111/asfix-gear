@@ -109,10 +109,16 @@ export async function getReceiptLogoMonoDataUrl(thermalWidth = '58mm') {
   }
 }
 
-/** ASPLYWOOD / ASFIN brand mark — same mono pipeline as AsFix logo. */
-export const ASFIN_LOGO_PATH = '/asfin-logo.png?v=9';
+/** ASPLYWOOD / ASFIN brand mark — wide hex only (photo-mono). */
+export const ASFIN_LOGO_PATH = '/asfin-logo.png?v=10';
 
 let asfinLogoImagePromise = null;
+
+/** Near-full paper width so the hex box reads large on 58mm. */
+export function asfinLogoTargetDots(thermalWidth = '58mm') {
+  const printable = thermalWidth === '80mm' ? 576 : 384;
+  return Math.max(96, Math.floor((printable * 0.96) / 8) * 8);
+}
 
 export function loadAsfinLogoImage() {
   if (typeof Image === 'undefined') return Promise.resolve(null);
@@ -131,8 +137,7 @@ export function loadAsfinLogoImage() {
 export async function buildAsfinLogoEscPosRaster(thermalWidth = '58mm') {
   const img = await loadAsfinLogoImage();
   if (!img) return new Uint8Array(0);
-  /* Black-on-white print mark → photo mono (dark = ink). Wider for readable ASP on 58mm. */
-  const dots = Math.max(receiptLogoTargetDots(thermalWidth), Math.floor((thermalWidth === '80mm' ? 576 : 384) * 0.88 / 8) * 8);
+  const dots = asfinLogoTargetDots(thermalWidth);
   const canvas = renderPhotoMonoCanvas(img, dots);
   return canvasToEscPosRasterBytes(canvas);
 }
@@ -140,7 +145,7 @@ export async function buildAsfinLogoEscPosRaster(thermalWidth = '58mm') {
 export async function getAsfinLogoMonoDataUrl(thermalWidth = '58mm') {
   const img = await loadAsfinLogoImage();
   if (!img) return '';
-  const dots = Math.max(receiptLogoTargetDots(thermalWidth), Math.floor((thermalWidth === '80mm' ? 576 : 384) * 0.88 / 8) * 8);
+  const dots = asfinLogoTargetDots(thermalWidth);
   const canvas = renderPhotoMonoCanvas(img, dots);
   if (!canvas) return '';
   try {
@@ -159,16 +164,13 @@ export async function drawAsfinLogoOnCanvas(ctx, {
   const img = await loadAsfinLogoImage();
   if (!img || !ctx) return 0;
   const usable = Math.max(8, (canvasWidth || 0) - (padX || 0) * 2);
-  const target = Math.min(
-    Math.max(receiptLogoTargetDots(thermalWidth), Math.floor(usable * 0.88 / 8) * 8),
-    Math.floor(usable / 8) * 8,
-  );
+  const target = Math.min(asfinLogoTargetDots(thermalWidth), Math.floor(usable / 8) * 8);
   const mono = renderPhotoMonoCanvas(img, target);
   if (!mono) return 0;
   const x = Math.round(((canvasWidth || mono.width) - mono.width) / 2);
   ctx.imageSmoothingEnabled = false;
   ctx.drawImage(mono, x, Math.round(y));
-  return mono.height + 8;
+  return mono.height + 10;
 }
 
 /** Draw centered mono logo onto an existing receipt canvas context. Returns height used. */
