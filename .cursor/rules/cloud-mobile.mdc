@@ -11,4 +11,5 @@ When the user works from **Cursor Mobile** or asks for a **Cloud** run:
 2. Live site updates only after **push to `main`** (Vercel + Render).
 3. If they say deploy / live / “kr do” / push — commit focused files and push `origin/main` (no force push, no secrets).
 4. AsFix POS Android app loads `https://asfixgear.com/pos` — most UI/print JS fixes need **website deploy**, not a new APK.
-5. Keep answers short; end with what to tap on the phone after deploy.
+5. Custom / freeform repair bill: `/pos` → **Custom bill** (qty + rate + name; empty rows skip print; optional logo/QR) — details in `AGENTS.md`.
+6. Keep answers short; end with what to tap on the phone after deploy.
