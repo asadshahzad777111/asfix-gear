@@ -509,6 +509,7 @@ export default function Counter() {
           <PosCustomBill
             onPrintOrder={printCounterSale}
             onOpenPrinterSetup={openPrinterSetup}
+            onBillCreated={() => loadCounterData({ silent: true })}
           />
         )}
 
@@ -545,6 +546,7 @@ export default function Counter() {
                       <th>{t('admin.counterBillNo')}</th>
                       <th>{t('admin.counterBillDate')}</th>
                       <th>{t('admin.counterBillCustomer')}</th>
+                      <th>{t('counter.customBillItems')}</th>
                       <th>{t('admin.counterBillPayment')}</th>
                       <th>{t('admin.counterBillTotal')}</th>
                       <th>{t('admin.counterBillActions')}</th>
@@ -558,11 +560,30 @@ export default function Counter() {
                         ? Number(sale.net_amount)
                         : originalTotal - returnedAmount;
                       const hasReturn = returnedAmount > 0;
+                      const saleItems = Array.isArray(sale.items) ? sale.items : [];
                       return (
                       <tr key={sale.id} className={hasReturn ? 'counter-sales__row--returned' : undefined}>
                         <td>{sale.order_id || sale.id}</td>
                         <td>{sale.created_at ? new Date(sale.created_at).toLocaleTimeString() : '-'}</td>
                         <td>{sale.customer_name || 'Walk-in Customer'}</td>
+                        <td>
+                          {saleItems.length === 0 ? (
+                            <span className="field-hint">—</span>
+                          ) : (
+                            <ul className="counter-sales__items">
+                              {saleItems.map((item, idx) => {
+                                const qty = Number(item.qty) || 1;
+                                const unit = Number(item.price) || 0;
+                                return (
+                                  <li key={`${sale.id}-${item.product_id || item.name}-${idx}`}>
+                                    {item.name || 'Item'} ×{qty}
+                                    <span> {formatPrice(unit * qty)}</span>
+                                  </li>
+                                );
+                              })}
+                            </ul>
+                          )}
+                        </td>
                         <td>{sale.payment_mode}</td>
                         <td>
                           <div className="counter-sales__total-cell">

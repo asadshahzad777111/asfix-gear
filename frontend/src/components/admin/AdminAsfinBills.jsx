@@ -9,6 +9,7 @@ export default function AdminAsfinBills() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [deletingId, setDeletingId] = useState(null);
+  const [expandedId, setExpandedId] = useState(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -78,33 +79,81 @@ export default function AdminAsfinBills() {
                   <th>{t('admin.counterBillDate')}</th>
                   <th>{t('admin.counterBillCustomer')}</th>
                   <th>{t('counter.customBillShop')}</th>
+                  <th>{t('counter.customBillItems')}</th>
                   <th>{t('admin.counterBillTotal')}</th>
                   <th>{t('admin.counterBillActions')}</th>
                 </tr>
               </thead>
               <tbody>
-                {bills.map((bill) => (
-                  <tr key={bill.id}>
-                    <td>{bill.bill_id || bill.id}</td>
-                    <td>
-                      {[bill.receipt_date, bill.receipt_time].filter(Boolean).join(' ')
-                        || (bill.created_at ? new Date(bill.created_at).toLocaleString() : '-')}
-                    </td>
-                    <td>{bill.customer_name || 'Walk-in'}</td>
-                    <td>{bill.shop_name || ASFIN.shopName}</td>
-                    <td><strong>{formatPrice(bill.total_amount)}</strong></td>
-                    <td>
-                      <button
-                        type="button"
-                        className="wp-button wp-button--secondary"
-                        disabled={deletingId === bill.id}
-                        onClick={() => void onDelete(bill)}
-                      >
-                        {deletingId === bill.id ? t('common.loading') : t('admin.asfinBillsDelete')}
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {bills.map((bill) => {
+                  const items = Array.isArray(bill.items) ? bill.items : [];
+                  const open = expandedId === bill.id;
+                  return (
+                    <tr key={bill.id}>
+                      <td>{bill.bill_id || bill.id}</td>
+                      <td>
+                        {[bill.receipt_date, bill.receipt_time].filter(Boolean).join(' ')
+                          || (bill.created_at ? new Date(bill.created_at).toLocaleString() : '-')}
+                      </td>
+                      <td>{bill.customer_name || 'Walk-in'}</td>
+                      <td>{bill.shop_name || ASFIN.shopName}</td>
+                      <td>
+                        {items.length === 0 ? (
+                          <span className="field-hint">—</span>
+                        ) : (
+                          <div className="asfin-bills__items">
+                            <button
+                              type="button"
+                              className="wp-button wp-button--secondary asfin-bills__items-toggle"
+                              onClick={() => setExpandedId(open ? null : bill.id)}
+                            >
+                              {open
+                                ? t('admin.asfinBillsHideItems')
+                                : t('admin.asfinBillsShowItems', { count: items.length })}
+                            </button>
+                            {open ? (
+                              <ul className="asfin-bills__items-list">
+                                {items.map((item, idx) => {
+                                  const qty = Number(item.qty) || 1;
+                                  const unit = Number(item.price) || 0;
+                                  return (
+                                    <li key={`${bill.id}-${idx}`}>
+                                      <strong>{item.name || 'Item'}</strong>
+                                      <span>{qty}×{Math.round(unit)}</span>
+                                      <b>{formatPrice(unit * qty)}</b>
+                                    </li>
+                                  );
+                                })}
+                              </ul>
+                            ) : (
+                              <ul className="asfin-bills__items-summary">
+                                {items.slice(0, 3).map((item, idx) => (
+                                  <li key={`${bill.id}-s-${idx}`}>
+                                    {item.name || 'Item'} ×{Number(item.qty) || 1}
+                                  </li>
+                                ))}
+                                {items.length > 3 ? (
+                                  <li>+{items.length - 3}</li>
+                                ) : null}
+                              </ul>
+                            )}
+                          </div>
+                        )}
+                      </td>
+                      <td><strong>{formatPrice(bill.total_amount)}</strong></td>
+                      <td>
+                        <button
+                          type="button"
+                          className="wp-button wp-button--secondary"
+                          disabled={deletingId === bill.id}
+                          onClick={() => void onDelete(bill)}
+                        >
+                          {deletingId === bill.id ? t('common.loading') : t('admin.asfinBillsDelete')}
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>

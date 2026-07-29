@@ -3729,7 +3729,14 @@ export function createAsfinBill(input = {}, user = {}) {
     if (!Array.isArray(data.asfin_bills)) data.asfin_bills = [];
     const items = normalizeAsfinBillItems(input.items);
     if (!items.length) throw new Error('Add at least one item');
-    const total = items.reduce((sum, row) => sum + row.price * row.qty, 0);
+    const subtotal = items.reduce((sum, row) => sum + row.price * row.qty, 0);
+    const discountRaw = Math.round(Number(input.discount_amount) || 0);
+    const discount_amount = Math.max(0, Math.min(subtotal, discountRaw));
+    const totalFromItems = Math.max(0, subtotal - discount_amount);
+    const clientTotal = Math.round(Number(input.total_amount));
+    const total_amount = Number.isFinite(clientTotal) && clientTotal >= 0
+      ? clientTotal
+      : totalFromItems;
     const id = nextAsfinBillId(data.asfin_bills);
     const bill = {
       id,
@@ -3739,12 +3746,15 @@ export function createAsfinBill(input = {}, user = {}) {
       shop_place: clampPosStr(input.shop_place, 80),
       shop_phone: clampPosStr(input.shop_phone, 40),
       customer_name: clampPosStr(input.customer_name || 'Walk-in', 80, 'Walk-in'),
+      phone: clampPosStr(input.phone, 40),
       device_name: clampPosStr(input.device_name, 80),
       notes: clampPosStr(input.notes, 500),
       receipt_date: clampPosStr(input.receipt_date, 40),
       receipt_time: clampPosStr(input.receipt_time, 20),
       items,
-      total_amount: total,
+      subtotal,
+      discount_amount,
+      total_amount,
       created_at: now(),
       staff_user_id: user?.id ?? null,
       staff_name: clampPosStr(user?.username || user?.name || '', 80),
@@ -3754,6 +3764,7 @@ export function createAsfinBill(input = {}, user = {}) {
       actor: staffAuditUser(user),
       bill_id: bill.bill_id,
       total_amount: bill.total_amount,
+      items: bill.items,
     });
     return bill;
   });

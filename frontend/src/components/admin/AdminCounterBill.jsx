@@ -190,7 +190,8 @@ function counterPaymentNote(order) {
 }
 
 function receiptTotals(order) {
-  const subtotal = (order?.items || []).reduce(
+  const items = normalizeReceiptItems(order?.items);
+  const subtotal = items.reduce(
     (sum, item) => sum + Number(item.price || 0) * (Number(item.qty) || 1),
     0
   );
@@ -685,10 +686,39 @@ function shortReceiptDate(order) {
   return `${date} ${time}`;
 }
 
+/** Normalize sale/custom line items so receipt never drops named rows (price/rate aliases). */
+export function normalizeReceiptItems(items) {
+  if (!Array.isArray(items)) return [];
+  return items
+    .map((item) => {
+      if (!item || typeof item !== 'object') return null;
+      const name = String(
+        item.name
+        || item.product_name
+        || item.title
+        || item.label
+        || '',
+      ).trim();
+      if (!name) return null;
+      const qtyRaw = Number(item.qty ?? item.quantity ?? 1);
+      const qty = Number.isFinite(qtyRaw) && qtyRaw > 0 ? Math.max(1, Math.round(qtyRaw)) : 1;
+      const unitRaw = Number(
+        item.price
+        ?? item.rate
+        ?? item.sale_price
+        ?? item.unit_price
+        ?? 0,
+      );
+      const price = Number.isFinite(unitRaw) && unitRaw >= 0 ? unitRaw : 0;
+      return { ...item, name, qty, price };
+    })
+    .filter(Boolean);
+}
+
 function buildReceiptLines(orderInput, maxChars = 18) {
   const order = isolateReceiptOrder(orderInput);
   const { discount, grandTotal } = receiptTotals(order);
-  const rows = order?.items || [];
+  const rows = normalizeReceiptItems(order?.items);
   const lines = [];
   const push = (value = '', options = {}) => {
     lines.push({
@@ -771,6 +801,7 @@ function buildReceiptLines(orderInput, maxChars = 18) {
   if (order?.phone) kv('Phone', String(order.phone));
   rule();
 
+  /* Always print itemized name + qty×rate + line amount (custom + sale). */
   if (!rows.length) {
     push('No items');
   } else {
@@ -958,15 +989,49 @@ export async function createCounterReceiptPngBlob(orderInput, thermalWidth = '58
   const qrSize = (qrModules + qrMarginModules * 2) * qrMag;
   const qrDrawSize = Math.min(qrSize, Math.floor(usable * 0.74));
 
-  /* Estimate logo height — ASFIN is wide hex (~0.42 aspect), not square */
+  /* Measure real logo height first — underestimate clipped item lines off the PNG */
+  let measuredLogoH = 0;
+  {
+    const probe = document.createElement('canvas');
+    probe.width = widthPx;
+    probe.height = Math.max(8, Math.floor(usable * 1.2));
+    const probeCtx = probe.getContext('2d', { alpha: false });
+    if (probeCtx) {
+      if (isCustomReceipt(order)) {
+        const logoMode = customLogoMode(order);
+        if (logoMode === 'own') {
+          measuredLogoH = await drawReceiptLogoOnCanvas(probeCtx, {
+            canvasWidth: widthPx, padX, y: 0, thermalWidth: pageWidth,
+          }) || 0;
+        } else if (logoMode === 'asfin') {
+          measuredLogoH = await drawAsfinLogoOnCanvas(probeCtx, {
+            canvasWidth: widthPx, padX, y: 0, thermalWidth: pageWidth,
+          }) || 0;
+        } else if (logoMode === 'custom' && order.custom_logo_data_url) {
+          measuredLogoH = await drawCustomImageOnCanvas(probeCtx, {
+            src: order.custom_logo_data_url,
+            canvasWidth: widthPx, padX, y: 0, thermalWidth: pageWidth, widthRatio: 0.72,
+          }) || 0;
+        }
+      } else if (lines.some((line) => line.logo)) {
+        measuredLogoH = await drawReceiptLogoOnCanvas(probeCtx, {
+          canvasWidth: widthPx, padX, y: 0, thermalWidth: pageWidth,
+        }) || 0;
+      }
+    }
+  }
+
+  /* Fallback estimate if probe failed — ASFIN wide hex ~0.55–0.65 aspect, not 0.45 */
   const asfinLogoOnlyEstimate = isCustomReceipt(order) && customLogoMode(order) === 'asfin';
-  const logoEstimate = lines.some((line) => line.logo)
-    ? (asfinLogoOnlyEstimate
-      ? Math.round(Math.min(asfinLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) * 0.45) + 12
-      : Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 10)
-    : (isCustomReceipt(order) && customLogoMode(order) !== 'none'
-      ? Math.floor(usable * 0.55) + 10
-      : 0);
+  const logoEstimate = measuredLogoH > 0
+    ? measuredLogoH
+    : (lines.some((line) => line.logo)
+      ? (asfinLogoOnlyEstimate
+        ? Math.round(Math.min(asfinLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) * 0.65) + 24
+        : Math.min(receiptLogoTargetDots(pageWidth), Math.floor(usable / 8) * 8) + 16)
+      : (isCustomReceipt(order) && customLogoMode(order) !== 'none'
+        ? Math.floor(usable * 0.55) + 16
+        : 0));
 
   let heightPx = padTop + padBottom + 4 + logoEstimate;
   lines.forEach((line, idx) => {
@@ -1402,7 +1467,7 @@ function buildThermalReceiptHtml(orderInput, thermalWidth = '58mm', qrDataUrl = 
   const { discount, grandTotal } = receiptTotals(order);
   const paymentNote = counterPaymentNote(order);
   const dateParts = shortReceiptDateParts(order);
-  const items = (order?.items || []).map((item) => {
+  const items = normalizeReceiptItems(order?.items).map((item) => {
     const qty = Number(item.qty) || 1;
     const unit = Number(item.price) || 0;
     return `<div class="r-item">
@@ -1560,7 +1625,7 @@ function buildThermalPngPrintHtml(dataUrl, widthMm, heightMm) {
    * a 58mm sheet, and forced img height caused progressive scale-down on reprints.
    * Image uses width + height:auto so aspect stays 1:1 with printer dots (203dpi).
    */
-  const contentH = Math.max(40, Math.min(280, Number(heightMm) || 120));
+  const contentH = Math.max(40, Math.min(450, Number(heightMm) || 120));
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
 <meta name="viewport" content="width=${paperW}, initial-scale=1, maximum-scale=1" />
 <title>AsFix receipt</title>
@@ -1648,7 +1713,7 @@ function lockThermalPageToContent(doc, widthMm = 58, forcedHeightMm = null) {
   const w = widthMm === 80 ? 80 : 58;
   let heightMm;
   if (forcedHeightMm != null && Number.isFinite(Number(forcedHeightMm))) {
-    heightMm = Math.max(40, Math.min(280, Math.ceil(Number(forcedHeightMm))));
+    heightMm = Math.max(40, Math.min(450, Math.ceil(Number(forcedHeightMm))));
   } else {
     const node = doc.querySelector('.receipt') || doc.body;
     const px = Math.max(
@@ -1659,7 +1724,7 @@ function lockThermalPageToContent(doc, widthMm = 58, forcedHeightMm = null) {
     );
     /* CSS px → mm @ 96dpi; +2mm padding; clamp away from tall-roll / A4 */
     heightMm = Math.ceil((px * 25.4) / 96) + 2;
-    heightMm = Math.max(40, Math.min(heightMm, 280));
+    heightMm = Math.max(40, Math.min(heightMm, 450));
   }
 
   let style = doc.getElementById('asfix-thermal-page-lock');
@@ -1876,7 +1941,7 @@ export async function printDirectSystemReceipt({
     /* 1px = 1 printer dot — same visual scale as Android BT / share / download PNG */
     const heightMm = Math.max(
       40,
-      Math.min(280, Math.ceil((Math.max(1, dims.height) / printerDots) * widthMm) + 4),
+      Math.min(450, Math.ceil((Math.max(1, dims.height) / printerDots) * widthMm) + 4),
     );
     const html = buildThermalPngPrintHtml(dataUrl, widthMm, heightMm);
     const printed = await printViaIframe(html, inFlightRef, widthMm, heightMm);
@@ -1987,7 +2052,7 @@ export async function printActiveCounterReceipt({
       const dims = await loadImageNaturalSize(dataUrl);
       const heightMm = Math.max(
         40,
-        Math.min(280, Math.ceil((Math.max(1, dims.height) / printerDots) * widthMm) + 4),
+        Math.min(450, Math.ceil((Math.max(1, dims.height) / printerDots) * widthMm) + 4),
       );
       const html = buildThermalPngPrintHtml(dataUrl, widthMm, heightMm);
       const printed = await printViaIframe(html, inFlightRef, widthMm, heightMm);
@@ -2184,11 +2249,11 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
       </div>
       <div className="counter-bill-print__rule" />
       <div className="counter-bill-print__items">
-        {(order.items || []).map((item, index) => {
+        {normalizeReceiptItems(order.items).map((item, index) => {
           const qty = Number(item.qty) || 1;
           const unit = Number(item.price) || 0;
           return (
-            <div className="counter-bill-print__item" key={`${item.product_id}-${index}`}>
+            <div className="counter-bill-print__item" key={`${item.product_id || item.name}-${index}`}>
               <strong>{item.name}</strong>
               <span>{qty} x {formatPrice(unit)}</span>
               <b>{formatPrice(unit * qty)}</b>

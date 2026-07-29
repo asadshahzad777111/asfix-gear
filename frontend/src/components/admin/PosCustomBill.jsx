@@ -335,9 +335,9 @@ function readFileAsDataUrl(file) {
 export function buildCustomBillOrder(draft) {
   const items = (draft.items || [])
     .map((row) => {
-      const name = String(row.name || '').trim();
+      const name = String(row.name || row.product_name || '').trim();
       const qty = Math.max(1, Number(row.qty) || 1);
-      const price = Math.max(0, Number(row.rate) || 0);
+      const price = Math.max(0, Number(row.rate ?? row.price ?? row.sale_price) || 0);
       return { name, qty, price };
     })
     /* Empty name boxes are ignored — fill name (+ rate/qty) to print */
@@ -410,6 +410,7 @@ export function buildCustomBillOrder(draft) {
 export default function PosCustomBill({
   onPrintOrder,
   onOpenPrinterSetup,
+  onBillCreated,
 }) {
   const { t } = useTranslation();
   const logoInputRef = useRef(null);
@@ -712,11 +713,12 @@ export default function PosCustomBill({
         return null;
       }
       setFeedback({ type: 'ok', text: t('counter.customBillSaveDbOk') });
+      onBillCreated?.(outcome.result?.order || outcome.result);
       return outcome.result;
     } finally {
       setSavingDb(false);
     }
-  }, [runSaveToStock, t]);
+  }, [onBillCreated, runSaveToStock, t]);
 
   const printBill = useCallback(async () => {
     const order = buildCustomBillOrder(draft);
@@ -746,6 +748,7 @@ export default function PosCustomBill({
           setFeedback({ type: 'error', text: savedSale.error });
           return;
         }
+        onBillCreated?.(savedSale.result?.order || savedSale.result);
       }
       const result = normalizePrintResult(await onPrintOrder(order));
       if (result.ok) {
@@ -811,7 +814,7 @@ export default function PosCustomBill({
     } finally {
       setBusy(false);
     }
-  }, [draft, onOpenPrinterSetup, onPrintOrder, runSaveToStock, t]);
+  }, [draft, onBillCreated, onOpenPrinterSetup, onPrintOrder, runSaveToStock, t]);
 
   const profileOwn = draft.profileId === CUSTOM_BILL_PROFILE_OWN;
   const profileAsfin = draft.profileId === CUSTOM_BILL_PROFILE_ASFIN;
@@ -822,6 +825,10 @@ export default function PosCustomBill({
     if (!profileAsfin || !suggestRow) return [];
     return filterAsfinCatalog(suggestRow.name, { history: asfinHistory });
   }, [profileAsfin, suggestRow?.name, asfinHistory]);
+  const previewItems = useMemo(
+    () => buildCustomBillOrder(draft).items,
+    [draft],
+  );
   const showSaveFields = Boolean(draft.saveToDbOnPrint);
   const actionsLocked = busy || savingSettings || savingDb;
 
@@ -1313,7 +1320,13 @@ export default function PosCustomBill({
         </ul>
       </div>
 
-      <label className="pos-custom-bill__check pos-custom-bill__save-toggle">
+      <label
+        className={`pos-custom-bill__check pos-custom-bill__save-toggle${showSaveFields ? ' pos-custom-bill__save-toggle--on' : ''}`}
+      >
+        <span
+          className={`pos-custom-bill__save-dot${showSaveFields ? ' pos-custom-bill__save-dot--on' : ''}`}
+          aria-hidden="true"
+        />
         <input
           type="checkbox"
           checked={Boolean(draft.saveToDbOnPrint)}
@@ -1326,6 +1339,27 @@ export default function PosCustomBill({
       ) : (
         <p className="pos-custom-bill__save-hint">{t('counter.customBillSaveSeparate')}</p>
       )}
+
+      <div className="pos-custom-bill__preview" aria-live="polite">
+        <strong className="pos-custom-bill__preview-title">{t('counter.customBillPreview')}</strong>
+        {previewItems.length === 0 ? (
+          <p className="pos-custom-bill__preview-empty">{t('counter.customBillPreviewEmpty')}</p>
+        ) : (
+          <ul className="pos-custom-bill__preview-list">
+            {previewItems.map((item, idx) => {
+              const qty = Number(item.qty) || 1;
+              const unit = Number(item.price) || 0;
+              return (
+                <li key={`${item.name}-${idx}`}>
+                  <span className="pos-custom-bill__preview-name">{item.name}</span>
+                  <span className="pos-custom-bill__preview-qty">{qty}×{Math.round(unit)}</span>
+                  <strong className="pos-custom-bill__preview-amt">{formatPrice(unit * qty)}</strong>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </div>
 
       <label className="pos-custom-bill__notes">
         <span>{t('counter.customBillNotes')}</span>

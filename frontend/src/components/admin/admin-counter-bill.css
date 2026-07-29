@@ -583,12 +583,131 @@
 
 .pos-custom-bill__save-toggle {
   margin-top: 0.75rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid var(--wp-border, #ccc);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--wp-surface, #fff) 92%, #1a1a1a 8%);
+  gap: 0.5rem;
+}
+
+.pos-custom-bill__save-toggle--on {
+  border-color: #1b7a3d;
+  background: color-mix(in srgb, #1b7a3d 12%, var(--wp-surface, #fff));
+}
+
+.pos-custom-bill__save-dot {
+  width: 0.55rem;
+  height: 0.55rem;
+  border-radius: 50%;
+  background: #bbb;
+  flex: 0 0 auto;
+}
+
+.pos-custom-bill__save-dot--on {
+  background: #1b7a3d;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #1b7a3d 25%, transparent);
 }
 
 .pos-custom-bill__save-hint {
   margin: 0.35rem 0 0;
   font-size: 0.78rem;
   opacity: 0.75;
+}
+
+.pos-custom-bill__preview {
+  margin-top: 0.85rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px dashed var(--wp-border, #ccc);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--wp-surface, #fff) 88%, #000 12%);
+}
+
+.pos-custom-bill__preview-title {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 0.4rem;
+}
+
+.pos-custom-bill__preview-empty {
+  margin: 0;
+  font-size: 0.8rem;
+  opacity: 0.7;
+}
+
+.pos-custom-bill__preview-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.3rem;
+}
+
+.pos-custom-bill__preview-list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.5rem;
+  align-items: baseline;
+  font-size: 0.85rem;
+}
+
+.pos-custom-bill__preview-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pos-custom-bill__preview-qty {
+  opacity: 0.75;
+  font-variant-numeric: tabular-nums;
+}
+
+.pos-custom-bill__preview-amt {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+}
+
+.counter-sales__items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.15rem;
+  font-size: 0.8rem;
+  max-width: 14rem;
+}
+
+.counter-sales__items span {
+  opacity: 0.75;
+}
+
+.asfin-bills__items {
+  display: grid;
+  gap: 0.35rem;
+  min-width: 10rem;
+}
+
+.asfin-bills__items-toggle {
+  justify-self: start;
+  font-size: 0.78rem;
+  padding: 0.2rem 0.45rem;
+}
+
+.asfin-bills__items-list,
+.asfin-bills__items-summary {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.2rem;
+  font-size: 0.8rem;
+}
+
+.asfin-bills__items-list li {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 0.4rem;
+  align-items: baseline;
 }
 
 .pos-custom-bill__media {
