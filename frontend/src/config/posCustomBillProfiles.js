@@ -14,7 +14,7 @@ export const CUSTOM_BILL_MEDIA_CUSTOM = 'custom';
 
 export const DEFAULT_CUSTOM_BILL_OWN = {
   shopName: SHOP.name || 'AsFix & Gear',
-  shopPlace: SHOP.city || 'Lahore',
+  shopPlace: SHOP.addressLine2 || SHOP.city || 'Lahore',
   shopPhone: SHOP.phone || '',
   logoSource: CUSTOM_BILL_MEDIA_OWN,
   scannerSource: CUSTOM_BILL_MEDIA_OWN,

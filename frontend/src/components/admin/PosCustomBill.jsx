@@ -26,6 +26,7 @@ import {
   loadAsfinItemHistory,
   rememberAsfinItemName,
 } from '../../config/asfinCatalog';
+import { SHOP } from '../../config/shop';
 import { useTranslation } from '../../context/LanguageContext';
 import { normalizePrintResult } from './AdminCounterBill';
 
@@ -383,8 +384,11 @@ export function buildCustomBillOrder(draft) {
     brand: draft.profileId === CUSTOM_BILL_PROFILE_ASFIN ? 'asfin' : 'asfix',
     profileId: draft.profileId,
     shop_name: String(draft.shopName || '').trim() || 'Shop',
-    shop_place: String(draft.shopPlace || '').trim(),
-    shop_phone: String(draft.shopPhone || '').trim(),
+    /* AsFix (own) custom bills: empty place/phone fall back to SHOP so thermal isn't blank */
+    shop_place: String(draft.shopPlace || '').trim()
+      || (draft.profileId === CUSTOM_BILL_PROFILE_OWN ? (SHOP.addressLine2 || '') : ''),
+    shop_phone: String(draft.shopPhone || '').trim()
+      || (draft.profileId === CUSTOM_BILL_PROFILE_OWN ? (SHOP.phone || '') : ''),
     logo_source: logoSource,
     scanner_source: scannerSource,
     use_own_logo: useOwnLogo,

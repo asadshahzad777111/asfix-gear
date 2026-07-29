@@ -631,6 +631,29 @@ function customQrMode(order) {
   return 'none';
 }
 
+/** AsFix Custom bill: empty place/phone → SHOP so thermal header isn't blank. Other/ASFIN keep blanks. */
+function shouldFallbackCustomShopContact(order) {
+  if (!isCustomReceipt(order)) return false;
+  const profile = String(order?.profileId || order?.profile_id || '').toLowerCase();
+  if (profile === 'own') return true;
+  if (profile === 'other' || profile === 'asfin') return false;
+  if (customLogoMode(order) === 'own') return true;
+  const name = String(order?.shop_name || '').trim().toLowerCase();
+  return name === 'asfix & gear' || name === 'asfix';
+}
+
+function customShopPlace(order) {
+  const place = String(order?.shop_place || '').trim();
+  if (place) return place;
+  return shouldFallbackCustomShopContact(order) ? String(SHOP.addressLine2 || '').trim() : '';
+}
+
+function customShopPhone(order) {
+  const phone = String(order?.shop_phone || '').trim();
+  if (phone) return phone;
+  return shouldFallbackCustomShopContact(order) ? String(SHOP.phone || '').trim() : '';
+}
+
 function shortReceiptDateParts(order) {
   if (order?.receipt_date || order?.receipt_time) {
     return {
@@ -717,16 +740,18 @@ function buildReceiptLines(orderInput, maxChars = 18) {
   if (custom) {
     /* Freeform / trade bill — optional logo, then text shop header */
     const logoMode = customLogoMode(order);
+    const place = customShopPlace(order);
+    const phone = customShopPhone(order);
     if (logoMode !== 'none') {
       push('', { logo: true, align: 'center' });
     }
     if (logoMode === 'asfin') {
       /* ASFIN graphic already has ASPLYWOOD brand — skip duplicate name/place */
-      if (order.shop_phone) wrap(order.shop_phone, { align: 'center', small: true });
+      if (phone) wrap(phone, { align: 'center', small: true });
     } else {
       wrap(order.shop_name || 'Shop', { align: 'center', weight: 'bold', title: true });
-      if (order.shop_place) wrap(order.shop_place, { align: 'center', small: true });
-      if (order.shop_phone) wrap(order.shop_phone, { align: 'center', small: true });
+      if (place) wrap(place, { align: 'center', small: true });
+      if (phone) wrap(phone, { align: 'center', small: true });
     }
   } else {
     /* Logo → city → phone (no text shop name — graphic logo already has brand) */
@@ -1388,6 +1413,8 @@ function buildThermalReceiptHtml(orderInput, thermalWidth = '58mm', qrDataUrl = 
 
   const logoMode = custom ? customLogoMode(order) : 'sale';
   const receiptPadTop = logoMode === 'asfin' ? '10mm' : '6.5mm';
+  const customPlace = custom ? customShopPlace(order) : '';
+  const customPhone = custom ? customShopPhone(order) : '';
 
   const css = `
 /* Placeholder — overwritten with measured content height before print */
@@ -1467,15 +1494,15 @@ html, body {
     ? (logoMode === 'asfin'
       /* Logo sits where ASPLYWOOD/Lahore text used to be — no duplicate brand lines */
       ? `${`<img class="r-logo r-logo--asfin" src="${logoDataUrl || ASFIN_LOGO_PATH}" alt="" width="340" height="152" />`}
-    ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`
+    ${customPhone ? `<p>${escapeHtml(customPhone)}</p>` : ''}`
       : `${logoMode === 'own'
         ? `<img class="r-logo" src="${logoDataUrl || RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`
         : (logoMode === 'custom' && order.custom_logo_data_url
           ? `<img class="r-logo" src="${order.custom_logo_data_url}" alt="" width="280" height="280" />`
           : '')}
     <strong class="r-shop-name">${escapeHtml(order.shop_name || 'Shop')}</strong>
-    ${order.shop_place ? `<p>${escapeHtml(order.shop_place)}</p>` : ''}
-    ${order.shop_phone ? `<p>${escapeHtml(order.shop_phone)}</p>` : ''}`)
+    ${customPlace ? `<p>${escapeHtml(customPlace)}</p>` : ''}
+    ${customPhone ? `<p>${escapeHtml(customPhone)}</p>` : ''}`)
     : (logoDataUrl
       ? `<img class="r-logo" src="${logoDataUrl}" alt="" width="280" height="280" />`
       : `<img class="r-logo" src="${RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`)

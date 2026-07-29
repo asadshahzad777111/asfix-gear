@@ -17,7 +17,7 @@ export const SHOP = {
   lng: 74.46745,
 
   addressLine1: 'AsFix & Gear — Mobile Repair & Accessories',
-  addressLine2: 'Lahore, Pakistan',
+  addressLine2: 'Lahore, Manawa, opposite Punjab College',
   city: 'Lahore',
 
   get coordinates() {
