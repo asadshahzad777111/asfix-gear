@@ -325,8 +325,11 @@ export default function Counter() {
   }, [resolvePrintableCounterSale]);
 
   const printCounterSale = useCallback(async (sale) => {
-    /* Freeform custom bill — already a full printable order, skip API hydrate */
-    if (sale?.custom_receipt && saleHasReceiptItems(sale)) {
+    /* Freeform custom bill — full printable order; same printSmart chooser as Sale bill */
+    if (sale?.custom_receipt) {
+      if (!saleHasReceiptItems(sale)) {
+        return { ok: false, reason: 'no_order', message: 'Add at least one named item to print' };
+      }
       return printSmart(sale, {
         thermalWidth,
         inFlightRef: printInFlightRef,
@@ -336,7 +339,7 @@ export default function Counter() {
     if (!order) {
       return { ok: false, reason: 'no_order', message: 'Receipt details are still loading' };
     }
-    /* Smart print: native BT local, else remote station chooser */
+    /* Smart print: native BT local, else Direct / station chooser (laptop + iOS) */
     return printSmart(order, {
       thermalWidth,
       inFlightRef: printInFlightRef,

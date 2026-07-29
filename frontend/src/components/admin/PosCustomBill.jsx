@@ -27,7 +27,6 @@ import {
   rememberAsfinItemName,
 } from '../../config/asfinCatalog';
 import { useTranslation } from '../../context/LanguageContext';
-import { isNativePosApp, getSavedPrinter } from '../../utils/nativePosPrint';
 import { normalizePrintResult } from './AdminCounterBill';
 
 const STORAGE_KEY = 'asfix_pos_custom_bill_v3';
@@ -315,7 +314,6 @@ export default function PosCustomBill({
   onOpenPrinterSetup,
 }) {
   const { t } = useTranslation();
-  const nativePos = isNativePosApp();
   const logoInputRef = useRef(null);
   const qrInputRef = useRef(null);
   const settingsRef = useRef(normalizeCustomBillSettings({}));
@@ -606,6 +604,10 @@ export default function PosCustomBill({
       setFeedback({ type: 'error', text: t('counter.customBillNeedItems') });
       return;
     }
+    if (typeof onPrintOrder !== 'function') {
+      setFeedback({ type: 'error', text: t('admin.counterBillNativePrintFailed') });
+      return;
+    }
     if (draft.saveToDbOnPrint) {
       const checked = validateSaveItems(draft.items, t);
       if (!checked.ok) {
@@ -613,14 +615,8 @@ export default function PosCustomBill({
         return;
       }
     }
-    if (nativePos) {
-      const saved = await getSavedPrinter();
-      if (!saved?.address) {
-        onOpenPrinterSetup?.();
-        setFeedback({ type: 'error', text: t('admin.counterBillNativePrintFailed') });
-        return;
-      }
-    }
+    /* Same pipeline as Sale bill: onPrintOrder -> printSmart -> PrintTargetChooser
+       (auto-local only when native Android POS already has a BT printer). */
     setBusy(true);
     setFeedback(null);
     try {
@@ -631,7 +627,7 @@ export default function PosCustomBill({
           return;
         }
       }
-      const result = normalizePrintResult(await onPrintOrder?.(order));
+      const result = normalizePrintResult(await onPrintOrder(order));
       if (result.ok) {
         if (isAsfinCustomBill({ ...draft, ...order })) {
           order.items.forEach((item) => rememberAsfinItemName(item.name));
@@ -658,22 +654,44 @@ export default function PosCustomBill({
         }
         setFeedback({
           type: 'ok',
-          text: draft.saveToDbOnPrint
-            ? t('counter.customBillPrintAndSaveOk')
-            : t('counter.customBillPrintOk'),
+          text: result.job
+            ? t('admin.printTargetQueued')
+            : draft.saveToDbOnPrint
+              ? t('counter.customBillPrintAndSaveOk')
+              : t('counter.customBillPrintOk'),
         });
-      } else {
-        setFeedback({
-          type: 'error',
-          text: result.message || t('admin.counterBillNativePrintFailed'),
-        });
+        return;
       }
+      /* Match Sale bill applyPrintFeedback — cancel/busy stay quiet */
+      if (result.reason === 'cancelled' || result.reason === 'busy') {
+        if (result.reason === 'busy') {
+          setFeedback({ type: 'error', text: t('admin.counterBillPrintBusy') });
+        }
+        return;
+      }
+      if (result.reason === 'no_station') {
+        setFeedback({ type: 'error', text: t('admin.printTargetNoStation') });
+        return;
+      }
+      if (result.reason === 'no_printer') {
+        onOpenPrinterSetup?.();
+        setFeedback({ type: 'error', text: t('admin.counterBillNativeNoPrinter') });
+        return;
+      }
+      if (result.reason === 'permission_denied') {
+        setFeedback({ type: 'error', text: t('admin.counterBillNativeBtPermission') });
+        return;
+      }
+      setFeedback({
+        type: 'error',
+        text: result.message || t('admin.counterBillNativePrintFailed'),
+      });
     } catch (err) {
       setFeedback({ type: 'error', text: err?.message || t('admin.counterBillNativePrintFailed') });
     } finally {
       setBusy(false);
     }
-  }, [draft, nativePos, onOpenPrinterSetup, onPrintOrder, runSaveToStock, t]);
+  }, [draft, onOpenPrinterSetup, onPrintOrder, runSaveToStock, t]);
 
   const profileOwn = draft.profileId === CUSTOM_BILL_PROFILE_OWN;
   const profileAsfin = draft.profileId === CUSTOM_BILL_PROFILE_ASFIN;
