@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
+import { createPortal, flushSync } from 'react-dom';
 import QRCode from 'qrcode';
 import { api, formatPrice } from '../../api/client';
 import { ASFIN } from '../../config/asfin';
@@ -2463,7 +2463,7 @@ export default function AdminCounterBill({
   const total = Math.max(0, subtotal - discountAmount);
   const discountNeedsOverride = discountAmount > Number(posSettings.posDiscountMaxAmountWithoutPin || 0)
     || effectiveDiscountPercent > Number(posSettings.posDiscountMaxPercentWithoutPin || 0);
-  const cashReceivedValue = Number(cashReceived);
+  const cashReceivedValue = Number(String(cashReceived).replace(',', '.'));
   const changeDue = paymentMode === 'cash' && Number.isFinite(cashReceivedValue) ? Math.max(0, cashReceivedValue - total) : 0;
   const hasActiveBill = Boolean(lines.length || customerName || customerPhone || paymentNote || discountValue);
   const selectedItemCount = lines.reduce((sum, line) => sum + (Number(line.qty) || 0), 0);
@@ -2680,23 +2680,58 @@ export default function AdminCounterBill({
     }, 30);
   }, [softScrollToSection]);
 
-  /** Grand total / amount → Amount Received (cash) so cashier can tender + print. */
+  /** Focus Amount Received — must run inside the same tap gesture on iOS or the keypad stays closed. */
+  const focusCashReceivedInput = useCallback(() => {
+    const input = cashReceivedRef.current;
+    if (!input || typeof input.focus !== 'function') return false;
+    try {
+      input.focus({ preventScroll: true });
+    } catch {
+      try {
+        input.focus();
+      } catch {
+        return false;
+      }
+    }
+    try {
+      input.select?.();
+    } catch {
+      /* select unsupported on some inputs */
+    }
+    return true;
+  }, []);
+
+  /**
+   * Grand total / dock price → Amount Received (cash) so cashier can tender + print.
+   * iOS: focus FIRST in this gesture (like jumpToSearch). Delayed focus after scroll never opens the keypad.
+   */
   const jumpToAmountReceived = useCallback(() => {
-    setPaymentMode('cash');
+    if (paymentMode !== 'cash') {
+      flushSync(() => {
+        setPaymentMode('cash');
+      });
+    }
+    setDockFocus('amount');
+    setSearchFocused(false);
+    focusCashReceivedInput();
+    /* Soft pin after keyboard — scrolling first dismisses an opening iOS keypad. */
     window.setTimeout(() => {
       softScrollToSection('counter-bill-cash');
-      const input = cashReceivedRef.current;
-      if (!input) return;
-      window.setTimeout(() => {
-        focusWithoutScroll(input);
-        try {
-          input.select?.();
-        } catch {
-          /* ignore */
-        }
-      }, 180);
-    }, 40);
-  }, [focusWithoutScroll, softScrollToSection]);
+      focusCashReceivedInput();
+    }, 280);
+  }, [focusCashReceivedInput, paymentMode, softScrollToSection]);
+
+  /** Dock / summary total: open amount keypad on pointerdown (same gesture); click is keyboard backup. */
+  const onAmountDockPointerDown = useCallback((e) => {
+    if (typeof e.button === 'number' && e.button !== 0) return;
+    /* Keep focus on the amount input — total button must not steal it. */
+    e.preventDefault();
+    jumpToAmountReceived();
+  }, [jumpToAmountReceived]);
+
+  const onAmountDockClick = useCallback((e) => {
+    if (e.detail === 0) jumpToAmountReceived();
+  }, [jumpToAmountReceived]);
 
   const jumpToSearch = useCallback(() => {
     const input = searchRef.current;
@@ -3721,13 +3756,14 @@ export default function AdminCounterBill({
               <span>{t('admin.counterBillAmountReceived')}</span>
               <input
                 ref={cashReceivedRef}
-                type="number"
-                min="0"
-                step="1"
+                type="text"
                 inputMode="decimal"
+                pattern="[0-9]*[.,]?[0-9]*"
                 value={cashReceived}
-                onChange={(e) => setCashReceived(e.target.value)}
+                onChange={(e) => setCashReceived(e.target.value.replace(/[^\d.,]/g, ''))}
                 placeholder="0"
+                autoComplete="off"
+                enterKeyHint="done"
               />
             </label>
             <div className="counter-bill__change">
@@ -3818,7 +3854,8 @@ export default function AdminCounterBill({
               <button
                 type="button"
                 className="counter-bill__summary-total counter-bill__summary-total--jump"
-                onClick={jumpToAmountReceived}
+                onPointerDown={onAmountDockPointerDown}
+                onClick={onAmountDockClick}
                 title={t('admin.counterBillAmountReceived')}
               >
                 <span>{t('admin.counterBillGrandTotal')}</span>
@@ -3891,7 +3928,8 @@ export default function AdminCounterBill({
               <button
                 type="button"
                 className="counter-bill__pos-dock-amount"
-                onClick={jumpToAmountReceived}
+                onPointerDown={onAmountDockPointerDown}
+                onClick={onAmountDockClick}
                 title={t('admin.counterBillAmountReceived')}
               >
                 <strong key={`dock-total-${total}-${selectedItemCount}`}>{formatPrice(total)}</strong>
