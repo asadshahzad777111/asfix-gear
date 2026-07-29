@@ -644,12 +644,15 @@ function shortReceiptDateParts(order) {
   const day = String(d.getDate()).padStart(2, '0');
   const mon = RECEIPT_MONTHS[d.getMonth()] || 'JAN';
   const year = String(d.getFullYear());
-  const hh = String(d.getHours()).padStart(2, '0');
   const mi = String(d.getMinutes()).padStart(2, '0');
+  const hours24 = d.getHours();
+  const period = hours24 >= 12 ? 'PM' : 'AM';
+  let hour12 = hours24 % 12;
+  if (hour12 === 0) hour12 = 12;
   return {
-    /* Unique POS style: 26 JUL 2026 (not 23/07/26) */
+    /* Unique POS style: 26 JUL 2026 · 10:30 AM (not 23/07/26 · 24h) */
     date: `${day} ${mon} ${year}`,
-    time: `${hh}:${mi}`,
+    time: `${hour12}:${mi} ${period}`,
   };
 }
 

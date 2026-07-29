@@ -366,6 +366,69 @@
   grid-column: 1 / -1;
 }
 
+.pos-custom-bill__datetime {
+  grid-column: 1 / -1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.55rem 0.65rem;
+}
+
+.pos-custom-bill__date-field,
+.pos-custom-bill__time-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  font-size: 0.8rem;
+}
+
+.pos-custom-bill__date-field > label {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.pos-custom-bill__time-12h {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.pos-custom-bill__time-12h select,
+.pos-custom-bill__date-field input[type="date"] {
+  border: 1px solid var(--wp-border, #ccc);
+  border-radius: 8px;
+  padding: 0.45rem 0.4rem;
+  font: inherit;
+  background: var(--wp-surface, #fff);
+  color: inherit;
+}
+
+.pos-custom-bill__time-hour,
+.pos-custom-bill__time-minute {
+  min-width: 3.25rem;
+}
+
+.pos-custom-bill__time-period {
+  min-width: 4rem;
+}
+
+.pos-custom-bill__time-sep {
+  font-weight: 600;
+  opacity: 0.7;
+}
+
+.pos-custom-bill__datetime-btn {
+  padding: 0.35rem 0.55rem;
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.pos-custom-bill__time-preview {
+  opacity: 0.75;
+  font-size: 0.75rem;
+}
+
 .pos-custom-bill__grid input,
 .pos-custom-bill__notes textarea,
 .pos-custom-bill__item-name,
@@ -721,6 +784,10 @@
 
 @media (max-width: 640px) {
   .pos-custom-bill__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .pos-custom-bill__datetime {
     grid-template-columns: 1fr;
   }
 }

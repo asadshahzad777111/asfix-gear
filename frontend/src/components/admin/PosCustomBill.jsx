@@ -103,16 +103,46 @@ function validateSaveItems(items, t) {
   return { ok: true, items: named };
 }
 
-function tomorrowLocalParts() {
+function pad2(n) {
+  return String(n).padStart(2, '0');
+}
+
+/** Today + current clock — stored as date YYYY-MM-DD and 24h HH:mm for ISO. */
+function nowLocalParts() {
   const d = new Date();
-  d.setDate(d.getDate() + 1);
-  const yyyy = d.getFullYear();
-  const mm = String(d.getMonth() + 1).padStart(2, '0');
-  const dd = String(d.getDate()).padStart(2, '0');
   return {
-    dateInput: `${yyyy}-${mm}-${dd}`,
-    timeInput: '10:00',
+    dateInput: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
+    timeInput: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`,
   };
+}
+
+function parseTimeInput24(timeInput) {
+  const [hhRaw = '0', miRaw = '0'] = String(timeInput || '').split(':');
+  const hours24 = Math.min(23, Math.max(0, Number.parseInt(hhRaw, 10) || 0));
+  const minutes = Math.min(59, Math.max(0, Number.parseInt(miRaw, 10) || 0));
+  return { hours24, minutes };
+}
+
+/** Shop-style 12h parts from stored HH:mm (e.g. 13:05 → 1, 5, PM). */
+function to12hParts(timeInput) {
+  const { hours24, minutes } = parseTimeInput24(timeInput);
+  const period = hours24 >= 12 ? 'PM' : 'AM';
+  let hour12 = hours24 % 12;
+  if (hour12 === 0) hour12 = 12;
+  return { hour12, minutes, period };
+}
+
+function from12hParts(hour12, minutes, period) {
+  let h = Math.min(12, Math.max(1, Number.parseInt(hour12, 10) || 12));
+  const mi = Math.min(59, Math.max(0, Number.parseInt(minutes, 10) || 0));
+  const isPm = String(period || 'AM').toUpperCase() === 'PM';
+  let hours24;
+  if (h === 12) {
+    hours24 = isPm ? 12 : 0;
+  } else {
+    hours24 = isPm ? h + 12 : h;
+  }
+  return `${pad2(hours24)}:${pad2(mi)}`;
 }
 
 function formatReceiptDateLabel(dateInput) {
@@ -123,10 +153,11 @@ function formatReceiptDateLabel(dateInput) {
   return `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+/** Receipt print: "10:30 AM" (not 24h). */
 function formatReceiptTimeLabel(timeInput) {
-  if (!timeInput) return '-';
-  const [hh = '00', mi = '00'] = String(timeInput).split(':');
-  return `${String(hh).padStart(2, '0')}:${String(mi).padStart(2, '0')}`;
+  if (!timeInput && timeInput !== 0) return '-';
+  const { hour12, minutes, period } = to12hParts(timeInput);
+  return `${hour12}:${pad2(minutes)} ${period}`;
 }
 
 function loadSavedDraft() {
@@ -195,7 +226,7 @@ function migrateDraftMediaSources(draft) {
 }
 
 function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
-  const t = tomorrowLocalParts();
+  const now = nowLocalParts();
   const normalized = normalizeCustomBillSettings(settings || {});
   const id = normalizeProfileId(profileId, CUSTOM_BILL_PROFILE_OTHER);
   const profile =
@@ -212,8 +243,8 @@ function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
     ...profileIdentityFields(profile),
     logoDataUrl: media.logoDataUrl,
     qrImageDataUrl: media.qrImageDataUrl,
-    dateInput: t.dateInput,
-    timeInput: t.timeInput,
+    dateInput: now.dateInput,
+    timeInput: now.timeInput,
     workType,
     mobileName: workType === WORK_TYPE_MOBILE ? 'Infinix Smart 5' : '',
     customerName: '',
@@ -362,6 +393,7 @@ export default function PosCustomBill({
     draft.workType,
     draft.profileId === CUSTOM_BILL_PROFILE_ASFIN ? WORK_TYPE_OTHER : WORK_TYPE_MOBILE,
   );
+  const time12 = to12hParts(draft.timeInput);
 
   const persist = useCallback((next) => {
     setDraft(next);
@@ -426,6 +458,27 @@ export default function PosCustomBill({
   const updateField = useCallback((key, value) => {
     persist({ ...draft, [key]: value });
   }, [draft, persist]);
+
+  const updateTime12h = useCallback((patch) => {
+    const cur = to12hParts(draft.timeInput);
+    const next = {
+      hour12: patch.hour12 ?? cur.hour12,
+      minutes: patch.minutes ?? cur.minutes,
+      period: patch.period ?? cur.period,
+    };
+    persist({
+      ...draft,
+      timeInput: from12hParts(next.hour12, next.minutes, next.period),
+    });
+  }, [draft, persist]);
+
+  const setTodayDate = useCallback(() => {
+    updateField('dateInput', nowLocalParts().dateInput);
+  }, [updateField]);
+
+  const setNowTime = useCallback(() => {
+    updateField('timeInput', nowLocalParts().timeInput);
+  }, [updateField]);
 
   const updateItem = useCallback((id, patch) => {
     persist({
@@ -771,22 +824,70 @@ export default function PosCustomBill({
             inputMode="tel"
           />
         </label>
-        <label>
-          <span>{t('admin.counterBillDate')}</span>
-          <input
-            type="date"
-            value={draft.dateInput}
-            onChange={(e) => updateField('dateInput', e.target.value)}
-          />
-        </label>
-        <label>
-          <span>{t('counter.customBillTime')}</span>
-          <input
-            type="time"
-            value={draft.timeInput}
-            onChange={(e) => updateField('timeInput', e.target.value)}
-          />
-        </label>
+        <div className="pos-custom-bill__datetime">
+          <div className="pos-custom-bill__date-field">
+            <label>
+              <span>{t('admin.counterBillDate')}</span>
+              <input
+                type="date"
+                value={draft.dateInput}
+                onChange={(e) => updateField('dateInput', e.target.value)}
+              />
+            </label>
+            <button
+              type="button"
+              className="wp-button wp-button--secondary pos-custom-bill__datetime-btn"
+              onClick={setTodayDate}
+            >
+              {t('counter.customBillTodayDate')}
+            </button>
+          </div>
+          <div className="pos-custom-bill__time-field">
+            <span>{t('counter.customBillTime')}</span>
+            <div className="pos-custom-bill__time-12h" role="group" aria-label={t('counter.customBillTime')}>
+              <select
+                className="pos-custom-bill__time-hour"
+                value={time12.hour12}
+                onChange={(e) => updateTime12h({ hour12: Number(e.target.value) })}
+                aria-label={t('counter.customBillHour')}
+              >
+                {Array.from({ length: 12 }, (_, i) => i + 1).map((h) => (
+                  <option key={h} value={h}>{h}</option>
+                ))}
+              </select>
+              <span className="pos-custom-bill__time-sep" aria-hidden="true">:</span>
+              <select
+                className="pos-custom-bill__time-minute"
+                value={time12.minutes}
+                onChange={(e) => updateTime12h({ minutes: Number(e.target.value) })}
+                aria-label={t('counter.customBillMinute')}
+              >
+                {Array.from({ length: 60 }, (_, i) => i).map((m) => (
+                  <option key={m} value={m}>{pad2(m)}</option>
+                ))}
+              </select>
+              <select
+                className="pos-custom-bill__time-period"
+                value={time12.period}
+                onChange={(e) => updateTime12h({ period: e.target.value })}
+                aria-label={t('counter.customBillAmPm')}
+              >
+                <option value="AM">AM</option>
+                <option value="PM">PM</option>
+              </select>
+              <button
+                type="button"
+                className="wp-button wp-button--secondary pos-custom-bill__datetime-btn"
+                onClick={setNowTime}
+              >
+                {t('counter.customBillNowTime')}
+              </button>
+            </div>
+            <small className="pos-custom-bill__time-preview">
+              {formatReceiptTimeLabel(draft.timeInput)}
+            </small>
+          </div>
+        </div>
         <div className="pos-custom-bill__full pos-custom-bill__work-type">
           <span>{t('counter.customBillWorkType')}</span>
           <div className="pos-custom-bill__source" role="radiogroup" aria-label={t('counter.customBillWorkType')}>
