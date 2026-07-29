@@ -3,8 +3,6 @@ import { api } from '../api/client';
 import { readProductsCache, writeProductsCache } from '../utils/productCache';
 import { filterPublishedProducts } from '../utils/productStatus';
 import HomeHero from '../components/home/HomeHero';
-import TrustBadges from '../components/home/TrustBadges';
-import Marquee from '../components/Marquee';
 import CollectionGrid from '../components/home/CollectionGrid';
 import BrandGrid from '../components/home/BrandGrid';
 import ProductCarousel from '../components/home/ProductCarousel';
@@ -81,8 +79,6 @@ export default function Home() {
       />
       <LocalBusinessJsonLd />
       <HomeHero />
-      <TrustBadges />
-      <Marquee />
       <BrandGrid />
       <CollectionGrid />
 
