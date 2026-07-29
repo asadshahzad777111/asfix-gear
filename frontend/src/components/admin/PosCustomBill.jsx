@@ -107,13 +107,76 @@ function pad2(n) {
   return String(n).padStart(2, '0');
 }
 
-/** Today + current clock — stored as date YYYY-MM-DD and 24h HH:mm for ISO. */
-function nowLocalParts() {
-  const d = new Date();
+/** Shop wall clock — always Lahore / Pakistan, never the device/browser local TZ. */
+const SHOP_TIME_ZONE = 'Asia/Karachi';
+
+function partsFromZonedDate(date, timeZone = SHOP_TIME_ZONE) {
+  const parts = new Intl.DateTimeFormat('en-GB', {
+    timeZone,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    hourCycle: 'h23',
+  }).formatToParts(date);
+  const get = (type) => parts.find((p) => p.type === type)?.value || '00';
   return {
-    dateInput: `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`,
-    timeInput: `${pad2(d.getHours())}:${pad2(d.getMinutes())}`,
+    dateInput: `${get('year')}-${get('month')}-${get('day')}`,
+    timeInput: `${get('hour')}:${get('minute')}`,
   };
+}
+
+/** Today + current clock in Asia/Karachi — stored as YYYY-MM-DD and 24h HH:mm. */
+function nowShopParts() {
+  return partsFromZonedDate(new Date(), SHOP_TIME_ZONE);
+}
+
+/**
+ * Convert a Karachi wall date+time (YYYY-MM-DD + HH:mm) to a real UTC ISO string.
+ * Does not treat the values as the laptop's local timezone.
+ */
+function shopWallToIso(dateInput, timeInput) {
+  const [ys, mos, ds] = String(dateInput || '').split('-');
+  const [hs, mis] = String(timeInput || '00:00').split(':');
+  const y = Number(ys);
+  const mo = Number(mos);
+  const d = Number(ds);
+  const h = Number(hs) || 0;
+  const mi = Number(mis) || 0;
+  if (!y || !mo || !d) return new Date().toISOString();
+
+  const wantedAsUtc = Date.UTC(y, mo - 1, d, h, mi, 0);
+  let guess = wantedAsUtc;
+  const formatter = new Intl.DateTimeFormat('en-US', {
+    timeZone: SHOP_TIME_ZONE,
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    second: '2-digit',
+    hourCycle: 'h23',
+  });
+  for (let i = 0; i < 2; i += 1) {
+    const p = Object.fromEntries(
+      formatter
+        .formatToParts(new Date(guess))
+        .filter((x) => x.type !== 'literal')
+        .map((x) => [x.type, Number(x.value)]),
+    );
+    const actualAsUtc = Date.UTC(
+      p.year,
+      p.month - 1,
+      p.day,
+      p.hour,
+      p.minute,
+      p.second || 0,
+    );
+    guess += wantedAsUtc - actualAsUtc;
+  }
+  const out = new Date(guess);
+  return Number.isNaN(out.getTime()) ? new Date().toISOString() : out.toISOString();
 }
 
 function parseTimeInput24(timeInput) {
@@ -147,10 +210,13 @@ function from12hParts(hour12, minutes, period) {
 
 function formatReceiptDateLabel(dateInput) {
   if (!dateInput) return '-';
-  const d = new Date(`${dateInput}T12:00:00`);
-  if (Number.isNaN(d.getTime())) return dateInput;
+  const [ys, mos, ds] = String(dateInput).split('-');
+  const y = Number(ys);
+  const m = Number(mos);
+  const d = Number(ds);
+  if (!y || !m || !d) return dateInput;
   const months = ['JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN', 'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'];
-  return `${String(d.getDate()).padStart(2, '0')} ${months[d.getMonth()]} ${d.getFullYear()}`;
+  return `${pad2(d)} ${months[m - 1]} ${y}`;
 }
 
 /** Receipt print: "10:30 AM" (not 24h). */
@@ -226,7 +292,7 @@ function migrateDraftMediaSources(draft) {
 }
 
 function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
-  const now = nowLocalParts();
+  const now = nowShopParts();
   const normalized = normalizeCustomBillSettings(settings || {});
   const id = normalizeProfileId(profileId, CUSTOM_BILL_PROFILE_OTHER);
   const profile =
@@ -291,10 +357,7 @@ export function buildCustomBillOrder(draft) {
     : '';
   const dateLabel = formatReceiptDateLabel(draft.dateInput);
   const timeLabel = formatReceiptTimeLabel(draft.timeInput);
-  const createdAt = (() => {
-    const iso = new Date(`${draft.dateInput || ''}T${draft.timeInput || '00:00'}:00`);
-    return Number.isNaN(iso.getTime()) ? new Date().toISOString() : iso.toISOString();
-  })();
+  const createdAt = shopWallToIso(draft.dateInput, draft.timeInput);
 
   const logoSource = resolveLogoSource(draft, CUSTOM_BILL_MEDIA_NONE);
   const scannerSource = resolveScannerSource(draft, CUSTOM_BILL_MEDIA_NONE);
@@ -473,11 +536,11 @@ export default function PosCustomBill({
   }, [draft, persist]);
 
   const setTodayDate = useCallback(() => {
-    updateField('dateInput', nowLocalParts().dateInput);
+    updateField('dateInput', nowShopParts().dateInput);
   }, [updateField]);
 
   const setNowTime = useCallback(() => {
-    updateField('timeInput', nowLocalParts().timeInput);
+    updateField('timeInput', nowShopParts().timeInput);
   }, [updateField]);
 
   const updateItem = useCallback((id, patch) => {
@@ -825,6 +888,7 @@ export default function PosCustomBill({
           />
         </label>
         <div className="pos-custom-bill__datetime">
+          <p className="pos-custom-bill__tz-hint">{t('counter.customBillPkTimeHint')}</p>
           <div className="pos-custom-bill__date-field">
             <label>
               <span>{t('admin.counterBillDate')}</span>

@@ -373,6 +373,14 @@
   gap: 0.55rem 0.65rem;
 }
 
+.pos-custom-bill__tz-hint {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 0.72rem;
+  opacity: 0.72;
+  line-height: 1.3;
+}
+
 .pos-custom-bill__date-field,
 .pos-custom-bill__time-field {
   display: flex;
