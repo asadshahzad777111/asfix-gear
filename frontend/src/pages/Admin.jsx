@@ -176,8 +176,10 @@ export default function Admin() {
 
   const pendingOrders = orders.filter((o) => o.payment_status === 'pending_payment' || o.shipping_status === 'pending').length;
 
-  const stockAlertProducts = getStockAlertProducts(products);
-  const lowStockProducts = getLowStockProducts(products);
+  /* POS Custom (custom-bill save) rows often land at 0/low stock — keep them in Stock tab,
+     but skip popup / top-bar noise so Custom bill save does not spam Low Stock alerts. */
+  const stockAlertProducts = getStockAlertProducts(products, { excludePosCustom: true });
+  const lowStockProducts = getLowStockProducts(products, { excludePosCustom: true });
   const lowStockCount = lowStockProducts.length;
 
   const productCategories = [...new Set(products.map((p) => p.category).filter(Boolean))].sort();

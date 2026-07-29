@@ -21,6 +21,7 @@ import {
   listBondedPrinters,
   savePrinter,
 } from '../utils/nativePosPrint';
+import { getLowStockProducts } from '../utils/stock';
 import '../components/admin/admin-wp.css';
 import '../components/admin/admin-counter-bill.css';
 
@@ -75,6 +76,11 @@ export default function Counter() {
   });
   const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
   const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
+  /* Sale bill only — Custom bill / ASFIN save must not show Low Stock noise. */
+  const saleLowStockCount = useMemo(
+    () => (posMode === 'sale' ? getLowStockProducts(products, { excludePosCustom: true }).length : 0),
+    [posMode, products],
+  );
 
   useEffect(() => {
     if (!nativePos) return undefined;
@@ -493,6 +499,12 @@ export default function Counter() {
 
         {bootstrapping && products.length === 0 && posMode === 'sale' ? (
           <div className="counter-boot">{t('common.loading')}</div>
+        ) : null}
+
+        {posMode === 'sale' && saleLowStockCount > 0 ? (
+          <div className="counter-stock-alert-bar" role="status" aria-label={t('admin.stockAlerts')}>
+            {t('admin.stockAlertBar', { count: saleLowStockCount })}
+          </div>
         ) : null}
 
         {posMode === 'sale' ? (

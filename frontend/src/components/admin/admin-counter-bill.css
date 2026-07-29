@@ -306,6 +306,23 @@
   border: none;
 }
 
+.counter-stock-alert-bar {
+  margin: 0 0 0.65rem;
+  padding: 0.55rem 0.75rem;
+  border-radius: 10px;
+  border: 1px solid rgba(180, 83, 9, 0.35);
+  background: rgba(251, 191, 36, 0.16);
+  color: #92400e;
+  font-size: 0.88rem;
+  font-weight: 700;
+}
+
+[data-theme='dark'] .counter-stock-alert-bar {
+  border-color: rgba(251, 191, 36, 0.35);
+  background: rgba(180, 83, 9, 0.22);
+  color: #fde68a;
+}
+
 .pos-custom-bill {
   margin: 0 0 1rem;
   padding: 0.85rem 0.95rem 1rem;
@@ -1795,12 +1812,47 @@ html.pos-keyboard-open #counter-bill-search {
   overflow: hidden;
   border-radius: 6px;
   background: var(--pos-media-bg);
+  position: relative;
 }
 
 .counter-bill__product-media img {
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.counter-bill__product-low-badge {
+  position: absolute;
+  left: 0.35rem;
+  top: 0.35rem;
+  z-index: 1;
+  padding: 0.15rem 0.4rem;
+  border-radius: 999px;
+  background: rgba(180, 83, 9, 0.95);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  line-height: 1.2;
+  pointer-events: none;
+}
+
+.counter-bill__product-tile--low {
+  border-color: rgba(180, 83, 9, 0.45);
+}
+
+.counter-bill__product-cost,
+.counter-bill__suggest-prices,
+.counter-bill__cart-item-prices {
+  display: block;
+  color: #64748b;
+  font-variant-numeric: tabular-nums;
+}
+
+.counter-bill__cart-cost {
+  color: #b45309 !important;
+  font-weight: 700 !important;
 }
 
 .counter-bill__product-info,

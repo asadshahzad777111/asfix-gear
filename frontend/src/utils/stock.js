@@ -1,4 +1,6 @@
 export const LOW_STOCK_THRESHOLD = 5;
+const POS_CUSTOM_CATEGORY = 'pos custom';
+const POS_CUSTOM_TAG = 'pos-custom';
 
 /** Coerce API/form stock to a non-negative integer (handles strings like "4"). */
 export function normalizeStock(stock) {
@@ -23,19 +25,34 @@ export function getStockStatus(stock) {
   return 'in';
 }
 
+/** Custom-bill save rows — keep in inventory views, exclude from popup alert noise. */
+export function isPosCustomProduct(product) {
+  if (!product) return false;
+  const category = String(product.category || '').trim().toLowerCase();
+  if (category === POS_CUSTOM_CATEGORY) return true;
+  const tags = Array.isArray(product.tags) ? product.tags : [];
+  return tags.some((tag) => String(tag || '').trim().toLowerCase() === POS_CUSTOM_TAG);
+}
+
 /** True when stock is out (≤0) or low (1…threshold). */
 export function needsStockAlert(stock) {
   return getStockStatus(stock) !== 'in';
 }
 
-export function getStockAlertProducts(products) {
+export function getStockAlertProducts(products, { excludePosCustom = false } = {}) {
   if (!Array.isArray(products)) return [];
-  return products.filter((p) => needsStockAlert(p.stock));
+  return products.filter((p) => {
+    if (excludePosCustom && isPosCustomProduct(p)) return false;
+    return needsStockAlert(p.stock);
+  });
 }
 
-export function getLowStockProducts(products) {
+export function getLowStockProducts(products, { excludePosCustom = false } = {}) {
   if (!Array.isArray(products)) return [];
-  return products.filter((p) => getStockStatus(p.stock) === 'low');
+  return products.filter((p) => {
+    if (excludePosCustom && isPosCustomProduct(p)) return false;
+    return getStockStatus(p.stock) === 'low';
+  });
 }
 
 export function maxCartQty(product) {

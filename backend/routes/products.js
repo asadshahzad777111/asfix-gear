@@ -11,7 +11,8 @@ import {
 } from '../utils/productsCsv.js';
 
 const router = Router();
-const STAFF = ['super_admin', 'admin', 'editor'];
+/** Includes counter — POS needs cost_price on catalog reads (sell vs cost). */
+const STAFF = ['super_admin', 'admin', 'editor', 'counter'];
 const PRODUCT_MANAGERS = ['super_admin', 'admin'];
 const MAX_IMAGE_DATA_URL = 180_000;
 const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;

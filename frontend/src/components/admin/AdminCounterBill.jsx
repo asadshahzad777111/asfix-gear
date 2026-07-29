@@ -17,6 +17,7 @@ import {
   tryNativeThermalPrint,
 } from '../../utils/nativePosPrint';
 import { useSmartThermalPrint } from '../../hooks/useSmartThermalPrint';
+import { getStockStatus } from '../../utils/stock';
 import {
   ASFIN_LOGO_PATH,
   asfinLogoTargetDots,
@@ -144,6 +145,12 @@ function salePrice(product) {
   if (!Number.isFinite(price) || price < 0) return 0;
   const discount = Math.min(90, Math.max(0, Number(product.discount_percent) || 0));
   return Math.round(price * (1 - discount / 100));
+}
+
+/** Product cost (asal / actual rate) — never invent; 0 when unset. */
+function costPrice(product) {
+  const cost = Number(product?.cost_price);
+  return Number.isFinite(cost) && cost > 0 ? Math.round(cost) : 0;
 }
 
 /** Cart line unit — staff sell-rate override, else catalog sale price. */
@@ -3013,7 +3020,7 @@ export default function AdminCounterBill({
       }
     }
     commitSellRateDraft(id);
-    const cost = Math.max(0, Number(line.product.cost_price) || 0);
+    const cost = costPrice(line.product);
     if (cost > 0 && unit < cost) {
       setFocusedLineId(id);
       window.setTimeout(() => {
@@ -3450,7 +3457,10 @@ export default function AdminCounterBill({
                   {autocompleteProducts.length === 0 ? (
                     <p className="counter-bill__search-empty">{t('admin.counterBillNoProductsFound')}</p>
                   ) : (
-                    autocompleteProducts.map((product) => (
+                    autocompleteProducts.map((product) => {
+                      const sale = salePrice(product);
+                      const cost = costPrice(product);
+                      return (
                       <button
                         key={product.id}
                         type="button"
@@ -3464,10 +3474,20 @@ export default function AdminCounterBill({
                         <span>
                           <strong>{product.name}</strong>
                           <small>{product.category || product.brand || `#${product.id}`}</small>
+                          <small className="counter-bill__suggest-prices">
+                            {t('admin.counterBillCostPrice', {
+                              price: cost > 0 ? formatPrice(cost) : t('admin.counterBillCostUnset'),
+                            })}
+                            {' · '}
+                            {t('admin.counterBillSalePriceLabel', { price: formatPrice(sale) })}
+                            {' · '}
+                            {t('admin.stockLabel', { count: Number(product.stock) || 0 })}
+                          </small>
                         </span>
-                        <b>{formatPrice(salePrice(product))}</b>
+                        <b>{formatPrice(sale)}</b>
                       </button>
-                    ))
+                      );
+                    })
                   )}
                 </div>
               ) : null}
@@ -3479,14 +3499,19 @@ export default function AdminCounterBill({
               {filteredProducts.length === 0 ? (
                 <p className="counter-bill__empty">{t('admin.counterBillNoMatch')}</p>
               ) : null}
-              {filteredProducts.map((product) => (
+              {filteredProducts.map((product) => {
+                const sale = salePrice(product);
+                const cost = costPrice(product);
+                const stock = Number(product.stock) || 0;
+                const stockStatus = getStockStatus(stock);
+                return (
                 <button
                   key={product.id}
                   id={`counter-product-${product.id}`}
                   type="button"
                   className={`counter-bill__product-tile${
                     highlightProductId === product.id ? ' counter-bill__product-tile--jump' : ''
-                  }`}
+                  }${stockStatus === 'low' ? ' counter-bill__product-tile--low' : ''}`}
                   onClick={() => addProduct(product)}
                 >
                   <span className="counter-bill__product-media">
@@ -3495,17 +3520,26 @@ export default function AdminCounterBill({
                     ) : (
                       <img src={getDefaultImage(product.category)} alt="" loading="lazy" />
                     )}
+                    {stockStatus === 'low' ? (
+                      <span className="counter-bill__product-low-badge">{t('admin.lowStock')}</span>
+                    ) : null}
                   </span>
                   <span className="counter-bill__product-info">
                     <strong>{product.name}</strong>
                     <small>{product.category || product.brand || `#${product.id}`}</small>
                   </span>
                   <span className="counter-bill__product-price">
-                    <strong>{formatPrice(salePrice(product))}</strong>
-                    <small>{t('admin.stockLabel', { count: Number(product.stock) || 0 })}</small>
+                    <strong>{formatPrice(sale)}</strong>
+                    <small className="counter-bill__product-cost">
+                      {t('admin.counterBillCostPrice', {
+                        price: cost > 0 ? formatPrice(cost) : t('admin.counterBillCostUnset'),
+                      })}
+                    </small>
+                    <small>{t('admin.stockLabel', { count: stock })}</small>
                   </span>
                 </button>
-              ))}
+                );
+              })}
             </div>
           ) : null}
         </section>
@@ -3613,7 +3647,7 @@ export default function AdminCounterBill({
                 const actual = salePrice(line.product);
                 const unit = lineUnitPrice(line);
                 const stock = Number(line.product.stock) || 1;
-                const cost = Math.max(0, Number(line.product.cost_price) || 0);
+                const cost = costPrice(line.product);
                 const rateWarnBelowList = actual > 0 && unit < actual;
                 const rateWarnBelowCost = cost > 0 && unit < cost;
                 const rateWarnHigh = actual > 0 && unit > actual;
@@ -3635,6 +3669,13 @@ export default function AdminCounterBill({
                     >
                       <strong>{line.product.name}</strong>
                       <small>{t('admin.stockLabel', { count: stock })}</small>
+                      <small className="counter-bill__cart-item-prices">
+                        {t('admin.counterBillCostPrice', {
+                          price: cost > 0 ? formatPrice(cost) : t('admin.counterBillCostUnset'),
+                        })}
+                        {' · '}
+                        {t('admin.counterBillSalePriceLabel', { price: formatPrice(actual) })}
+                      </small>
                     </button>
                     <div
                       className="counter-bill__cart-rate"
@@ -3699,13 +3740,13 @@ export default function AdminCounterBill({
                         </button>
                       </div>
                       <div className="counter-bill__cart-refs">
-                        <small className="counter-bill__cart-actual">
-                          {t('admin.counterBillActualPrice', { price: formatPrice(actual) })}
-                        </small>
                         <small className="counter-bill__cart-cost">
                           {t('admin.counterBillCostPrice', {
                             price: cost > 0 ? formatPrice(cost) : t('admin.counterBillCostUnset'),
                           })}
+                        </small>
+                        <small className="counter-bill__cart-actual">
+                          {t('admin.counterBillSalePriceLabel', { price: formatPrice(actual) })}
                         </small>
                       </div>
                       {rateWarnBelowCost ? (
