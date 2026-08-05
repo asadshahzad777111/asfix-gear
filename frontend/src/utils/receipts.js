@@ -46,16 +46,19 @@ function shippingLines(order) {
 }
 
 export function buildOrderReceipt(order, { showCost = false } = {}) {
+  const isReturn = order?.source === 'counter_return' || order?.transaction_type === 'return';
+  const returnedAmount = Math.max(0, Number(order?.returned_amount) || 0);
   const items = (order.items || []).map((i) => formatItemLine(i, showCost)).join('\n');
   const costNote =
     showCost && Array.isArray(order.items)
       ? (() => {
+          const sign = isReturn ? -1 : 1;
           const costTotal = order.items.reduce(
             (sum, i) => sum + (Number(i.cost_price) || 0) * (Number(i.qty) || 1),
             0
-          );
+          ) * sign;
           const profit = Number(order.total_amount) - costTotal;
-          return costTotal > 0
+          return costTotal !== 0
             ? `\nCost Total: ${formatAmount(costTotal)}\nProfit: ${formatAmount(profit)}`
             : '';
         })()
@@ -81,8 +84,23 @@ export function buildOrderReceipt(order, { showCost = false } = {}) {
           ? 'Pay via: Cash on Delivery (pay rider on delivery)'
           : null;
 
+  const header = isReturn
+    ? [
+        'ASFIX GEAR - RETURNED BILL',
+        '*** THIS BILL IS A RETURN ***',
+        order.original_order_ref ? `Of bill: #${order.original_order_ref}` : null,
+      ].filter(Boolean)
+    : returnedAmount > 0
+      ? [
+          'ASFIX GEAR - ORDER RECEIPT',
+          returnedAmount >= Math.abs(Number(order.total_amount) || 0) - 0.5
+            ? '*** THIS BILL WAS RETURNED ***'
+            : '*** THIS BILL HAS A RETURN ***',
+        ]
+      : ['ASFIX GEAR - ORDER RECEIPT'];
+
   const text = [
-    'ASFIX GEAR - ORDER RECEIPT',
+    ...header,
     '---------------------',
     `Order ID: #${order.order_id}`,
     `Date: ${order.created_at ? new Date(order.created_at).toLocaleString('en-PK') : '—'}`,
@@ -95,10 +113,17 @@ export function buildOrderReceipt(order, { showCost = false } = {}) {
     'Items:',
     items || '—',
     '---------------------',
-    `Sale Total: ${formatAmount(order.total_amount)}${costNote}`,
+    `${isReturn ? 'Refund Total' : 'Sale Total'}: ${formatAmount(order.total_amount)}${costNote}`,
+    returnedAmount > 0 && !isReturn
+      ? `Returned: ${formatAmount(returnedAmount)}\nNet after return: ${formatAmount(
+        Number.isFinite(Number(order.net_amount))
+          ? Number(order.net_amount)
+          : (Number(order.total_amount) || 0) - returnedAmount,
+      )}`
+      : null,
     `Status: ${order.shipping_status || 'Pending Verification'}`,
     SHOP.name,
-  ].join('\n');
+  ].filter((line) => line != null).join('\n');
 
   return { text, waUrl: whatsappLink(text) };
 }

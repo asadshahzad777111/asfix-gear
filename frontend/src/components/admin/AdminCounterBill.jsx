@@ -620,6 +620,35 @@ function isCustomReceipt(order) {
   return order?.custom_receipt === true;
 }
 
+function isReturnReceipt(order) {
+  return order?.source === 'counter_return' || order?.transaction_type === 'return';
+}
+
+/** Banner + totals for return slips and original bills that already have returns. */
+function receiptReturnMeta(order) {
+  if (!order) return null;
+  if (isReturnReceipt(order)) {
+    return {
+      kind: 'return',
+      banner: '*** RETURNED BILL ***',
+      ofRef: String(order.original_order_ref || '').trim(),
+    };
+  }
+  const returned = Math.max(0, Number(order.returned_amount) || 0);
+  if (!(returned > 0)) return null;
+  const total = Math.abs(Number(order.total_amount) || 0);
+  const full = returned >= total - 0.5;
+  const net = Number.isFinite(Number(order.net_amount))
+    ? Number(order.net_amount)
+    : total - returned;
+  return {
+    kind: full ? 'sale_full_return' : 'sale_part_return',
+    banner: full ? '*** BILL RETURNED ***' : '*** PART RETURN ***',
+    returned,
+    net,
+  };
+}
+
 function customLogoMode(order) {
   if (!isCustomReceipt(order)) return 'none';
   if (order.use_asfin_logo || order.logo_source === 'asfin') return 'asfin';
@@ -773,6 +802,7 @@ function buildReceiptLines(orderInput, maxChars = 18) {
 
   const { date: billDate, time: billTime } = shortReceiptDateParts(order);
   const custom = isCustomReceipt(order);
+  const returnMeta = receiptReturnMeta(order);
 
   if (custom) {
     /* Freeform / trade bill — optional logo, then text shop header */
@@ -797,12 +827,30 @@ function buildReceiptLines(orderInput, maxChars = 18) {
     wrap(SHOP.phone, { align: 'center', small: true });
   }
   rule();
+  if (returnMeta) {
+    wrap(returnMeta.banner, { align: 'center', weight: 'bold', title: true });
+    if (returnMeta.kind === 'return') {
+      wrap('This bill is a RETURN', { align: 'center', weight: 'bold' });
+      if (returnMeta.ofRef) kv('Of bill', `#${returnMeta.ofRef}`);
+      kv('Type', 'RETURN');
+    } else {
+      wrap(
+        returnMeta.kind === 'sale_full_return' ? 'This bill was RETURNED' : 'This bill has a RETURN',
+        { align: 'center', weight: 'bold' },
+      );
+    }
+    rule();
+  }
   kv('Bill', receiptNumber(order));
   /* Separate Date / Time so HH:mm never truncates (was showing 10:5) */
   kv('Date', billDate);
   kv('Time', billTime);
   /* No Staff line — Bill / Date / Time / Pay / Customer only */
-  if (!custom) kv('Pay', paymentLabel(order?.payment_mode));
+  if (!custom) {
+    kv('Pay', returnMeta?.kind === 'return'
+      ? `Refund/${paymentLabel(order?.payment_mode)}`
+      : paymentLabel(order?.payment_mode));
+  }
   if (order?.device_name) kv('Mobile', String(order.device_name));
   kv('Customer', order?.customer_name || 'Walk-in');
   if (order?.phone) kv('Phone', String(order.phone));
@@ -832,15 +880,29 @@ function buildReceiptLines(orderInput, maxChars = 18) {
   /* Items → rule → [Discount] → TOTAL → rule (no Subtotal; TOTAL stays compact) */
   rule();
   if (discount) money('Discount', discount);
-  money('TOTAL AMOUNT', grandTotal, { weight: 'bold', grand: true });
+  money(
+    returnMeta?.kind === 'return' ? 'REFUND TOTAL' : 'TOTAL AMOUNT',
+    grandTotal,
+    { weight: 'bold', grand: true },
+  );
+  if (returnMeta && returnMeta.kind !== 'return' && returnMeta.returned > 0) {
+    money('Returned', returnMeta.returned);
+    money('Net after', returnMeta.net);
+  }
   const note = counterPaymentNote(order);
   if (note) wrap(`Note: ${note}`, { small: true });
   if (custom && order?.notes) wrap(`Note: ${order.notes}`, { small: true });
+  if (returnMeta?.kind === 'return' && order?.return_reason) {
+    wrap(`Reason: ${order.return_reason}`, { small: true });
+  }
   rule();
   /* Footer: Thank You → dashed line → Visit again → site → Scan → QR */
-  push('Thank You', { align: 'center', weight: 'bold' });
+  push(
+    returnMeta?.kind === 'return' ? 'RETURNED — Refund done' : 'Thank You',
+    { align: 'center', weight: 'bold' },
+  );
   rule();
-  push('Visit again', { align: 'center', small: true });
+  push(returnMeta?.kind === 'return' ? 'Stock restored' : 'Visit again', { align: 'center', small: true });
   if (!custom) {
     push(RECEIPT_SITE, { align: 'center', small: true });
     push('Scan', { align: 'center', small: true });
@@ -1524,6 +1586,8 @@ html, body {
 .r-shop .r-logo--asfin { width: 88%; max-width: 88%; margin: 6px auto 4px; }
 .r-shop .r-shop-name { display: block; margin: 2px 0 4px; font-size: 16px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
 .r-shop p { margin: 2px 0; font-size: 12px; font-weight: 400; letter-spacing: 0.04em; }
+.r-return-banner { text-align: center; margin: 4px 0 2px; padding: 3px 0; border: 1.5px solid #000; font-size: 13px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; }
+.r-return-banner p { margin: 1px 0; font-size: 11px; font-weight: 700; letter-spacing: 0.04em; text-transform: none; }
 .r-meta { display: grid; grid-template-columns: auto 1fr; gap: 2px 8px; margin: 4px 0; font-size: 13px; font-weight: 400; }
 .r-meta span:last-child { text-align: right; }
 .r-rule { border: 0; border-top: 1px dashed #000; margin: 3px 0; padding: 0; }
@@ -1580,11 +1644,41 @@ html, body {
       : `<img class="r-logo" src="${RECEIPT_LOGO_PATH}" alt="" width="280" height="280" />`)
       + `<p>${escapeHtml(SHOP.addressLine2)}</p><p>${escapeHtml(SHOP.phone)}</p>`;
 
+  const returnMeta = receiptReturnMeta(order);
   const noteBlock = custom && order?.notes
     ? `<p class="r-visit">Note: ${escapeHtml(order.notes)}</p>`
     : paymentNote
       ? `<p class="r-visit">Note: ${escapeHtml(paymentNote)}</p>`
       : '';
+  const reasonBlock = returnMeta?.kind === 'return' && order?.return_reason
+    ? `<p class="r-visit">Reason: ${escapeHtml(order.return_reason)}</p>`
+    : '';
+  const returnBanner = returnMeta
+    ? `<div class="r-return-banner">${escapeHtml(returnMeta.banner)}
+      <p>${escapeHtml(
+        returnMeta.kind === 'return'
+          ? 'This bill is a RETURN'
+          : returnMeta.kind === 'sale_full_return'
+            ? 'This bill was RETURNED'
+            : 'This bill has a RETURN',
+      )}</p>
+    </div>
+    <hr class="r-rule" />`
+    : '';
+  const returnMetaRows = returnMeta?.kind === 'return'
+    ? `${returnMeta.ofRef ? `<span>Of bill</span><span>#${escapeHtml(returnMeta.ofRef)}</span>` : ''}
+    <span>Type</span><span>RETURN</span>`
+    : '';
+  const returnTotals = returnMeta && returnMeta.kind !== 'return' && returnMeta.returned > 0
+    ? `<div class="r-totals"><span>Returned</span><strong>${escapeHtml(thermalAmountText(returnMeta.returned))}</strong>
+       <span>Net after</span><strong>${escapeHtml(thermalAmountText(returnMeta.net))}</strong></div>`
+    : '';
+  const payLabel = returnMeta?.kind === 'return'
+    ? `Refund/${paymentLabel(order?.payment_mode)}`
+    : paymentLabel(order?.payment_mode);
+  const totalLabel = returnMeta?.kind === 'return' ? 'REFUND TOTAL' : 'TOTAL AMOUNT';
+  const thanksLabel = returnMeta?.kind === 'return' ? 'RETURNED — Refund done' : 'Thank You';
+  const visitLabel = returnMeta?.kind === 'return' ? 'Stock restored' : 'Visit again';
 
   return `<!DOCTYPE html><html><head><meta charset="utf-8" />
 <meta name="viewport" content="width=${widthMm}, initial-scale=1" />
@@ -1595,11 +1689,13 @@ html, body {
     ${logoBlock}
   </div>
   <hr class="r-rule" />
+  ${returnBanner}
   <div class="r-meta">
     <span>Bill</span><span>${escapeHtml(receiptNumber(order))}</span>
     <span>Date</span><span>${escapeHtml(dateParts.date)}</span>
     <span>Time</span><span>${escapeHtml(dateParts.time)}</span>
-    ${custom ? '' : `<span>Pay</span><span>${escapeHtml(paymentLabel(order?.payment_mode))}${paymentNote ? ` (${escapeHtml(paymentNote)})` : ''}</span>`}
+    ${custom ? '' : `<span>Pay</span><span>${escapeHtml(payLabel)}${paymentNote ? ` (${escapeHtml(paymentNote)})` : ''}</span>`}
+    ${returnMetaRows}
     ${order?.device_name ? `<span>Mobile</span><span>${escapeHtml(String(order.device_name))}</span>` : ''}
     <span>Customer</span><span>${escapeHtml(order?.customer_name || 'Walk-in')}</span>
     ${order?.phone ? `<span>Phone</span><span>${escapeHtml(String(order.phone))}</span>` : ''}
@@ -1609,14 +1705,16 @@ html, body {
   <hr class="r-rule" />
   ${discount ? `<div class="r-totals"><span>Discount</span><strong>${escapeHtml(thermalAmountText(discount))}</strong></div>` : ''}
   <div class="r-grand-row">
-    <span class="r-grand-label">TOTAL AMOUNT</span>
+    <span class="r-grand-label">${escapeHtml(totalLabel)}</span>
     <strong class="r-grand">${escapeHtml(thermalAmountText(grandTotal))}</strong>
   </div>
+  ${returnTotals}
   ${noteBlock}
+  ${reasonBlock}
   <hr class="r-rule" />
-  <p class="r-thanks">Thank You</p>
+  <p class="r-thanks">${escapeHtml(thanksLabel)}</p>
   <hr class="r-rule" />
-  <p class="r-visit">Visit again</p>
+  <p class="r-visit">${escapeHtml(visitLabel)}</p>
   ${custom ? '' : `<p class="r-site">${escapeHtml(RECEIPT_SITE)}</p>`}
   ${qrBlock}
 </main>
@@ -2225,10 +2323,13 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
 
   const paymentNote = counterPaymentNote(order);
   const { discount, grandTotal } = receiptTotals(order);
+  const returnMeta = receiptReturnMeta(order);
 
   return (
     <div
-      className={`counter-bill-print${printable ? ' counter-bill-print--active' : ''}`}
+      className={`counter-bill-print${printable ? ' counter-bill-print--active' : ''}${
+        returnMeta ? ' counter-bill-print--return' : ''
+      }`}
       style={{ '--thermal-receipt-width': thermalWidth }}
       aria-label={t('admin.counterBillReceipt')}
     >
@@ -2244,13 +2345,32 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
         <p>{SHOP.addressLine2}</p>
         <p>{SHOP.phone}</p>
       </div>
+      {returnMeta ? (
+        <div className="counter-bill-print__return-banner">
+          <strong>{returnMeta.banner}</strong>
+          <span>
+            {returnMeta.kind === 'return'
+              ? 'This bill is a RETURN'
+              : returnMeta.kind === 'sale_full_return'
+                ? 'This bill was RETURNED'
+                : 'This bill has a RETURN'}
+          </span>
+          {returnMeta.kind === 'return' && returnMeta.ofRef ? (
+            <span>Of bill #{returnMeta.ofRef}</span>
+          ) : null}
+        </div>
+      ) : null}
       <div className="counter-bill-print__meta">
         <span>{t('admin.counterBillNo')}: {order.order_id || order.id}</span>
         <span>{t('admin.counterBillDate')}: {order.created_at ? shortReceiptDate(order) : '-'}</span>
         <span>
-          {t('admin.counterBillPayment')}: {paymentLabel(order.payment_mode)}
+          {t('admin.counterBillPayment')}:{' '}
+          {returnMeta?.kind === 'return'
+            ? `Refund/${paymentLabel(order.payment_mode)}`
+            : paymentLabel(order.payment_mode)}
           {paymentNote ? ` (${paymentNote})` : ''}
         </span>
+        {returnMeta?.kind === 'return' ? <span>Type: RETURN</span> : null}
         <span>{t('admin.counterBillCustomer')}: {order.customer_name || 'Walk-in Customer'}</span>
         {order.phone ? <span>{t('admin.counterBillPhone')}: {order.phone}</span> : null}
       </div>
@@ -2276,12 +2396,26 @@ export function CounterBillReceipt({ order, printable = false, thermalWidth = '5
             <strong>{formatPrice(discount)}</strong>
           </>
         ) : null}
-        <span className="counter-bill-print__grand-label">{t('admin.counterBillGrandTotal')}</span>
+        <span className="counter-bill-print__grand-label">
+          {returnMeta?.kind === 'return' ? 'REFUND TOTAL' : t('admin.counterBillGrandTotal')}
+        </span>
         <strong className="counter-bill-print__grand">{formatPrice(grandTotal)}</strong>
+        {returnMeta && returnMeta.kind !== 'return' && returnMeta.returned > 0 ? (
+          <>
+            <span>Returned</span>
+            <strong>{formatPrice(returnMeta.returned)}</strong>
+            <span>Net after</span>
+            <strong>{formatPrice(returnMeta.net)}</strong>
+          </>
+        ) : null}
       </div>
-      <p className="counter-bill-print__thanks">{t('admin.counterBillThanks')}</p>
+      <p className="counter-bill-print__thanks">
+        {returnMeta?.kind === 'return' ? 'RETURNED — Refund done' : t('admin.counterBillThanks')}
+      </p>
       <div className="counter-bill-print__rule" />
-      <p className="counter-bill-print__visit">Visit again</p>
+      <p className="counter-bill-print__visit">
+        {returnMeta?.kind === 'return' ? 'Stock restored' : 'Visit again'}
+      </p>
       <p className="counter-bill-print__site">{RECEIPT_SITE}</p>
       <p className="counter-bill-print__scan">Scan</p>
       {qrDataUrl ? (

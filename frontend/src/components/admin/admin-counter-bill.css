@@ -2738,6 +2738,30 @@ html.pos-keyboard-open #counter-bill-search {
   padding: 3mm 2.5mm;
 }
 
+.counter-bill-print__return-banner {
+  margin: 0.35rem 0 0.45rem;
+  padding: 0.35rem 0.25rem;
+  border: 1.5px solid #111;
+  text-align: center;
+  display: grid;
+  gap: 0.12rem;
+}
+
+.counter-bill-print__return-banner strong {
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.counter-bill-print__return-banner span {
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.counter-bill-print--return .counter-bill-print__grand {
+  color: #111;
+}
+
 .counter-bill-print__shop {
   text-align: center;
   margin-bottom: 0.4rem;
