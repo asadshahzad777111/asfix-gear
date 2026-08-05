@@ -970,6 +970,68 @@
   font-variant-numeric: tabular-nums;
 }
 
+.counter-bill-search {
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid var(--border, #c3c4c7);
+  border-radius: 10px;
+  background: var(--surface, #fff);
+}
+
+.counter-bill-search__label {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.counter-bill-search__label span {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--text-muted, #646970);
+}
+
+.counter-bill-search__input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid var(--border, #c3c4c7);
+  border-radius: 10px;
+  padding: 0.55rem 0.85rem;
+  font: inherit;
+  font-size: 16px;
+  background: var(--surface, #fff);
+  color: inherit;
+}
+
+.counter-bill-search__input:focus {
+  outline: 2px solid color-mix(in srgb, var(--accent, #2271b1) 55%, transparent);
+  outline-offset: 1px;
+}
+
+.counter-bill-search__meta {
+  margin: 0.45rem 0 0;
+  font-size: 0.78rem;
+  color: var(--text-muted, #646970);
+}
+
+.counter-bill-search__results {
+  margin-top: 0.75rem;
+}
+
+.counter-sales__row--search-hit td {
+  background: #e6f2fb;
+}
+
+.counter-sales__return-of,
+.counter-sales__phone {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #646970;
+}
+
+.counter-sales__return-of {
+  color: #b32d2e;
+}
+
 .counter-sales {
   margin-top: 0.75rem;
   padding: 0.75rem;

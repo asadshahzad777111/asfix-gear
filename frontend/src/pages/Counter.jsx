@@ -22,6 +22,8 @@ import {
   savePrinter,
 } from '../utils/nativePosPrint';
 import { getLowStockProducts } from '../utils/stock';
+import { filterOrders } from '../utils/orderSearch';
+import { enrichOrdersWithReturns, isReturnOrder } from '../utils/orderReturns';
 import '../components/admin/admin-wp.css';
 import '../components/admin/admin-counter-bill.css';
 
@@ -61,6 +63,8 @@ export default function Counter() {
   const [thermalWidth, setThermalWidth] = useState(() => readThermalReceiptWidth());
   const [bootstrapping, setBootstrapping] = useState(true);
   const [salesOpen, setSalesOpen] = useState(false);
+  const [billSearch, setBillSearch] = useState('');
+  const [allBills, setAllBills] = useState([]);
   const nativePos = isNativePosApp();
   const [nativePrinter, setNativePrinter] = useState(null);
   const [nativePrinters, setNativePrinters] = useState([]);
@@ -81,6 +85,15 @@ export default function Counter() {
     () => (posMode === 'sale' ? getLowStockProducts(products, { excludePosCustom: true }).length : 0),
     [posMode, products],
   );
+
+  const matchedBills = useMemo(() => {
+    const q = billSearch.trim();
+    if (!q) return [];
+    return filterOrders(allBills, q);
+  }, [allBills, billSearch]);
+
+  const hasBillSearch = Boolean(billSearch.trim());
+  const highlightBillId = hasBillSearch && matchedBills.length === 1 ? matchedBills[0]?.id : null;
 
   useEffect(() => {
     if (!nativePos) return undefined;
@@ -141,13 +154,19 @@ export default function Counter() {
   const loadCounterData = async ({ silent = false } = {}) => {
     // Never tear down the bill UI after first paint — silent refresh only.
     try {
-      const [productData, salesData, statsData] = await Promise.all([
+      const [productData, salesData, statsData, allSalesData] = await Promise.all([
         api.getProducts(),
         api.getCounterSales({ date: today }),
         api.getCounterStats({ date: today }).catch(() => null),
+        api.getCounterSales({}).catch(() => null),
       ]);
       setProducts(productData);
       setSales(salesData);
+      if (Array.isArray(allSalesData)) {
+        setAllBills(enrichOrdersWithReturns(allSalesData));
+      } else {
+        setAllBills(enrichOrdersWithReturns(salesData));
+      }
       setStats(statsData || {
         today_sales: salesData.reduce((sum, order) => sum + Number(order.total_amount || 0), 0),
         bills_today: salesData.filter((order) => order.source !== 'counter_return').length,
@@ -394,6 +413,161 @@ export default function Counter() {
     }
   };
 
+  useEffect(() => {
+    if (!highlightBillId) return;
+    const timer = window.setTimeout(() => {
+      document.querySelector('.counter-sales__row--search-hit')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [highlightBillId, matchedBills]);
+
+  const renderSaleRows = (list) =>
+    (list || []).map((sale) => {
+      const returnedAmount = Math.max(0, Number(sale.returned_amount) || 0);
+      const originalTotal = Number(sale.total_amount) || 0;
+      const netAmount = Number.isFinite(Number(sale.net_amount))
+        ? Number(sale.net_amount)
+        : originalTotal - returnedAmount;
+      const hasReturn = returnedAmount > 0;
+      const saleItems = Array.isArray(sale.items) ? sale.items : [];
+      const isHit = highlightBillId != null && String(highlightBillId) === String(sale.id);
+      const isReturn = isReturnOrder(sale);
+      return (
+        <tr
+          key={sale.id}
+          className={[
+            hasReturn ? 'counter-sales__row--returned' : '',
+            isReturn ? 'counter-sales__row--return-bill' : '',
+            isHit ? 'counter-sales__row--search-hit' : '',
+          ].filter(Boolean).join(' ') || undefined}
+        >
+          <td>
+            <strong>#{sale.order_id || sale.id}</strong>
+            {isReturn && sale.original_order_ref ? (
+              <small className="counter-sales__return-of">
+                {t('admin.orderReturnOf', { id: sale.original_order_ref })}
+              </small>
+            ) : null}
+            {hasReturn && !isReturn ? (
+              <small className="counter-sales__return-of">{t('admin.orderHasReturn')}</small>
+            ) : null}
+          </td>
+          <td>
+            {sale.created_at
+              ? new Date(sale.created_at).toLocaleString('en-PK', {
+                day: 'numeric',
+                month: 'short',
+                hour: '2-digit',
+                minute: '2-digit',
+              })
+              : '-'}
+          </td>
+          <td>
+            {sale.customer_name || 'Walk-in Customer'}
+            {sale.phone ? <small className="counter-sales__phone"> · {sale.phone}</small> : null}
+          </td>
+          <td>
+            {saleItems.length === 0 ? (
+              <span className="field-hint">—</span>
+            ) : (
+              <ul className="counter-sales__items">
+                {saleItems.map((item, idx) => {
+                  const qty = Number(item.qty) || 1;
+                  const unit = Number(item.price) || 0;
+                  return (
+                    <li key={`${sale.id}-${item.product_id || item.name}-${idx}`}>
+                      {item.name || 'Item'} ×{qty}
+                      <span> {formatPrice(unit * qty)}</span>
+                    </li>
+                  );
+                })}
+              </ul>
+            )}
+          </td>
+          <td>{sale.payment_mode}</td>
+          <td>
+            <div className="counter-sales__total-cell">
+              <strong className="counter-sales__total-original">{formatPrice(originalTotal)}</strong>
+              {hasReturn ? (
+                <>
+                  <span className="counter-sales__returned-badge">
+                    {t('counter.returnedAmount')}: {formatPrice(returnedAmount)}
+                  </span>
+                  <small className="counter-sales__net-amount">
+                    {t('counter.netAfterReturn')}: {formatPrice(netAmount)}
+                  </small>
+                </>
+              ) : null}
+            </div>
+          </td>
+          <td>
+            <div className="counter-sales__actions">
+              <button
+                type="button"
+                className="wp-button wp-button--secondary counter-sales__print"
+                onClick={async () => {
+                  const result = await printCounterSale(sale);
+                  if (!result?.ok) {
+                    if (result?.reason === 'cancelled' || result?.reason === 'busy') return;
+                    if (result?.reason === 'no_printer') {
+                      window.alert?.(t('admin.counterBillNativeNoPrinter'));
+                      void openNativePrinterPicker();
+                      return;
+                    }
+                    if (result?.reason === 'no_station') {
+                      window.alert?.(t('admin.printTargetNoStation'));
+                      return;
+                    }
+                    const msg =
+                      result?.reason === 'permission_denied'
+                        ? t('admin.counterBillNativeBtPermission')
+                        : result?.message || t('admin.counterBillNativePrintFailed');
+                    window.alert?.(msg);
+                    return;
+                  }
+                  if (result?.job) {
+                    window.alert?.(t('admin.printTargetQueued'));
+                  }
+                }}
+              >
+                {nativePos
+                  ? t('admin.counterBillPrintNative')
+                  : isAndroid
+                    ? t('admin.counterBillPrintMate')
+                    : t('admin.counterBillPrintNow')}
+              </button>
+              <button
+                type="button"
+                className="wp-button wp-button--secondary counter-sales__print"
+                onClick={() => downloadCounterSale(sale)}
+              >
+                {t('admin.counterBillDownloadPdf')}
+              </button>
+              <button
+                type="button"
+                className="wp-button wp-button--secondary counter-sales__print"
+                onClick={() => shareCounterSale(sale)}
+              >
+                {t('admin.counterBillSharePdf')}
+              </button>
+              {!isReturn ? (
+                <button
+                  type="button"
+                  className="wp-button wp-button--secondary counter-sales__print counter-sales__return"
+                  onClick={() => openReturnModal(sale)}
+                >
+                  {hasReturn ? t('counter.processReturnAgain') : t('counter.processReturn')}
+                </button>
+              ) : null}
+            </div>
+          </td>
+        </tr>
+      );
+    });
+
   return (
     <div className="wp-admin-shell counter-shell">
       <header className="wp-admin-bar">
@@ -532,6 +706,54 @@ export default function Counter() {
           title={t('counter.paymentQrSlips')}
         />
 
+        <section className="counter-bill-search" aria-label={t('admin.orderReceiptSearchLabel')}>
+          <label className="counter-bill-search__label">
+            <span>{t('admin.orderReceiptSearchLabel')}</span>
+            <input
+              type="search"
+              className="counter-bill-search__input"
+              value={billSearch}
+              onChange={(e) => setBillSearch(e.target.value)}
+              placeholder={t('counter.findReceiptPh')}
+              aria-label={t('admin.orderReceiptSearchLabel')}
+              autoComplete="off"
+              enterKeyHint="search"
+            />
+          </label>
+          {hasBillSearch ? (
+            <p className="counter-bill-search__meta">
+              {t('admin.orderReceiptSearchResults', {
+                count: matchedBills.length,
+                total: allBills.length,
+              })}
+            </p>
+          ) : (
+            <p className="counter-bill-search__meta">{t('counter.findReceiptHint')}</p>
+          )}
+          {hasBillSearch ? (
+            matchedBills.length === 0 ? (
+              <p className="field-hint">{t('admin.orderReceiptSearchEmpty')}</p>
+            ) : (
+              <div className="wp-table-wrap counter-bill-search__results">
+                <table className="wp-table">
+                  <thead>
+                    <tr>
+                      <th>{t('admin.counterBillNo')}</th>
+                      <th>{t('admin.counterBillDate')}</th>
+                      <th>{t('admin.counterBillCustomer')}</th>
+                      <th>{t('counter.customBillItems')}</th>
+                      <th>{t('admin.counterBillPayment')}</th>
+                      <th>{t('admin.counterBillTotal')}</th>
+                      <th>{t('admin.counterBillActions')}</th>
+                    </tr>
+                  </thead>
+                  <tbody>{renderSaleRows(matchedBills)}</tbody>
+                </table>
+              </div>
+            )
+          ) : null}
+        </section>
+
         <section className="counter-sales" id="counter-bill-sales" ref={salesSectionRef}>
           <div className="counter-sales__head">
             <button
@@ -564,117 +786,7 @@ export default function Counter() {
                       <th>{t('admin.counterBillActions')}</th>
                     </tr>
                   </thead>
-                  <tbody>
-                    {sales.map((sale) => {
-                      const returnedAmount = Math.max(0, Number(sale.returned_amount) || 0);
-                      const originalTotal = Number(sale.total_amount) || 0;
-                      const netAmount = Number.isFinite(Number(sale.net_amount))
-                        ? Number(sale.net_amount)
-                        : originalTotal - returnedAmount;
-                      const hasReturn = returnedAmount > 0;
-                      const saleItems = Array.isArray(sale.items) ? sale.items : [];
-                      return (
-                      <tr key={sale.id} className={hasReturn ? 'counter-sales__row--returned' : undefined}>
-                        <td>{sale.order_id || sale.id}</td>
-                        <td>{sale.created_at ? new Date(sale.created_at).toLocaleTimeString() : '-'}</td>
-                        <td>{sale.customer_name || 'Walk-in Customer'}</td>
-                        <td>
-                          {saleItems.length === 0 ? (
-                            <span className="field-hint">—</span>
-                          ) : (
-                            <ul className="counter-sales__items">
-                              {saleItems.map((item, idx) => {
-                                const qty = Number(item.qty) || 1;
-                                const unit = Number(item.price) || 0;
-                                return (
-                                  <li key={`${sale.id}-${item.product_id || item.name}-${idx}`}>
-                                    {item.name || 'Item'} ×{qty}
-                                    <span> {formatPrice(unit * qty)}</span>
-                                  </li>
-                                );
-                              })}
-                            </ul>
-                          )}
-                        </td>
-                        <td>{sale.payment_mode}</td>
-                        <td>
-                          <div className="counter-sales__total-cell">
-                            <strong className="counter-sales__total-original">{formatPrice(originalTotal)}</strong>
-                            {hasReturn ? (
-                              <>
-                                <span className="counter-sales__returned-badge">
-                                  {t('counter.returnedAmount')}: {formatPrice(returnedAmount)}
-                                </span>
-                                <small className="counter-sales__net-amount">
-                                  {t('counter.netAfterReturn')}: {formatPrice(netAmount)}
-                                </small>
-                              </>
-                            ) : null}
-                          </div>
-                        </td>
-                        <td>
-                          <div className="counter-sales__actions">
-                            <button
-                              type="button"
-                              className="wp-button wp-button--secondary counter-sales__print"
-                              onClick={async () => {
-                                const result = await printCounterSale(sale);
-                                if (!result?.ok) {
-                                  if (result?.reason === 'cancelled' || result?.reason === 'busy') return;
-                                  if (result?.reason === 'no_printer') {
-                                    window.alert?.(t('admin.counterBillNativeNoPrinter'));
-                                    void openNativePrinterPicker();
-                                    return;
-                                  }
-                                  if (result?.reason === 'no_station') {
-                                    window.alert?.(t('admin.printTargetNoStation'));
-                                    return;
-                                  }
-                                  const msg =
-                                    result?.reason === 'permission_denied'
-                                      ? t('admin.counterBillNativeBtPermission')
-                                      : result?.message || t('admin.counterBillNativePrintFailed');
-                                  window.alert?.(msg);
-                                  return;
-                                }
-                                if (result?.job) {
-                                  window.alert?.(t('admin.printTargetQueued'));
-                                }
-                              }}
-                            >
-                              {nativePos
-                                ? t('admin.counterBillPrintNative')
-                                : isAndroid
-                                  ? t('admin.counterBillPrintMate')
-                                  : t('admin.counterBillPrintNow')}
-                            </button>
-                            <button
-                              type="button"
-                              className="wp-button wp-button--secondary counter-sales__print"
-                              onClick={() => downloadCounterSale(sale)}
-                            >
-                              {t('admin.counterBillDownloadPdf')}
-                            </button>
-                            <button
-                              type="button"
-                              className="wp-button wp-button--secondary counter-sales__print"
-                              onClick={() => shareCounterSale(sale)}
-                            >
-                              {t('admin.counterBillSharePdf')}
-                            </button>
-                            <button
-                              type="button"
-                              className="wp-button wp-button--secondary counter-sales__print counter-sales__return"
-                              onClick={() => openReturnModal(sale)}
-                            >
-                              {hasReturn ? t('counter.processReturnAgain') : t('counter.processReturn')}
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                      );
-                    })}
-                  </tbody>
+                  <tbody>{renderSaleRows(sales)}</tbody>
                 </table>
               </div>
             )
