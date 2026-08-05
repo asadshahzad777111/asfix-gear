@@ -128,24 +128,21 @@ export default function AdminLayout({
                     className={`wp-submenu-link ${tab === item.id ? 'is-active' : ''}`}
                     onClick={() => goTab(item.id)}
                   >
-                    <span>{item.id === 'add' && editingProduct ? 'Edit product' : item.label}</span>
+                    <span className="wp-submenu-link__text">
+                      {item.id === 'add' && editingProduct ? 'Edit product' : item.label}
+                      {item.id === 'stock' && lowStockCount > 0 ? (
+                        <span className="wp-menu-low-stock-label">{t('admin.lowStock')}</span>
+                      ) : null}
+                    </span>
                     {item.id === 'stock' && lowStockCount > 0 ? (
-                      <span className="wp-menu-badge wp-menu-badge--warn">{lowStockCount}</span>
+                      <span className="wp-menu-badge wp-menu-badge--warn" title={t('admin.stockAlerts')}>
+                        {lowStockCount}
+                      </span>
                     ) : null}
                   </button>
                 ))}
               </div>
             </div>
-            {lowStockCount > 0 ? (
-              <button
-                type="button"
-                className={`wp-menu-link wp-menu-link--stock-alert ${tab === 'stock' ? 'is-active' : ''}`}
-                onClick={() => (onStockAlertClick ? onStockAlertClick() : goTab('stock'))}
-              >
-                <span className="wp-menu-text">{t('admin.stockAlerts')}</span>
-                <span className="wp-menu-badge wp-menu-badge--warn">{lowStockCount}</span>
-              </button>
-            ) : null}
             {navItem('orders', 'Orders', pendingOrders > 0 ? pendingOrders : orders || null)}
             {navItem('customers', 'Customers')}
             {navItem('asfin', 'ASPLYWOOD / ASFIN')}
@@ -153,7 +150,6 @@ export default function AdminLayout({
             {navItem('bookings', 'Repair Intake', repairChatUnread > 0 ? repairChatUnread : (bookings || null))}
             {navItem('messages', t('admin.messages'))}
             {navItem('feedback', 'Reviews')}
-            {navItem('ads', 'Create Ad')}
             {showShopControl && navItem('hero', 'Home Ads')}
           </div>
 

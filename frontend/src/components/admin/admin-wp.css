@@ -1162,6 +1162,25 @@
   background: #dba617;
 }
 
+.wp-submenu-link__text {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 0;
+}
+
+.wp-menu-low-stock-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: #f0c518;
+  white-space: nowrap;
+}
+
+.wp-submenu-link.is-active .wp-menu-low-stock-label {
+  color: #fff8c5;
+}
+
 .wp-button--small {
   font-size: 0.78rem;
   padding: 0.2rem 0.45rem;
