@@ -1920,6 +1920,44 @@
   margin-bottom: 1rem;
 }
 
+.wp-table--orders {
+  width: 100%;
+}
+
+.wp-table--orders .wp-order-id-btn {
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  color: #2271b1;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+
+.wp-table--orders .wp-order-id-btn:hover strong {
+  text-decoration: underline;
+}
+
+.wp-table--orders tr.is-receipt-hit > td {
+  background: #e6f2fb;
+}
+
+.wp-order-detail-row td {
+  padding: 0 !important;
+  background: #f0f6fc !important;
+  border-top: none !important;
+}
+
+.wp-order-bill-panel {
+  padding: 0.75rem 1rem 1rem;
+}
+
+.wp-order-bill-panel .admin-order-card-full {
+  margin: 0;
+  max-width: none;
+}
+
 .wp-table--nested {
   font-size: 0.82rem;
   background: #fff;

@@ -16,7 +16,8 @@ import AddProductForm from '../components/AddProductForm';
 import AdminManagement from '../components/AdminManagement';
 import AdminChatInbox from '../components/AdminChatInbox';
 import AdminSalesReport from '../components/AdminSalesReport';
-import AdminOrderCard, { ORDER_STATUSES } from '../components/AdminOrderCard';
+import { ORDER_STATUSES } from '../components/AdminOrderCard';
+import AdminOrdersTable from '../components/admin/AdminOrdersTable';
 import AdminStockManager from '../components/AdminStockManager';
 import AdminProductsSheet from '../components/admin/AdminProductsSheet';
 import AdminAuditLog from '../components/admin/AdminAuditLog';
@@ -89,6 +90,7 @@ export default function Admin() {
   const [orderDatePreset, setOrderDatePreset] = useState('all'); // all | today | yesterday | older | custom
   const [orderDateFilter, setOrderDateFilter] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
+  const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [bulkLoading, setBulkLoading] = useState(false);
   const [noteDrafts, setNoteDrafts] = useState({});
   const [noteSaving, setNoteSaving] = useState({});
@@ -295,39 +297,30 @@ export default function Admin() {
       return true;
     }).length;
 
-  const onlineOrders = filteredOrders.filter((o) => orderChannel(o) === 'online');
-  const counterOrders = filteredOrders.filter((o) => orderChannel(o) === 'counter');
   const hasOrderSearch = Boolean(String(orderSearch || '').trim());
   const highlightSingle = hasOrderSearch && filteredOrders.length === 1;
+  const highlightOrderId = highlightSingle ? filteredOrders[0]?.id : null;
 
   useEffect(() => {
-    if (!highlightSingle) return;
+    if (highlightSingle && filteredOrders[0]) {
+      setExpandedOrderId(String(filteredOrders[0].id));
+      return;
+    }
+    if (!hasOrderSearch) return;
+    if (filteredOrders.length === 0) setExpandedOrderId(null);
+  }, [highlightSingle, hasOrderSearch, filteredOrders]);
+
+  useEffect(() => {
+    if (!expandedOrderId) return;
     const timer = window.setTimeout(() => {
-      document.querySelector('.admin-order-card--search-hit')?.scrollIntoView({
-        behavior: 'smooth',
-        block: 'center',
-      });
+      document.querySelector('.wp-order-detail-row .admin-order-card--search-hit, .wp-order-detail-row .admin-order-card-full')
+        ?.closest('tr')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      document.querySelector('.wp-table--orders tr.is-receipt-hit')
+        ?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 80);
     return () => window.clearTimeout(timer);
-  }, [highlightSingle, filteredOrders]);
-
-  const renderOrderCards = (list) =>
-    list
-      .slice()
-      .reverse()
-      .map((o) => (
-        <AdminOrderCard
-          key={o.id}
-          order={o}
-          onUpdateStatus={orderChannel(o) === 'online' ? updateOrderStatus : undefined}
-          onMarkPaid={orderChannel(o) === 'online' ? markOrderPaid : undefined}
-          onAssignRider={orderChannel(o) === 'online' ? assignOrderRider : undefined}
-          onMarkDelivered={orderChannel(o) === 'online' ? markOrderDelivered : undefined}
-          className={`admin-float-card admin-order-card-full glass-card${
-            orderChannel(o) === 'counter' ? ' admin-order-card--pos' : ' admin-order-card--online'
-          }${highlightSingle ? ' admin-order-card--search-hit' : ''}`}
-        />
-      ));
+  }, [expandedOrderId, highlightOrderId]);
 
   const clearOrderFilters = () => {
     setOrderSourceFilter('all');
@@ -335,6 +328,7 @@ export default function Admin() {
     setOrderDatePreset('all');
     setOrderDateFilter('');
     setOrderSearch('');
+    setExpandedOrderId(null);
   };
 
   const navigateAdmin = (nextTab, filter = {}) => {
@@ -763,7 +757,11 @@ export default function Admin() {
                       total: orders.length,
                     })}
                   </span>
-                ) : null}
+                ) : (
+                  <span className="admin-orders-search__meta">
+                    {filteredOrders.length} of {orders.length} orders — click ▶ or order # to open bill
+                  </span>
+                )}
               </label>
               <p className="admin-orders-print-hint">{t('admin.orderThermalPrintHint')}</p>
             <div className="admin-orders-list">
@@ -771,35 +769,18 @@ export default function Admin() {
                 <div className="empty-state glass-card">
                   {hasOrderSearch ? t('admin.orderReceiptSearchEmpty') : 'Is filter mein koi order nahi.'}
                 </div>
-              ) : hasOrderSearch || orderSourceFilter !== 'all' ? (
-                <div className="admin-orders-section__grid">{renderOrderCards(filteredOrders)}</div>
               ) : (
-                <>
-                  <section className="admin-orders-section" aria-label={t('admin.orderSourceOnline')}>
-                    <div className="admin-orders-section__head">
-                      <h3>{t('admin.orderSourceOnline')}</h3>
-                      <span>{onlineOrders.length}</span>
-                    </div>
-                    <p className="admin-orders-section__hint">{t('admin.orderOnlineHint')}</p>
-                    {onlineOrders.length === 0 ? (
-                      <div className="empty-state glass-card">{t('admin.orderOnlineEmpty')}</div>
-                    ) : (
-                      <div className="admin-orders-section__grid">{renderOrderCards(onlineOrders)}</div>
-                    )}
-                  </section>
-                  <section className="admin-orders-section admin-orders-section--pos" aria-label={t('admin.orderSourceCounter')}>
-                    <div className="admin-orders-section__head">
-                      <h3>{t('admin.orderSourceCounter')}</h3>
-                      <span>{counterOrders.length}</span>
-                    </div>
-                    <p className="admin-orders-section__hint">{t('admin.orderCounterHint')}</p>
-                    {counterOrders.length === 0 ? (
-                      <div className="empty-state glass-card">{t('admin.orderCounterEmpty')}</div>
-                    ) : (
-                      <div className="admin-orders-section__grid">{renderOrderCards(counterOrders)}</div>
-                    )}
-                  </section>
-                </>
+                <AdminOrdersTable
+                  orders={filteredOrders}
+                  expandedId={expandedOrderId}
+                  onToggleExpand={setExpandedOrderId}
+                  highlightId={highlightOrderId}
+                  onUpdateStatus={updateOrderStatus}
+                  onMarkPaid={markOrderPaid}
+                  onAssignRider={assignOrderRider}
+                  onMarkDelivered={markOrderDelivered}
+                  t={t}
+                />
               )}
             </div>
             </>
