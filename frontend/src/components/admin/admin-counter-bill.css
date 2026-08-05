@@ -231,9 +231,56 @@
     max-height: min(340px, 46vh);
   }
 
+  /*
+   * Laptop: Find receipt + My Sales Today = compact cards, not full-bleed slabs.
+   * Keep a clear gap so the two blocks never look like one merged page.
+   */
+  .counter-bill-search,
+  .counter-sales {
+    width: min(100%, 720px);
+    max-width: 720px;
+    box-sizing: border-box;
+  }
+
   .counter-bill-search {
-    margin-top: 1rem;
+    margin: 1.15rem 0 0;
+    padding: 0.7rem 0.85rem 0.75rem;
+    border-radius: 12px;
+  }
+
+  .counter-bill-search__label span {
+    font-size: 0.8rem;
+  }
+
+  .counter-bill-search__input {
+    width: 100%;
+    max-width: 420px;
+    min-height: 40px;
+    padding: 0.4rem 0.7rem;
+    font-size: 15px;
+  }
+
+  .counter-bill-search__meta {
+    margin-top: 0.35rem;
+    max-width: 420px;
+    font-size: 0.72rem;
+    line-height: 1.35;
+  }
+
+  .counter-sales {
+    margin-top: 1.15rem;
     margin-bottom: calc(6.75rem + env(safe-area-inset-bottom, 0px));
+    padding: 0.65rem 0.85rem;
+    border-radius: 12px;
+  }
+
+  .counter-sales__toggle h3 {
+    font-size: 0.95rem;
+  }
+
+  .counter-sales__head {
+    gap: 0.5rem;
+    margin-bottom: 0.35rem;
   }
 }
 
@@ -1145,7 +1192,7 @@
 }
 
 .counter-bill-search {
-  margin: 1rem 0 1.25rem;
+  margin: 1rem 0 0;
   padding: 1rem 1.1rem 1.15rem;
   border: 1px solid var(--pos-border, var(--border, #c3c4c7));
   border-radius: 14px;
@@ -1218,12 +1265,15 @@
 }
 
 .counter-sales {
-  margin-top: 0.75rem;
+  margin-top: 1rem;
   padding: 0.75rem;
   border: 1px solid var(--pos-border);
   border-radius: 14px;
   background: var(--pos-surface);
   flex: 0 0 auto;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
   scroll-margin-top: 12px;
   scroll-margin-bottom: calc(5.5rem + env(safe-area-inset-bottom, 0px));
 }
