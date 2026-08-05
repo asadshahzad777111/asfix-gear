@@ -2888,12 +2888,33 @@ export default function AdminCounterBill({
     }, 2200);
   }, []);
 
-  /** Pin section near the top of the screen — never center (that overshoots Discount → Customer). */
+  /** Nearest overflow scrollport (laptop cart / products pane) — else null for window scroll. */
+  const findScrollParent = useCallback((el) => {
+    let node = el?.parentElement || null;
+    while (node && node !== document.body && node !== document.documentElement) {
+      try {
+        const style = getComputedStyle(node);
+        const oy = style.overflowY;
+        if ((oy === 'auto' || oy === 'scroll' || oy === 'overlay') && node.scrollHeight > node.clientHeight + 4) {
+          return node;
+        }
+      } catch {
+        /* ignore */
+      }
+      node = node.parentElement;
+    }
+    return null;
+  }, []);
+
+  /**
+   * Pin section near the top — never center (that overshoots Discount → Customer).
+   * Laptop dual-pane: scroll inside cart/products panel; phone: window scroll.
+   */
   const softScrollToSection = useCallback((sectionId) => {
     const section = document.getElementById(sectionId);
     if (!section) return;
     const topPad = 12;
-    const dockReserve = 100;
+    const dockReserve = 110;
     let vvBottom = 0;
     try {
       vvBottom = parseInt(
@@ -2905,13 +2926,32 @@ export default function AdminCounterBill({
     }
     const viewH = window.visualViewport?.height || window.innerHeight || 0;
     const rect = section.getBoundingClientRect();
+    const scrollParent = findScrollParent(section);
+
+    if (scrollParent) {
+      const parentRect = scrollParent.getBoundingClientRect();
+      const usableBottom = Math.min(parentRect.bottom - 8, viewH - dockReserve - vvBottom);
+      const usableTop = Math.max(parentRect.top + topPad, topPad);
+      if (rect.top >= usableTop && rect.top <= usableBottom - 40) {
+        return;
+      }
+      const delta = rect.top - parentRect.top - topPad;
+      const nextTop = Math.max(0, scrollParent.scrollTop + delta);
+      try {
+        scrollParent.scrollTo({ top: nextTop, behavior: 'smooth' });
+      } catch {
+        scrollParent.scrollTop = nextTop;
+      }
+      return;
+    }
+
     /* Already usable above the sticky dock — do not jump the page. */
     if (rect.top >= topPad && rect.top <= Math.max(topPad + 8, viewH - dockReserve - vvBottom - 48)) {
       return;
     }
     const nextTop = Math.max(0, window.scrollY + rect.top - topPad);
     window.scrollTo({ top: nextTop, behavior: 'smooth' });
-  }, []);
+  }, [findScrollParent]);
 
   const focusWithoutScroll = useCallback((el) => {
     if (!el || typeof el.focus !== 'function') return;
@@ -2991,8 +3031,8 @@ export default function AdminCounterBill({
     const input = searchRef.current;
     /*
      * Focus FIRST in this same pointer gesture — mobile only opens the keyboard then.
-     * Never scrollTo/scrollIntoView here (scroll dismisses an opening keyboard).
-     * Visibility: CSS fixed-lifts #counter-bill-search while searchFocused on phone only.
+     * Never scrollTo/scrollIntoView here on phone (scroll dismisses an opening keyboard).
+     * Laptop: also scroll the products pane so Search is visible in-place (no fixed lift).
      */
     const lift = typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
     const wrap = document.getElementById('counter-bill-search');
@@ -3000,6 +3040,9 @@ export default function AdminCounterBill({
       const h = Math.ceil(wrap.getBoundingClientRect().height);
       if (h > 0) setSearchSlotH(h);
     }
+    setProductPanelCollapsed(false);
+    setDockFocus('search');
+    setSearchFocused(true);
     if (input) {
       try {
         input.focus({ preventScroll: true });
@@ -3011,10 +3054,10 @@ export default function AdminCounterBill({
         }
       }
     }
-    setProductPanelCollapsed(false);
-    setDockFocus('search');
-    setSearchFocused(true);
-  }, []);
+    if (!lift) {
+      window.setTimeout(() => softScrollToSection('counter-bill-search'), 40);
+    }
+  }, [softScrollToSection]);
 
   /** Dock Search: open keyboard on pointerdown (same gesture); click is backup for keyboard activation. */
   const onSearchDockPointerDown = useCallback((e) => {
@@ -3398,10 +3441,10 @@ export default function AdminCounterBill({
   }, [applyPrintFeedback, onPrintOrder, printSmart, receiptOrder, t, thermalWidth]);
 
   /* No auto-print — confirm + Print was firing multiple thermal jobs (3–4 slips). */
-  const confirmBill = async () => {
+  const confirmBill = async ({ printAfter = false } = {}) => {
     if (!lines.length) {
       setFeedback({ type: 'error', text: t('admin.counterBillEmpty') });
-      return;
+      return null;
     }
     setSubmitting(true);
     setFeedback(null);
@@ -3412,13 +3455,13 @@ export default function AdminCounterBill({
         if (!managerLogin.trim()) {
           setFeedback({ type: 'error', text: 'Manager approval is required for this discount.' });
           setSubmitting(false);
-          return;
+          return null;
         }
         const managerPassword = window.prompt?.('Enter manager password/PIN:') || '';
         if (!managerPassword) {
           setFeedback({ type: 'error', text: 'Manager password/PIN is required.' });
           setSubmitting(false);
-          return;
+          return null;
         }
         managerApproval = {
           manager_login: managerLogin,
@@ -3454,12 +3497,40 @@ export default function AdminCounterBill({
       setCashReceived('');
       onBillCreated?.(result.order);
       /* Native app: auto-print once. Browser/desktop: Print button only (avoids duplicate slips). */
-      void maybeAutoPrintNative(result.order);
+      if (printAfter) {
+        /* Laptop bridge / dock Print: confirm then send one slip (no native double-print). */
+        if (!nativePos) {
+          void printReceipt(result.order);
+        } else {
+          void maybeAutoPrintNative(result.order);
+        }
+      } else {
+        void maybeAutoPrintNative(result.order);
+      }
+      return result.order;
     } catch (err) {
       setFeedback({ type: 'error', text: err.message || t('admin.counterBillFailed') });
+      return null;
     } finally {
       setSubmitting(false);
     }
+  };
+
+  /** Dock green print: print last receipt, or confirm current bill then print (laptop bridge). */
+  const dockPrintAction = async () => {
+    if (nativePos && !nativePrinter?.address) {
+      openPrinterSetup();
+      return;
+    }
+    if (lines.length > 0 && !receiptOrder) {
+      await confirmBill({ printAfter: true });
+      return;
+    }
+    if (receiptOrder) {
+      await printReceipt(receiptOrder);
+      return;
+    }
+    setFeedback({ type: 'error', text: t('admin.counterBillNoReceipt') });
   };
 
   const downloadInvoice = async (order = receiptOrder) => {
@@ -4306,6 +4377,48 @@ export default function AdminCounterBill({
                   onClick={jumpToCustomer}
                 >
                   {t('admin.counterBillToolbarCustomer')}
+                </button>
+                <button
+                  type="button"
+                  className="counter-bill__pos-dock-confirm"
+                  onClick={() => void confirmBill()}
+                  disabled={submitting || !lines.length}
+                  title={t('admin.counterBillConfirm')}
+                >
+                  {submitting ? t('common.saving') : t('admin.counterBillConfirm')}
+                </button>
+                <button
+                  type="button"
+                  className="counter-bill__pos-dock-printer"
+                  onClick={() => openPrinterSetup()}
+                  aria-label={t('admin.counterBillNativeRefresh')}
+                  title={
+                    nativePos
+                      ? (nativePrinter?.name || t('admin.counterBillNativeRefresh'))
+                      : t('admin.counterBillNativeRefresh')
+                  }
+                >
+                  <svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true" focusable="false">
+                    <path
+                      fill="currentColor"
+                      d="M17 7V5a3 3 0 0 0-3-3H10a3 3 0 0 0-3 3v2H5a3 3 0 0 0-3 3v6a3 3 0 0 0 3 3h1v2a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2v-2h1a3 3 0 0 0 3-3v-6a3 3 0 0 0-3-3h-2zM10 5h4v2h-4V5zm6 14H8v-4h8v4zm3-6a1 1 0 1 1 0-2 1 1 0 0 1 0 2z"
+                    />
+                  </svg>
+                </button>
+                <button
+                  type="button"
+                  className="counter-bill__pos-dock-print"
+                  onClick={() => void dockPrintAction()}
+                  disabled={submitting || (!lines.length && !receiptOrder && !(nativePos && !nativePrinter?.address))}
+                  aria-label={t('admin.counterBillPrintNow')}
+                  title={t('admin.counterBillPrintNow')}
+                >
+                  <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true" focusable="false">
+                    <path
+                      fill="currentColor"
+                      d="M6 9V3h12v6h2a2 2 0 0 1 2 2v6h-4v4H6v-4H2v-6a2 2 0 0 1 2-2h2zm2-4v4h8V5H8zm-2 12v2h12v-2H6zm-2-2h16v-4H4v4zm2-2.5a1 1 0 1 0 0-2 1 1 0 0 0 0 2z"
+                    />
+                  </svg>
                 </button>
               </>
             )}
