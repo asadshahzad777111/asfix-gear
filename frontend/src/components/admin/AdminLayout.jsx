@@ -40,7 +40,12 @@ export default function AdminLayout({
     if (next === 'add' && onEditCancel) onEditCancel();
     setTab(next);
     setMenuOpen(false);
-    window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    const content = document.querySelector('.wp-admin-content');
+    if (content) {
+      content.scrollTop = 0;
+    } else {
+      window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
+    }
   };
 
   const navItem = (id, label, badge) => (
