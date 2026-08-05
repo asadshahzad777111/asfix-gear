@@ -119,9 +119,19 @@
 
   .counter-bill {
     min-height: 0;
-    /* Taller workspace so Add products shows several full tiles */
-    height: min(82dvh, 920px);
-    max-height: min(82dvh, 920px);
+    /* Outer bill grows for compact post-print actions; workspace height is on the grid */
+    height: auto;
+    max-height: none;
+    overflow: visible;
+  }
+
+  .counter-bill__grid {
+    flex: 1 1 auto;
+    min-height: 0;
+    height: min(78dvh, 880px);
+    max-height: min(78dvh, 880px);
+    align-items: stretch;
+    gap: 0.7rem;
   }
 
   .counter-bill__head {
@@ -136,14 +146,6 @@
 
   .counter-bill__shop strong {
     font-size: 0.85rem;
-  }
-
-  .counter-bill__grid {
-    flex: 1 1 auto;
-    min-height: 0;
-    height: 100%;
-    align-items: stretch;
-    gap: 0.7rem;
   }
 
   .counter-bill__panel {
@@ -3056,12 +3058,22 @@ html.pos-keyboard-open #counter-bill-search {
 }
 
 .counter-bill__receipt {
-  margin-top: 0.85rem;
+  margin: 0 0 0.75rem;
   border: 1px solid var(--pos-border);
   border-radius: var(--pos-radius);
-  padding: 0.85rem;
+  padding: 0.7rem 0.85rem;
   background: var(--pos-surface);
   color: var(--pos-text);
+  flex: 0 0 auto;
+  position: relative;
+  z-index: 5;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.counter-bill__receipt--compact {
+  /* Actions only — never host the thermal slip preview on the live POS screen */
+  max-height: none;
 }
 
 .counter-bill__receipt-head {
@@ -3069,8 +3081,26 @@ html.pos-keyboard-open #counter-bill-search {
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 0.75rem;
+  margin-bottom: 0;
   flex-wrap: wrap;
+}
+
+.counter-bill__receipt-copy {
+  display: grid;
+  gap: 0.15rem;
+  min-width: 0;
+}
+
+.counter-bill__receipt-copy strong {
+  font-size: 0.9rem;
+  font-weight: 800;
+  color: var(--pos-text);
+}
+
+.counter-bill__receipt-copy span {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--pos-muted);
 }
 
 .counter-bill__receipt-actions {
@@ -3083,6 +3113,32 @@ html.pos-keyboard-open #counter-bill-search {
   margin: -0.2rem 0 0.75rem;
   color: var(--pos-muted);
   font-size: 0.84rem;
+}
+
+/*
+ * Print iframe must never paint on the POS UI (only used for window.print / bridge fallback).
+ */
+#counter-receipt-print-root {
+  position: fixed !important;
+  left: -10000px !important;
+  top: 0 !important;
+  width: 1px !important;
+  height: 1px !important;
+  max-width: 1px !important;
+  max-height: 1px !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  border: 0 !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  visibility: hidden !important;
+  z-index: -1 !important;
+  overflow: hidden !important;
+}
+
+body.counter-receipt-printing {
+  /* Keep POS interactive; print runs in isolated iframe */
+  overflow: auto;
 }
 
 /* Opacity/transform only — avoid animating box-shadow (paint thrash on 120Hz). */

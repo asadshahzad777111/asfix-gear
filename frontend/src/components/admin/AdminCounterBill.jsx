@@ -3600,6 +3600,54 @@ export default function AdminCounterBill({
         </div>
       ) : null}
 
+      {receiptOrder ? (
+        <section className="counter-bill__receipt counter-bill__receipt--compact" aria-live="polite">
+          <div className="counter-bill__receipt-head">
+            <div className="counter-bill__receipt-copy">
+              <strong>{t('admin.counterBillSavedReady')}</strong>
+              <span>
+                {t('admin.counterBillNo')}: {receiptOrder.order_id || receiptOrder.id}
+              </span>
+            </div>
+            <div className="counter-bill__receipt-actions">
+              <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
+                {nativePos
+                  ? t('admin.counterBillPrintNative')
+                  : showMateThermalLink
+                    ? t('admin.counterBillPrintMate')
+                    : t('admin.counterBillPrintNow')}
+              </button>
+              <button type="button" className="wp-button counter-bill__pdf-cta" onClick={() => downloadInvoice()}>
+                {t('admin.counterBillDownloadPdf')}
+              </button>
+              <button type="button" className="wp-button counter-bill__share-cta" onClick={() => shareInvoice()}>
+                {t('admin.counterBillSharePdf')}
+              </button>
+              {showMateThermalLink ? (
+                <button
+                  type="button"
+                  className="wp-button counter-bill__mate-cta"
+                  onClick={() => void openMateThermalText(receiptOrder, thermalWidth)}
+                >
+                  {t('admin.counterBillOpenMate')}
+                </button>
+              ) : null}
+              <button
+                type="button"
+                className="wp-button wp-button--secondary counter-bill__receipt-dismiss"
+                onClick={() => {
+                  setReceiptOrder(null);
+                  setFeedback(null);
+                  finishPrintJob(printInFlightRef);
+                }}
+              >
+                {t('common.close')}
+              </button>
+            </div>
+          </div>
+        </section>
+      ) : null}
+
       <div className={`counter-bill__grid${productPanelCollapsed ? ' counter-bill__grid--products-collapsed' : ''}`}>
         <section className="counter-bill__panel counter-bill__panel--products">
           <div className="counter-bill__panel-head">
@@ -4427,39 +4475,6 @@ export default function AdminCounterBill({
         )
         : null}
 
-      {receiptOrder ? (
-        <section className="counter-bill__receipt">
-          <div className="counter-bill__receipt-head">
-            <strong>{t('admin.counterBillSavedReady')}</strong>
-            <div className="counter-bill__receipt-actions">
-              <button type="button" className="wp-button counter-bill__print-cta" onClick={() => printReceipt()}>
-                {nativePos
-                  ? t('admin.counterBillPrintNative')
-                  : showMateThermalLink
-                    ? t('admin.counterBillPrintMate')
-                    : t('admin.counterBillPrintNow')}
-              </button>
-              <button type="button" className="wp-button counter-bill__pdf-cta" onClick={() => downloadInvoice()}>
-                {t('admin.counterBillDownloadPdf')}
-              </button>
-              <button type="button" className="wp-button counter-bill__share-cta" onClick={() => shareInvoice()}>
-                {t('admin.counterBillSharePdf')}
-              </button>
-              {showMateThermalLink ? (
-                <button
-                  type="button"
-                  className="wp-button counter-bill__mate-cta"
-                  onClick={() => void openMateThermalText(receiptOrder, thermalWidth)}
-                >
-                  {t('admin.counterBillOpenMate')}
-                </button>
-              ) : null}
-            </div>
-          </div>
-          <p className="counter-bill__receipt-note">{t('admin.counterBillThermalHint')}</p>
-          <CounterBillReceipt order={receiptOrder} printable={!onPrintOrder} thermalWidth={thermalWidth} />
-        </section>
-      ) : null}
       {!onPrintOrder ? printChooser : null}
     </div>
   );
