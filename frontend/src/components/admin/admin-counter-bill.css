@@ -112,10 +112,15 @@
  * Left products = one scroll. Right cart/payment = one scroll.
  */
 @media (min-width: 901px) {
+  .counter-content.counter-content--sale {
+    overflow-x: clip;
+    overflow-y: auto;
+  }
+
   .counter-bill {
     min-height: 0;
-    height: min(70dvh, 780px);
-    max-height: min(70dvh, 780px);
+    height: min(68dvh, 760px);
+    max-height: min(68dvh, 760px);
   }
 
   .counter-bill__head {
@@ -144,10 +149,17 @@
     padding: 0.7rem;
   }
 
+  .counter-bill__panel-head,
+  .counter-bill__categories {
+    flex: 0 0 auto;
+  }
+
   .counter-bill__panel--products {
     overflow: hidden;
     max-height: 100%;
     height: 100%;
+    display: flex;
+    flex-direction: column;
   }
 
   .counter-bill__products-body {
@@ -160,6 +172,8 @@
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+    /* Keep last product tiles above the fixed dock */
+    padding-bottom: calc(6.75rem + env(safe-area-inset-bottom, 0px));
   }
 
   .counter-bill__products {
@@ -178,11 +192,18 @@
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
+    /* Keep Confirm / New bill / Hold above the fixed dock */
+    padding-bottom: calc(6.75rem + env(safe-area-inset-bottom, 0px));
   }
 
   /* Dock already has Discount / Customer / Print — hide duplicate toolbar */
   .counter-bill__quick-actions--mobile {
     display: none;
+  }
+
+  /* Cart panel already clears the fixed dock — avoid a second huge spacer */
+  .counter-bill__footer {
+    padding-bottom: 0.35rem;
   }
 
   .counter-bill-search {
@@ -1686,7 +1707,8 @@
   align-items: center;
   justify-content: space-between;
   gap: 0.75rem;
-  margin-bottom: 0.7rem;
+  margin-bottom: 0.55rem;
+  flex: 0 0 auto;
 }
 
 .counter-bill__panel-head > div {
@@ -1729,10 +1751,16 @@
 .counter-bill__categories {
   display: flex;
   gap: 0.4rem;
-  margin-bottom: 0.7rem;
-  padding-bottom: 0.1rem;
+  margin: 0 0 0.55rem;
+  padding: 0.2rem 0.1rem 0.4rem;
+  min-height: 42px;
+  flex: 0 0 auto;
   overflow-x: auto;
+  overflow-y: visible;
   -webkit-overflow-scrolling: touch;
+  /* Stay above product scroll — never clipped by products-body */
+  position: relative;
+  z-index: 2;
 }
 
 .counter-bill__category {
@@ -1764,6 +1792,8 @@
 .counter-bill__payment {
   display: grid;
   gap: 0.3rem;
+  width: 100%;
+  min-width: 0;
   font-size: 0.78rem;
   font-weight: 700;
   color: var(--pos-muted);
@@ -2591,10 +2621,23 @@ html.pos-keyboard-open #counter-bill-search {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.45rem;
+  width: 100%;
+  max-width: 100%;
+  align-items: stretch;
+  box-sizing: border-box;
 }
 
 .counter-bill__pay {
+  width: 100%;
+  min-width: 0;
   min-height: 44px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  white-space: nowrap;
+  padding: 0.45rem 0.4rem;
+  box-sizing: border-box;
   border: 1px solid var(--pos-border);
   border-radius: var(--pos-radius-sm);
   background: var(--pos-bg);
@@ -2602,7 +2645,8 @@ html.pos-keyboard-open #counter-bill-search {
   cursor: pointer;
   font: inherit;
   font-weight: 700;
-  font-size: 0.86rem;
+  font-size: clamp(0.72rem, 1.6vw, 0.86rem);
+  line-height: 1.15;
 }
 
 .counter-bill__pay--active.counter-bill__pay--cash {
@@ -2635,17 +2679,22 @@ html.pos-keyboard-open #counter-bill-search {
 
 .counter-bill__cash-box {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(7.5rem, 0.85fr);
   gap: 0.65rem;
-  align-items: end;
+  align-items: stretch;
+  width: 100%;
+  min-width: 0;
 }
 
 .counter-bill__change {
-  min-width: 150px;
+  min-width: 0;
   padding: 0.65rem;
   border: 1px solid var(--pos-border);
   border-radius: var(--pos-radius-sm);
   background: var(--pos-bg);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
 .counter-bill__change span,
@@ -2669,8 +2718,7 @@ html.pos-keyboard-open #counter-bill-search {
   position: static;
   z-index: 3;
   margin: 0.75rem 0 0;
-  padding: 0.75rem 0 0;
-  padding-bottom: 0;
+  padding: 0.75rem 0 calc(6.75rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid var(--pos-border);
   border-radius: 0;
   background: transparent;
@@ -3358,7 +3406,7 @@ body:has(.counter-printer-modal) .counter-bill__pos-dock {
 
 .counter-bill,
 .counter-content {
-  padding-bottom: calc(5.5rem + env(safe-area-inset-bottom));
+  padding-bottom: calc(6.75rem + env(safe-area-inset-bottom, 0px));
 }
 
 @media (max-width: 900px) {
@@ -3471,8 +3519,7 @@ body:has(.counter-printer-modal) .counter-bill__pos-dock {
     bottom: auto;
     z-index: 1;
     margin: 0.75rem 0 0;
-    padding: 0.75rem 0 0;
-    padding-bottom: 0;
+    padding: 0.75rem 0 calc(6.75rem + env(safe-area-inset-bottom, 0px));
     border-radius: 0;
     background: transparent;
     box-shadow: none;
@@ -3481,12 +3528,19 @@ body:has(.counter-printer-modal) .counter-bill__pos-dock {
 
 @media (max-width: 640px) {
   .counter-content {
-    padding: 0.7rem max(0.55rem, env(safe-area-inset-right)) 1.1rem max(0.55rem, env(safe-area-inset-left));
+    padding-top: 0.7rem;
+    padding-right: max(0.55rem, env(safe-area-inset-right));
+    padding-bottom: calc(7.25rem + env(safe-area-inset-bottom, 0px));
+    padding-left: max(0.55rem, env(safe-area-inset-left));
   }
 
   .counter-bill {
-    padding: 0.55rem;
+    padding: 0.55rem 0.55rem calc(7.25rem + env(safe-area-inset-bottom, 0px));
     border-radius: 12px;
+  }
+
+  .counter-bill__footer {
+    padding-bottom: calc(7.25rem + env(safe-area-inset-bottom, 0px));
   }
 
   .counter-bill__head,
@@ -3585,8 +3639,16 @@ body:has(.counter-printer-modal) .counter-bill__pos-dock {
 }
 
 @media (max-width: 420px) {
+  /* Keep Cash / Card / EasyPaisa / JazzCash as a clean 2×2 grid */
   .counter-bill__payment-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
+  }
+
+  .counter-bill__pay {
+    min-height: 2.65rem;
+    padding: 0.4rem 0.3rem;
+    font-size: 0.74rem;
   }
 }
 

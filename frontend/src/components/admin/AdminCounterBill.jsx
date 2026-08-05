@@ -3527,7 +3527,6 @@ export default function AdminCounterBill({
             </button>
           </div>
 
-          <div className="counter-bill__products-body">
           {!productPanelCollapsed ? (
             <div className="counter-bill__categories" role="tablist" aria-label="Product categories">
               <button
@@ -3550,6 +3549,7 @@ export default function AdminCounterBill({
             </div>
           ) : null}
 
+          <div className="counter-bill__products-body">
           <div
             className="counter-bill__search-slot"
             style={searchFocused && searchSlotH > 0 ? { minHeight: searchSlotH } : undefined}
