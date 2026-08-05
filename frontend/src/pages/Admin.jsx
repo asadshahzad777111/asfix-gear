@@ -30,6 +30,7 @@ import AdminBookingCard from '../components/admin/AdminBookingCard';
 import { RepairChatButton, RepairChatModal } from '../components/RepairChatPanel';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import useLiveUpdates from '../hooks/useLiveUpdates';
+import { filterOrders } from '../utils/orderSearch';
 
 const VALID_TABS = new Set([
   'dashboard', 'products', 'add', 'categories', 'stock', 'sheet', 'orders', 'customers',
@@ -87,6 +88,7 @@ export default function Admin() {
   const [orderStaffFilter, setOrderStaffFilter] = useState('all');
   const [orderDatePreset, setOrderDatePreset] = useState('all'); // all | today | yesterday | older | custom
   const [orderDateFilter, setOrderDateFilter] = useState('');
+  const [orderSearch, setOrderSearch] = useState('');
   const [bulkLoading, setBulkLoading] = useState(false);
   const [noteDrafts, setNoteDrafts] = useState({});
   const [noteSaving, setNoteSaving] = useState({});
@@ -263,14 +265,25 @@ export default function Admin() {
     return true;
   };
 
-  const filteredOrders = orders.filter((o) => {
-    if (orderStatusFilter !== 'all' && o.shipping_status !== orderStatusFilter) return false;
-    if (orderSourceFilter === 'counter_sale' && orderChannel(o) !== 'counter') return false;
-    if (orderSourceFilter === 'online' && orderChannel(o) !== 'online') return false;
-    if (orderStaffFilter !== 'all' && String(o.created_by_staff_id || '') !== orderStaffFilter) return false;
-    if (!matchesOrderDate(o)) return false;
-    return true;
-  });
+  const filteredOrders = useMemo(() => {
+    const base = orders.filter((o) => {
+      if (orderStatusFilter !== 'all' && o.shipping_status !== orderStatusFilter) return false;
+      if (orderSourceFilter === 'counter_sale' && orderChannel(o) !== 'counter') return false;
+      if (orderSourceFilter === 'online' && orderChannel(o) !== 'online') return false;
+      if (orderStaffFilter !== 'all' && String(o.created_by_staff_id || '') !== orderStaffFilter) return false;
+      if (!matchesOrderDate(o)) return false;
+      return true;
+    });
+    return filterOrders(base, orderSearch);
+  }, [
+    orders,
+    orderStatusFilter,
+    orderSourceFilter,
+    orderStaffFilter,
+    orderDatePreset,
+    orderDateFilter,
+    orderSearch,
+  ]);
 
   const countByDatePreset = (preset) =>
     orders.filter((o) => {
@@ -284,6 +297,19 @@ export default function Admin() {
 
   const onlineOrders = filteredOrders.filter((o) => orderChannel(o) === 'online');
   const counterOrders = filteredOrders.filter((o) => orderChannel(o) === 'counter');
+  const hasOrderSearch = Boolean(String(orderSearch || '').trim());
+  const highlightSingle = hasOrderSearch && filteredOrders.length === 1;
+
+  useEffect(() => {
+    if (!highlightSingle) return;
+    const timer = window.setTimeout(() => {
+      document.querySelector('.admin-order-card--search-hit')?.scrollIntoView({
+        behavior: 'smooth',
+        block: 'center',
+      });
+    }, 80);
+    return () => window.clearTimeout(timer);
+  }, [highlightSingle, filteredOrders]);
 
   const renderOrderCards = (list) =>
     list
@@ -299,7 +325,7 @@ export default function Admin() {
           onMarkDelivered={orderChannel(o) === 'online' ? markOrderDelivered : undefined}
           className={`admin-float-card admin-order-card-full glass-card${
             orderChannel(o) === 'counter' ? ' admin-order-card--pos' : ' admin-order-card--online'
-          }`}
+          }${highlightSingle ? ' admin-order-card--search-hit' : ''}`}
         />
       ));
 
@@ -308,6 +334,7 @@ export default function Admin() {
     setOrderStaffFilter('all');
     setOrderDatePreset('all');
     setOrderDateFilter('');
+    setOrderSearch('');
   };
 
   const navigateAdmin = (nextTab, filter = {}) => {
@@ -707,7 +734,7 @@ export default function Admin() {
                   }}
                   aria-label={t('admin.orderDateFilter')}
                 />
-                {(orderSourceFilter !== 'all' || orderStaffFilter !== 'all' || orderDatePreset !== 'all' || orderDateFilter) ? (
+                {(orderSourceFilter !== 'all' || orderStaffFilter !== 'all' || orderDatePreset !== 'all' || orderDateFilter || orderSearch) ? (
                   <button
                     type="button"
                     className="wp-button wp-button--secondary wp-button--small"
@@ -717,11 +744,36 @@ export default function Admin() {
                   </button>
                 ) : null}
               </div>
+              <label className="admin-orders-search">
+                <span className="admin-orders-search__label">{t('admin.orderReceiptSearchLabel')}</span>
+                <input
+                  type="search"
+                  className="admin-orders-search__input"
+                  value={orderSearch}
+                  onChange={(e) => setOrderSearch(e.target.value)}
+                  placeholder={t('admin.orderReceiptSearchPh')}
+                  aria-label={t('admin.orderReceiptSearchLabel')}
+                  autoComplete="off"
+                  enterKeyHint="search"
+                />
+                {orderSearch.trim() ? (
+                  <span className="admin-orders-search__meta">
+                    {t('admin.orderReceiptSearchResults', {
+                      count: filteredOrders.length,
+                      total: orders.length,
+                    })}
+                  </span>
+                ) : null}
+              </label>
               <p className="admin-orders-print-hint">{t('admin.orderThermalPrintHint')}</p>
             <div className="admin-orders-list">
               {filteredOrders.length === 0 ? (
-                <div className="empty-state glass-card">Is filter mein koi order nahi.</div>
-              ) : orderSourceFilter === 'all' ? (
+                <div className="empty-state glass-card">
+                  {hasOrderSearch ? t('admin.orderReceiptSearchEmpty') : 'Is filter mein koi order nahi.'}
+                </div>
+              ) : hasOrderSearch || orderSourceFilter !== 'all' ? (
+                <div className="admin-orders-section__grid">{renderOrderCards(filteredOrders)}</div>
+              ) : (
                 <>
                   <section className="admin-orders-section" aria-label={t('admin.orderSourceOnline')}>
                     <div className="admin-orders-section__head">
@@ -748,8 +800,6 @@ export default function Admin() {
                     )}
                   </section>
                 </>
-              ) : (
-                <div className="admin-orders-section__grid">{renderOrderCards(filteredOrders)}</div>
               )}
             </div>
             </>
