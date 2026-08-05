@@ -3689,70 +3689,72 @@ export default function AdminCounterBill({
             <span>{lines.length} {t('admin.counterBillCartItems')}</span>
           </div>
 
-          <div className="counter-bill__thermal-setting">
-            <span>{t('admin.counterBillThermalWidth')}</span>
-            <div role="group" aria-label={t('admin.counterBillThermalWidth')}>
-              {THERMAL_WIDTH_OPTIONS.map((width) => (
-                <button
-                  key={width}
-                  type="button"
-                  className={thermalWidth === width ? 'counter-bill__thermal-active' : ''}
-                  onClick={() => setThermalWidth(width)}
-                >
-                  {width}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {nativePos ? (
-            <div className="counter-bill__thermal-setting counter-bill__thermal-setting--native counter-bill__thermal-setting--native-sticky">
-              <span>{t('admin.counterBillNativePrinter')}</span>
-              <div className="counter-bill__native-printer">
-                <p className="counter-bill__native-printer-status">
-                  {nativePrinter
-                    ? `${nativePrinter.name || 'Printer'} (${nativePrinter.address})`
-                    : t('admin.counterBillNativeNoPrinter')}
-                </p>
-                <div role="group" aria-label={t('admin.counterBillNativePrinter')}>
+          <details className="counter-bill__print-settings">
+            <summary>{t('admin.counterBillThermalWidth')} · {thermalWidth}</summary>
+            <div className="counter-bill__thermal-setting">
+              <span>{t('admin.counterBillThermalWidth')}</span>
+              <div role="group" aria-label={t('admin.counterBillThermalWidth')}>
+                {THERMAL_WIDTH_OPTIONS.map((width) => (
                   <button
+                    key={width}
                     type="button"
-                    disabled={nativePrinterBusy}
-                    onClick={() => void refreshNativePrinters()}
+                    className={thermalWidth === width ? 'counter-bill__thermal-active' : ''}
+                    onClick={() => setThermalWidth(width)}
                   >
-                    {nativePrinterBusy ? t('common.loading') : t('admin.counterBillNativeRefresh')}
+                    {width}
                   </button>
-                  {nativePrinter ? (
-                    <button type="button" onClick={() => void selectNativePrinter(null)}>
-                      {t('admin.counterBillNativeClear')}
-                    </button>
-                  ) : null}
-                </div>
-                {nativePrinters.length > 0 ? (
-                  <ul className="counter-bill__native-printer-list">
-                    {nativePrinters.map((printer) => (
-                      <li key={printer.address}>
-                        <button
-                          type="button"
-                          className={
-                            nativePrinter?.address === printer.address
-                              ? 'counter-bill__thermal-active'
-                              : ''
-                          }
-                          onClick={() => void selectNativePrinter(printer)}
-                        >
-                          {printer.name || printer.address}
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                ) : null}
-                <p className="counter-bill__native-printer-hint">{t('admin.counterBillNativeHint')}</p>
+                ))}
               </div>
             </div>
-          ) : null}
+            {nativePos ? (
+              <div className="counter-bill__thermal-setting counter-bill__thermal-setting--native">
+                <span>{t('admin.counterBillNativePrinter')}</span>
+                <div className="counter-bill__native-printer">
+                  <p className="counter-bill__native-printer-status">
+                    {nativePrinter
+                      ? `${nativePrinter.name || 'Printer'} (${nativePrinter.address})`
+                      : t('admin.counterBillNativeNoPrinter')}
+                  </p>
+                  <div role="group" aria-label={t('admin.counterBillNativePrinter')}>
+                    <button
+                      type="button"
+                      disabled={nativePrinterBusy}
+                      onClick={() => void refreshNativePrinters()}
+                    >
+                      {nativePrinterBusy ? t('common.loading') : t('admin.counterBillNativeRefresh')}
+                    </button>
+                    {nativePrinter ? (
+                      <button type="button" onClick={() => void selectNativePrinter(null)}>
+                        {t('admin.counterBillNativeClear')}
+                      </button>
+                    ) : null}
+                  </div>
+                  {nativePrinters.length > 0 ? (
+                    <ul className="counter-bill__native-printer-list">
+                      {nativePrinters.map((printer) => (
+                        <li key={printer.address}>
+                          <button
+                            type="button"
+                            className={
+                              nativePrinter?.address === printer.address
+                                ? 'counter-bill__thermal-active'
+                                : ''
+                            }
+                            onClick={() => void selectNativePrinter(printer)}
+                          >
+                            {printer.name || printer.address}
+                          </button>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  <p className="counter-bill__native-printer-hint">{t('admin.counterBillNativeHint')}</p>
+                </div>
+              </div>
+            ) : null}
+          </details>
 
-          <div className="counter-bill__quick-actions" aria-label={t('admin.counterBillQuickActions')}>
+          <div className="counter-bill__quick-actions counter-bill__quick-actions--mobile" aria-label={t('admin.counterBillQuickActions')}>
             <button type="button" onClick={jumpToDiscount}>
               <span aria-hidden="true">%</span>
               {t('admin.counterBillToolbarDiscount')}

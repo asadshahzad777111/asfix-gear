@@ -591,38 +591,26 @@ export default function Counter() {
         </div>
       </header>
 
-      <main className="wp-admin-content counter-content">
-        <div className="wp-admin-content-head counter-head">
-          <div>
+      <main className={`wp-admin-content counter-content${posMode === 'sale' ? ' counter-content--sale' : ' counter-content--custom'}`}>
+        <div className="wp-admin-content-head counter-head counter-head--compact">
+          <div className="counter-head__title-row">
             <h1 className="wp-admin-page-title">{t('counter.title')}</h1>
-            <p>{t('counter.subtitle')}</p>
-          </div>
-          <div className="counter-stats-bar" aria-label={t('counter.quickStats')}>
-            <div className="counter-today-card">
-              <span>{t('counter.todaySales')}</span>
-              <strong>{formatPrice(stats.today_sales)}</strong>
-              <small>{t('counter.shopToday')}</small>
-            </div>
-            <div className="counter-today-card">
-              <span>{t('counter.billsToday')}</span>
-              <strong>{Number(stats.bills_today || 0).toLocaleString('en-PK')}</strong>
-              <small>{t('counter.counterBills')}</small>
-            </div>
-            <div className="counter-today-card">
-              <span>{t('counter.itemsSoldToday')}</span>
-              <strong>{Number(stats.items_sold_today || 0).toLocaleString('en-PK')}</strong>
-              <small>{t('counter.netAfterReturns')}</small>
+            <div className="counter-stats-bar counter-stats-bar--compact" aria-label={t('counter.quickStats')}>
+              <div className="counter-today-card">
+                <span>{t('counter.todaySales')}</span>
+                <strong>{formatPrice(stats.today_sales)}</strong>
+              </div>
+              <div className="counter-today-card">
+                <span>{t('counter.billsToday')}</span>
+                <strong>{Number(stats.bills_today || 0).toLocaleString('en-PK')}</strong>
+              </div>
             </div>
           </div>
         </div>
 
-        {nativePos ? (
-          <p className="counter-pos-apk-installed" role="status">
-            {t('counter.downloadPosApkInstalled')}
-          </p>
-        ) : (
+        {!nativePos && isAndroid ? (
           <div
-            className={`counter-pos-download-bar${isAndroid ? ' counter-pos-download-bar--android' : ''}`}
+            className="counter-pos-download-bar counter-pos-download-bar--android"
             role="region"
             aria-label={t('counter.downloadPosApk')}
           >
@@ -639,7 +627,7 @@ export default function Counter() {
               {t('counter.downloadPosApk')}
             </a>
           </div>
-        )}
+        ) : null}
 
         <div className="counter-pos-tools">
           <div className="counter-pos-tools__modes" role="tablist" aria-label={t('counter.posModes')}>

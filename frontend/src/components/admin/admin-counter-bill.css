@@ -108,14 +108,28 @@
 }
 
 /*
- * Desktop dual-pane: each column scrolls on its own.
- * Left = products (mouse wheel over items), right = bill / payment.
+ * Desktop: simple dual-pane POS workspace.
+ * Left products = one scroll. Right cart/payment = one scroll.
  */
 @media (min-width: 901px) {
   .counter-bill {
-    height: min(78dvh, 860px);
-    max-height: min(78dvh, 860px);
-    min-height: min(64dvh, 680px);
+    min-height: 0;
+    height: min(70dvh, 780px);
+    max-height: min(70dvh, 780px);
+  }
+
+  .counter-bill__head {
+    flex-shrink: 0;
+    margin-bottom: 0.45rem;
+  }
+
+  .counter-bill__head p,
+  .counter-bill__shop span {
+    display: none;
+  }
+
+  .counter-bill__shop strong {
+    font-size: 0.85rem;
   }
 
   .counter-bill__grid {
@@ -123,6 +137,11 @@
     min-height: 0;
     height: 100%;
     align-items: stretch;
+    gap: 0.7rem;
+  }
+
+  .counter-bill__panel {
+    padding: 0.7rem;
   }
 
   .counter-bill__panel--products {
@@ -160,6 +179,15 @@
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
   }
+
+  /* Dock already has Discount / Customer / Print — hide duplicate toolbar */
+  .counter-bill__quick-actions--mobile {
+    display: none;
+  }
+
+  .counter-bill-search {
+    margin-top: 0.75rem;
+  }
 }
 
 .counter-bill *,
@@ -180,6 +208,50 @@
   /* pan-y: finger scroll must work on Android WebView (manipulation was too aggressive) */
   touch-action: pan-y;
   overscroll-behavior-y: auto;
+}
+
+.counter-head--compact {
+  margin-bottom: 0.55rem;
+}
+
+.counter-head__title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.counter-head--compact .wp-admin-page-title {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.counter-stats-bar--compact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+  margin: 0;
+}
+
+.counter-stats-bar--compact .counter-today-card {
+  min-width: 0;
+  padding: 0.35rem 0.65rem;
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.4rem;
+}
+
+.counter-stats-bar--compact .counter-today-card span {
+  font-size: 0.72rem;
+}
+
+.counter-stats-bar--compact .counter-today-card strong {
+  font-size: 0.95rem;
+}
+
+.counter-stats-bar--compact .counter-today-card small {
+  display: none;
 }
 
 .counter-shell .wp-admin-page-title {
@@ -1586,15 +1658,12 @@
 }
 
 .counter-bill__panel--cart {
-  position: sticky;
-  top: 0;
+  position: relative;
+  top: auto;
   z-index: 5;
   color: var(--pos-text);
-  max-height: min(78dvh, 860px);
-  overflow-x: hidden;
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  touch-action: pan-y;
+  max-height: none;
+  overflow: visible;
   background: var(--pos-surface);
 }
 
@@ -1893,11 +1962,35 @@ html.pos-keyboard-open #counter-bill-search {
   flex: 1 1 auto;
   min-height: 0;
   max-height: none;
-  overflow-y: auto;
-  overscroll-behavior: contain;
+  /* Scroll lives on .counter-bill__products-body (desktop) or page (mobile) */
+  overflow: visible;
   padding-right: 0.15rem;
-  -webkit-overflow-scrolling: touch;
-  touch-action: pan-y;
+}
+
+.counter-bill__print-settings {
+  margin: 0 0 0.65rem;
+  border: 1px solid var(--pos-border);
+  border-radius: 10px;
+  background: var(--pos-surface-2);
+  padding: 0.35rem 0.55rem;
+}
+
+.counter-bill__print-settings > summary {
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--pos-muted);
+  list-style-position: outside;
+  padding: 0.25rem 0;
+}
+
+.counter-bill__print-settings[open] > summary {
+  margin-bottom: 0.45rem;
+  color: var(--pos-text);
+}
+
+.counter-bill__print-settings .counter-bill__thermal-setting {
+  margin-bottom: 0.45rem;
 }
 
 .counter-bill__product-tile {
@@ -3322,7 +3415,19 @@ body:has(.counter-printer-modal) .counter-bill__pos-dock {
     overflow: visible;
   }
 
-  /* Cart scrolls in page flow on phone — sticky 68vh overlay was covering products + mixing with dock */
+  .counter-bill__quick-actions--mobile {
+    display: grid;
+  }
+
+  .counter-bill__head p {
+    display: block;
+  }
+
+  .counter-bill__shop span {
+    display: block;
+  }
+
+  /* Cart scrolls in page flow on phone — no nested scroll traps */
   .counter-bill__panel--cart {
     position: relative;
     top: auto;
@@ -3339,6 +3444,17 @@ body:has(.counter-printer-modal) .counter-bill__pos-dock {
     max-height: none;
     overflow: visible;
     touch-action: pan-y;
+  }
+
+  .counter-bill {
+    height: auto;
+    max-height: none;
+    min-height: 0;
+  }
+
+  .counter-head__title-row {
+    align-items: flex-start;
+    flex-direction: column;
   }
 
   .counter-bill__cart-lines {
