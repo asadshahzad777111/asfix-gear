@@ -96,11 +96,31 @@ export default function AdminCustomers() {
     );
   }, [customers]);
 
+  const ordersEnriched = useMemo(() => enrichOrdersWithReturns(orders), [orders]);
+
   const matchedOrders = useMemo(() => {
     const q = search.trim();
     if (!q) return [];
-    return filterOrders(orders, q);
-  }, [orders, search]);
+    const hits = filterOrders(ordersEnriched, q);
+    /* If a return matches, also surface its original sale bill. */
+    const byId = new Map(ordersEnriched.map((o) => [String(o.id), o]));
+    const out = [];
+    const seen = new Set();
+    for (const hit of hits) {
+      if (isReturnOrder(hit) && hit.original_order_id != null) {
+        const parent = byId.get(String(hit.original_order_id));
+        if (parent && !seen.has(String(parent.id))) {
+          out.push(parent);
+          seen.add(String(parent.id));
+        }
+      }
+      if (!seen.has(String(hit.id))) {
+        out.push(hit);
+        seen.add(String(hit.id));
+      }
+    }
+    return out;
+  }, [ordersEnriched, search]);
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
@@ -221,10 +241,13 @@ export default function AdminCustomers() {
               <AdminOrderCard
                 key={o.id}
                 order={o}
+                linkedReturns={o.linked_returns}
                 className={`admin-float-card admin-order-card-full glass-card wp-customer-receipt-hit${
-                  o.source === 'counter_sale' || o.source === 'counter_return'
-                    ? ' admin-order-card--pos'
-                    : ' admin-order-card--online'
+                  isReturnOrder(o)
+                    ? ' admin-order-card--return'
+                    : o.source === 'counter_sale' || o.source === 'counter_return'
+                      ? ' admin-order-card--pos'
+                      : ' admin-order-card--online'
                 }${highlightSingleReceipt ? ' admin-order-card--search-hit' : ''}`}
               />
             ))}
