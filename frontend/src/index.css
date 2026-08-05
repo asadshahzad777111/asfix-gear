@@ -4636,6 +4636,11 @@ body.modal-open .guest-welcome-banner {
   color: #c2410c;
 }
 
+.admin-order-channel-pill.is-return {
+  background: rgba(182, 45, 46, 0.12);
+  color: #b32d2e;
+}
+
 .admin-order-customer-line {
   margin: 0.35rem 0 0.25rem;
   font-size: 0.92rem;

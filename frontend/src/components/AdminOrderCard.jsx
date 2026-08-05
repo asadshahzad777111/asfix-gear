@@ -11,8 +11,14 @@ import {
   readThermalReceiptWidth,
   shareCounterInvoicePdf,
 } from './admin/AdminCounterBill';
+import {
+  isReturnOrder,
+  orderLineFinancials,
+  orderProfitTotals,
+  returnRefundAmount,
+} from '../utils/orderReturns';
 
-export const ORDER_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'cancelled'];
+export const ORDER_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'returned', 'cancelled'];
 
 const ORDER_QUICK_ACTIONS = [
   { status: 'payment_verified', label: 'Verify Payment', short: 'Paid' },
@@ -150,6 +156,7 @@ function DeliveryLocationBlock({ addr, t }) {
  */
 export default function AdminOrderCard({
   order: o,
+  linkedReturns: linkedReturnsProp,
   onUpdateStatus,
   onMarkPaid,
   onAssignRider,
@@ -165,7 +172,22 @@ export default function AdminOrderCard({
   const addr = o.shipping_address;
   const mapUrl = addr ? googleMapsUrl(addr.lat, addr.lng) : null;
   const isCounter = o.source === 'counter_sale' || o.source === 'counter_return';
-  const isReturn = o.source === 'counter_return' || o.transaction_type === 'return';
+  const isReturn = isReturnOrder(o);
+  const linkedReturns = Array.isArray(linkedReturnsProp)
+    ? linkedReturnsProp
+    : Array.isArray(o.linked_returns)
+      ? o.linked_returns
+      : [];
+  const returnedAmount = Math.max(
+    0,
+    Number(o.returned_amount) || linkedReturns.reduce((sum, row) => sum + returnRefundAmount(row), 0),
+  );
+  const hasLinkedReturns = !isReturn && (returnedAmount > 0 || linkedReturns.length > 0);
+  const netAfterReturn = Number.isFinite(Number(o.net_amount))
+    ? Number(o.net_amount)
+    : (Number(o.total_amount) || 0) - returnedAmount;
+  const profitTotals = orderProfitTotals(o);
+  const refundAmount = isReturn ? returnRefundAmount(o) : 0;
   const walkInName = !o.customer_name || /^walk-?in/i.test(String(o.customer_name).trim());
   const customerLabel = walkInName
     ? (o.phone ? `Walk-in · ${o.phone}` : 'Walk-in Customer')
@@ -228,17 +250,52 @@ export default function AdminOrderCard({
       <div className="admin-float-card-head">
         <strong>
           #{o.order_id || o.id}
-          <span className={`admin-order-channel-pill ${isCounter ? 'is-pos' : 'is-online'}`}>
+          <span className={`admin-order-channel-pill ${isReturn ? 'is-return' : isCounter ? 'is-pos' : 'is-online'}`}>
             {isReturn ? t('admin.orderChannelReturn') : isCounter ? t('admin.orderChannelPos') : t('admin.orderChannelOnline')}
           </span>
         </strong>
-        <span>{formatPrice(o.total_amount)}</span>
+        <span>{isReturn ? `−${formatPrice(refundAmount)}` : formatPrice(o.total_amount)}</span>
       </div>
 
       <p className="admin-order-customer-line">
         <strong>{customerLabel}</strong>
         {o.phone && !walkInName ? <span> · {o.phone}</span> : null}
       </p>
+
+      {isReturn && (o.original_order_ref || o.original_order_id) ? (
+        <p className="admin-float-sub admin-order-return-link">
+          {t('admin.orderReturnOf', { id: o.original_order_ref || o.original_order_id })}
+          {o.refund_method ? ` · ${t('admin.orderRefundMethod')}: ${o.refund_method}` : ''}
+          {o.return_reason ? ` · ${o.return_reason}` : ''}
+        </p>
+      ) : null}
+
+      {hasLinkedReturns ? (
+        <div className="admin-order-return-summary">
+          <p className="admin-float-sub">
+            <strong>{t('admin.orderHasReturn')}</strong>
+            {' · '}
+            {t('admin.returnedAmount')}: {formatPrice(returnedAmount)}
+            {' · '}
+            {t('admin.netAfterReturn')}: {formatPrice(netAfterReturn)}
+          </p>
+          <ul className="admin-order-return-summary__list">
+            {linkedReturns.map((ret) => {
+              const retProfit = orderProfitTotals(ret);
+              return (
+                <li key={ret.id}>
+                  #{ret.order_id || ret.id}
+                  {' · '}
+                  {t('admin.returnedAmount')}: {formatPrice(returnRefundAmount(ret))}
+                  {' · '}
+                  {t('sales.profitShort')}: {formatPrice(retProfit.profitTotal)}
+                  {ret.created_at ? ` · ${new Date(ret.created_at).toLocaleString()}` : ''}
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
 
       {isCounter ? (
         <p className="admin-float-sub">
@@ -285,17 +342,14 @@ export default function AdminOrderCard({
 
       <ul className="admin-float-items">
         {(o.items || []).map((item, idx) => {
-          const qty = Number(item.qty) || 1;
-          const saleLine = Number(item.price) * qty;
-          const costLine = Number(item.cost_price || 0) * qty;
-          const profitLine = saleLine - costLine;
+          const { qty, saleLine, costLine, profitLine } = orderLineFinancials(item, { isReturn });
           return (
             <li key={idx}>
               {item.name} ×{qty}
               {item.price != null && (
                 <span className="admin-float-item-price"> — {formatPrice(saleLine)}</span>
               )}
-              {item.cost_price > 0 && (
+              {Number(item.cost_price) > 0 && (
                 <span className="admin-float-item-cost">
                   {' '}· {t('sales.costShort')}: {formatPrice(costLine)}
                   {' '}· {t('sales.profitShort')}: {formatPrice(profitLine)}
@@ -306,13 +360,41 @@ export default function AdminOrderCard({
         })}
       </ul>
 
-      {(Number(o.subtotal_amount) > 0 || Number(o.discount_amount) > 0) && (
-        <p className="admin-float-sub">
-          Subtotal {formatPrice(o.subtotal_amount || o.total_amount)}
-          {Number(o.discount_amount) > 0 ? ` · Discount ${formatPrice(o.discount_amount)}` : ''}
-          {` · Net ${formatPrice(o.total_amount)}`}
-        </p>
-      )}
+      <p className="admin-float-sub admin-order-profit-line">
+        {isReturn ? (
+          <>
+            {t('admin.returnedAmount')}: {formatPrice(refundAmount)}
+            {' · '}
+            {t('sales.costShort')}: {formatPrice(profitTotals.costTotal)}
+            {' · '}
+            {t('sales.profitShort')}: {formatPrice(profitTotals.profitTotal)}
+          </>
+        ) : (
+          <>
+            {(Number(o.subtotal_amount) > 0 || Number(o.discount_amount) > 0) ? (
+              <>
+                Subtotal {formatPrice(o.subtotal_amount || o.total_amount)}
+                {Number(o.discount_amount) > 0 ? ` · Discount ${formatPrice(o.discount_amount)}` : ''}
+                {` · Net ${formatPrice(o.total_amount)}`}
+              </>
+            ) : (
+              <>{t('admin.orderSoldTotal')}: {formatPrice(o.total_amount)}</>
+            )}
+            {Number(profitTotals.costTotal) !== 0 ? (
+              <>
+                {' · '}
+                {t('sales.profitShort')}: {formatPrice(profitTotals.profitTotal)}
+              </>
+            ) : null}
+            {hasLinkedReturns ? (
+              <>
+                {' · '}
+                {t('admin.netAfterReturn')}: {formatPrice(netAfterReturn)}
+              </>
+            ) : null}
+          </>
+        )}
+      </p>
 
       <div className="admin-float-receipt-actions">
         <a

@@ -1,6 +1,9 @@
 /** Unified customer-facing order status from payment + delivery fields. */
 export function getOrderCustomerStatus(order) {
   if (!order) return 'pending';
+  if (order.source === 'counter_return' || order.transaction_type === 'return') {
+    return order.shipping_status || order.delivery_status || 'returned';
+  }
   if (order.customer_status) return order.customer_status;
   if (order.payment_status === 'pending_payment') return 'pending_payment';
   if (order.delivery_status === 'waiting_for_rider') return 'waiting_for_rider';

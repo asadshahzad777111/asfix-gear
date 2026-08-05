@@ -2,6 +2,7 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import { api, formatPrice } from '../../api/client';
 import AdminOrderCard from '../AdminOrderCard';
 import { filterOrders, normalizeOrderSearchQuery } from '../../utils/orderSearch';
+import { enrichOrdersWithReturns, isReturnOrder } from '../../utils/orderReturns';
 
 function SortHeader({ label, sortKey, activeKey, dir, onSort }) {
   const active = activeKey === sortKey;

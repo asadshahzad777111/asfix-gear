@@ -1958,6 +1958,89 @@
   max-width: none;
 }
 
+.wp-order-row--nested > td:nth-child(2) {
+  padding-left: 1.25rem;
+}
+
+.wp-order-row--return > td {
+  background: #fff8f5;
+}
+
+.wp-order-row--has-return > td {
+  background: #f8fafc;
+}
+
+.wp-order-id-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.15rem;
+}
+
+.wp-order-id-btn--nested {
+  padding-left: 0.35rem;
+  border-left: 2px solid #d63638;
+}
+
+.wp-order-return-of,
+.wp-order-return-tag {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #b32d2e;
+}
+
+.wp-order-return-tag {
+  color: #996800;
+}
+
+.wp-order-total-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+  white-space: nowrap;
+}
+
+.wp-order-total-cell small,
+.wp-order-total-cell__returned {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: #646970;
+}
+
+.wp-order-total-cell__returned,
+.wp-order-total-cell__refund {
+  color: #b32d2e;
+}
+
+.admin-order-channel-pill.is-return {
+  background: #fcf0f1;
+  color: #b32d2e;
+}
+
+.admin-order-return-summary {
+  margin: 0.35rem 0 0.5rem;
+  padding: 0.55rem 0.7rem;
+  border: 1px dashed rgba(182, 45, 46, 0.35);
+  border-radius: 8px;
+  background: #fff8f5;
+}
+
+.admin-order-return-summary__list {
+  margin: 0.35rem 0 0;
+  padding-left: 1.1rem;
+  font-size: 0.82rem;
+  color: #50575e;
+}
+
+.admin-order-card--return {
+  border-color: rgba(182, 45, 46, 0.28);
+}
+
+.admin-order-return-link {
+  font-weight: 600;
+  color: #b32d2e;
+}
+
 .wp-table--nested {
   font-size: 0.82rem;
   background: #fff;

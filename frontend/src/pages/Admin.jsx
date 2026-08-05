@@ -772,6 +772,7 @@ export default function Admin() {
               ) : (
                 <AdminOrdersTable
                   orders={filteredOrders}
+                  allOrders={orders}
                   expandedId={expandedOrderId}
                   onToggleExpand={setExpandedOrderId}
                   highlightId={highlightOrderId}

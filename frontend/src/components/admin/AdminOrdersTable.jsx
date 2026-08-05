@@ -1,7 +1,13 @@
-import { Fragment } from 'react';
+import { Fragment, useMemo } from 'react';
 import { formatPrice } from '../../api/client';
 import AdminOrderCard from '../AdminOrderCard';
 import { getOrderCustomerStatus } from '../../utils/orderStatus';
+import {
+  buildAdminOrderRows,
+  isReturnOrder,
+  orderProfitTotals,
+  returnRefundAmount,
+} from '../../utils/orderReturns';
 
 function orderChannel(o) {
   const src = o?.source || 'online';
@@ -29,10 +35,12 @@ function customerLabel(o) {
 }
 
 /**
- * Customers-style expandable order list: one row per order, click ▶ to open bill + print/share.
+ * Customers-style expandable order list.
+ * Returns are nested under their original sale bill.
  */
 export default function AdminOrdersTable({
   orders,
+  allOrders,
   expandedId,
   onToggleExpand,
   highlightId = null,
@@ -42,7 +50,10 @@ export default function AdminOrdersTable({
   onMarkDelivered,
   t,
 }) {
-  const rows = [...(orders || [])].reverse();
+  const rows = useMemo(
+    () => buildAdminOrderRows(orders, allOrders || orders),
+    [orders, allOrders],
+  );
 
   if (rows.length === 0) {
     return null;
@@ -58,31 +69,43 @@ export default function AdminOrdersTable({
             <th>Customer</th>
             <th>Phone</th>
             <th>Channel</th>
-            <th>Total</th>
+            <th>Total / Net</th>
             <th>Status</th>
             <th>Date</th>
           </tr>
         </thead>
         <tbody>
-          {rows.map((o) => {
+          {rows.map((row) => {
+            const o = row.order;
             const id = String(o.id);
             const expanded = String(expandedId) === id;
             const isHit = highlightId != null && String(highlightId) === id;
             const channel = orderChannel(o);
-            const isReturn = o.source === 'counter_return' || o.transaction_type === 'return';
-            const status = getOrderCustomerStatus(o);
+            const isReturn = row.kind === 'return' || isReturnOrder(o);
+            const status = isReturn ? (o.shipping_status || 'returned') : getOrderCustomerStatus(o);
             const channelLabel = isReturn
               ? t('admin.orderChannelReturn')
               : channel === 'counter'
                 ? t('admin.orderChannelPos')
                 : t('admin.orderChannelOnline');
+            const returnedAmount = Math.max(0, Number(o.returned_amount) || 0);
+            const hasReturn = !isReturn && returnedAmount > 0;
+            const netAmount = Number.isFinite(Number(o.net_amount))
+              ? Number(o.net_amount)
+              : (Number(o.total_amount) || 0) - returnedAmount;
+            const refund = isReturn ? returnRefundAmount(o) : 0;
+            const profit = orderProfitTotals(o);
+            const originalRef = o.original_order_ref || row.parent?.order_id || '';
 
             return (
-              <Fragment key={o.id}>
+              <Fragment key={`${row.kind}-${o.id}`}>
                 <tr
                   className={[
                     expanded ? 'is-expanded' : '',
                     isHit ? 'is-receipt-hit' : '',
+                    isReturn ? 'wp-order-row--return' : '',
+                    hasReturn ? 'wp-order-row--has-return' : '',
+                    row.depth > 0 ? 'wp-order-row--nested' : '',
                   ].filter(Boolean).join(' ') || undefined}
                 >
                   <td className="wp-col-expand">
@@ -99,10 +122,18 @@ export default function AdminOrdersTable({
                   <td>
                     <button
                       type="button"
-                      className="wp-order-id-btn"
+                      className={`wp-order-id-btn${row.depth > 0 ? ' wp-order-id-btn--nested' : ''}`}
                       onClick={() => onToggleExpand(expanded ? null : id)}
                     >
                       <strong>#{o.order_id || o.id}</strong>
+                      {isReturn && originalRef ? (
+                        <span className="wp-order-return-of">
+                          {t('admin.orderReturnOf', { id: originalRef })}
+                        </span>
+                      ) : null}
+                      {hasReturn ? (
+                        <span className="wp-order-return-tag">{t('admin.orderHasReturn')}</span>
+                      ) : null}
                     </button>
                   </td>
                   <td>
@@ -110,11 +141,40 @@ export default function AdminOrdersTable({
                   </td>
                   <td className="wp-customer-phone">{o.phone || '—'}</td>
                   <td>
-                    <span className={`admin-order-channel-pill ${channel === 'counter' ? 'is-pos' : 'is-online'}`}>
+                    <span
+                      className={`admin-order-channel-pill ${
+                        isReturn ? 'is-return' : channel === 'counter' ? 'is-pos' : 'is-online'
+                      }`}
+                    >
                       {channelLabel}
                     </span>
                   </td>
-                  <td className="wp-customer-spent">{formatPrice(o.total_amount || 0)}</td>
+                  <td className="wp-customer-spent">
+                    {isReturn ? (
+                      <div className="wp-order-total-cell">
+                        <strong className="wp-order-total-cell__refund">
+                          −{formatPrice(refund)}
+                        </strong>
+                        <small>
+                          {t('sales.profitShort')}: {formatPrice(profit.profitTotal)}
+                        </small>
+                      </div>
+                    ) : (
+                      <div className="wp-order-total-cell">
+                        <strong>{formatPrice(o.total_amount || 0)}</strong>
+                        {hasReturn ? (
+                          <>
+                            <span className="wp-order-total-cell__returned">
+                              {t('admin.returnedAmount')}: {formatPrice(returnedAmount)}
+                            </span>
+                            <small>
+                              {t('admin.netAfterReturn')}: {formatPrice(netAmount)}
+                            </small>
+                          </>
+                        ) : null}
+                      </div>
+                    )}
+                  </td>
                   <td>
                     <span className={`order-status-pill status-${status}`}>
                       {t(`track.status_${status}`) || String(status).replace(/_/g, ' ')}
@@ -128,12 +188,17 @@ export default function AdminOrdersTable({
                       <div className="wp-order-bill-panel">
                         <AdminOrderCard
                           order={o}
-                          onUpdateStatus={channel === 'online' ? onUpdateStatus : undefined}
-                          onMarkPaid={channel === 'online' ? onMarkPaid : undefined}
-                          onAssignRider={channel === 'online' ? onAssignRider : undefined}
-                          onMarkDelivered={channel === 'online' ? onMarkDelivered : undefined}
+                          linkedReturns={isReturn ? undefined : o.linked_returns}
+                          onUpdateStatus={channel === 'online' && !isReturn ? onUpdateStatus : undefined}
+                          onMarkPaid={channel === 'online' && !isReturn ? onMarkPaid : undefined}
+                          onAssignRider={channel === 'online' && !isReturn ? onAssignRider : undefined}
+                          onMarkDelivered={channel === 'online' && !isReturn ? onMarkDelivered : undefined}
                           className={`admin-float-card admin-order-card-full glass-card${
-                            channel === 'counter' ? ' admin-order-card--pos' : ' admin-order-card--online'
+                            isReturn
+                              ? ' admin-order-card--return'
+                              : channel === 'counter'
+                                ? ' admin-order-card--pos'
+                                : ' admin-order-card--online'
                           }${isHit ? ' admin-order-card--search-hit' : ''}`}
                         />
                       </div>
