@@ -2457,6 +2457,10 @@ export default function AdminCounterBill({
   const [searchFocused, setSearchFocused] = useState(false);
   /** Spacer height while search is fixed-lifted (keeps layout from collapsing). */
   const [searchSlotH, setSearchSlotH] = useState(0);
+  /** Mobile-only: lift search above soft keyboard. Laptop/desktop stays in place. */
+  const [searchLiftOnFocus, setSearchLiftOnFocus] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 900px)').matches : false
+  );
   const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES);
   const [lines, setLines] = useState(() => draftSeed?.lines || []);
   const [customerName, setCustomerName] = useState(() => draftSeed?.customerName || '');
@@ -2544,9 +2548,23 @@ export default function AdminCounterBill({
     };
   }, []);
 
+  /* Track viewport: search lift is phone-only (soft keyboard). */
+  useEffect(() => {
+    if (typeof window === 'undefined' || !window.matchMedia) return undefined;
+    const mq = window.matchMedia('(max-width: 900px)');
+    const sync = () => setSearchLiftOnFocus(mq.matches);
+    sync();
+    if (mq.addEventListener) mq.addEventListener('change', sync);
+    else mq.addListener(sync);
+    return () => {
+      if (mq.removeEventListener) mq.removeEventListener('change', sync);
+      else mq.removeListener(sync);
+    };
+  }, []);
+
   /* Keep document-flow height while search is fixed to the top (keyboard-safe lift). */
   useLayoutEffect(() => {
-    if (!searchFocused) {
+    if (!searchFocused || !searchLiftOnFocus) {
       setSearchSlotH(0);
       return;
     }
@@ -2554,7 +2572,7 @@ export default function AdminCounterBill({
     if (!el) return;
     const h = Math.ceil(el.getBoundingClientRect().height);
     if (h > 0) setSearchSlotH((prev) => (prev > 0 ? prev : h));
-  }, [searchFocused]);
+  }, [searchFocused, searchLiftOnFocus]);
 
   const refreshNativePrinters = useCallback(async () => {
     if (!nativePos) return;
@@ -2974,10 +2992,11 @@ export default function AdminCounterBill({
     /*
      * Focus FIRST in this same pointer gesture — mobile only opens the keyboard then.
      * Never scrollTo/scrollIntoView here (scroll dismisses an opening keyboard).
-     * Visibility: CSS fixed-lifts #counter-bill-search while searchFocused.
+     * Visibility: CSS fixed-lifts #counter-bill-search while searchFocused on phone only.
      */
+    const lift = typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
     const wrap = document.getElementById('counter-bill-search');
-    if (wrap && !wrap.classList.contains('counter-bill__search-wrap--lifted')) {
+    if (lift && wrap && !wrap.classList.contains('counter-bill__search-wrap--lifted')) {
       const h = Math.ceil(wrap.getBoundingClientRect().height);
       if (h > 0) setSearchSlotH(h);
     }
@@ -3552,10 +3571,10 @@ export default function AdminCounterBill({
           <div className="counter-bill__products-body">
           <div
             className="counter-bill__search-slot"
-            style={searchFocused && searchSlotH > 0 ? { minHeight: searchSlotH } : undefined}
+            style={searchFocused && searchLiftOnFocus && searchSlotH > 0 ? { minHeight: searchSlotH } : undefined}
           >
             <div
-              className={`counter-bill__search-wrap${searchFocused ? ' counter-bill__search-wrap--lifted' : ''}`}
+              className={`counter-bill__search-wrap${searchFocused && searchLiftOnFocus ? ' counter-bill__search-wrap--lifted' : ''}`}
               id="counter-bill-search"
             >
               <label className="counter-bill__search">
@@ -3566,10 +3585,15 @@ export default function AdminCounterBill({
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                   onFocus={() => {
-                    const wrap = document.getElementById('counter-bill-search');
-                    if (wrap && !wrap.classList.contains('counter-bill__search-wrap--lifted')) {
-                      const h = Math.ceil(wrap.getBoundingClientRect().height);
-                      if (h > 0) setSearchSlotH(h);
+                    const lift = typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
+                    if (lift) {
+                      const wrap = document.getElementById('counter-bill-search');
+                      if (wrap && !wrap.classList.contains('counter-bill__search-wrap--lifted')) {
+                        const h = Math.ceil(wrap.getBoundingClientRect().height);
+                        if (h > 0) setSearchSlotH(h);
+                      }
+                    } else {
+                      setSearchSlotH(0);
                     }
                     setSearchFocused(true);
                     setDockFocus('search');

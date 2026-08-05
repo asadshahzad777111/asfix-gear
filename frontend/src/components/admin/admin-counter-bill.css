@@ -119,8 +119,9 @@
 
   .counter-bill {
     min-height: 0;
-    height: min(68dvh, 760px);
-    max-height: min(68dvh, 760px);
+    /* Taller workspace so Add products shows several full tiles */
+    height: min(82dvh, 920px);
+    max-height: min(82dvh, 920px);
   }
 
   .counter-bill__head {
@@ -172,12 +173,13 @@
     overscroll-behavior: contain;
     -webkit-overflow-scrolling: touch;
     touch-action: pan-y;
-    /* Keep last product tiles above the fixed dock */
-    padding-bottom: calc(6.75rem + env(safe-area-inset-bottom, 0px));
+    /* End clearance only — keep first rows fully visible */
+    padding-bottom: 1.25rem;
   }
 
   .counter-bill__products {
-    flex: 0 0 auto;
+    flex: 1 1 auto;
+    min-height: 12rem;
     max-height: none;
     overflow: visible;
   }
@@ -206,8 +208,32 @@
     padding-bottom: 0.35rem;
   }
 
+  /*
+   * Laptop/desktop: never fixed-lift the product search.
+   * Soft-keyboard lift is phone-only (≤900px).
+   */
+  .counter-bill__search-wrap--lifted {
+    position: relative;
+    top: auto;
+    left: auto;
+    right: auto;
+    z-index: 40;
+    padding: 0;
+    border: none;
+    border-radius: 0;
+    background: transparent;
+    box-shadow: none;
+    -webkit-transform: none;
+    transform: none;
+  }
+
+  .counter-bill__search-wrap--lifted .counter-bill__search-results {
+    max-height: min(340px, 46vh);
+  }
+
   .counter-bill-search {
-    margin-top: 0.75rem;
+    margin-top: 1rem;
+    margin-bottom: calc(6.75rem + env(safe-area-inset-bottom, 0px));
   }
 }
 
@@ -1119,45 +1145,56 @@
 }
 
 .counter-bill-search {
-  margin: 0 0 1rem;
-  padding: 0.85rem 1rem 1rem;
-  border: 1px solid var(--border, #c3c4c7);
-  border-radius: 10px;
-  background: var(--surface, #fff);
+  margin: 1rem 0 1.25rem;
+  padding: 1rem 1.1rem 1.15rem;
+  border: 1px solid var(--pos-border, var(--border, #c3c4c7));
+  border-radius: 14px;
+  background: var(--pos-surface, var(--surface, #fff));
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+  position: relative;
+  z-index: 1;
+  clear: both;
+  isolation: isolate;
 }
 
 .counter-bill-search__label {
   display: grid;
-  gap: 0.35rem;
+  gap: 0.4rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .counter-bill-search__label span {
-  font-size: 0.82rem;
-  font-weight: 700;
-  color: var(--text-muted, #646970);
+  font-size: 0.86rem;
+  font-weight: 800;
+  color: var(--pos-text, var(--text-muted, #646970));
+  letter-spacing: -0.01em;
 }
 
 .counter-bill-search__input {
   width: 100%;
   min-height: 46px;
-  border: 1px solid var(--border, #c3c4c7);
+  border: 1px solid var(--pos-border-strong, var(--border, #c3c4c7));
   border-radius: 10px;
   padding: 0.55rem 0.85rem;
   font: inherit;
   font-size: 16px;
-  background: var(--surface, #fff);
-  color: inherit;
+  background: var(--pos-bg, var(--surface, #fff));
+  color: var(--pos-text, inherit);
+  box-sizing: border-box;
 }
 
 .counter-bill-search__input:focus {
-  outline: 2px solid color-mix(in srgb, var(--accent, #2271b1) 55%, transparent);
-  outline-offset: 1px;
+  outline: none;
+  border-color: var(--pos-accent, #2271b1);
+  box-shadow: 0 0 0 3px var(--pos-accent-soft, rgba(34, 113, 177, 0.22));
 }
 
 .counter-bill-search__meta {
-  margin: 0.45rem 0 0;
+  margin: 0.55rem 0 0;
   font-size: 0.78rem;
-  color: var(--text-muted, #646970);
+  line-height: 1.4;
+  color: var(--pos-muted, var(--text-muted, #646970));
 }
 
 .counter-bill-search__results {
@@ -2389,7 +2426,7 @@ html.pos-keyboard-open #counter-bill-search {
 }
 
 .counter-bill__customer-toggle {
-  margin-top: 0.75rem;
+  margin-top: 0;
 }
 
 .counter-bill__customer-toggle button {
@@ -2399,13 +2436,16 @@ html.pos-keyboard-open #counter-bill-search {
   cursor: pointer;
   font: inherit;
   font-weight: 700;
+  padding: 0.15rem 0;
 }
 
 .counter-bill__customer {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.55rem;
-  margin-top: 0.65rem;
+  gap: 0.65rem;
+  margin-top: 0.7rem;
+  width: 100%;
+  min-width: 0;
 }
 
 .counter-bill__thermal-setting {
@@ -2493,8 +2533,30 @@ html.pos-keyboard-open #counter-bill-search {
 .counter-bill__payment,
 .counter-bill__note,
 .counter-bill__cash-box,
+.counter-bill__discount-box,
+.counter-bill__customer-anchor {
+  margin-top: 0.85rem;
+  padding-top: 0.85rem;
+  border-top: 1px solid var(--pos-border);
+  width: 100%;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+  isolation: isolate;
+}
+
 .counter-bill__discount-box {
-  margin-top: 0.75rem;
+  margin-top: 0.85rem;
+}
+
+.counter-bill__payment {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.counter-bill__payment > span {
+  display: block;
+  margin-bottom: 0.1rem;
 }
 
 .counter-bill__quick-actions {
@@ -2620,11 +2682,12 @@ html.pos-keyboard-open #counter-bill-search {
 .counter-bill__payment-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0.45rem;
+  gap: 0.5rem;
   width: 100%;
   max-width: 100%;
   align-items: stretch;
   box-sizing: border-box;
+  margin: 0;
 }
 
 .counter-bill__pay {
@@ -2680,21 +2743,28 @@ html.pos-keyboard-open #counter-bill-search {
 .counter-bill__cash-box {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(7.5rem, 0.85fr);
-  gap: 0.65rem;
+  gap: 0.75rem;
   align-items: stretch;
   width: 100%;
   min-width: 0;
 }
 
+.counter-bill__cash-box label {
+  display: grid;
+  gap: 0.3rem;
+  min-width: 0;
+}
+
 .counter-bill__change {
   min-width: 0;
-  padding: 0.65rem;
+  padding: 0.65rem 0.75rem;
   border: 1px solid var(--pos-border);
   border-radius: var(--pos-radius-sm);
   background: var(--pos-bg);
   display: flex;
   flex-direction: column;
   justify-content: center;
+  gap: 0.15rem;
 }
 
 .counter-bill__change span,
