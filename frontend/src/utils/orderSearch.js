@@ -1,5 +1,14 @@
 /** Client-side order search — name, phone, product, order id (ASF-1001 / ASF1001 / ASF101 / 1001). */
 
+/** Normalize "# ASF - 1043" / "ASF 1043" → "asf-1043" before token split. */
+export function normalizeOrderSearchQuery(query) {
+  let q = String(query || '').trim();
+  q = q.replace(/#/g, ' ');
+  q = q.replace(/\basf\b\s*[-–—]?\s*(\d+)/gi, 'asf-$1');
+  q = q.replace(/\s+/g, ' ').trim();
+  return q;
+}
+
 function digitsOnly(value) {
   return String(value || '').replace(/\D/g, '');
 }
@@ -123,7 +132,7 @@ function orderHaystack(order) {
 
 export function filterOrders(orders, query) {
   if (!Array.isArray(orders)) return [];
-  const q = String(query || '').trim().toLowerCase();
+  const q = normalizeOrderSearchQuery(query).toLowerCase();
   if (!q) return orders;
 
   const tokens = q.split(/\s+/).filter(Boolean);

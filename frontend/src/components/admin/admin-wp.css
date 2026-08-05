@@ -1876,6 +1876,50 @@
   color: #646970;
 }
 
+.wp-customers-search-input {
+  flex: 1 1 18rem;
+  min-width: min(100%, 16rem);
+  min-height: 42px;
+  font-size: 16px;
+}
+
+.wp-customer-receipts {
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem 1rem;
+  border: 1px solid #c3c4c7;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.wp-customer-receipts__head {
+  margin-bottom: 0.75rem;
+}
+
+.wp-customer-receipts__head h3 {
+  margin: 0 0 0.25rem;
+  font-size: 1rem;
+  color: #1d2327;
+}
+
+.wp-customer-receipts__head p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #646970;
+}
+
+.wp-customer-receipts__grid {
+  display: grid;
+  gap: 0.85rem;
+}
+
+.wp-table--nested tr.is-receipt-hit td {
+  background: #e6f2fb;
+}
+
+.wp-empty--soft {
+  margin-bottom: 1rem;
+}
+
 .wp-table--nested {
   font-size: 0.82rem;
   background: #fff;
