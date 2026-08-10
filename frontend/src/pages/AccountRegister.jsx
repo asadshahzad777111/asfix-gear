@@ -46,7 +46,7 @@ export default function AccountRegister() {
   }
 
   if (user && isCustomer) {
-    return <Navigate to="/account" replace />;
+    return <Navigate to="/" replace />;
   }
 
   const setField = (key, value) => setForm((f) => ({ ...f, [key]: value }));
@@ -114,7 +114,7 @@ export default function AccountRegister() {
         email: form.email.trim(),
       });
       await completeSession(data);
-      navigate('/account', { replace: true });
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.message || t('otp.verifyFailed'));
     } finally {
@@ -149,7 +149,7 @@ export default function AccountRegister() {
     try {
       const data = await api.googleSignIn({ credential });
       await completeSession(data);
-      navigate('/account', { replace: true });
+      navigate('/', { replace: true });
     } catch (err) {
       setError(err.message || t('auth.googleSignInFailed'));
     } finally {

@@ -1,77 +1,86 @@
 import { useEffect, useRef, useState } from 'react';
 
 /**
- * Continuous scroll reveal — plays when entering the view band and
- * resets when leaving, so up/down scrolling keeps replaying (not one-shot).
+ * One-shot scroll reveal — once visible, stays visible.
+ * (Replay-on-leave left sections at opacity:0 on iPhone after login/navigation.)
  */
 export default function useScrollReveal({
-  threshold = 0.12,
+  threshold = 0.08,
   delay = 0,
   disabled = false,
-  /** Inset band: leave top/bottom → reset; re-enter → animate again */
-  rootMargin = '-10% 0px -18% 0px',
+  rootMargin = '0px 0px -6% 0px',
 } = {}) {
   const ref = useRef(null);
   const [revealed, setRevealed] = useState(disabled);
-  const [playId, setPlayId] = useState(0);
   const delayRef = useRef(delay);
   delayRef.current = delay;
+  const doneRef = useRef(disabled);
 
   useEffect(() => {
     if (disabled) {
+      doneRef.current = true;
       setRevealed(true);
       return undefined;
     }
 
     const el = ref.current;
-    if (!el) return undefined;
+    if (!el || doneRef.current) return undefined;
 
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      doneRef.current = true;
       setRevealed(true);
       return undefined;
     }
 
+    let delayTimer = null;
+
+    const revealNow = () => {
+      if (doneRef.current) return;
+      doneRef.current = true;
+      const wait = Math.max(0, delayRef.current);
+      if (wait === 0) {
+        setRevealed(true);
+      } else {
+        delayTimer = window.setTimeout(() => setRevealed(true), wait);
+      }
+    };
+
+    // iOS Safari often skips the first IO callback when the node is already on screen
+    // (common after login redirect). Force a sync check on the next frames.
+    const kick = () => {
+      if (doneRef.current || !el) return;
+      const rect = el.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight || 0;
+      const visible = rect.bottom > 0 && rect.top < vh;
+      if (visible) revealNow();
+    };
+
+    const raf1 = window.requestAnimationFrame(() => {
+      kick();
+      window.requestAnimationFrame(kick);
+    });
+
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          /* Bump playId so enter always restarts even if still "revealed" */
-          setRevealed(false);
-          setPlayId((n) => n + 1);
-        } else {
-          setRevealed(false);
-          setPlayId(0);
-        }
+        if (entry.isIntersecting) revealNow();
       },
       { threshold, rootMargin }
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
-  }, [threshold, disabled, rootMargin]);
 
-  /* After reset, wait a frame so CSS can apply the hidden state, then reveal */
-  useEffect(() => {
-    if (disabled || playId === 0) return undefined;
-
-    let delayTimer = null;
-    let raf2 = 0;
-    const raf1 = window.requestAnimationFrame(() => {
-      raf2 = window.requestAnimationFrame(() => {
-        const wait = Math.max(0, delayRef.current);
-        if (wait === 0) {
-          setRevealed(true);
-        } else {
-          delayTimer = window.setTimeout(() => setRevealed(true), wait);
-        }
-      });
-    });
+    // Last-resort: never leave storefront sections invisible
+    const failsafe = window.setTimeout(() => {
+      if (!doneRef.current) revealNow();
+    }, 1200);
 
     return () => {
+      observer.disconnect();
       window.cancelAnimationFrame(raf1);
-      window.cancelAnimationFrame(raf2);
+      window.clearTimeout(failsafe);
       if (delayTimer) window.clearTimeout(delayTimer);
     };
-  }, [playId, disabled]);
+  }, [threshold, disabled, rootMargin]);
 
   return {
     ref,

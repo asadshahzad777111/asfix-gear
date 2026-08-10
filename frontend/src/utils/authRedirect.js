@@ -1,6 +1,6 @@
 import { isAdminStaff, isCounterStaff, isCustomer } from '../config/permissions';
 
-const LOGIN_PATHS = new Set(['/account/login', '/login', '/pos/login']);
+const LOGIN_PATHS = new Set(['/account/login', '/login', '/pos/login', '/account/register', '/account/forgot-password']);
 
 /** Where to send the user after a successful sign-in (password or OTP). */
 export function getPostLoginPath(user, from) {
@@ -19,9 +19,12 @@ export function getPostLoginPath(user, from) {
     return '/admin';
   }
 
+  // Customers stay on the storefront after login (same page as logged-out home).
+  // Only honor an explicit return path (e.g. /account/settings), never force /account.
   if (isCustomer(user)) {
     if (safeFrom?.startsWith('/account')) return safeFrom;
-    return '/account';
+    if (safeFrom && safeFrom !== '/') return safeFrom;
+    return '/';
   }
 
   return safeFrom || '/';

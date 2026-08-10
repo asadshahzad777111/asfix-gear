@@ -25,7 +25,7 @@ export default function AccountLogin() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const from = location.state?.from || '/account';
+  const from = location.state?.from || '/';
 
   const [mode, setMode] = useState('password');
   const [loginValue, setLoginValue] = useState('');
