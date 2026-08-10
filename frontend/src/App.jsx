@@ -4,18 +4,18 @@ import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ChatAssistant from './components/ChatAssistant';
-const GamingTransition = () => import('./components/gaming/GamingTransition').catch(() => null);
-const ExitGamingButton = () => import('./components/gaming/ExitGamingButton').catch(() => null);
+import GamingTransition from './components/gaming/GamingTransition';
+import ExitGamingButton from './components/gaming/ExitGamingButton';
 import ButtonEffects from './components/ButtonEffects';
-const FloatingCart = () => import('./components/premium/FloatingCart').catch(() => null);
-const FloatingRepairButton = () => import('./components/FloatingRepairButton').catch(() => null);
-const FlyToCart = () => import('./components/premium/FlyToCart').catch(() => null);
-const MobileBottomNav = () => import('./components/MobileBottomNav').catch(() => null);
-const FloatingNavRail = () => import('./components/FloatingNavRail').catch(() => null);
+import FloatingCart from './components/premium/FloatingCart';
+import FloatingRepairButton from './components/FloatingRepairButton';
+import FlyToCart from './components/premium/FlyToCart';
+import MobileBottomNav from './components/MobileBottomNav';
+import FloatingNavRail from './components/FloatingNavRail';
 import GuestWelcomeBanner from './components/GuestWelcomeBanner';
-const SectionScrollStrap = () => import('./components/SectionScrollStrap').catch(() => null);
+import SectionScrollStrap from './components/SectionScrollStrap';
 import AuthTopBar from './components/auth/AuthTopBar';
-const PageTransition = () => import('./components/premium/PageTransition').catch(() => null);
+import PageTransition from './components/premium/PageTransition';
 import Analytics from './components/seo/Analytics';
 import { useLocation } from 'react-router-dom';
 import { useGaming } from './context/GamingContext';
@@ -78,12 +78,8 @@ function AppContent() {
       {showBottomNav && <MobileBottomNav />}
       {showFloatingNav && <FloatingNavRail />}
       {showShopChrome && <FlyToCart />}
-      <Suspense>
-        <ExitGamingButton />
-      </Suspense>
-      <Suspense>
-        <GamingTransition />
-      </Suspense>
+      <ExitGamingButton />
+      <GamingTransition />
       <ButtonEffects />
     </div>
   );
