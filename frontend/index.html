@@ -20,18 +20,12 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <!-- Fonts load async so refresh does not block the browser tab on Google CDN -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" crossorigin />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
-      media="print"
-      onload="this.media='all'"
     />
-    <noscript>
-      <link
-        rel="stylesheet"
-        href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;600&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap"
-      />
-    </noscript>
     <style>
       #boot-splash {
         min-height: 100vh;
@@ -66,38 +60,7 @@
       })();
     </script>
     <script>
-      // Apex + www share one Vercel production deploy, but a stale apex service
-      // worker can still trap the tab on an old shell. Purge SW + Cache Storage
-      // once per session, then hard-reload so first paint is the live SPA —
-      // stay on asfixgear.com (no www redirect required).
-      (function () {
-        var host = location.hostname;
-        if (host !== 'asfixgear.com' && host !== 'www.asfixgear.com') return;
-        var KEY = 'asfix_sw_purged_v3';
-        if (sessionStorage.getItem(KEY) === '1') return;
-        var hadController = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
-        sessionStorage.setItem(KEY, '1');
-        var tasks = [];
-        if ('serviceWorker' in navigator) {
-          tasks.push(
-            navigator.serviceWorker.getRegistrations().then(function (regs) {
-              return Promise.all(regs.map(function (r) { return r.unregister(); }));
-            })
-          );
-        }
-        if (window.caches && caches.keys) {
-          tasks.push(
-            caches.keys().then(function (keys) {
-              return Promise.all(keys.map(function (k) { return caches.delete(k); }));
-            })
-          );
-        }
-        Promise.all(tasks).then(function () {
-          if (hadController) location.reload();
-        }, function () {
-          if (hadController) location.reload();
-        });
-      })();
+      // Simple theme init only — remove SW purge to avoid deployment issues
     </script>
   </head>
   <body>
