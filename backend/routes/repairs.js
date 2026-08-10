@@ -133,11 +133,11 @@ function assertBookingChatAccess(req, res, booking) {
 router.get('/track', (req, res) => {
   const bookingId = str(req.query.bookingId, 40);
   const phone = str(req.query.phone, MAX_LEN.phone);
-  if (!bookingId || !phone) {
-    return res.status(400).json({ error: 'Booking ID and phone are required' });
+  if (!bookingId) {
+    return res.status(400).json({ error: 'Booking ID is required' });
   }
-  const booking = store.trackRepairBooking(bookingId, phone);
-  if (!booking) return res.status(404).json({ error: 'Repair booking not found — check ID and phone' });
+  const booking = store.trackRepairBooking(bookingId, phone || '');
+  if (!booking) return res.status(404).json({ error: 'Repair booking not found — check the ID' });
   res.json(booking);
 });
 

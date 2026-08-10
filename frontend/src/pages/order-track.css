@@ -1,0 +1,293 @@
+/* Stitch-inspired Track Order — mobile + iPad/desktop */
+
+.order-track-page {
+  max-width: none;
+  margin: 0 auto;
+  padding: 0.75rem 1.25rem 3rem;
+}
+
+.order-track-page__inner {
+  width: min(100%, 72rem);
+  margin: 0 auto;
+}
+
+.order-track-page__back {
+  margin-bottom: 0.5rem;
+}
+
+.order-track-heading {
+  text-align: center;
+  margin: 0.5rem 0 1.25rem;
+}
+
+.order-track-heading h1 {
+  font-family: 'Space Grotesk', var(--font-display, system-ui), sans-serif;
+  font-size: clamp(1.65rem, 4vw, 2.35rem);
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.4rem;
+  color: var(--text);
+}
+
+.order-track-heading p {
+  margin: 0;
+  color: var(--text-muted, rgba(245, 245, 247, 0.65));
+  font-size: 0.95rem;
+}
+
+.order-track-layout {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: 1fr;
+}
+
+.order-track-hero,
+.order-track-result {
+  padding: 1.25rem 1.15rem 1.35rem;
+  margin-bottom: 0;
+  border-radius: 1rem;
+  background: var(--bg-elevated, #1c1c24);
+  border: 1px solid var(--glass-edge, #2a2a32);
+  box-shadow: 0 12px 40px rgba(255, 106, 43, 0.05);
+}
+
+.order-track-page .track-tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-bottom: 1.1rem;
+}
+
+.order-track-page .track-tabs button {
+  appearance: none;
+  border: 1px solid var(--glass-edge, #2a2a32);
+  background: transparent;
+  color: var(--text-muted, #9a9aa3);
+  border-radius: 0.65rem;
+  padding: 0.7rem 0.85rem;
+  font-weight: 600;
+  font-size: 0.92rem;
+  cursor: pointer;
+  transition: background 0.18s ease, color 0.18s ease, border-color 0.18s ease;
+}
+
+.order-track-page .track-tabs button.active {
+  background: color-mix(in srgb, var(--primary, #ff6a2b) 18%, transparent);
+  color: var(--primary, #ff6a2b);
+  border-color: color-mix(in srgb, var(--primary, #ff6a2b) 55%, transparent);
+}
+
+.order-track-form {
+  display: grid;
+  gap: 0.85rem;
+  margin-top: 0.25rem;
+}
+
+.order-track-field {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.order-track-field > span {
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--text-muted, #9a9aa3);
+}
+
+.order-track-optional {
+  font-style: normal;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  opacity: 0.75;
+}
+
+.order-track-input {
+  width: 100%;
+  border-radius: 0.65rem;
+  border: 1px solid var(--glass-edge, #2a2a32);
+  background: var(--input-bg, rgba(255, 255, 255, 0.03));
+  color: var(--text);
+  padding: 0.85rem 0.95rem;
+  font-size: 1rem;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.order-track-input--mono {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  letter-spacing: 0.02em;
+}
+
+.order-track-input:focus {
+  border-color: var(--primary, #ff6a2b);
+  box-shadow: 0 0 0 3px rgba(255, 106, 43, 0.18);
+}
+
+.order-track-submit {
+  width: 100%;
+  margin-top: 0.15rem;
+  min-height: 2.85rem;
+  border-radius: 0.65rem !important;
+  font-weight: 700;
+}
+
+.order-track-whatsapp {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+  width: 100%;
+  min-height: 2.6rem;
+  border-radius: 0.65rem;
+  border: 1px solid var(--glass-edge, #2a2a32);
+  color: var(--text);
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.92rem;
+  background: transparent;
+}
+
+.order-track-whatsapp:hover {
+  border-color: color-mix(in srgb, #25d366 50%, var(--glass-edge, #2a2a32));
+}
+
+.order-track-result-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.85rem;
+}
+
+.order-track-result-kicker {
+  display: block;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-muted, #9a9aa3);
+  margin-bottom: 0.25rem;
+}
+
+.order-track-result-id {
+  display: block;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: clamp(1.25rem, 3vw, 1.65rem);
+  letter-spacing: 0.01em;
+  color: var(--text);
+}
+
+.order-track-result-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.order-track-result-head h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.order-track-result-head p {
+  margin: 0.2rem 0 0;
+  color: var(--text-muted, #9a9aa3);
+  font-size: 0.9rem;
+}
+
+.order-track-items {
+  list-style: none;
+  margin: 1rem 0 0.5rem;
+  padding: 0;
+  display: grid;
+  gap: 0.55rem;
+}
+
+.order-track-items li {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.65rem;
+  background: color-mix(in srgb, var(--bg, #0c0c12) 55%, transparent);
+  border: 1px solid var(--glass-edge, #2a2a32);
+  font-size: 0.92rem;
+}
+
+.order-track-total {
+  text-align: right;
+  margin: 0.75rem 0 0;
+  font-size: 1.05rem;
+}
+
+.order-track-back {
+  text-align: center;
+  margin: 1.35rem 0 0;
+  font-size: 0.92rem;
+}
+
+.order-track-my-orders {
+  margin-bottom: 1rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid var(--glass-edge, #2a2a32);
+}
+
+.order-track-my-orders h3 {
+  margin: 0 0 0.35rem;
+  font-size: 1rem;
+}
+
+.order-track-my-orders-hint {
+  margin: 0 0 0.65rem;
+  font-size: 0.82rem;
+  color: var(--text-muted, #9a9aa3);
+}
+
+.order-track-guest-divider {
+  margin: 0.75rem 0 0;
+  font-size: 0.82rem;
+  color: var(--text-muted, #9a9aa3);
+}
+
+html[data-theme='light'] .order-track-hero,
+html[data-theme='light'] .order-track-result {
+  background: #fff;
+  box-shadow: 0 10px 28px rgba(18, 18, 26, 0.06);
+}
+
+html[data-theme='light'] .order-track-page .track-tabs button.active {
+  background: color-mix(in srgb, var(--primary, #ff6a2b) 12%, #fff);
+}
+
+/* iPad / laptop: form + result side by side like Stitch desktop */
+@media (min-width: 768px) {
+  .order-track-page {
+    padding: 1.25rem 2rem 3.5rem;
+  }
+
+  .order-track-page--has-result .order-track-layout {
+    grid-template-columns: minmax(18rem, 22rem) minmax(0, 1fr);
+    align-items: start;
+    gap: 1.25rem;
+  }
+
+  .order-track-heading {
+    margin-bottom: 1.75rem;
+  }
+
+  .order-track-hero,
+  .order-track-result {
+    padding: 1.5rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .order-track-page--has-result .order-track-layout {
+    grid-template-columns: minmax(20rem, 24rem) minmax(0, 1fr);
+    gap: 1.5rem;
+  }
+}

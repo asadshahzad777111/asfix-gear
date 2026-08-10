@@ -347,11 +347,11 @@ router.get('/reviews', (req, res) => {
 
 router.get('/track', (req, res) => {
   const { orderId, phone } = req.query;
-  if (!orderId?.trim() || !phone?.trim()) {
-    return res.status(400).json({ error: 'Order ID and phone are required' });
+  if (!orderId?.trim()) {
+    return res.status(400).json({ error: 'Order ID is required' });
   }
-  const order = store.trackOrder(orderId.trim(), phone.trim());
-  if (!order) return res.status(404).json({ error: 'Order not found — check ID and phone' });
+  const order = store.trackOrder(orderId.trim(), phone?.trim() || '');
+  if (!order) return res.status(404).json({ error: 'Order not found — check the ID' });
   res.json(order);
 });
 

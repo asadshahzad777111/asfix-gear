@@ -210,6 +210,46 @@ function normalizePhone(phone) {
   return String(phone || '').replace(/\D/g, '');
 }
 
+/** ASF-1001 / asf 1001 / #1001 / 1001 → ASF1001 or 1001 (case/space/dash insensitive). */
+export function normalizeTrackRef(raw) {
+  return String(raw || '')
+    .trim()
+    .toUpperCase()
+    .replace(/^#/, '')
+    .replace(/[^A-Z0-9]/g, '');
+}
+
+function orderMatchesTrackRef(order, rawKey) {
+  const key = normalizeTrackRef(rawKey);
+  if (!key) return false;
+  const id = Number(order.id);
+  const formatted = formatOrderId(id); // ASF-1001
+  const candidates = new Set([
+    normalizeTrackRef(order.order_id),
+    normalizeTrackRef(formatted),
+    normalizeTrackRef(String(id)),
+    normalizeTrackRef(String(1000 + id)),
+    normalizeTrackRef(`ASF${1000 + id}`),
+  ]);
+  return candidates.has(key);
+}
+
+function repairMatchesTrackRef(booking, rawKey) {
+  const key = normalizeTrackRef(rawKey);
+  if (!key) return false;
+  const id = Number(booking.id);
+  const formatted = formatBookingRef(id); // ASF-R-1001
+  const candidates = new Set([
+    normalizeTrackRef(booking.booking_ref),
+    normalizeTrackRef(formatted),
+    normalizeTrackRef(String(id)),
+    normalizeTrackRef(String(1000 + id)),
+    normalizeTrackRef(`ASFR${1000 + id}`),
+    normalizeTrackRef(`R${1000 + id}`),
+  ]);
+  return candidates.has(key);
+}
+
 function statusLabel(status) {
   const labels = {
     pending: 'Pending Verification',
@@ -1414,20 +1454,16 @@ export function updateBookingPhotos(id, { photos_before, photos_after }, staffUs
 
 export function trackRepairBooking(bookingRef, phone) {
   const data = readData();
-  const key = String(bookingRef || '').trim().toUpperCase().replace(/^#/, '');
   const phoneKey = normalizePhone(phone);
+  const requirePhone = Boolean(phoneKey);
 
   const booking = data.repair_bookings.find((b) => {
-    const ref = String(b.booking_ref || formatBookingRef(b.id)).toUpperCase();
-    const idMatch =
-      ref === key ||
-      ref === `ASF-${key}` ||
-      key === `ASF-R-${1000 + b.id}` ||
-      String(b.id) === key;
-    const phoneMatch =
+    if (!repairMatchesTrackRef(b, bookingRef)) return false;
+    if (!requirePhone) return true;
+    return (
       normalizePhone(b.phone) === phoneKey ||
-      (b.alternative_contact && normalizePhone(b.alternative_contact) === phoneKey);
-    return idMatch && phoneMatch;
+      (b.alternative_contact && normalizePhone(b.alternative_contact) === phoneKey)
+    );
   });
 
   if (!booking) return null;
@@ -2261,18 +2297,14 @@ export function getProfitReport() {
 
 export function trackOrder(orderId, phone) {
   const data = readData();
-  const key = String(orderId || '').trim().toUpperCase().replace(/^#/, '');
   const phoneKey = normalizePhone(phone);
+  const requirePhone = Boolean(phoneKey);
 
   const order = data.orders.find((o) => {
-    const ref = String(o.order_id || formatOrderId(o.id)).toUpperCase();
-    const idMatch =
-      ref === key ||
-      ref === `ASF-${key}` ||
-      key === `ASF-${1000 + o.id}` ||
-      String(o.id) === key;
-    const phoneMatch = normalizePhone(o.phone) === phoneKey;
-    return idMatch && phoneMatch;
+    if (!orderMatchesTrackRef(o, orderId)) return false;
+    // Phone is optional — when provided, it must still match
+    if (!requirePhone) return true;
+    return normalizePhone(o.phone) === phoneKey;
   });
 
   if (!order) return null;
