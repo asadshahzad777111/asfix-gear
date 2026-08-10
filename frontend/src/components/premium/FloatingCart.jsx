@@ -132,17 +132,21 @@ export default function FloatingCart() {
   const showPaymentInstructions = PAYMENT_INSTRUCTION_MODES.has(form.payment_mode);
   const isCod = isCodPayment(form.payment_mode);
 
+  // Defaults already cover first paint — only hit Render when cart/checkout actually opens
   useEffect(() => {
+    if (!open && !checkoutOpen) return undefined;
+    let cancelled = false;
     api.getPaymentSettings()
-      .then((data) => setPaymentSettings(mergePaymentSettings(data)))
-      .catch(() => setPaymentSettings(mergePaymentSettings()));
+      .then((data) => { if (!cancelled) setPaymentSettings(mergePaymentSettings(data)); })
+      .catch(() => { if (!cancelled) setPaymentSettings(mergePaymentSettings()); });
     api.getDeliverySettings()
-      .then((data) => setDeliverySettings(mergeDeliverySettings(data)))
-      .catch(() => setDeliverySettings(mergeDeliverySettings()));
+      .then((data) => { if (!cancelled) setDeliverySettings(mergeDeliverySettings(data)); })
+      .catch(() => { if (!cancelled) setDeliverySettings(mergeDeliverySettings()); });
     api.getAddressSettings()
-      .then((data) => setAddressSettings(mergeAddressSettings(data)))
-      .catch(() => setAddressSettings(mergeAddressSettings()));
-  }, []);
+      .then((data) => { if (!cancelled) setAddressSettings(mergeAddressSettings(data)); })
+      .catch(() => { if (!cancelled) setAddressSettings(mergeAddressSettings()); });
+    return () => { cancelled = true; };
+  }, [open, checkoutOpen]);
 
   useEffect(() => {
     document.body.classList.toggle('cart-open', open);

@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import AmbientBackground from './components/AmbientBackground';
 import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
@@ -34,9 +34,21 @@ function AppContent() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/counter') || location.pathname.startsWith('/pos');
   const isAuthRoute = AUTH_PATHS.has(location.pathname);
+  const [secondaryChrome, setSecondaryChrome] = useState(false);
 
   useEffect(() => {
     wakeApiServer();
+  }, []);
+
+  // Mount chat / floating extras after first paint so home opens sooner
+  useEffect(() => {
+    const enable = () => setSecondaryChrome(true);
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(enable, { timeout: 2000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(enable, 700);
+    return () => window.clearTimeout(t);
   }, []);
 
   useEffect(() => {
@@ -72,15 +84,15 @@ function AppContent() {
       </main>
 
       {showShopChrome && !isGamingPage && <Footer />}
-      {showShopChrome && !isGamingPage && <ChatAssistant />}
-      {showShopChrome && !isGamingPage && <FloatingRepairButton />}
       {showCart && <FloatingCart />}
       {showBottomNav && <MobileBottomNav />}
-      {showFloatingNav && <FloatingNavRail />}
-      {showShopChrome && <FlyToCart />}
-      <ExitGamingButton />
-      <GamingTransition />
-      <ButtonEffects />
+      {secondaryChrome && showShopChrome && !isGamingPage && <ChatAssistant />}
+      {secondaryChrome && showShopChrome && !isGamingPage && <FloatingRepairButton />}
+      {secondaryChrome && showFloatingNav && <FloatingNavRail />}
+      {secondaryChrome && showShopChrome && <FlyToCart />}
+      {secondaryChrome && <ExitGamingButton />}
+      {secondaryChrome && <GamingTransition />}
+      {secondaryChrome && <ButtonEffects />}
     </div>
   );
 }
