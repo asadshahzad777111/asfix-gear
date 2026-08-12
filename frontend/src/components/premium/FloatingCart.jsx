@@ -15,9 +15,6 @@ import { useTranslation } from '../../context/LanguageContext';
 
 import { useAuth } from '../../context/AuthContext';
 
-import { Link } from 'react-router-dom';
-import { buildContactPath, buildContactPrefill } from '../../utils/contactPrefill';
-
 import OrderSuccessPanel from '../OrderSuccessPanel';
 import PaymentInstructions from '../PaymentInstructions';
 import MapAddressPicker from '../MapAddressPicker';
@@ -28,9 +25,7 @@ import { mergeAddressSettings } from '../../config/addressSettings';
 import { displayAddressLine } from '../../utils/address';
 
 import ShopLoginPrompt from '../ShopLoginPrompt';
-
 import CustomerLoginModal from '../CustomerLoginModal';
-
 import { useShopGate } from '../../hooks/useShopGate';
 
 
@@ -64,7 +59,8 @@ export default function FloatingCart() {
     setLoginOpen,
   } = useShopGate();
 
-  const { items, count, open, setOpen, removeItem, updateQty, clearCart } = useCart();
+  const { items, count, open, setOpen, removeItem, updateQty, clearCart, checkoutIntent, clearCheckoutIntent } =
+    useCart();
 
   const [checkoutOpen, setCheckoutOpen] = useState(false);
 
@@ -228,16 +224,6 @@ export default function FloatingCart() {
 
 
 
-  const cartContactTo =
-
-    items.length > 0
-
-      ? buildContactPath(buildContactPrefill({ type: 'cart', items, total, formatPrice }))
-
-      : '#';
-
-
-
   const resetCheckout = () => {
 
     setCheckoutOpen(false);
@@ -265,6 +251,14 @@ export default function FloatingCart() {
     });
 
   };
+
+  // Order Now from product page → open website checkout (not WhatsApp)
+  useEffect(() => {
+    if (!checkoutIntent || !open || items.length === 0 || checkoutOpen || orderSuccess) return;
+    clearCheckoutIntent?.();
+    startCheckout();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot intent from buyNow
+  }, [checkoutIntent, open, items.length, checkoutOpen, orderSuccess]);
 
 
 
@@ -1260,20 +1254,6 @@ export default function FloatingCart() {
                     </button>
 
                   )}
-
-                  <Link
-
-                    to={cartContactTo}
-
-                    className="btn btn-whatsapp premium-btn premium-btn--liquid"
-
-                    style={{ width: '100%', marginTop: '0.5rem', opacity: items.length ? 1 : 0.5, pointerEvents: items.length ? 'auto' : 'none' }}
-
-                  >
-
-                    {t('cart.whatsappCheckout')}
-
-                  </Link>
 
                   {items.length > 0 && (
 

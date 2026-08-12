@@ -621,6 +621,35 @@ body.custom-cursor-active {
   justify-content: center;
 }
 
+.product-order-now-btn {
+  appearance: none;
+  border: none;
+  cursor: pointer;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, #16a34a, #15803d);
+  box-shadow: 0 8px 20px rgba(22, 163, 74, 0.35);
+}
+
+.product-order-now-btn--card {
+  position: static;
+  flex: 1;
+  min-height: var(--touch-min, 2.75rem);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-size: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.product-actions .product-order-now-btn {
+  border-radius: 0.65rem;
+  padding: 0.75rem 1.1rem;
+  font-size: 0.95rem;
+  min-height: 2.75rem;
+}
+
 .product-card-wrap.is-selected {
   animation: cardSelectPop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
