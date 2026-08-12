@@ -48,8 +48,6 @@ export default function AdminOrdersTable({
   onShipIntentConsumed,
   onUpdateStatus,
   onMarkPaid,
-  onAssignRider,
-  onMarkDelivered,
   onBookPostEx,
   onOrderUpdated,
   t,
@@ -197,8 +195,6 @@ export default function AdminOrdersTable({
                           onShipIntentConsumed={onShipIntentConsumed}
                           onUpdateStatus={channel === 'online' && !isReturn ? onUpdateStatus : undefined}
                           onMarkPaid={channel === 'online' && !isReturn ? onMarkPaid : undefined}
-                          onAssignRider={channel === 'online' && !isReturn ? onAssignRider : undefined}
-                          onMarkDelivered={channel === 'online' && !isReturn ? onMarkDelivered : undefined}
                           onBookPostEx={channel === 'online' && !isReturn ? onBookPostEx : undefined}
                           onOrderUpdated={onOrderUpdated}
                           className={`admin-float-card admin-order-card-full glass-card${

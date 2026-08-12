@@ -41,7 +41,7 @@ export function markSeenOnlineOrderId(id) {
 export function adminOrderDeepLink(orderId, opts = {}) {
   const q = encodeURIComponent(String(orderId || '').trim());
   const ship = String(opts.ship || '').trim().toLowerCase();
-  const shipParam = ship === 'postex' || ship === 'local' ? `&ship=${ship}` : '';
+  const shipParam = ship === 'postex' ? `&ship=${ship}` : '';
   return q ? `/admin?tab=orders&q=${q}${shipParam}` : '/admin?tab=orders';
 }
 

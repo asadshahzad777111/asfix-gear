@@ -158,13 +158,6 @@ function ToastStack({ toasts, onDismiss, onView, onStaffAction }) {
                 >
                   {t('orderNotif.bookPostex')}
                 </button>
-                <button
-                  type="button"
-                  className="order-notif-action"
-                  onClick={() => onStaffAction(toast, 'local')}
-                >
-                  {t('orderNotif.localDelivery')}
-                </button>
               </div>
             ) : null}
             <button
@@ -302,10 +295,6 @@ export function OrderNotificationProvider({ children }) {
       dismiss(toast.id);
       if (action === 'postex') {
         openStaffOrder(toast.orderId, 'postex');
-        return;
-      }
-      if (action === 'local') {
-        openStaffOrder(toast.orderId, 'local');
         return;
       }
       openStaffOrder(toast.orderId);

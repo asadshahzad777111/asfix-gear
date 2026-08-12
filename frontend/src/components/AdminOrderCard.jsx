@@ -28,17 +28,8 @@ export const ORDER_STATUSES = [
   'cancelled',
 ];
 
-const ORDER_QUICK_ACTIONS = [
-  { status: 'payment_verified', label: 'Verify Payment', short: 'Paid' },
-  { status: 'shipped', label: 'Mark Shipped', short: 'Ship' },
-  { status: 'out_for_delivery', label: 'Out for Delivery', short: 'Rider' },
-  { status: 'delivered', label: 'Mark Delivered', short: 'Done' },
-];
-
-function statusBtnLabel(status) {
-  const found = ORDER_QUICK_ACTIONS.find((a) => a.status === status);
-  return found?.short || status;
-}
+/** Online gateways — payment confirmed by provider; no manual Paid button. */
+const AUTO_PAID_MODES = new Set(['safepay', 'payfast']);
 
 function paymentModeLabel(mode, t) {
   const m = String(mode || '').toLowerCase();
@@ -59,57 +50,18 @@ function paymentModeClass(mode) {
   return '';
 }
 
-function AssignRiderForm({ onSubmit, onCancel, t }) {
-  const [riderPhone, setRiderPhone] = useState('');
-  const [deliveryCharge, setDeliveryCharge] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState('');
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setSubmitting(true);
-    setError('');
-    try {
-      await onSubmit({ rider_phone: riderPhone.trim(), delivery_charge: Number(deliveryCharge) });
-    } catch (err) {
-      setError(err.message);
-      setSubmitting(false);
-    }
-  };
-
-  return (
-    <form className="admin-rider-form" onSubmit={handleSubmit}>
-      {error && <p className="alert alert-error">{error}</p>}
-      <input
-        placeholder={t('admin.riderPhonePh')}
-        value={riderPhone}
-        onChange={(e) => setRiderPhone(e.target.value)}
-        required
-      />
-      <input
-        type="number"
-        min="0"
-        step="1"
-        placeholder={t('admin.deliveryChargePh')}
-        value={deliveryCharge}
-        onChange={(e) => setDeliveryCharge(e.target.value)}
-        required
-      />
-      <div className="admin-rider-form-actions">
-        <button type="button" className="btn btn-ghost btn-sm" onClick={onCancel}>
-          {t('common.cancel')}
-        </button>
-        <button type="submit" className="btn btn-primary btn-sm" disabled={submitting}>
-          {submitting ? t('common.saving') : t('admin.assignRider')}
-        </button>
-      </div>
-    </form>
-  );
+function needsManualPaidButton(order) {
+  if (order.payment_status !== 'pending_payment') return false;
+  const mode = String(order.payment_mode || '').toLowerCase();
+  // Safepay / PayFast: gateway marks paid — hide manual Paid
+  if (AUTO_PAID_MODES.has(mode)) return false;
+  return true;
 }
 
 /**
  * Shared order card — Admin Orders tab + Ops Desk.
- * No map UI (address text only). Clear payment + next-action focus.
+ * PostEx tracking auto-updates status — no manual Ship/Rider/Done / Assign Rider.
+ * Address text only (no map).
  */
 export default function AdminOrderCard({
   order: o,
@@ -118,14 +70,11 @@ export default function AdminOrderCard({
   onShipIntentConsumed,
   onUpdateStatus,
   onMarkPaid,
-  onAssignRider,
-  onMarkDelivered,
   onBookPostEx,
   onOrderUpdated,
   className = 'admin-float-card',
 }) {
   const { t } = useTranslation();
-  const [showRiderForm, setShowRiderForm] = useState(false);
   const [showReceipts, setShowReceipts] = useState(false);
   const [receiptBusy, setReceiptBusy] = useState(false);
   const [postexBusy, setPostexBusy] = useState(false);
@@ -168,20 +117,7 @@ export default function AdminOrderCard({
     o.shipping_status !== 'cancelled' &&
     !o.postex_tracking;
 
-  const needsPay =
-    !isCounter && !isReturn && o.payment_status === 'pending_payment' && Boolean(onMarkPaid);
-  const needsShip =
-    !isCounter &&
-    !isReturn &&
-    o.shipping_status !== 'cancelled' &&
-    (canBookPostEx ||
-      (o.delivery_status === 'waiting_for_rider' && onAssignRider) ||
-      (o.delivery_status === 'rider_assigned' && onMarkDelivered));
-
-  const handleAssignRider = async (payload) => {
-    await onAssignRider(o.id, payload);
-    setShowRiderForm(false);
-  };
+  const needsPay = !isCounter && !isReturn && needsManualPaidButton(o) && Boolean(onMarkPaid);
 
   const handleBookPostEx = async () => {
     if (!canBookPostEx || postexBusy) return;
@@ -202,12 +138,10 @@ export default function AdminOrderCard({
     shipIntentDoneRef.current = intent;
     if (intent === 'postex' && canBookPostEx) {
       void handleBookPostEx();
-    } else if (intent === 'local' && onAssignRider) {
-      setShowRiderForm(true);
     }
     onShipIntentConsumed?.();
     // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot from URL intent
-  }, [shipIntent, canBookPostEx, onAssignRider]);
+  }, [shipIntent, canBookPostEx]);
 
   const handleThermalPrint = async () => {
     if (receiptBusy) return;
@@ -465,8 +399,8 @@ export default function AdminOrderCard({
           )}
         </p>
 
-        {/* Primary next actions — payment / courier */}
-        {!isCounter && (needsPay || needsShip || showRiderForm) ? (
+        {/* Primary: Confirm COD / Mark Paid (wallets) + Book PostEx — no manual Ship/Rider */}
+        {!isCounter && (needsPay || canBookPostEx) ? (
           <div className="admin-order-actions admin-order-actions--primary">
             {needsPay ? (
               <button type="button" className="btn btn-primary btn-sm" onClick={() => onMarkPaid(o.id)}>
@@ -483,50 +417,23 @@ export default function AdminOrderCard({
                 {postexBusy ? t('common.saving') : t('admin.postexBook')}
               </button>
             ) : null}
-            {o.delivery_status === 'waiting_for_rider' && onAssignRider && !showRiderForm ? (
-              <button type="button" className="btn btn-outline btn-sm" onClick={() => setShowRiderForm(true)}>
-                {t('admin.assignRider')}
-              </button>
-            ) : null}
-            {showRiderForm && onAssignRider ? (
-              <AssignRiderForm t={t} onCancel={() => setShowRiderForm(false)} onSubmit={handleAssignRider} />
-            ) : null}
-            {o.delivery_status === 'rider_assigned' && onMarkDelivered ? (
-              <button type="button" className="btn btn-primary btn-sm" onClick={() => onMarkDelivered(o.id)}>
-                {t('admin.markDelivered')}
-              </button>
-            ) : null}
           </div>
         ) : null}
 
-        {/* Status shortcuts — single row (no duplicate dropdown) */}
-        {!isCounter && onUpdateStatus ? (
+        {/* Cancel only — Ship/Rider/Done removed; PostEx tracking updates delivery */}
+        {!isCounter && onUpdateStatus && o.shipping_status !== 'cancelled' ? (
           <div className="admin-order-actions admin-order-actions--status">
-            {ORDER_QUICK_ACTIONS.map((action) => (
-              <button
-                key={action.status}
-                type="button"
-                className={`btn btn-outline btn-sm admin-status-btn ${o.shipping_status === action.status ? 'active' : ''}`}
-                disabled={o.shipping_status === action.status}
-                onClick={() => onUpdateStatus(o.id, action.status)}
-                title={action.label}
-              >
-                {statusBtnLabel(action.status)}
-              </button>
-            ))}
-            {o.shipping_status !== 'cancelled' ? (
-              <button
-                type="button"
-                className="btn btn-ghost btn-sm"
-                onClick={() => {
-                  if (window.confirm?.(t('admin.cancelOrderConfirm'))) {
-                    onUpdateStatus(o.id, 'cancelled');
-                  }
-                }}
-              >
-                {t('admin.cancelOrder')}
-              </button>
-            ) : null}
+            <button
+              type="button"
+              className="btn btn-ghost btn-sm"
+              onClick={() => {
+                if (window.confirm?.(t('admin.cancelOrderConfirm'))) {
+                  onUpdateStatus(o.id, 'cancelled');
+                }
+              }}
+            >
+              {t('admin.cancelOrder')}
+            </button>
           </div>
         ) : null}
 

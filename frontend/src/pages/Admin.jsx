@@ -410,21 +410,6 @@ export default function Admin() {
     }
   };
 
-  const assignOrderRider = async (id, body) => {
-    const updated = await api.assignOrderRider(id, body);
-    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-    return updated;
-  };
-
-  const markOrderDelivered = async (id) => {
-    try {
-      const updated = await api.markOrderDelivered(id);
-      setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
-    } catch (err) {
-      alert(err.message);
-    }
-  };
-
   const bookOrderPostEx = async (id) => {
     const updated = await api.bookOrderPostEx(id);
     setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
@@ -473,7 +458,7 @@ export default function Admin() {
       if (next === 'orders' || !t) setTabState('orders');
     }
     const ship = String(searchParams.get('ship') || '').trim().toLowerCase();
-    setOrderShipIntent(ship === 'postex' || ship === 'local' ? ship : '');
+    setOrderShipIntent(ship === 'postex' ? ship : '');
   }, [searchParams]);
 
   const updateStatus = async (id, status) => {
@@ -810,8 +795,6 @@ export default function Admin() {
                   }}
                   onUpdateStatus={updateOrderStatus}
                   onMarkPaid={markOrderPaid}
-                  onAssignRider={assignOrderRider}
-                  onMarkDelivered={markOrderDelivered}
                   onBookPostEx={bookOrderPostEx}
                   onOrderUpdated={onOrderUpdated}
                   t={t}
