@@ -132,7 +132,6 @@ export function CartProvider({ children }) {
       }
       return [...prev, { ...product, qty: addQty }];
     });
-    setOpen(true);
     setCheckoutIntent(true);
   }, []);
 

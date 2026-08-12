@@ -30,6 +30,7 @@ const METHODS = [
   { id: 'easypaisa', title: 'EasyPaisa', fields: ['number', 'accountName'] },
   { id: 'bank', title: 'Bank Transfer', fields: ['bankName', 'accountName', 'accountNumber', 'iban', 'branch'] },
   { id: 'cod', title: 'Cash on Delivery (Lahore)', fields: [] },
+  { id: 'safepay', title: 'Safepay (Card / Advance)', fields: [] },
 ];
 
 const FIELD_LABELS = {
@@ -295,6 +296,10 @@ export default function AdminPayments() {
             {id === 'cod' ? (
               <p style={{ margin: 0, fontSize: '0.88rem', color: '#50575e' }}>
                 No account fields. Customer pays cash on delivery or at shop pickup (Lahore). Orders show as <strong>COD</strong> in admin.
+              </p>
+            ) : id === 'safepay' ? (
+              <p style={{ margin: 0, fontSize: '0.88rem', color: '#50575e' }}>
+                Advance / card checkout option on the final order page. Gateway redirect can be wired when Safepay merchant keys are ready. Orders show as <strong>Safepay</strong>.
               </p>
             ) : (
               <div className="wp-payments-grid">

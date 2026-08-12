@@ -47,6 +47,7 @@ const ShippingWarrantyPage = lazy(() =>
 );
 const Faq = lazy(() => import('../../pages/Faq'));
 const Wishlist = lazy(() => import('../../pages/Wishlist'));
+const Checkout = lazy(() => import('../../pages/Checkout'));
 
 function AppRoutes({ location }) {
   return (
@@ -56,6 +57,7 @@ function AppRoutes({ location }) {
       <Route path="/shop" element={<Shop />} />
       <Route path="/shop/p/:slug" element={<ProductDetail />} />
       <Route path="/shop/:id" element={<ProductDetail />} />
+      <Route path="/checkout" element={<Checkout />} />
       <Route path="/privacy" element={<PrivacyPage />} />
       <Route path="/refund" element={<RefundPage />} />
       <Route path="/terms" element={<TermsPage />} />

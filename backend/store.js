@@ -4078,6 +4078,8 @@ const DEFAULT_PAYMENT_SETTINGS = {
   cod: { enabled: true },
   /** Premier PayFast — disabled until merchant credentials are configured. */
   payfast: { enabled: false },
+  /** Safepay advance / card — toggle in Admin Payments. */
+  safepay: { enabled: true },
   /** POS thermal Scan & Pay slips (JazzCash / EasyPaisa / Meezan). */
   posQrCards: DEFAULT_POS_QR_CARDS,
 };
@@ -4605,6 +4607,7 @@ export function getPaymentSettings() {
     bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
     cod: { ...DEFAULT_PAYMENT_SETTINGS.cod, ...(saved.cod || {}) },
     payfast: { ...DEFAULT_PAYMENT_SETTINGS.payfast, ...(saved.payfast || {}) },
+    safepay: { ...DEFAULT_PAYMENT_SETTINGS.safepay, ...(saved.safepay || {}) },
     posQrCards: normalizePosQrCards(saved.posQrCards),
     updated_at: saved.updated_at ?? null,
     updated_by: saved.updated_by ?? null,
@@ -4654,10 +4657,11 @@ export function setPaymentSettings(input, userId) {
       bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
       cod: { ...DEFAULT_PAYMENT_SETTINGS.cod, ...(saved.cod || {}) },
       payfast: { ...DEFAULT_PAYMENT_SETTINGS.payfast, ...(saved.payfast || {}) },
+      safepay: { ...DEFAULT_PAYMENT_SETTINGS.safepay, ...(saved.safepay || {}) },
       posQrCards: normalizePosQrCards(saved.posQrCards),
     };
 
-    for (const key of ['jazzcash', 'easypaisa', 'bank', 'cod', 'payfast']) {
+    for (const key of ['jazzcash', 'easypaisa', 'bank', 'cod', 'payfast', 'safepay']) {
       if (!input[key]) continue;
       const patch = input[key];
       next[key] = {
