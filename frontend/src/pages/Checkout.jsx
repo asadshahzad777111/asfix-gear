@@ -12,13 +12,10 @@ import {
   isPostExDelivery,
   mergeDeliverySettings,
 } from '../config/delivery';
-import { mergeAddressSettings } from '../config/addressSettings';
 import { displayAddressLine } from '../utils/address';
 import { getSalePrice } from '../utils/pricing';
 import { maxCartQty } from '../utils/stock';
 import OrderSuccessPanel from '../components/OrderSuccessPanel';
-import MapAddressPicker from '../components/MapAddressPicker';
-import PaymentMethodSheet from '../components/PaymentMethodSheet';
 import ShopLoginPrompt from '../components/ShopLoginPrompt';
 import CustomerLoginModal from '../components/CustomerLoginModal';
 import { useShopGate } from '../hooks/useShopGate';
@@ -26,23 +23,31 @@ import './checkout-page.css';
 
 const CITIES = ['Lahore', 'Karachi', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Multan'];
 
-const PAYMENT_METHODS = [
-  { id: 'safepay', icon: '🔐' },
+const PRIMARY_PAY = [
   { id: 'cod', icon: '💵' },
-  { id: 'jazzcash', icon: '📱' },
-  { id: 'easypaisa', icon: '💳' },
-  { id: 'bank', icon: '🏦' },
-  { id: 'payfast', icon: '🔒' },
+  { id: 'safepay', icon: '🔐', logos: 'Visa · Mastercard' },
 ];
 
-function deliveryWindowLabel() {
-  const start = new Date();
-  start.setDate(start.getDate() + 2);
-  const end = new Date();
-  end.setDate(end.getDate() + 4);
-  const fmt = (d) =>
-    d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
-  return `${fmt(start)}–${fmt(end)}`;
+const OTHER_PAY = [
+  { id: 'jazzcash', icon: '📱' },
+  { id: 'easypaisa', icon: '💚' },
+  { id: 'bank', icon: '🏦' },
+];
+
+function splitName(full = '') {
+  const parts = String(full).trim().split(/\s+/).filter(Boolean);
+  if (!parts.length) return { first: '', last: '' };
+  if (parts.length === 1) return { first: parts[0], last: '' };
+  return { first: parts[0], last: parts.slice(1).join(' ') };
+}
+
+function Field({ label, children, className = '' }) {
+  return (
+    <label className={`ck-field ${className}`.trim()}>
+      <span className="ck-field__label">{label}</span>
+      {children}
+    </label>
+  );
 }
 
 export default function Checkout() {
@@ -61,40 +66,41 @@ export default function Checkout() {
 
   const [paymentSettings, setPaymentSettings] = useState(() => mergePaymentSettings());
   const [deliverySettings, setDeliverySettings] = useState(() => mergeDeliverySettings());
-  const [addressSettings, setAddressSettings] = useState(() => mergeAddressSettings());
   const [fulfillment, setFulfillment] = useState('delivery');
   const [savedAddresses, setSavedAddresses] = useState([]);
-  const [addressMode, setAddressMode] = useState('saved');
+  const [addressMode, setAddressMode] = useState('new');
   const [selectedAddressId, setSelectedAddressId] = useState(null);
-  const [editingAddress, setEditingAddress] = useState(false);
+  const [billingSame, setBillingSame] = useState(true);
+  const [showOtherPay, setShowOtherPay] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
-  const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderMsg, setOrderMsg] = useState('');
   const [orderSuccess, setOrderSuccess] = useState(null);
   const [successPhone, setSuccessPhone] = useState('');
-  const [newAddress, setNewAddress] = useState({
-    name: '',
-    phone: '',
+  const [newsOptIn, setNewsOptIn] = useState(false);
+
+  const [ship, setShip] = useState({
+    firstName: '',
+    lastName: '',
     country: 'Pakistan',
-    region: '',
-    city: '',
-    postalCode: '',
     streetAddress: '',
     houseNumber: '',
-    landmark: '',
-    notes: '',
-    text: '',
-    lat: SHOP.lat,
-    lng: SHOP.lng,
-  });
-  const [form, setForm] = useState({
-    customer_name: '',
-    phone: '',
     city: 'Lahore',
-    payment_mode: 'safepay',
+    postalCode: '',
+    phone: '',
     notes: '',
   });
+  const [billing, setBilling] = useState({
+    firstName: '',
+    lastName: '',
+    country: 'Pakistan',
+    streetAddress: '',
+    houseNumber: '',
+    city: 'Lahore',
+    postalCode: '',
+    phone: '',
+  });
+  const [paymentMode, setPaymentMode] = useState('cod');
 
   const listSubtotal = useMemo(
     () => items.reduce((sum, i) => sum + (Number(i.price) || 0) * i.qty, 0),
@@ -106,21 +112,22 @@ export default function Checkout() {
   );
   const discountAmount = Math.max(0, listSubtotal - merchandiseSubtotal);
   const isPickup = fulfillment === 'pickup';
-  const effectiveCity = isPickup ? 'Lahore' : form.city;
+  const effectiveCity = isPickup ? 'Lahore' : ship.city;
   const lahore = isLahoreCity(effectiveCity);
-  const estimatedDeliveryFee = isPickup ? 0 : getEstimatedDeliveryFee(form.city, deliverySettings);
+  const estimatedDeliveryFee = isPickup ? 0 : getEstimatedDeliveryFee(ship.city, deliverySettings);
   const shippingFee = estimatedDeliveryFee == null ? 0 : estimatedDeliveryFee;
   const shippingPending = !isPickup && estimatedDeliveryFee == null;
   const otherFees = 0;
   const grandTotal = merchandiseSubtotal + shippingFee + otherFees;
 
   const activePaymentIds = enabledPaymentMethods(paymentSettings);
-  const checkoutPaymentMethods = PAYMENT_METHODS.filter(({ id }) => {
+  const primaryMethods = PRIMARY_PAY.filter(({ id }) => {
     if (!activePaymentIds.includes(id)) return false;
-    if (id === 'cod' && !lahore) return false;
+    if (id === 'cod' && !lahore && !isPickup) return false;
     return true;
   });
-  const selectedSavedAddress = savedAddresses.find((a) => a.id === selectedAddressId);
+  const otherMethods = OTHER_PAY.filter(({ id }) => activePaymentIds.includes(id));
+  const isCod = isCodPayment(paymentMode);
 
   useEffect(() => {
     document.body.classList.add('checkout-page-open');
@@ -132,12 +139,10 @@ export default function Checkout() {
     Promise.all([
       api.getPaymentSettings().catch(() => null),
       api.getDeliverySettings().catch(() => null),
-      api.getAddressSettings().catch(() => null),
-    ]).then(([pay, del, addr]) => {
+    ]).then(([pay, del]) => {
       if (cancelled) return;
       if (pay) setPaymentSettings(mergePaymentSettings(pay));
       if (del) setDeliverySettings(mergeDeliverySettings(del));
-      if (addr) setAddressSettings(mergeAddressSettings(addr));
     });
     return () => {
       cancelled = true;
@@ -146,15 +151,12 @@ export default function Checkout() {
 
   useEffect(() => {
     if (!isCustomer || !user) return;
-    setForm((prev) => ({
+    const { first, last } = splitName(user.name || '');
+    setShip((prev) => ({
       ...prev,
-      customer_name: user.name || prev.customer_name,
-      phone: user.phone || prev.phone,
-    }));
-    setNewAddress((prev) => ({
-      ...prev,
-      name: user.name || prev.name,
-      phone: user.phone || prev.phone,
+      firstName: prev.firstName || first,
+      lastName: prev.lastName || last,
+      phone: prev.phone || user.phone || '',
     }));
   }, [isCustomer, user]);
 
@@ -167,17 +169,24 @@ export default function Checkout() {
       if (defaultAddr) {
         setSelectedAddressId(defaultAddr.id);
         setAddressMode('saved');
-        if (defaultAddr.city) {
-          setForm((prev) => ({ ...prev, city: defaultAddr.city }));
-        }
+        const { first, last } = splitName(defaultAddr.name || '');
+        setShip((prev) => ({
+          ...prev,
+          firstName: first || prev.firstName,
+          lastName: last || prev.lastName,
+          phone: defaultAddr.phone || prev.phone,
+          city: defaultAddr.city || prev.city,
+          streetAddress: defaultAddr.streetAddress || prev.streetAddress,
+          houseNumber: defaultAddr.houseNumber || prev.houseNumber,
+          postalCode: defaultAddr.postalCode || prev.postalCode,
+          country: defaultAddr.country || 'Pakistan',
+        }));
       } else {
         setAddressMode('new');
-        setEditingAddress(true);
       }
     } catch {
       setSavedAddresses([]);
       setAddressMode('new');
-      setEditingAddress(true);
     }
   }, [isCustomer]);
 
@@ -186,74 +195,69 @@ export default function Checkout() {
   }, [isCustomer, loadSavedAddresses]);
 
   useEffect(() => {
-    const ids = checkoutPaymentMethods.map((m) => m.id);
-    if (!ids.includes(form.payment_mode) && ids[0]) {
-      setForm((prev) => ({ ...prev, payment_mode: ids[0] }));
-    }
-  }, [form.city, form.payment_mode, fulfillment, activePaymentIds.join(',')]);
+    const ids = [...primaryMethods, ...otherMethods].map((m) => m.id);
+    if (!ids.includes(paymentMode) && ids[0]) setPaymentMode(ids[0]);
+  }, [ship.city, fulfillment, paymentMode, activePaymentIds.join(',')]);
+
+  const fullName = `${ship.firstName} ${ship.lastName}`.trim();
 
   const validateDeliveryAddress = () => {
     if (fulfillment === 'pickup') return true;
-    if (addressMode === 'saved') {
-      if (!selectedAddressId) {
-        setOrderMsg(t('cart.selectAddress'));
-        return false;
-      }
-      return true;
-    }
-    const hasAddressLine = newAddress.streetAddress.trim() || newAddress.text.trim();
-    if (!newAddress.name.trim() || !newAddress.phone.trim() || !hasAddressLine) {
+    if (addressMode === 'saved' && selectedAddressId) return true;
+    const hasAddressLine = ship.streetAddress.trim() || ship.houseNumber.trim();
+    if (!ship.firstName.trim() || !ship.lastName.trim() || !ship.phone.trim() || !hasAddressLine || !ship.city.trim()) {
       setOrderMsg(t('cart.addressRequired'));
       return false;
     }
-    if (!Number.isFinite(Number(newAddress.lat)) || !Number.isFinite(Number(newAddress.lng))) {
-      setOrderMsg(t('cart.mapPinRequired'));
-      return false;
+    if (!billingSame) {
+      const billLine = billing.streetAddress.trim() || billing.houseNumber.trim();
+      if (!billing.firstName.trim() || !billing.lastName.trim() || !billing.phone.trim() || !billLine) {
+        setOrderMsg(t('checkout.billingRequired'));
+        return false;
+      }
     }
     return true;
   };
 
-  const openPaymentSheet = () => {
-    setOrderMsg('');
-    if (!isCustomer) {
-      requireCustomer(() => setPaymentSheetOpen(true));
-      return;
-    }
-    if (!form.customer_name.trim() || !form.phone.trim()) {
-      setOrderMsg(t('cart.namePhoneRequired'));
-      setEditingAddress(true);
-      return;
-    }
-    if (!validateDeliveryAddress()) {
-      setEditingAddress(true);
-      return;
-    }
-    setPaymentSheetOpen(true);
+  const buildShippingPayload = () => {
+    const name = fullName || ship.firstName.trim();
+    return {
+      name,
+      fullName: name,
+      phone: ship.phone.trim(),
+      country: ship.country || 'Pakistan',
+      city: ship.city.trim(),
+      postalCode: ship.postalCode.trim(),
+      streetAddress: ship.streetAddress.trim(),
+      houseNumber: ship.houseNumber.trim(),
+      text: [ship.houseNumber, ship.streetAddress, ship.city, ship.postalCode, ship.country]
+        .map((p) => String(p || '').trim())
+        .filter(Boolean)
+        .join(', '),
+      lat: SHOP.lat,
+      lng: SHOP.lng,
+    };
   };
 
   const submitOrder = async () => {
     if (!isCustomer) {
-      requireCustomer();
+      requireCustomer(() => void submitOrder());
       return;
     }
     if (!items.length) {
       setOrderMsg(t('cart.empty'));
       return;
     }
-    if (!form.customer_name.trim() || !form.phone.trim()) {
+    if (!ship.phone.trim() || !fullName) {
       setOrderMsg(t('cart.namePhoneRequired'));
-      setEditingAddress(true);
       return;
     }
-    if (!validateDeliveryAddress()) {
-      setEditingAddress(true);
-      return;
-    }
-    if (isCodPayment(form.payment_mode) && !isLahoreCity(effectiveCity)) {
+    if (!validateDeliveryAddress()) return;
+    if (isCodPayment(paymentMode) && !isLahoreCity(effectiveCity) && !isPickup) {
       setOrderMsg(t('cart.codOutsideLahore'));
       return;
     }
-    if (!form.payment_mode) {
+    if (!paymentMode) {
       setOrderMsg(t('cart.selectPayment'));
       return;
     }
@@ -261,9 +265,30 @@ export default function Checkout() {
     setSubmitting(true);
     setOrderMsg('');
     try {
+      let notes = ship.notes.trim();
+      if (!billingSame) {
+        const billLine = [
+          `${billing.firstName} ${billing.lastName}`.trim(),
+          billing.phone,
+          billing.houseNumber,
+          billing.streetAddress,
+          billing.city,
+          billing.postalCode,
+        ]
+          .filter(Boolean)
+          .join(', ');
+        notes = [notes, `Billing: ${billLine}`].filter(Boolean).join('\n');
+      }
+      if (newsOptIn) {
+        notes = [notes, 'Opt-in: news & offers SMS'].filter(Boolean).join('\n');
+      }
+
       const payload = {
-        ...form,
-        city: isPickup ? 'Lahore' : form.city,
+        customer_name: fullName,
+        phone: ship.phone.trim(),
+        city: isPickup ? 'Lahore' : ship.city.trim(),
+        payment_mode: paymentMode,
+        notes,
         fulfillment_method: fulfillment,
         items: items.map((i) => ({
           product_id: i.id,
@@ -273,15 +298,15 @@ export default function Checkout() {
         })),
       };
       if (fulfillment === 'delivery') {
-        if (addressMode === 'saved') {
+        if (addressMode === 'saved' && selectedAddressId) {
           payload.address_id = selectedAddressId;
         } else {
-          payload.shipping_address = newAddress;
+          payload.shipping_address = buildShippingPayload();
         }
       }
 
       const { order } = await api.placeOrder(payload);
-      setSuccessPhone(form.phone.trim());
+      setSuccessPhone(ship.phone.trim());
       setOrderSuccess(order);
       clearCart();
     } catch (err) {
@@ -291,22 +316,11 @@ export default function Checkout() {
     }
   };
 
-  const displayName =
-    addressMode === 'saved' && selectedSavedAddress
-      ? selectedSavedAddress.name || form.customer_name
-      : newAddress.name || form.customer_name;
-  const displayPhone =
-    addressMode === 'saved' && selectedSavedAddress
-      ? selectedSavedAddress.phone || form.phone
-      : newAddress.phone || form.phone;
-  const displayLine =
-    fulfillment === 'pickup'
-      ? `${SHOP.addressLine1}, ${SHOP.addressLine2}`
-      : addressMode === 'saved' && selectedSavedAddress
-        ? displayAddressLine(selectedSavedAddress)
-        : displayAddressLine(newAddress) || form.city;
-
-  const ctaLabel = t('checkout.proceedToPay');
+  const ctaLabel = submitting
+    ? t('cart.placing')
+    : isCod
+      ? t('checkout.completeOrder')
+      : t('checkout.proceedToPay');
 
   if (orderSuccess) {
     return (
@@ -338,8 +352,102 @@ export default function Checkout() {
     );
   }
 
+  const renderAddressFields = (data, setData, prefix) => (
+    <div className="ck-form-grid">
+      <Field label={t('checkout.countryRegion')} className="ck-field--full">
+        <select
+          value={data.country || 'Pakistan'}
+          onChange={(e) => setData((p) => ({ ...p, country: e.target.value }))}
+        >
+          <option value="Pakistan">Pakistan</option>
+        </select>
+      </Field>
+      <Field label={t('checkout.firstName')}>
+        <input
+          value={data.firstName}
+          onChange={(e) => setData((p) => ({ ...p, firstName: e.target.value }))}
+          maxLength={60}
+          autoComplete={`${prefix} given-name`}
+        />
+      </Field>
+      <Field label={t('checkout.lastName')}>
+        <input
+          value={data.lastName}
+          onChange={(e) => setData((p) => ({ ...p, lastName: e.target.value }))}
+          maxLength={60}
+          autoComplete={`${prefix} family-name`}
+          required
+        />
+      </Field>
+      <Field label={t('checkout.addressLine')} className="ck-field--full">
+        <input
+          value={data.streetAddress}
+          onChange={(e) => setData((p) => ({ ...p, streetAddress: e.target.value }))}
+          maxLength={220}
+          autoComplete={`${prefix} address-line1`}
+        />
+      </Field>
+      <Field label={t('checkout.apartmentOptional')} className="ck-field--full">
+        <input
+          value={data.houseNumber}
+          onChange={(e) => setData((p) => ({ ...p, houseNumber: e.target.value }))}
+          maxLength={80}
+          autoComplete={`${prefix} address-line2`}
+        />
+      </Field>
+      <Field label={t('checkout.city')}>
+        <select
+          value={CITIES.includes(data.city) ? data.city : 'Other'}
+          onChange={(e) => {
+            const v = e.target.value;
+            setData((p) => ({ ...p, city: v === 'Other' ? '' : v }));
+          }}
+        >
+          {CITIES.map((c) => (
+            <option key={c} value={c}>
+              {c}
+            </option>
+          ))}
+          <option value="Other">{t('cart.cityOther')}</option>
+        </select>
+      </Field>
+      {!CITIES.includes(data.city) ? (
+        <Field label={t('cart.cityOther')}>
+          <input value={data.city} onChange={(e) => setData((p) => ({ ...p, city: e.target.value }))} />
+        </Field>
+      ) : (
+        <Field label={t('checkout.postalOptional')}>
+          <input
+            value={data.postalCode}
+            onChange={(e) => setData((p) => ({ ...p, postalCode: e.target.value }))}
+            maxLength={20}
+            autoComplete={`${prefix} postal-code`}
+          />
+        </Field>
+      )}
+      {CITIES.includes(data.city) ? null : (
+        <Field label={t('checkout.postalOptional')} className="ck-field--full">
+          <input
+            value={data.postalCode}
+            onChange={(e) => setData((p) => ({ ...p, postalCode: e.target.value }))}
+            maxLength={20}
+          />
+        </Field>
+      )}
+      <Field label={t('checkout.phoneUpdates')} className="ck-field--full">
+        <input
+          value={data.phone}
+          onChange={(e) => setData((p) => ({ ...p, phone: e.target.value }))}
+          maxLength={20}
+          inputMode="tel"
+          autoComplete={`${prefix} tel`}
+        />
+      </Field>
+    </div>
+  );
+
   return (
-    <div className="checkout-page">
+    <div className="checkout-page checkout-page--shopify">
       <div className="checkout-page__inner">
         <header className="checkout-topbar">
           <button type="button" className="checkout-back" onClick={() => navigate(-1)} aria-label={t('nav.back')}>
@@ -353,185 +461,112 @@ export default function Checkout() {
           </div>
         </header>
 
-        {/* Address */}
-        <section className="checkout-block checkout-address">
-          <div className="checkout-address__head">
-            <span className="checkout-pin" aria-hidden>
-              📍
-            </span>
-            <div className="checkout-address__meta">
-              <strong>
-                {displayName || t('cart.fullName')}
-                {displayPhone ? `, ${displayPhone}` : ''}
-              </strong>
-              <button
-                type="button"
-                className="checkout-edit"
-                onClick={() => {
-                  setEditingAddress((v) => !v);
-                  requireCustomer(() => {});
-                }}
-              >
-                {t('checkout.edit')}
-              </button>
-            </div>
+        {/* Delivery / pickup */}
+        <section className="checkout-block">
+          <div className="checkout-fulfillment" role="radiogroup" aria-label={t('cart.fulfillmentLabel')}>
+            <button
+              type="button"
+              className={fulfillment === 'delivery' ? 'is-active' : ''}
+              onClick={() => setFulfillment('delivery')}
+            >
+              {t('cart.fulfillmentDelivery')}
+            </button>
+            <button
+              type="button"
+              className={fulfillment === 'pickup' ? 'is-active' : ''}
+              onClick={() => {
+                setFulfillment('pickup');
+                setShip((p) => ({ ...p, city: 'Lahore' }));
+              }}
+            >
+              {t('cart.fulfillmentPickup')}
+            </button>
           </div>
-          <div className="checkout-address__line">
-            {fulfillment === 'pickup' ? (
-              <span className="checkout-badge">{t('cart.fulfillmentPickup')}</span>
-            ) : (
-              <span className="checkout-badge">{t('checkout.homeBadge')}</span>
-            )}
-            <span>{displayLine || t('cart.deliveryAddress')}</span>
-          </div>
-
-          {editingAddress ? (
-            <div className="checkout-address__editor">
-              <div className="checkout-fulfillment" role="radiogroup" aria-label={t('cart.fulfillmentLabel')}>
-                <button
-                  type="button"
-                  className={fulfillment === 'delivery' ? 'is-active' : ''}
-                  onClick={() => setFulfillment('delivery')}
-                >
-                  {t('cart.fulfillmentDelivery')}
-                </button>
-                <button
-                  type="button"
-                  className={fulfillment === 'pickup' ? 'is-active' : ''}
-                  onClick={() => {
-                    setFulfillment('pickup');
-                    setForm((p) => ({ ...p, city: 'Lahore' }));
-                  }}
-                >
-                  {t('cart.fulfillmentPickup')}
-                </button>
-              </div>
-
-              <div className="checkout-fields">
-                <label>
-                  {t('cart.fullName')}
-                  <input
-                    value={form.customer_name}
-                    onChange={(e) => setForm((p) => ({ ...p, customer_name: e.target.value }))}
-                    maxLength={120}
-                  />
-                </label>
-                <label>
-                  {t('cart.phone')}
-                  <input
-                    value={form.phone}
-                    onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
-                    maxLength={20}
-                  />
-                </label>
-              </div>
-
-              {!isPickup ? (
-                <>
-                  <label className="checkout-city">
-                    {t('cart.cityLabel')}
-                    <select
-                      value={CITIES.includes(form.city) ? form.city : 'Other'}
-                      onChange={(e) => {
-                        const v = e.target.value;
-                        setForm((p) => ({ ...p, city: v === 'Other' ? '' : v }));
-                      }}
-                    >
-                      {CITIES.map((c) => (
-                        <option key={c} value={c}>
-                          {c}
-                        </option>
-                      ))}
-                      <option value="Other">{t('cart.cityOther')}</option>
-                    </select>
-                  </label>
-                  {!CITIES.includes(form.city) ? (
-                    <input
-                      className="checkout-city-other"
-                      placeholder={t('cart.cityOther')}
-                      value={form.city}
-                      onChange={(e) => setForm((p) => ({ ...p, city: e.target.value }))}
-                    />
-                  ) : null}
-
-                  {savedAddresses.length > 0 ? (
-                    <div className="checkout-addr-mode">
-                      <button
-                        type="button"
-                        className={addressMode === 'saved' ? 'is-active' : ''}
-                        onClick={() => setAddressMode('saved')}
-                      >
-                        {t('cart.useSavedAddress')}
-                      </button>
-                      <button
-                        type="button"
-                        className={addressMode === 'new' ? 'is-active' : ''}
-                        onClick={() => setAddressMode('new')}
-                      >
-                        {t('cart.newAddress')}
-                      </button>
-                    </div>
-                  ) : null}
-
-                  {addressMode === 'saved' && savedAddresses.length > 0 ? (
-                    <div className="checkout-saved-list">
-                      {savedAddresses.map((addr) => (
-                        <label key={addr.id} className={`checkout-saved-card${selectedAddressId === addr.id ? ' is-selected' : ''}`}>
-                          <input
-                            type="radio"
-                            name="checkout-addr"
-                            checked={selectedAddressId === addr.id}
-                            onChange={() => {
-                              setSelectedAddressId(addr.id);
-                              if (addr.city) setForm((p) => ({ ...p, city: addr.city }));
-                            }}
-                          />
-                          <span>
-                            <strong>{addr.name}</strong>
-                            <small>{displayAddressLine(addr)}</small>
-                          </span>
-                        </label>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="checkout-new-addr">
-                      <input
-                        placeholder={t('address.streetLabel')}
-                        value={newAddress.streetAddress}
-                        onChange={(e) => setNewAddress((p) => ({ ...p, streetAddress: e.target.value }))}
-                      />
-                      <input
-                        placeholder={t('address.houseLabel')}
-                        value={newAddress.houseNumber}
-                        onChange={(e) => setNewAddress((p) => ({ ...p, houseNumber: e.target.value }))}
-                      />
-                      {addressSettings?.addressMapPickerEnabled !== false ? (
-                        <MapAddressPicker
-                          lat={newAddress.lat}
-                          lng={newAddress.lng}
-                          onChange={({ lat, lng }) => setNewAddress((p) => ({ ...p, lat, lng }))}
-                          previewHeight={140}
-                        />
-                      ) : null}
-                    </div>
-                  )}
-                </>
-              ) : (
-                <p className="checkout-pickup-hint">{t('cart.pickupHint')}</p>
-              )}
-
-              <label className="checkout-notes">
-                {t('cart.orderNotes')}
-                <textarea
-                  rows={2}
-                  value={form.notes}
-                  onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-                  maxLength={500}
-                />
-              </label>
-            </div>
+          {isPostExDelivery(deliverySettings) && !isPickup ? (
+            <p className="ck-ship-note">{t('cart.postexDeliveryNote')}</p>
           ) : null}
         </section>
+
+        {/* Shipping address — phonecase style, no map */}
+        {!isPickup ? (
+          <section className="checkout-block">
+            <h2 className="ck-section-title">{t('checkout.shippingAddress')}</h2>
+
+            {savedAddresses.length > 0 ? (
+              <div className="checkout-addr-mode" style={{ marginBottom: '0.75rem' }}>
+                <button
+                  type="button"
+                  className={addressMode === 'saved' ? 'is-active' : ''}
+                  onClick={() => setAddressMode('saved')}
+                >
+                  {t('cart.useSavedAddress')}
+                </button>
+                <button
+                  type="button"
+                  className={addressMode === 'new' ? 'is-active' : ''}
+                  onClick={() => setAddressMode('new')}
+                >
+                  {t('cart.newAddress')}
+                </button>
+              </div>
+            ) : null}
+
+            {addressMode === 'saved' && savedAddresses.length > 0 ? (
+              <Field label={t('checkout.savedAddresses')} className="ck-field--full">
+                <select
+                  value={selectedAddressId || ''}
+                  onChange={(e) => {
+                    const id = Number(e.target.value) || e.target.value;
+                    setSelectedAddressId(id);
+                    const addr = savedAddresses.find((a) => a.id === id);
+                    if (!addr) return;
+                    const { first, last } = splitName(addr.name || '');
+                    setShip((prev) => ({
+                      ...prev,
+                      firstName: first || prev.firstName,
+                      lastName: last || prev.lastName,
+                      phone: addr.phone || prev.phone,
+                      city: addr.city || prev.city,
+                      streetAddress: addr.streetAddress || '',
+                      houseNumber: addr.houseNumber || '',
+                      postalCode: addr.postalCode || '',
+                      country: addr.country || 'Pakistan',
+                    }));
+                  }}
+                >
+                  {savedAddresses.map((addr) => (
+                    <option key={addr.id} value={addr.id}>
+                      {addr.name} — {displayAddressLine(addr)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            ) : null}
+
+            {addressMode === 'new' || !savedAddresses.length ? renderAddressFields(ship, setShip, 'shipping') : null}
+
+            <label className="ck-check">
+              <input type="checkbox" checked={newsOptIn} onChange={(e) => setNewsOptIn(e.target.checked)} />
+              <span>{t('checkout.textNewsOffers')}</span>
+            </label>
+          </section>
+        ) : (
+          <section className="checkout-block">
+            <h2 className="ck-section-title">{t('cart.fulfillmentPickup')}</h2>
+            <p className="checkout-pickup-hint">{t('cart.pickupHint')}</p>
+            <div className="ck-form-grid">
+              <Field label={t('checkout.firstName')}>
+                <input value={ship.firstName} onChange={(e) => setShip((p) => ({ ...p, firstName: e.target.value }))} />
+              </Field>
+              <Field label={t('checkout.lastName')}>
+                <input value={ship.lastName} onChange={(e) => setShip((p) => ({ ...p, lastName: e.target.value }))} />
+              </Field>
+              <Field label={t('checkout.phoneUpdates')} className="ck-field--full">
+                <input value={ship.phone} onChange={(e) => setShip((p) => ({ ...p, phone: e.target.value }))} />
+              </Field>
+            </div>
+          </section>
+        )}
 
         {/* Products */}
         <section className="checkout-block checkout-products">
@@ -548,9 +583,6 @@ export default function Checkout() {
                   <img src={item.image} alt="" loading="lazy" />
                   <div className="checkout-item__body">
                     <strong>{item.name}</strong>
-                    <span className="checkout-item__meta">
-                      {[item.brand, item.category].filter(Boolean).join(' · ') || 'AsFix & Gear'}
-                    </span>
                     <div className="checkout-item__row">
                       <span className="checkout-item__price">{formatPrice(sale)}</span>
                       <div className="checkout-qty">
@@ -576,51 +608,104 @@ export default function Checkout() {
               );
             })}
           </ul>
-
-          {!isPickup ? (
-            <div className="checkout-ship-row">
-              <div>
-                <strong>
-                  {shippingPending
-                    ? t('checkout.deliveryConfirmSoon')
-                    : t('checkout.guaranteedBy', { window: deliveryWindowLabel() })}
-                </strong>
-                {isPostExDelivery(deliverySettings) ? (
-                  <small>{t('cart.postexDeliveryNote')}</small>
-                ) : null}
-              </div>
-              <span>
-                {shippingPending ? t('checkout.feeTbd') : formatPrice(shippingFee)}
-              </span>
-            </div>
-          ) : (
-            <div className="checkout-ship-row">
-              <strong>{t('cart.pickupFeeNote')}</strong>
-              <span>{formatPrice(0)}</span>
-            </div>
-          )}
         </section>
 
-        {/* Payment — opens Daraz-style sheet on Proceed to Pay */}
-        <section className="checkout-block checkout-payment">
-          <button type="button" className="checkout-payment-preview" onClick={openPaymentSheet}>
-            <div>
-              <strong>{t('cart.paymentTitle')}</strong>
-              <span>
-                {form.payment_mode
-                  ? t(`cart.${form.payment_mode}`)
-                  : t('checkout.selectPayment')}
-              </span>
+        {/* Payment — phonecase style COD + Safepay */}
+        <section className="checkout-block">
+          <h2 className="ck-section-title">{t('checkout.paymentHeading')}</h2>
+          <p className="ck-secure-line">{t('checkout.paymentSecure')}</p>
+          <div className="ck-pay-list" role="radiogroup" aria-label={t('cart.paymentTitle')}>
+            {primaryMethods.map((m) => (
+              <button
+                key={m.id}
+                type="button"
+                className={`ck-pay-option${paymentMode === m.id ? ' is-selected' : ''}`}
+                onClick={() => setPaymentMode(m.id)}
+              >
+                <span className={`ck-radio${paymentMode === m.id ? ' is-on' : ''}`} aria-hidden />
+                <span className="ck-pay-option__body">
+                  <strong>
+                    {m.icon} {t(`cart.${m.id}`)}
+                  </strong>
+                  {m.id === 'cod' ? (
+                    <small className="ck-pay-cod-box">{t('checkout.codPolicy')}</small>
+                  ) : null}
+                  {m.id === 'safepay' ? (
+                    <small>
+                      {t('cart.safepayDesc')}
+                      {m.logos ? ` · ${m.logos}` : ''}
+                    </small>
+                  ) : null}
+                </span>
+              </button>
+            ))}
+          </div>
+
+          {otherMethods.length > 0 ? (
+            <div className="ck-other-pay">
+              <button type="button" className="ck-other-pay__toggle" onClick={() => setShowOtherPay((v) => !v)}>
+                {showOtherPay ? '▾' : '▸'} {t('checkout.otherMethods')}
+              </button>
+              {showOtherPay
+                ? otherMethods.map((m) => (
+                    <button
+                      key={m.id}
+                      type="button"
+                      className={`ck-pay-option${paymentMode === m.id ? ' is-selected' : ''}`}
+                      onClick={() => setPaymentMode(m.id)}
+                    >
+                      <span className={`ck-radio${paymentMode === m.id ? ' is-on' : ''}`} aria-hidden />
+                      <span className="ck-pay-option__body">
+                        <strong>
+                          {m.icon} {t(`cart.${m.id}`)}
+                        </strong>
+                        <small>{t(`cart.${m.id}Desc`)}</small>
+                      </span>
+                    </button>
+                  ))
+                : null}
             </div>
-            <span className="checkout-payment-preview__chev" aria-hidden>
-              ›
-            </span>
-          </button>
+          ) : null}
+        </section>
+
+        {/* Billing address */}
+        <section className="checkout-block">
+          <h2 className="ck-section-title">{t('checkout.billingAddress')}</h2>
+          <div className="ck-radio-cards" role="radiogroup">
+            <button
+              type="button"
+              className={`ck-radio-card${billingSame ? ' is-selected' : ''}`}
+              onClick={() => setBillingSame(true)}
+            >
+              <span className={`ck-radio${billingSame ? ' is-on' : ''}`} aria-hidden />
+              <span>{t('checkout.billingSame')}</span>
+            </button>
+            <button
+              type="button"
+              className={`ck-radio-card${!billingSame ? ' is-selected' : ''}`}
+              onClick={() => {
+                setBillingSame(false);
+                setBilling((prev) => ({
+                  ...prev,
+                  firstName: prev.firstName || ship.firstName,
+                  lastName: prev.lastName || ship.lastName,
+                  phone: prev.phone || ship.phone,
+                  city: prev.city || ship.city,
+                }));
+              }}
+            >
+              <span className={`ck-radio${!billingSame ? ' is-on' : ''}`} aria-hidden />
+              <span>{t('checkout.billingDifferent')}</span>
+            </button>
+          </div>
+          {!billingSame ? (
+            <div className="ck-billing-fields">{renderAddressFields(billing, setBilling, 'billing')}</div>
+          ) : null}
         </section>
 
         {/* Order summary */}
         <section className="checkout-block checkout-summary">
-          <h2>{t('cart.orderSummary')}</h2>
+          <h2 className="ck-section-title">{t('cart.orderSummary')}</h2>
           <div className="checkout-summary__row">
             <span>{t('checkout.merchandiseSubtotal')}</span>
             <span>{formatPrice(merchandiseSubtotal)}</span>
@@ -637,7 +722,13 @@ export default function Checkout() {
           </div>
           <div className="checkout-summary__row">
             <span>{t('checkout.shippingFeeTotal')}</span>
-            <span>{shippingPending ? t('checkout.feeTbd') : formatPrice(shippingFee)}</span>
+            <span>
+              {isPickup
+                ? formatPrice(0)
+                : shippingPending
+                  ? t('checkout.feeTbd')
+                  : formatPrice(shippingFee)}
+            </span>
           </div>
           <div className="checkout-summary__row">
             <span>{t('checkout.otherFees')}</span>
@@ -647,13 +738,19 @@ export default function Checkout() {
             <span>{t('cart.total')}</span>
             <span>{formatPrice(grandTotal)}</span>
           </div>
-          {count > 0 ? (
-            <p className="checkout-summary__count">{t('cart.itemsCount', { count })}</p>
-          ) : null}
+          {count > 0 ? <p className="checkout-summary__count">{t('cart.itemsCount', { count })}</p> : null}
         </section>
 
-        {orderMsg ? <p className="checkout-error">{orderMsg}</p> : null}
+        <Field label={t('cart.orderNotes')} className="checkout-block ck-field--notes">
+          <textarea
+            rows={2}
+            value={ship.notes}
+            onChange={(e) => setShip((p) => ({ ...p, notes: e.target.value }))}
+            maxLength={500}
+          />
+        </Field>
 
+        {orderMsg ? <p className="checkout-error">{orderMsg}</p> : null}
         <div className="checkout-sticky-space" aria-hidden />
       </div>
 
@@ -668,13 +765,9 @@ export default function Checkout() {
               <span>{t('checkout.discount')}</span>
               <span>{formatPrice(discountAmount)}</span>
             </div>
-            <div className="checkout-summary__row">
-              <span>{t('checkout.shippingFeeTotal')}</span>
-              <span>{shippingPending ? t('checkout.feeTbd') : formatPrice(shippingFee)}</span>
-            </div>
-            <div className="checkout-summary__row">
-              <span>{t('checkout.otherFees')}</span>
-              <span>{formatPrice(otherFees)}</span>
+            <div className="checkout-summary__row checkout-summary__row--total">
+              <span>{t('checkout.totalAmount')}</span>
+              <span>{formatPrice(grandTotal)}</span>
             </div>
           </div>
         ) : null}
@@ -690,25 +783,12 @@ export default function Checkout() {
           type="button"
           className="checkout-sticky__cta"
           disabled={submitting}
-          onClick={openPaymentSheet}
+          onClick={() => requireCustomer(() => void submitOrder())}
         >
           <span>{ctaLabel}</span>
           <span>{formatPrice(grandTotal)}</span>
         </button>
       </div>
-
-      <PaymentMethodSheet
-        open={paymentSheetOpen}
-        onClose={() => setPaymentSheetOpen(false)}
-        methods={checkoutPaymentMethods}
-        selectedId={form.payment_mode}
-        onSelect={(id) => setForm((p) => ({ ...p, payment_mode: id }))}
-        total={grandTotal}
-        submitting={submitting}
-        onConfirm={() => void submitOrder()}
-        t={t}
-        lahore={lahore}
-      />
 
       <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
       <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />

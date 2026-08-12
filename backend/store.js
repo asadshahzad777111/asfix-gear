@@ -315,13 +315,15 @@ function validateShippingAddress(raw) {
     country,
   });
   const text = textValue(raw.text, 500) || composed;
-  const lat = Number(raw.lat);
-  const lng = Number(raw.lng);
+  let lat = Number(raw.lat);
+  let lng = Number(raw.lng);
   if (!name || !phone || !text) {
     throw new Error('Delivery address requires name, phone, and address details');
   }
+  // Map pin optional — default to shop coords when customer skips map
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    throw new Error('Drop a map pin for delivery location');
+    lat = 31.59375;
+    lng = 74.46745;
   }
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
     throw new Error('Invalid map coordinates');
