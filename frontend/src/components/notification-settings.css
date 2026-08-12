@@ -1,0 +1,221 @@
+/* WhatsApp-like notification settings — AsFix shop / account */
+
+.asfix-notif-panel {
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 0.25rem 0 1.5rem;
+  color: #e9edef;
+}
+
+.asfix-notif-panel--customer {
+  color: inherit;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+}
+
+.asfix-notif-panel__head {
+  margin-bottom: 1.1rem;
+  padding: 0 0.15rem;
+}
+
+.asfix-notif-panel__title {
+  margin: 0 0 0.35rem;
+  font-size: 1.35rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.asfix-notif-panel__lead {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.45;
+  opacity: 0.72;
+}
+
+.asfix-notif-section {
+  margin-bottom: 1.15rem;
+}
+
+.asfix-notif-section__label {
+  margin: 0 0 0.45rem;
+  padding: 0 0.35rem;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  opacity: 0.55;
+}
+
+.asfix-notif-card {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #1f2c34;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.asfix-notif-panel--customer .asfix-notif-card {
+  background: color-mix(in srgb, var(--surface, #fff) 92%, #000 8%);
+  border: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+}
+
+.asfix-notif-row {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.85rem 1rem;
+  min-height: 3.2rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.asfix-notif-panel--customer .asfix-notif-row {
+  border-bottom-color: color-mix(in srgb, currentColor 10%, transparent);
+}
+
+.asfix-notif-row:last-child {
+  border-bottom: none;
+}
+
+.asfix-notif-row.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+.asfix-notif-row__text {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.asfix-notif-row__title {
+  font-size: 0.98rem;
+  font-weight: 500;
+  line-height: 1.25;
+}
+
+.asfix-notif-row__sub {
+  font-size: 0.8rem;
+  line-height: 1.35;
+  opacity: 0.58;
+}
+
+/* iOS / WA-style switch */
+.asfix-notif-switch {
+  flex-shrink: 0;
+  width: 51px;
+  height: 31px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: #667781;
+  position: relative;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.asfix-notif-switch.is-on {
+  background: #25d366;
+}
+
+.asfix-notif-switch:disabled {
+  cursor: not-allowed;
+}
+
+.asfix-notif-switch__knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 27px;
+  height: 27px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.35);
+  transition: transform 0.2s ease;
+}
+
+.asfix-notif-switch.is-on .asfix-notif-switch__knob {
+  transform: translateX(20px);
+}
+
+.asfix-notif-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 0.35rem;
+  padding: 0 0.15rem;
+}
+
+.asfix-notif-btn {
+  appearance: none;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: #2a3942;
+  color: inherit;
+  border-radius: 10px;
+  padding: 0.55rem 0.9rem;
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.asfix-notif-panel--customer .asfix-notif-btn {
+  border-color: color-mix(in srgb, currentColor 18%, transparent);
+  background: color-mix(in srgb, var(--surface, #fff) 88%, #000 12%);
+}
+
+.asfix-notif-btn--ghost {
+  background: transparent;
+  font-weight: 500;
+  opacity: 0.9;
+}
+
+.asfix-notif-hint {
+  margin: 0.65rem 0.15rem 0;
+  font-size: 0.82rem;
+  opacity: 0.75;
+}
+
+/* Admin (WP light shell) — keep panel readable */
+.wp-settings .asfix-notif-panel {
+  color: #1c1c1c;
+  max-width: none;
+}
+
+.wp-settings .asfix-notif-card {
+  background: #fff;
+  border: 1px solid #dcdcde;
+  box-shadow: 0 1px 1px rgba(0, 0, 0, 0.04);
+}
+
+.wp-settings .asfix-notif-row {
+  border-bottom-color: #f0f0f1;
+}
+
+.wp-settings .asfix-notif-section__label {
+  color: #646970;
+  opacity: 1;
+  text-transform: none;
+  font-size: 0.82rem;
+  letter-spacing: 0;
+}
+
+.wp-settings .asfix-notif-btn {
+  background: #f6f7f7;
+  border-color: #c3c4c7;
+  color: #1d2327;
+}
+
+.wp-settings .asfix-notif-switch:not(.is-on) {
+  background: #c3c4c7;
+}
+
+@media (max-width: 480px) {
+  .asfix-notif-row {
+    padding: 0.8rem 0.9rem;
+  }
+
+  .asfix-notif-row__title {
+    font-size: 0.95rem;
+  }
+}
