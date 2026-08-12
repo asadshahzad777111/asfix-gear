@@ -486,12 +486,12 @@ export default function Checkout() {
                   ) : (
                     <div className="checkout-new-addr">
                       <input
-                        placeholder={t('addresses.streetLabel')}
+                        placeholder={t('address.streetLabel')}
                         value={newAddress.streetAddress}
                         onChange={(e) => setNewAddress((p) => ({ ...p, streetAddress: e.target.value }))}
                       />
                       <input
-                        placeholder={t('addresses.houseLabel')}
+                        placeholder={t('address.houseLabel')}
                         value={newAddress.houseNumber}
                         onChange={(e) => setNewAddress((p) => ({ ...p, houseNumber: e.target.value }))}
                       />
