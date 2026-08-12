@@ -77,14 +77,14 @@ function EmailTestPanel() {
           hoti. SMTP password Render pe rehta hai (security).
         </p>
         <p style={{ fontSize: '0.82rem', color: '#646970', marginTop: 0 }}>
-          Gmail list mein grey person icon → woh Google account ki <strong>profile photo</strong> hai
-          (code se change nahi hoti). Sender Gmail (
-          <code>GMAIL_USER</code>) pe jao:{' '}
+          <strong>Gmail inbox ka red/grey circle (A)</strong> email body wala logo nahi hai — woh
+          Google sender profile photo hai. Website code se change nahi hoti.
+          <br />
+          Fix: jis Gmail se mail jaati hai (Render <code>GMAIL_USER</code>) us account pe login →{' '}
           <a href="https://myaccount.google.com/personal-info" target="_blank" rel="noreferrer">
-            myaccount.google.com
+            myaccount.google.com → Personal info → Photo
           </a>{' '}
-          → Personal info → Photo → AsFix logo upload. Email body mein website logo already show
-          hota hai.
+          → AsFix logo upload (square). Phir naye emails pe logo dikhega.
         </p>
 
         <label className="wp-payments-field" style={{ display: 'block', marginBottom: '0.75rem' }}>

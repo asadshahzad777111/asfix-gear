@@ -66,18 +66,25 @@ function paymentLabel(mode) {
   return mode || '—';
 }
 
-function wrapEmail({ title, greeting, bodyHtml, bodyText, orderId }) {
+function wrapEmail({ title, greeting, bodyHtml, bodyText, orderId, trackCta = true }) {
   const subject = `${BRAND} — ${title} (#${orderId})`;
+  const trackUrl = orderId
+    ? `${SITE}/track?orderId=${encodeURIComponent(String(orderId))}`
+    : `${SITE}/track`;
   const text = [
     greeting,
     '',
     bodyText,
     '',
-    `Track: ${SITE}/track`,
+    `Track: ${trackUrl}`,
     `Account: ${SITE}/account`,
     '',
     `— Team ${BRAND}`,
   ].join('\n');
+
+  const ctaHtml = trackCta
+    ? `<a href="${trackUrl}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;margin-top:8px;">Track Order</a>`
+    : '';
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -90,7 +97,7 @@ function wrapEmail({ title, greeting, bodyHtml, bodyText, orderId }) {
         <tr><td style="padding:28px 32px;color:#e2e8f0;">
           <p style="margin:0 0 16px;font-size:16px;">${escapeHtml(greeting)}</p>
           ${bodyHtml}
-          <a href="${SITE}/track" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;margin-top:8px;">Track Order</a>
+          ${ctaHtml}
         </td></tr>
         <tr><td style="padding:16px 32px;background:#0f172a;text-align:center;border-top:1px solid #334155;">
           <p style="margin:0;font-size:11px;color:#64748b;">&copy; ${new Date().getFullYear()} ${BRAND} · asfixgear.com · WhatsApp 03039227000</p>
@@ -181,8 +188,7 @@ export function buildOrderStatusEmail(order, status) {
       <strong>${escapeHtml(title)}</strong>
     </p>
     ${tracking ? `<p style="margin:0 0 12px;font-size:14px;color:#94a3b8;">Courier tracking: <strong style="color:#e2e8f0;">${escapeHtml(tracking)}</strong></p>` : ''}
-    <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;">Track page ya account se live status dekhein.</p>
-    <a href="${trackUrl}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;margin-top:4px;">Track Order</a>`;
+    <p style="margin:0 0 8px;font-size:14px;color:#94a3b8;">Track page ya account se live status dekhein.</p>`;
 
   return wrapEmail({
     title,
@@ -222,10 +228,7 @@ export function buildOrderCompleteEmail(order) {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" style="max-width:520px;background:#1e293b;border-radius:16px;overflow:hidden;border:1px solid #334155;">
-        <tr><td style="padding:28px 32px;background:linear-gradient(135deg,#0ea5e9,#0369a1);">
-          <h1 style="margin:0;font-size:22px;color:#fff;">Order Complete!</h1>
-          <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.9);">AsFix &amp; Gear — Lahore</p>
-        </td></tr>
+        ${emailBrandHeader('Order Complete!', 'AsFix &amp; Gear — Lahore')}
         <tr><td style="padding:28px 32px;color:#e2e8f0;">
           <p style="margin:0 0 16px;font-size:16px;">Assalam o Alaikum <strong>${escapeHtml(name)}</strong>,</p>
           <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#cbd5e1;">
