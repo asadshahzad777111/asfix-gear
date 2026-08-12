@@ -4,7 +4,7 @@ import { api, formatPrice } from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { useCart } from '../context/CartContext';
 import { useTranslation } from '../context/LanguageContext';
-import { ADVANCE_PAYMENT_MODES, enabledPaymentMethods, isCodPayment, mergePaymentSettings } from '../config/payments';
+import { enabledPaymentMethods, isCodPayment, mergePaymentSettings } from '../config/payments';
 import { SHOP } from '../config/shop';
 import {
   getEstimatedDeliveryFee,
@@ -17,8 +17,8 @@ import { displayAddressLine } from '../utils/address';
 import { getSalePrice } from '../utils/pricing';
 import { maxCartQty } from '../utils/stock';
 import OrderSuccessPanel from '../components/OrderSuccessPanel';
-import PaymentInstructions from '../components/PaymentInstructions';
 import MapAddressPicker from '../components/MapAddressPicker';
+import PaymentMethodSheet from '../components/PaymentMethodSheet';
 import ShopLoginPrompt from '../components/ShopLoginPrompt';
 import CustomerLoginModal from '../components/CustomerLoginModal';
 import { useShopGate } from '../hooks/useShopGate';
@@ -27,15 +27,13 @@ import './checkout-page.css';
 const CITIES = ['Lahore', 'Karachi', 'Islamabad', 'Rawalpindi', 'Faisalabad', 'Multan'];
 
 const PAYMENT_METHODS = [
+  { id: 'safepay', icon: '🔐' },
+  { id: 'cod', icon: '💵' },
   { id: 'jazzcash', icon: '📱' },
   { id: 'easypaisa', icon: '💳' },
   { id: 'bank', icon: '🏦' },
-  { id: 'cod', icon: '💵' },
-  { id: 'safepay', icon: '🔐' },
   { id: 'payfast', icon: '🔒' },
 ];
-
-const WALLET_MODES = new Set(['jazzcash', 'easypaisa', 'bank']);
 
 function deliveryWindowLabel() {
   const start = new Date();
@@ -70,6 +68,7 @@ export default function Checkout() {
   const [selectedAddressId, setSelectedAddressId] = useState(null);
   const [editingAddress, setEditingAddress] = useState(false);
   const [summaryOpen, setSummaryOpen] = useState(false);
+  const [paymentSheetOpen, setPaymentSheetOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [orderMsg, setOrderMsg] = useState('');
   const [orderSuccess, setOrderSuccess] = useState(null);
@@ -93,7 +92,7 @@ export default function Checkout() {
     customer_name: '',
     phone: '',
     city: 'Lahore',
-    payment_mode: 'cod',
+    payment_mode: 'safepay',
     notes: '',
   });
 
@@ -121,9 +120,6 @@ export default function Checkout() {
     if (id === 'cod' && !lahore) return false;
     return true;
   });
-  const isCod = isCodPayment(form.payment_mode);
-  const isAdvance = ADVANCE_PAYMENT_MODES.has(form.payment_mode);
-  const showWalletInstructions = WALLET_MODES.has(form.payment_mode);
   const selectedSavedAddress = savedAddresses.find((a) => a.id === selectedAddressId);
 
   useEffect(() => {
@@ -217,6 +213,24 @@ export default function Checkout() {
     return true;
   };
 
+  const openPaymentSheet = () => {
+    setOrderMsg('');
+    if (!isCustomer) {
+      requireCustomer(() => setPaymentSheetOpen(true));
+      return;
+    }
+    if (!form.customer_name.trim() || !form.phone.trim()) {
+      setOrderMsg(t('cart.namePhoneRequired'));
+      setEditingAddress(true);
+      return;
+    }
+    if (!validateDeliveryAddress()) {
+      setEditingAddress(true);
+      return;
+    }
+    setPaymentSheetOpen(true);
+  };
+
   const submitOrder = async () => {
     if (!isCustomer) {
       requireCustomer();
@@ -292,11 +306,7 @@ export default function Checkout() {
         ? displayAddressLine(selectedSavedAddress)
         : displayAddressLine(newAddress) || form.city;
 
-  const ctaLabel = submitting
-    ? t('cart.placing')
-    : isCod
-      ? t('cart.placeOrder')
-      : t('checkout.proceedToPay');
+  const ctaLabel = t('checkout.proceedToPay');
 
   if (orderSuccess) {
     return (
@@ -591,36 +601,21 @@ export default function Checkout() {
           )}
         </section>
 
-        {/* Payment */}
+        {/* Payment — opens Daraz-style sheet on Proceed to Pay */}
         <section className="checkout-block checkout-payment">
-          <h2>{t('cart.paymentTitle')}</h2>
-          <div className="checkout-pay-grid">
-            {checkoutPaymentMethods.map((m) => (
-              <button
-                key={m.id}
-                type="button"
-                className={`checkout-pay-card${form.payment_mode === m.id ? ' is-selected' : ''}${m.id === 'cod' ? ' checkout-pay-card--cod' : ''}${m.id === 'safepay' ? ' checkout-pay-card--safepay' : ''}`}
-                onClick={() => setForm((p) => ({ ...p, payment_mode: m.id }))}
-              >
-                <span className="checkout-pay-card__icon">{m.icon}</span>
-                <span className="checkout-pay-card__label">{t(`cart.${m.id}`)}</span>
-                {m.id === 'cod' ? <small>{t('cart.codDesc')}</small> : null}
-                {m.id === 'safepay' ? <small>{t('cart.safepayDesc')}</small> : null}
-              </button>
-            ))}
-          </div>
-          {isCod ? (
-            <p className="checkout-pay-hint">
-              {isPickup ? t('cart.codPickupHint') : t('cart.codPaymentHint')}
-            </p>
-          ) : null}
-          {isAdvance ? <p className="checkout-pay-hint">{t('cart.advancePaymentHint')}</p> : null}
-          {form.payment_mode === 'safepay' ? (
-            <p className="checkout-pay-hint checkout-pay-hint--safepay">{t('cart.safepayCheckoutHint')}</p>
-          ) : null}
-          {showWalletInstructions ? (
-            <PaymentInstructions mode={form.payment_mode} settings={paymentSettings} amount={grandTotal} />
-          ) : null}
+          <button type="button" className="checkout-payment-preview" onClick={openPaymentSheet}>
+            <div>
+              <strong>{t('cart.paymentTitle')}</strong>
+              <span>
+                {form.payment_mode
+                  ? t(`cart.${form.payment_mode}`)
+                  : t('checkout.selectPayment')}
+              </span>
+            </div>
+            <span className="checkout-payment-preview__chev" aria-hidden>
+              ›
+            </span>
+          </button>
         </section>
 
         {/* Order summary */}
@@ -695,12 +690,25 @@ export default function Checkout() {
           type="button"
           className="checkout-sticky__cta"
           disabled={submitting}
-          onClick={() => requireCustomer(() => void submitOrder())}
+          onClick={openPaymentSheet}
         >
           <span>{ctaLabel}</span>
           <span>{formatPrice(grandTotal)}</span>
         </button>
       </div>
+
+      <PaymentMethodSheet
+        open={paymentSheetOpen}
+        onClose={() => setPaymentSheetOpen(false)}
+        methods={checkoutPaymentMethods}
+        selectedId={form.payment_mode}
+        onSelect={(id) => setForm((p) => ({ ...p, payment_mode: id }))}
+        total={grandTotal}
+        submitting={submitting}
+        onConfirm={() => void submitOrder()}
+        t={t}
+        lahore={lahore}
+      />
 
       <ShopLoginPrompt open={promptOpen} onClose={closePrompt} onSignIn={openLoginFromPrompt} />
       <CustomerLoginModal open={loginOpen} onClose={() => setLoginOpen(false)} />
