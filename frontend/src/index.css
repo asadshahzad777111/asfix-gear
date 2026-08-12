@@ -5486,12 +5486,18 @@ body.modal-open .guest-welcome-banner {
   border-radius: 12px;
   border: 1px solid var(--glass-edge);
   background: rgba(255, 255, 255, 0.03);
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+  box-sizing: border-box;
 }
 
-.account-list-item div {
+/* Only simple two-column rows — never all nested divs (broke order meta + timeline on mobile). */
+.account-list-item > div:not(.account-order-meta):not(.order-timeline):not(.account-order-id-box):not(.account-order-head):not(.account-order-badges):not(.account-order-help) {
   display: flex;
   justify-content: space-between;
   gap: 1rem;
+  min-width: 0;
 }
 
 .account-list-meta {
@@ -5566,10 +5572,16 @@ body.modal-open .guest-welcome-banner {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .account-order-id-box {
   margin-bottom: 0;
+  display: block;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .account-order-head {
@@ -5577,11 +5589,25 @@ body.modal-open .guest-welcome-banner {
   justify-content: space-between;
   align-items: center;
   gap: 0.75rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.account-order-meta {
+  display: grid;
+  gap: 0.35rem;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .account-order-meta p {
-  margin: 0.2rem 0;
+  margin: 0;
   font-size: 0.88rem;
+  display: block;
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .account-order-meta span {
@@ -6457,6 +6483,8 @@ a.order-feedback-product:hover {
   padding: 0;
   display: grid;
   gap: 0.35rem;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .account-order-items li {
@@ -6465,6 +6493,13 @@ a.order-feedback-product:hover {
   gap: 0.75rem;
   font-size: 0.88rem;
   color: var(--text-muted);
+  min-width: 0;
+}
+
+.account-order-items li > :first-child,
+.account-order-items li {
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .order-track-my-orders {

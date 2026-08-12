@@ -2419,13 +2419,20 @@ body.custom-cursor-active {
   background: rgba(255, 255, 255, 0.03);
   border: 1px solid var(--glass-edge);
   backdrop-filter: var(--glass-blur);
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .order-timeline-step {
   display: grid;
-  grid-template-columns: 1.75rem 1fr;
+  grid-template-columns: 1.75rem minmax(0, 1fr);
   gap: 0.65rem;
   min-height: 3rem;
+  min-width: 0;
+  width: 100%;
 }
 
 .order-timeline-rail {
@@ -2442,6 +2449,7 @@ body.custom-cursor-active {
   border: 2px solid rgba(255, 255, 255, 0.25);
   background: rgba(255, 255, 255, 0.06);
   z-index: 1;
+  flex-shrink: 0;
 }
 
 .order-timeline-step.done .order-timeline-dot {
@@ -2466,6 +2474,12 @@ body.custom-cursor-active {
 
 .order-timeline-step.done .order-timeline-line {
   background: linear-gradient(180deg, var(--neon, #ff6b2c), rgba(255, 255, 255, 0.15));
+}
+
+.order-timeline-body {
+  min-width: 0;
+  overflow-wrap: anywhere;
+  word-break: break-word;
 }
 
 .order-timeline-body strong {

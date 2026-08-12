@@ -4,11 +4,16 @@
   max-width: none;
   margin: 0 auto;
   padding: 0.75rem 1.25rem 3rem;
+  overflow-x: clip;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .order-track-page__inner {
   width: min(100%, 72rem);
   margin: 0 auto;
+  max-width: 100%;
+  min-width: 0;
 }
 
 .order-track-page__back {
@@ -38,7 +43,9 @@
 .order-track-layout {
   display: grid;
   gap: 1rem;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr);
+  width: 100%;
+  min-width: 0;
 }
 
 .order-track-hero,
@@ -49,6 +56,10 @@
   background: var(--bg-elevated, #1c1c24);
   border: 1px solid var(--glass-edge, #2a2a32);
   box-shadow: 0 12px 40px rgba(255, 106, 43, 0.05);
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+  box-sizing: border-box;
 }
 
 .order-track-page .track-tabs {
