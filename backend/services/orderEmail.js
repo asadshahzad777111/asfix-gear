@@ -1,5 +1,5 @@
 import { deliverTransactionalEmail } from './otpDelivery.js';
-import { getUserById } from '../store.js';
+import { getUserById, getEmailNotifySettings } from '../store.js';
 
 const BRAND = 'AsFix & Gear';
 const SITE = 'https://asfixgear.com';
@@ -260,13 +260,22 @@ export async function sendOrderPlacedEmail(order) {
 
 /** Shop inbox alert for new online orders (best-effort; does not block checkout). */
 export function resolveShopNotifyEmail() {
+  // Admin → Settings (DB) — survives APK reinstall
+  try {
+    const saved = getEmailNotifySettings();
+    if (saved?.notify_email && saved.notify_email.includes('@')) {
+      return saved.notify_email;
+    }
+  } catch {
+    /* ignore */
+  }
   const fromEnv = String(
     process.env.ORDER_NOTIFY_EMAIL || process.env.SHOP_NOTIFY_EMAIL || process.env.SHOP_EMAIL || ''
   )
     .trim()
     .toLowerCase();
   if (fromEnv && fromEnv.includes('@')) return fromEnv;
-  // Matches frontend/src/config/shop.js — override via ORDER_NOTIFY_EMAIL on Render
+  // Matches frontend/src/config/shop.js — override via Admin Settings or ORDER_NOTIFY_EMAIL
   return 'asadshahzad777111@gmail.com';
 }
 

@@ -4611,6 +4611,39 @@ export function getPaymentSettings() {
   };
 }
 
+/** Shop inbox for new-order alerts — survives APK reinstall (Mongo/JSON settings). */
+export function getEmailNotifySettings() {
+  const saved = readData().settings?.email_notify || {};
+  const notify = String(saved.notify_email || '').trim().toLowerCase();
+  return {
+    notify_email: notify && notify.includes('@') ? notify.slice(0, 120) : '',
+    updated_at: saved.updated_at ?? null,
+    updated_by: saved.updated_by ?? null,
+  };
+}
+
+export function setEmailNotifySettings(input, userId) {
+  return withData((data) => {
+    if (!data.settings) data.settings = {};
+    const current = data.settings.email_notify || {};
+    let notify = current.notify_email || '';
+    if (typeof input?.notify_email === 'string') {
+      notify = input.notify_email.trim().toLowerCase().slice(0, 120);
+    }
+    if (input?.clear_notify_email === true) notify = '';
+    if (notify && (!notify.includes('@') || notify.includes(' '))) {
+      throw new Error('Valid notify email required (e.g. your@gmail.com)');
+    }
+    const payload = {
+      notify_email: notify,
+      updated_at: now(),
+      updated_by: userId ?? null,
+    };
+    data.settings.email_notify = payload;
+    return { ...payload };
+  });
+}
+
 export function setPaymentSettings(input, userId) {
   return withData((data) => {
     if (!data.settings) data.settings = {};

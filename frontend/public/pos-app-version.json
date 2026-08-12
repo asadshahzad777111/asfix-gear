@@ -2,9 +2,10 @@
   "appId": "com.asfixgear.pos",
   "versionCode": 2,
   "versionName": "1.1.0",
+  "forceUpdate": false,
   "downloadUrl": "https://asfixgear.com/downloads/AsFix-POS.apk",
   "downloadPageUrl": "https://asfixgear.com/pos",
   "minSupportedVersionCode": 1,
-  "notes": "Local Notifications for order alerts + in-app update prompt",
+  "notes": "Order alerts + update prompt. Tap Update → website → download APK → Install. Gmail alert settings live in Admin → Settings (not inside APK).",
   "publishedAt": "2026-08-12"
 }

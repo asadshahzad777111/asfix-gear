@@ -17,6 +17,28 @@
   border: 1px solid rgba(125, 211, 252, 0.28);
   color: #e2e8f0;
   box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.pos-upd__badge {
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: 0 auto 0.65rem;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  font-size: 1.35rem;
+  font-weight: 800;
+  color: #0c4a6e;
+  background: linear-gradient(145deg, #7dd3fc, #38bdf8);
+  box-shadow: 0 8px 20px rgba(14, 165, 233, 0.35);
+}
+
+.pos-upd__hint {
+  margin: 0.75rem 0 0;
+  font-size: 0.72rem;
+  line-height: 1.4;
+  color: #94a3b8;
 }
 
 .pos-upd__kicker {

@@ -658,6 +658,8 @@ export const api = {
     request(`/admin/categories/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteCategory: (id) => request(`/admin/categories/${id}`, { method: 'DELETE' }),
   getEmailStatus: () => request('/admin/email-status'),
+  setEmailSettings: (body) =>
+    request('/admin/email-settings', { method: 'PATCH', body: JSON.stringify(body) }),
   sendTestEmail: (to) =>
     request('/admin/email-test', {
       method: 'POST',
