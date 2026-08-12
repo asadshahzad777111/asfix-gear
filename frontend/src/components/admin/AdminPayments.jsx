@@ -52,6 +52,15 @@ export default function AdminPayments() {
   const [form, setForm] = useState(mergePaymentSettings());
   const [delivery, setDelivery] = useState(mergeDeliverySettings());
   const [postexStatus, setPostexStatus] = useState(null);
+  const [postexForm, setPostexForm] = useState({
+    token: '',
+    webhook_secret: '',
+    webhook_header: 'x-postex-secret',
+    pickup_address_code: '',
+    enabled: true,
+  });
+  const [postexSecretOnce, setPostexSecretOnce] = useState('');
+  const [savingPostex, setSavingPostex] = useState(false);
   const [addressSettings, setAddressSettings] = useState(mergeAddressSettings());
   const [posSettings, setPosSettings] = useState(DEFAULT_POS_SETTINGS);
   const [loading, setLoading] = useState(true);
@@ -61,6 +70,7 @@ export default function AdminPayments() {
   const [savingPos, setSavingPos] = useState(false);
   const [msg, setMsg] = useState('');
   const [deliveryMsg, setDeliveryMsg] = useState('');
+  const [postexMsg, setPostexMsg] = useState('');
   const [addressMsg, setAddressMsg] = useState('');
   const [posMsg, setPosMsg] = useState('');
   const [qrPanelOpen, setQrPanelOpen] = useState(false);
@@ -72,13 +82,21 @@ export default function AdminPayments() {
       api.getDeliverySettings().catch(() => null),
       api.getAddressSettings().catch(() => null),
       api.getPosSettings().catch(() => null),
-      api.getPostExStatus().catch(() => null),
+      api.getPostExSettings().catch(() => api.getPostExStatus().catch(() => null)),
     ])
       .then(([pay, del, address, pos, postex]) => {
         setForm(mergePaymentSettings(pay));
         setDelivery(mergeDeliverySettings(del));
         setAddressSettings(mergeAddressSettings(address));
         setPostexStatus(postex);
+        if (postex) {
+          setPostexForm((f) => ({
+            ...f,
+            webhook_header: postex.webhook_header || 'x-postex-secret',
+            pickup_address_code: postex.pickup_address_code || '',
+            enabled: postex.enabled !== false,
+          }));
+        }
         setPosSettings({
           ...DEFAULT_POS_SETTINGS,
           ...(pos || {}),
@@ -127,6 +145,32 @@ export default function AdminPayments() {
       setDeliveryMsg(err.message || 'Save failed');
     } finally {
       setSavingDelivery(false);
+    }
+  };
+
+  const savePostex = async () => {
+    setSavingPostex(true);
+    setPostexMsg('');
+    setPostexSecretOnce('');
+    try {
+      const body = {
+        enabled: postexForm.enabled !== false,
+        webhook_header: postexForm.webhook_header || 'x-postex-secret',
+        pickup_address_code: postexForm.pickup_address_code || '',
+        generate_webhook_secret: !postexStatus?.webhook_secret_set && !postexForm.webhook_secret.trim(),
+      };
+      if (postexForm.token.trim()) body.token = postexForm.token.trim();
+      if (postexForm.webhook_secret.trim()) body.webhook_secret = postexForm.webhook_secret.trim();
+      const saved = await api.setPostExSettings(body);
+      setPostexStatus(saved);
+      setDelivery((d) => mergeDeliverySettings({ ...d, mode: saved.configured ? 'postex' : 'manual', postex_configured: saved.configured }));
+      if (saved.webhook_secret_once) setPostexSecretOnce(saved.webhook_secret_once);
+      setPostexForm((f) => ({ ...f, token: '', webhook_secret: '' }));
+      setPostexMsg(saved.configured ? 'PostEx saved — manual delivery fee is now off.' : 'PostEx settings saved.');
+    } catch (err) {
+      setPostexMsg(err.message || 'PostEx save failed');
+    } finally {
+      setSavingPostex(false);
     }
   };
 
@@ -328,52 +372,112 @@ export default function AdminPayments() {
       <div className="wp-postbox" style={{ marginTop: '1.5rem' }}>
         <div className="wp-postbox-head">PostEx courier (official API)</div>
         <div className="wp-postbox-body">
-          {delivery.mode === 'postex' || postexStatus?.configured ? (
-            <>
-              <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
-                Manual Lahore delivery fee is <strong>off</strong>. Online home-delivery orders use{' '}
-                <strong>PostEx</strong>. Staff books each order from <strong>Admin → Orders → Book on PostEx</strong>.
-                Tracking updates arrive on the webhook below.
+          <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
+            Paste token from <strong>merchant.postex.pk → Setting / Integration</strong>. Token yahan save hota hai
+            (baad mein change kar sakte ho). Jab token save ho, checkout se manual Rs fee band ho jati hai.
+          </p>
+
+          <div className="wp-payments-grid">
+            <label className="wp-payments-field" style={{ gridColumn: '1 / -1' }}>
+              <span>
+                API token {postexStatus?.token_masked ? `(saved ${postexStatus.token_masked})` : ''}
+              </span>
+              <input
+                type="password"
+                autoComplete="off"
+                placeholder={postexStatus?.configured ? 'Leave blank to keep current token' : 'Paste PostEx API token'}
+                value={postexForm.token}
+                onChange={(e) => setPostexForm((f) => ({ ...f, token: e.target.value }))}
+              />
+            </label>
+            <label className="wp-payments-field">
+              <span>Webhook header key</span>
+              <input
+                type="text"
+                value={postexForm.webhook_header}
+                onChange={(e) => setPostexForm((f) => ({ ...f, webhook_header: e.target.value }))}
+              />
+            </label>
+            <label className="wp-payments-field">
+              <span>
+                Webhook secret {postexStatus?.webhook_secret_masked ? `(saved ${postexStatus.webhook_secret_masked})` : ''}
+              </span>
+              <input
+                type="password"
+                autoComplete="off"
+                placeholder="Blank = auto-generate on save"
+                value={postexForm.webhook_secret}
+                onChange={(e) => setPostexForm((f) => ({ ...f, webhook_secret: e.target.value }))}
+              />
+            </label>
+            <label className="wp-payments-field" style={{ gridColumn: '1 / -1' }}>
+              <span>Pickup address code (optional)</span>
+              <input
+                type="text"
+                value={postexForm.pickup_address_code}
+                onChange={(e) => setPostexForm((f) => ({ ...f, pickup_address_code: e.target.value }))}
+                placeholder="From PostEx get-merchant-address"
+              />
+            </label>
+            <label className="wp-address-setting-row" style={{ gridColumn: '1 / -1' }}>
+              <input
+                type="checkbox"
+                checked={postexForm.enabled !== false}
+                onChange={(e) => setPostexForm((f) => ({ ...f, enabled: e.target.checked }))}
+              />
+              <span>
+                <strong>Enable PostEx for online delivery</strong>
+                <small>Off = temporary fall back to manual Lahore fee.</small>
+              </span>
+            </label>
+          </div>
+
+          <div className="wp-payments-actions" style={{ marginTop: '1rem' }}>
+            <button type="button" className="wp-button" onClick={savePostex} disabled={savingPostex}>
+              {savingPostex ? 'Saving…' : 'Save PostEx settings'}
+            </button>
+          </div>
+          {postexMsg ? <p className="wp-payments-msg">{postexMsg}</p> : null}
+
+          {(postexStatus?.configured || postexSecretOnce) && (
+            <div style={{ marginTop: '1rem', padding: '0.85rem 1rem', background: '#f6f7f7', borderRadius: 8 }}>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.88rem', color: '#1a7f37' }}>
+                Status: {postexStatus?.configured ? 'Connected' : 'Not connected'}
+                {postexStatus?.token_source ? ` (${postexStatus.token_source})` : ''}
               </p>
-              <ul style={{ margin: '0 0 1rem', paddingLeft: '1.2rem', fontSize: '0.88rem', color: '#50575e', lineHeight: 1.55 }}>
-                <li>
-                  API token:{' '}
-                  <strong style={{ color: postexStatus?.configured ? '#1a7f37' : '#b32d2e' }}>
-                    {postexStatus?.configured ? 'Configured on Render' : 'Missing POSTEX_TOKEN'}
-                  </strong>
-                </li>
-                <li>
-                  Pickup address code:{' '}
-                  {postexStatus?.pickup_code_set ? 'Set' : 'Optional — set POSTEX_PICKUP_ADDRESS_CODE if needed'}
-                </li>
-                <li>
-                  Webhook secret:{' '}
-                  {postexStatus?.webhook_secret_set ? 'Set' : 'Set POSTEX_WEBHOOK_SECRET on Render'}
-                </li>
-                <li>
-                  Webhook URL (paste in merchant.postex.pk):
-                  <br />
-                  <code style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>
-                    {postexStatus?.webhook_url || 'https://asfixgear.com/api/webhooks/postex'}
-                  </code>
-                </li>
-                <li>
-                  Header key: <code>{postexStatus?.webhook_header || 'x-postex-secret'}</code>
-                </li>
-              </ul>
-              <p style={{ margin: 0, fontSize: '0.8rem', color: '#646970' }}>
-                Checkout no longer shows a manual Rs delivery estimate. Courier fee / COD is handled via PostEx when you book the order.
+              <p style={{ margin: '0 0 0.35rem', fontSize: '0.82rem', color: '#50575e' }}>
+                Webhook URL (merchant.postex.pk pe paste):
+                <br />
+                <code style={{ wordBreak: 'break-all' }}>
+                  {postexStatus?.webhook_url || 'https://asfixgear.com/api/webhooks/postex'}
+                </code>
               </p>
-            </>
-          ) : (
+              <p style={{ margin: '0 0 0.35rem', fontSize: '0.82rem', color: '#50575e' }}>
+                Header key: <code>{postexStatus?.webhook_header || 'x-postex-secret'}</code>
+              </p>
+              {postexSecretOnce ? (
+                <p style={{ margin: 0, fontSize: '0.82rem', color: '#b32d2e' }}>
+                  Header value (copy now — ek dafa dikhega): <code>{postexSecretOnce}</code>
+                </p>
+              ) : (
+                <p style={{ margin: 0, fontSize: '0.8rem', color: '#646970' }}>
+                  Webhook secret already saved ({postexStatus?.webhook_secret_masked || '••••'}). Naya chahiye to field mein likh ke Save dabao.
+                </p>
+              )}
+              <p style={{ margin: '0.65rem 0 0', fontSize: '0.8rem', color: '#646970' }}>
+                Orders book: <strong>Admin → Orders → Book on PostEx</strong>
+              </p>
+            </div>
+          )}
+
+          {!postexStatus?.configured && (
             <>
-              <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#b32d2e' }}>
-                PostEx token not found on the server. Add <code>POSTEX_TOKEN</code> (and webhook secret) in{' '}
-                <strong>Render → Environment</strong>, then redeploy. Until then, legacy manual fee fields stay available below.
+              <p style={{ marginTop: '1.25rem', fontSize: '0.88rem', color: '#50575e' }}>
+                Token se pehle legacy Lahore fee (optional):
               </p>
               <div className="wp-payments-grid">
                 <label className="wp-payments-field">
-                  <span>Lahore estimated fee (PKR) — legacy only</span>
+                  <span>Lahore estimated fee (PKR)</span>
                   <input
                     type="number"
                     min={0}
@@ -393,8 +497,8 @@ export default function AdminPayments() {
                 </label>
               </div>
               <div className="wp-payments-actions" style={{ marginTop: '1rem' }}>
-                <button type="button" className="wp-button" onClick={saveDelivery} disabled={savingDelivery}>
-                  {savingDelivery ? 'Saving…' : 'Save legacy delivery settings'}
+                <button type="button" className="wp-button wp-button--secondary" onClick={saveDelivery} disabled={savingDelivery}>
+                  {savingDelivery ? 'Saving…' : 'Save legacy delivery fee'}
                 </button>
               </div>
               {deliveryMsg ? <p className="wp-payments-msg">{deliveryMsg}</p> : null}
@@ -629,7 +733,7 @@ export default function AdminPayments() {
                 <small>
                   {delivery.mode === 'postex' || postexStatus?.configured
                     ? 'PostEx is active — enable this so customers can mark a safe drop-off point for courier.'
-                    : 'Enable after PostEx token is set on Render.'}
+                    : 'Enable after PostEx token is saved above (Admin → Payments → PostEx).'}
                 </small>
               </span>
             </label>

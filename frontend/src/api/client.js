@@ -557,6 +557,9 @@ export const api = {
     request(`/orders/${id}/assign-rider`, { method: 'PATCH', body: JSON.stringify(body) }),
   markOrderDelivered: (id) => request(`/orders/${id}/mark-delivered`, { method: 'PATCH' }),
   getPostExStatus: () => request('/orders/postex/status'),
+  getPostExSettings: () => request('/shop/postex'),
+  setPostExSettings: (body) =>
+    request('/shop/postex', { method: 'PATCH', body: JSON.stringify(body) }),
   bookOrderPostEx: (id, body = {}) =>
     request(`/orders/${id}/postex-book`, {
       method: 'POST',

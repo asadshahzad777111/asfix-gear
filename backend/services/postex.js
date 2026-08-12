@@ -1,27 +1,35 @@
 /**
  * PostEx COD courier API (Pakistan).
  * Docs pattern: token header + /services/integration/api/order/v3/create-order
- * Token from merchant.postex.pk → Setting → API / Integration.
+ * Token: Admin → Payments → PostEx, or Render env POSTEX_TOKEN.
  */
+
+import { getPostExSecrets } from '../store.js';
 
 const DEFAULT_BASE = 'https://api.postex.pk/services/integration/api/order';
 
+function config() {
+  return getPostExSecrets();
+}
+
 export function isPostExConfigured() {
-  return Boolean(String(process.env.POSTEX_TOKEN || '').trim());
+  const c = config();
+  return Boolean(c.token) && c.enabled !== false;
 }
 
 function baseUrl() {
-  return String(process.env.POSTEX_BASE_URL || DEFAULT_BASE).replace(/\/$/, '');
+  const c = config();
+  return String(c.base_url || process.env.POSTEX_BASE_URL || DEFAULT_BASE).replace(/\/$/, '');
 }
 
 function token() {
-  return String(process.env.POSTEX_TOKEN || '').trim();
+  return String(config().token || '').trim();
 }
 
 async function postexFetch(path, { method = 'GET', body } = {}) {
   const t = token();
   if (!t) {
-    const err = new Error('PostEx is not configured. Set POSTEX_TOKEN on the server.');
+    const err = new Error('PostEx is not configured. Paste API token in Admin → Payments → PostEx.');
     err.code = 'POSTEX_NOT_CONFIGURED';
     throw err;
   }
@@ -146,7 +154,7 @@ export function buildCreateOrderPayload(order, { pickupAddressCode } = {}) {
 
   const pickup =
     pickupAddressCode ||
-    String(process.env.POSTEX_PICKUP_ADDRESS_CODE || '').trim() ||
+    config().pickup_address_code ||
     undefined;
 
   const body = {

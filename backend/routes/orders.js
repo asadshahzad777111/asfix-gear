@@ -830,14 +830,7 @@ router.get('/', requireAuth, requireRole(...STAFF), (_req, res) => {
 
 /** Staff: is PostEx API token configured? (never returns the token) */
 router.get('/postex/status', requireAuth, requireRole(...STAFF), (_req, res) => {
-  res.json({
-    configured: isPostExConfigured(),
-    pickup_code_set: Boolean(String(process.env.POSTEX_PICKUP_ADDRESS_CODE || '').trim()),
-    webhook_secret_set: Boolean(String(process.env.POSTEX_WEBHOOK_SECRET || '').trim()),
-    webhook_header: String(process.env.POSTEX_WEBHOOK_HEADER || 'x-postex-secret').trim(),
-    webhook_url: 'https://asfixgear.com/api/webhooks/postex',
-    webhook_url_direct: 'https://asfix-gear.onrender.com/api/webhooks/postex',
-  });
+  res.json(store.getPostExSettingsPublic());
 });
 
 /**
@@ -847,7 +840,7 @@ router.get('/postex/status', requireAuth, requireRole(...STAFF), (_req, res) => 
 router.post('/:id/postex-book', requireAuth, requireRole(...STAFF), async (req, res) => {
   if (!isPostExConfigured()) {
     return res.status(503).json({
-      error: 'PostEx not configured. Set POSTEX_TOKEN on the server (Render env).',
+      error: 'PostEx not configured. Paste API token in Admin → Payments → PostEx.',
     });
   }
 

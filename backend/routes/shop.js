@@ -90,6 +90,20 @@ router.patch('/delivery', requireAuth, requireRole(...SHOP_MANAGERS), (req, res)
   }
 });
 
+router.get('/postex', requireAuth, requireRole(...SHOP_MANAGERS), (_req, res) => {
+  res.json(store.getPostExSettingsPublic());
+});
+
+router.patch('/postex', requireAuth, requireRole(...SHOP_MANAGERS), (req, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const saved = store.setPostExSettings(body, req.auth.user.id);
+    res.json(saved);
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Could not save PostEx settings' });
+  }
+});
+
 router.get('/address-settings', (_req, res) => {
   res.json(store.getAddressSettings());
 });

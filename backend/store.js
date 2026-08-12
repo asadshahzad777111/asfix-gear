@@ -3705,6 +3705,170 @@ const DEFAULT_DELIVERY_SETTINGS = {
     'Delivery fee for your city will be confirmed by staff on WhatsApp before dispatch.',
 };
 
+const DEFAULT_POSTEX_SETTINGS = {
+  token: '',
+  webhook_secret: '',
+  webhook_header: 'x-postex-secret',
+  pickup_address_code: '',
+  base_url: '',
+  enabled: true,
+};
+
+function maskSecret(value) {
+  const v = String(value || '').trim();
+  if (!v) return null;
+  if (v.length <= 4) return '••••';
+  return `••••${v.slice(-4)}`;
+}
+
+function readPostExRaw() {
+  const saved = readData().settings?.postex || {};
+  return {
+    token: String(saved.token || '').trim(),
+    webhook_secret: String(saved.webhook_secret || '').trim(),
+    webhook_header: String(saved.webhook_header || DEFAULT_POSTEX_SETTINGS.webhook_header).trim() || 'x-postex-secret',
+    pickup_address_code: String(saved.pickup_address_code || '').trim(),
+    base_url: String(saved.base_url || '').trim(),
+    enabled: saved.enabled !== false,
+    updated_at: saved.updated_at ?? null,
+    updated_by: saved.updated_by ?? null,
+  };
+}
+
+/** Server-only secrets — never send raw token to the browser. */
+export function getPostExSecrets() {
+  const raw = readPostExRaw();
+  const envToken = String(process.env.POSTEX_TOKEN || '').trim();
+  const envSecret = String(process.env.POSTEX_WEBHOOK_SECRET || '').trim();
+  const envHeader = String(process.env.POSTEX_WEBHOOK_HEADER || '').trim();
+  const envPickup = String(process.env.POSTEX_PICKUP_ADDRESS_CODE || '').trim();
+  const envBase = String(process.env.POSTEX_BASE_URL || '').trim();
+  return {
+    token: envToken || raw.token,
+    webhook_secret: envSecret || raw.webhook_secret,
+    webhook_header: envHeader || raw.webhook_header || 'x-postex-secret',
+    pickup_address_code: envPickup || raw.pickup_address_code,
+    base_url: envBase || raw.base_url,
+    enabled: raw.enabled !== false,
+    token_source: envToken ? 'env' : raw.token ? 'admin' : null,
+  };
+}
+
+export function getPostExSettingsPublic() {
+  const secrets = getPostExSecrets();
+  const raw = readPostExRaw();
+  const configured = Boolean(secrets.token) && secrets.enabled !== false;
+  return {
+    configured,
+    enabled: secrets.enabled !== false,
+    token_masked: maskSecret(secrets.token),
+    token_source: secrets.token_source,
+    webhook_secret_set: Boolean(secrets.webhook_secret),
+    webhook_secret_masked: maskSecret(secrets.webhook_secret),
+    webhook_header: secrets.webhook_header || 'x-postex-secret',
+    pickup_address_code: secrets.pickup_address_code || '',
+    pickup_code_set: Boolean(secrets.pickup_address_code),
+    base_url: secrets.base_url || '',
+    webhook_url: 'https://asfixgear.com/api/webhooks/postex',
+    webhook_url_direct: 'https://asfix-gear.onrender.com/api/webhooks/postex',
+    updated_at: raw.updated_at,
+    updated_by: raw.updated_by,
+  };
+}
+
+export function setPostExSettings(input, userId) {
+  return withData((data) => {
+    if (!data.settings) data.settings = {};
+    const current = readPostExRaw();
+    const next = { ...current };
+
+    if (input?.enabled != null) next.enabled = Boolean(input.enabled);
+
+    if (typeof input?.token === 'string') {
+      const t = input.token.trim();
+      // Empty keeps existing; explicit clear with empty after checkbox handled separately
+      if (t) next.token = t.slice(0, 500);
+    }
+    if (input?.clear_token === true) next.token = '';
+
+    if (typeof input?.webhook_secret === 'string') {
+      const s = input.webhook_secret.trim();
+      if (s) next.webhook_secret = s.slice(0, 200);
+    }
+    if (input?.clear_webhook_secret === true) next.webhook_secret = '';
+    if (input?.generate_webhook_secret === true && !next.webhook_secret) {
+      next.webhook_secret = createToken().slice(0, 48);
+    }
+
+    if (typeof input?.webhook_header === 'string') {
+      const h = input.webhook_header.trim().toLowerCase().slice(0, 64);
+      next.webhook_header = h || 'x-postex-secret';
+    }
+    if (typeof input?.pickup_address_code === 'string') {
+      next.pickup_address_code = input.pickup_address_code.trim().slice(0, 80);
+    }
+    if (typeof input?.base_url === 'string') {
+      next.base_url = input.base_url.trim().slice(0, 300);
+    }
+
+    // Always ensure a webhook secret exists once token is set
+    if (next.token && !next.webhook_secret && !String(process.env.POSTEX_WEBHOOK_SECRET || '').trim()) {
+      next.webhook_secret = createToken().slice(0, 48);
+    }
+
+    const payload = {
+      token: next.token,
+      webhook_secret: next.webhook_secret,
+      webhook_header: next.webhook_header || 'x-postex-secret',
+      pickup_address_code: next.pickup_address_code,
+      base_url: next.base_url,
+      enabled: next.enabled !== false,
+      updated_at: now(),
+      updated_by: userId ?? null,
+    };
+    data.settings.postex = payload;
+
+    // Build public view from payload (do not call getPostExSettingsPublic inside
+    // withData — Mongo clones the cache, so readData() would still be stale).
+    const envToken = String(process.env.POSTEX_TOKEN || '').trim();
+    const envSecret = String(process.env.POSTEX_WEBHOOK_SECRET || '').trim();
+    const envHeader = String(process.env.POSTEX_WEBHOOK_HEADER || '').trim();
+    const envPickup = String(process.env.POSTEX_PICKUP_ADDRESS_CODE || '').trim();
+    const envBase = String(process.env.POSTEX_BASE_URL || '').trim();
+    const effectiveToken = envToken || payload.token;
+    const effectiveSecret = envSecret || payload.webhook_secret;
+    const effectiveHeader = envHeader || payload.webhook_header || 'x-postex-secret';
+    const effectivePickup = envPickup || payload.pickup_address_code;
+    const effectiveBase = envBase || payload.base_url;
+    const pub = {
+      configured: Boolean(effectiveToken) && payload.enabled !== false,
+      enabled: payload.enabled !== false,
+      token_masked: maskSecret(effectiveToken),
+      token_source: envToken ? 'env' : payload.token ? 'admin' : null,
+      webhook_secret_set: Boolean(effectiveSecret),
+      webhook_secret_masked: maskSecret(effectiveSecret),
+      webhook_header: effectiveHeader,
+      pickup_address_code: effectivePickup || '',
+      pickup_code_set: Boolean(effectivePickup),
+      base_url: effectiveBase || '',
+      webhook_url: 'https://asfixgear.com/api/webhooks/postex',
+      webhook_url_direct: 'https://asfix-gear.onrender.com/api/webhooks/postex',
+      updated_at: payload.updated_at,
+      updated_by: payload.updated_by,
+    };
+
+    // Return plaintext webhook secret once when freshly generated/set so admin can paste into PostEx portal
+    const secretJustSet =
+      (typeof input?.webhook_secret === 'string' && Boolean(input.webhook_secret.trim())) ||
+      (input?.generate_webhook_secret === true && Boolean(payload.webhook_secret)) ||
+      (Boolean(input?.token) && Boolean(payload.webhook_secret) && !current.webhook_secret);
+    if (secretJustSet && payload.webhook_secret) {
+      return { ...pub, webhook_secret_once: payload.webhook_secret };
+    }
+    return pub;
+  });
+}
+
 const DEFAULT_ADDRESS_SETTINGS = {
   addressStructuredFormEnabled: true,
   addressCourierSafeLocationEnabled: false,
@@ -3735,7 +3899,7 @@ function normalizePosSettings(input = {}) {
 export function getDeliverySettings() {
   const saved = readData().settings?.delivery || {};
   const fee = Number(saved.lahore_fee);
-  const postexConfigured = Boolean(String(process.env.POSTEX_TOKEN || '').trim());
+  const postexConfigured = Boolean(getPostExSecrets().token) && getPostExSecrets().enabled !== false;
   return {
     // When PostEx token is set, official courier mode replaces manual Lahore fee
     mode: postexConfigured ? 'postex' : 'manual',
@@ -3754,7 +3918,7 @@ export function getDeliverySettings() {
 export function setDeliverySettings(input, userId) {
   return withData((data) => {
     if (!data.settings) data.settings = {};
-    if (Boolean(String(process.env.POSTEX_TOKEN || '').trim())) {
+    if (Boolean(getPostExSecrets().token) && getPostExSecrets().enabled !== false) {
       throw new Error(
         'Manual delivery fees are disabled — PostEx courier API is active. Manage shipping from PostEx merchant portal + Admin → Orders → Book on PostEx.',
       );
