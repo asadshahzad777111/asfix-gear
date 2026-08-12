@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import * as store from '../store.js';
 import { publishOrderEvent } from '../services/liveEvents.js';
+import { isPostExConfigured } from '../services/postex.js';
 
 const router = Router();
 
@@ -12,10 +13,34 @@ function headerMatches(req) {
   return String(incoming).trim() === secret;
 }
 
+function webhookPublicUrl(req) {
+  const host = String(req.get('x-forwarded-host') || req.get('host') || '').split(',')[0].trim();
+  const proto = String(req.get('x-forwarded-proto') || req.protocol || 'https').split(',')[0].trim();
+  if (host) return `${proto}://${host}/api/webhooks/postex`;
+  return 'https://asfixgear.com/api/webhooks/postex';
+}
+
+/**
+ * Browser / merchant portal check — GET is not a status update.
+ * Real updates must POST with the configured secret header.
+ */
+router.get('/postex', (req, res) => {
+  res.json({
+    ok: true,
+    service: 'PostEx',
+    method: 'POST',
+    configured: isPostExConfigured(),
+    webhook_secret_set: Boolean(String(process.env.POSTEX_WEBHOOK_SECRET || '').trim()),
+    webhook_header: String(process.env.POSTEX_WEBHOOK_HEADER || 'x-postex-secret').trim(),
+    url: webhookPublicUrl(req),
+    hint: 'Paste this URL + header on merchant.postex.pk Webhook Configuration. Do not open in browser for tracking — PostEx POSTs status updates here.',
+  });
+});
+
 /**
  * PostEx status webhook.
  * Configure on merchant.postex.pk Integration Guide:
- *   URL: https://asfixgear.com/api/webhooks/postex
+ *   URL: https://asfixgear.com/api/webhooks/postex  (proxied to Render API)
  *   Header Key: value of POSTEX_WEBHOOK_HEADER (default x-postex-secret)
  *   Header Value: POSTEX_WEBHOOK_SECRET
  */
@@ -37,11 +62,14 @@ router.post('/postex', (req, res) => {
     dist.orderRefNumber ||
     body.orderRefNumber ||
     body.order_ref ||
+    body.orderReferenceNumber ||
     null;
   const transactionStatus =
     dist.transactionStatus ||
+    dist.orderStatus ||
     dist.status ||
     body.transactionStatus ||
+    body.orderStatus ||
     body.status ||
     null;
 

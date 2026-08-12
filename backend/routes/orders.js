@@ -834,6 +834,9 @@ router.get('/postex/status', requireAuth, requireRole(...STAFF), (_req, res) => 
     configured: isPostExConfigured(),
     pickup_code_set: Boolean(String(process.env.POSTEX_PICKUP_ADDRESS_CODE || '').trim()),
     webhook_secret_set: Boolean(String(process.env.POSTEX_WEBHOOK_SECRET || '').trim()),
+    webhook_header: String(process.env.POSTEX_WEBHOOK_HEADER || 'x-postex-secret').trim(),
+    webhook_url: 'https://asfixgear.com/api/webhooks/postex',
+    webhook_url_direct: 'https://asfix-gear.onrender.com/api/webhooks/postex',
   });
 });
 

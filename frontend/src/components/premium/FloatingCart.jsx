@@ -23,7 +23,7 @@ import PaymentInstructions from '../PaymentInstructions';
 import MapAddressPicker from '../MapAddressPicker';
 import { enabledPaymentMethods, mergePaymentSettings, isCodPayment } from '../../config/payments';
 import { SHOP } from '../../config/shop';
-import { getEstimatedDeliveryFee, isLahoreCity, mergeDeliverySettings } from '../../config/delivery';
+import { getEstimatedDeliveryFee, isLahoreCity, isPostExDelivery, mergeDeliverySettings } from '../../config/delivery';
 import { mergeAddressSettings } from '../../config/addressSettings';
 import { displayAddressLine } from '../../utils/address';
 
@@ -723,14 +723,19 @@ export default function FloatingCart() {
 
                         </div>
 
-                        {!isPickup && lahore && estimatedDeliveryFee != null && (
+                        {!isPickup && isPostExDelivery(deliverySettings) && (
+                          <p className="checkout-delivery-fee-note">
+                            {t('cart.postexDeliveryNote')}
+                          </p>
+                        )}
+                        {!isPickup && !isPostExDelivery(deliverySettings) && lahore && estimatedDeliveryFee != null && (
                           <p className="checkout-delivery-fee-note">
                             {t('cart.estimatedDeliveryFee')}: <strong>{formatPrice(estimatedDeliveryFee)}</strong>
                             {' — '}
                             {t('cart.deliveryFeeConfirmNote')}
                           </p>
                         )}
-                        {!isPickup && !lahore && (
+                        {!isPickup && !isPostExDelivery(deliverySettings) && !lahore && (
                           <p className="checkout-delivery-fee-note">
                             {deliverySettings.outside_note || t('cart.deliveryFeeOtherCity')}
                           </p>
@@ -1043,7 +1048,9 @@ export default function FloatingCart() {
 
                           </div>
 
-                          {estimatedDeliveryFee != null && !isPickup ? (
+                          {isPostExDelivery(deliverySettings) && !isPickup ? (
+                            <p className="checkout-delivery-fee-note">{t('cart.postexDeliveryNote')}</p>
+                          ) : estimatedDeliveryFee != null && !isPickup ? (
                             <div className="checkout-summary-row">
                               <span>{t('cart.estimatedDeliveryFee')}</span>
                               <strong>{formatPrice(estimatedDeliveryFee)}</strong>
@@ -1064,13 +1071,18 @@ export default function FloatingCart() {
                             <span>{t('cart.total')}</span>
 
                             <strong>
-                              {formatPrice(total + (isPickup ? 0 : (estimatedDeliveryFee || 0)))}
-                              {!isPickup && estimatedDeliveryFee != null ? '*' : ''}
+                              {formatPrice(
+                                total +
+                                  (isPickup || isPostExDelivery(deliverySettings)
+                                    ? 0
+                                    : estimatedDeliveryFee || 0),
+                              )}
+                              {!isPickup && !isPostExDelivery(deliverySettings) && estimatedDeliveryFee != null ? '*' : ''}
                             </strong>
 
                           </div>
 
-                          {!isPickup && estimatedDeliveryFee != null && (
+                          {!isPickup && !isPostExDelivery(deliverySettings) && estimatedDeliveryFee != null && (
                             <p className="checkout-delivery-fee-note">{t('cart.deliveryFeeConfirmNote')}</p>
                           )}
 

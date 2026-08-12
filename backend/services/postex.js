@@ -83,6 +83,11 @@ export async function listPickupAddresses(cityName = 'Lahore') {
   return postexFetch(`/v1/get-merchant-address?cityName=${city}`, { method: 'GET' });
 }
 
+/** Cities PostEx delivers to (for checkout / admin). */
+export async function listOperationalCities() {
+  return postexFetch('/v2/get-operational-city', { method: 'GET' });
+}
+
 /**
  * Book a Normal COD / prepaid shipment.
  * @returns {{ trackingNumber: string, raw: object }}

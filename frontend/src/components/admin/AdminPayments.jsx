@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../api/client';
 import { DEFAULT_PAYMENTS, mergePaymentSettings } from '../../config/payments';
-import { DEFAULT_DELIVERY, mergeDeliverySettings } from '../../config/delivery';
+import { mergeDeliverySettings } from '../../config/delivery';
 import { DEFAULT_ADDRESS_SETTINGS, mergeAddressSettings } from '../../config/addressSettings';
 import {
   DEFAULT_POS_PAYMENT_QR_CARDS,
@@ -51,6 +51,7 @@ const DEFAULT_POS_SETTINGS = {
 export default function AdminPayments() {
   const [form, setForm] = useState(mergePaymentSettings());
   const [delivery, setDelivery] = useState(mergeDeliverySettings());
+  const [postexStatus, setPostexStatus] = useState(null);
   const [addressSettings, setAddressSettings] = useState(mergeAddressSettings());
   const [posSettings, setPosSettings] = useState(DEFAULT_POS_SETTINGS);
   const [loading, setLoading] = useState(true);
@@ -71,11 +72,13 @@ export default function AdminPayments() {
       api.getDeliverySettings().catch(() => null),
       api.getAddressSettings().catch(() => null),
       api.getPosSettings().catch(() => null),
+      api.getPostExStatus().catch(() => null),
     ])
-      .then(([pay, del, address, pos]) => {
+      .then(([pay, del, address, pos, postex]) => {
         setForm(mergePaymentSettings(pay));
         setDelivery(mergeDeliverySettings(del));
         setAddressSettings(mergeAddressSettings(address));
+        setPostexStatus(postex);
         setPosSettings({
           ...DEFAULT_POS_SETTINGS,
           ...(pos || {}),
@@ -323,38 +326,80 @@ export default function AdminPayments() {
       <PosPaymentQrPanel open={qrPanelOpen} onClose={() => setQrPanelOpen(false)} />
 
       <div className="wp-postbox" style={{ marginTop: '1.5rem' }}>
-        <div className="wp-postbox-head">Delivery estimate (checkout)</div>
+        <div className="wp-postbox-head">PostEx courier (official API)</div>
         <div className="wp-postbox-body">
-          <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
-            Lahore estimated fee checkout par dikhegi. Final rider charge ab bhi order assign karte waqt set hota hai. Default: Rs. {DEFAULT_DELIVERY.lahore_fee}.
-          </p>
-          <div className="wp-payments-grid">
-            <label className="wp-payments-field">
-              <span>Lahore estimated fee (PKR)</span>
-              <input
-                type="number"
-                min={0}
-                max={50000}
-                step={1}
-                value={delivery.lahore_fee}
-                onChange={(e) => setDelivery((d) => ({ ...d, lahore_fee: e.target.value }))}
-              />
-            </label>
-            <label className="wp-payments-field" style={{ gridColumn: '1 / -1' }}>
-              <span>Outside Lahore note</span>
-              <input
-                type="text"
-                value={delivery.outside_note || ''}
-                onChange={(e) => setDelivery((d) => ({ ...d, outside_note: e.target.value }))}
-              />
-            </label>
-          </div>
-          <div className="wp-payments-actions" style={{ marginTop: '1rem' }}>
-            <button type="button" className="wp-button" onClick={saveDelivery} disabled={savingDelivery}>
-              {savingDelivery ? 'Saving…' : 'Save delivery settings'}
-            </button>
-          </div>
-          {deliveryMsg ? <p className="wp-payments-msg">{deliveryMsg}</p> : null}
+          {delivery.mode === 'postex' || postexStatus?.configured ? (
+            <>
+              <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#50575e' }}>
+                Manual Lahore delivery fee is <strong>off</strong>. Online home-delivery orders use{' '}
+                <strong>PostEx</strong>. Staff books each order from <strong>Admin → Orders → Book on PostEx</strong>.
+                Tracking updates arrive on the webhook below.
+              </p>
+              <ul style={{ margin: '0 0 1rem', paddingLeft: '1.2rem', fontSize: '0.88rem', color: '#50575e', lineHeight: 1.55 }}>
+                <li>
+                  API token:{' '}
+                  <strong style={{ color: postexStatus?.configured ? '#1a7f37' : '#b32d2e' }}>
+                    {postexStatus?.configured ? 'Configured on Render' : 'Missing POSTEX_TOKEN'}
+                  </strong>
+                </li>
+                <li>
+                  Pickup address code:{' '}
+                  {postexStatus?.pickup_code_set ? 'Set' : 'Optional — set POSTEX_PICKUP_ADDRESS_CODE if needed'}
+                </li>
+                <li>
+                  Webhook secret:{' '}
+                  {postexStatus?.webhook_secret_set ? 'Set' : 'Set POSTEX_WEBHOOK_SECRET on Render'}
+                </li>
+                <li>
+                  Webhook URL (paste in merchant.postex.pk):
+                  <br />
+                  <code style={{ fontSize: '0.8rem', wordBreak: 'break-all' }}>
+                    {postexStatus?.webhook_url || 'https://asfixgear.com/api/webhooks/postex'}
+                  </code>
+                </li>
+                <li>
+                  Header key: <code>{postexStatus?.webhook_header || 'x-postex-secret'}</code>
+                </li>
+              </ul>
+              <p style={{ margin: 0, fontSize: '0.8rem', color: '#646970' }}>
+                Checkout no longer shows a manual Rs delivery estimate. Courier fee / COD is handled via PostEx when you book the order.
+              </p>
+            </>
+          ) : (
+            <>
+              <p style={{ marginTop: 0, fontSize: '0.88rem', color: '#b32d2e' }}>
+                PostEx token not found on the server. Add <code>POSTEX_TOKEN</code> (and webhook secret) in{' '}
+                <strong>Render → Environment</strong>, then redeploy. Until then, legacy manual fee fields stay available below.
+              </p>
+              <div className="wp-payments-grid">
+                <label className="wp-payments-field">
+                  <span>Lahore estimated fee (PKR) — legacy only</span>
+                  <input
+                    type="number"
+                    min={0}
+                    max={50000}
+                    step={1}
+                    value={delivery.lahore_fee}
+                    onChange={(e) => setDelivery((d) => ({ ...d, lahore_fee: e.target.value }))}
+                  />
+                </label>
+                <label className="wp-payments-field" style={{ gridColumn: '1 / -1' }}>
+                  <span>Outside Lahore note</span>
+                  <input
+                    type="text"
+                    value={delivery.outside_note || ''}
+                    onChange={(e) => setDelivery((d) => ({ ...d, outside_note: e.target.value }))}
+                  />
+                </label>
+              </div>
+              <div className="wp-payments-actions" style={{ marginTop: '1rem' }}>
+                <button type="button" className="wp-button" onClick={saveDelivery} disabled={savingDelivery}>
+                  {savingDelivery ? 'Saving…' : 'Save legacy delivery settings'}
+                </button>
+              </div>
+              {deliveryMsg ? <p className="wp-payments-msg">{deliveryMsg}</p> : null}
+            </>
+          )}
         </div>
       </div>
 
@@ -581,7 +626,11 @@ export default function AdminPayments() {
               />
               <span>
                 <strong>Courier safe location</strong>
-                <small>Off by default. Enable only after courier process is ready; no courier API is connected yet.</small>
+                <small>
+                  {delivery.mode === 'postex' || postexStatus?.configured
+                    ? 'PostEx is active — enable this so customers can mark a safe drop-off point for courier.'
+                    : 'Enable after PostEx token is set on Render.'}
+                </small>
               </span>
             </label>
           </div>

@@ -3735,7 +3735,12 @@ function normalizePosSettings(input = {}) {
 export function getDeliverySettings() {
   const saved = readData().settings?.delivery || {};
   const fee = Number(saved.lahore_fee);
+  const postexConfigured = Boolean(String(process.env.POSTEX_TOKEN || '').trim());
   return {
+    // When PostEx token is set, official courier mode replaces manual Lahore fee
+    mode: postexConfigured ? 'postex' : 'manual',
+    postex_configured: postexConfigured,
+    courier: postexConfigured ? 'postex' : null,
     lahore_fee: Number.isFinite(fee) && fee >= 0 ? Math.round(fee) : DEFAULT_DELIVERY_SETTINGS.lahore_fee,
     outside_note:
       saved.outside_note != null && String(saved.outside_note).trim()
@@ -3749,6 +3754,11 @@ export function getDeliverySettings() {
 export function setDeliverySettings(input, userId) {
   return withData((data) => {
     if (!data.settings) data.settings = {};
+    if (Boolean(String(process.env.POSTEX_TOKEN || '').trim())) {
+      throw new Error(
+        'Manual delivery fees are disabled — PostEx courier API is active. Manage shipping from PostEx merchant portal + Admin → Orders → Book on PostEx.',
+      );
+    }
     const current = getDeliverySettings();
     const next = { ...current };
 
@@ -3771,7 +3781,7 @@ export function setDeliverySettings(input, userId) {
       updated_by: userId ?? null,
     };
     data.settings.delivery = payload;
-    return payload;
+    return getDeliverySettings();
   });
 }
 
