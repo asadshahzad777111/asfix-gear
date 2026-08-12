@@ -76,6 +76,16 @@ function EmailTestPanel() {
           save</strong> hoti hai (Admin Settings), APK install/update se <strong>reset nahi</strong>{' '}
           hoti. SMTP password Render pe rehta hai (security).
         </p>
+        <p style={{ fontSize: '0.82rem', color: '#646970', marginTop: 0 }}>
+          Gmail list mein grey person icon → woh Google account ki <strong>profile photo</strong> hai
+          (code se change nahi hoti). Sender Gmail (
+          <code>GMAIL_USER</code>) pe jao:{' '}
+          <a href="https://myaccount.google.com/personal-info" target="_blank" rel="noreferrer">
+            myaccount.google.com
+          </a>{' '}
+          → Personal info → Photo → AsFix logo upload. Email body mein website logo already show
+          hota hai.
+        </p>
 
         <label className="wp-payments-field" style={{ display: 'block', marginBottom: '0.75rem' }}>
           <span>Alert Gmail (inbox)</span>
