@@ -296,7 +296,7 @@ export function buildNewOrderShopEmail(order) {
     '',
     `Open Admin: ${adminUrl}`,
     '',
-    'Note: This email does not book PostEx. Verify stock/pack, then Book on PostEx in Admin (or enable optional auto-book later).',
+    'Note: Email does not book courier. In Admin → Orders: Book on PostEx OR Assign rider (local delivery).',
     `— ${BRAND}`,
   ].join('\n');
 
@@ -318,7 +318,7 @@ export function buildNewOrderShopEmail(order) {
             <p style="margin:12px 0 0;font-size:16px;font-weight:700;color:#4ade80;">Total: ${formatAmount(order.total_amount)}</p>
           </div>
           <a href="${adminUrl}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;">Open in Admin</a>
-          <p style="margin:16px 0 0;font-size:12px;color:#64748b;line-height:1.45;">Gmail se Admin auto-login nahi hota. Link kholo → stock/pack check → Book on PostEx. Email PostEx book nahi karti.</p>
+          <p style="margin:16px 0 0;font-size:12px;color:#64748b;line-height:1.45;">Gmail se Admin auto-login nahi hota. Link kholo → pack check → <strong>Book on PostEx</strong> ya <strong>Assign rider</strong> (local delivery). Email khud book nahi karti.</p>
         </td></tr>
       </table>
     </td></tr>

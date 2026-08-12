@@ -547,6 +547,7 @@ export const api = {
     return request(`/orders/counter-sales${query ? `?${query}` : ''}`);
   },
   getOrders: () => request('/orders'),
+  getOrderNotifyFeed: () => request('/orders/notify-feed'),
   updateOrderStatus: (id, shipping_status) =>
     request(`/orders/${id}/status`, {
       method: 'PATCH',

@@ -44,6 +44,8 @@ export default function AdminOrdersTable({
   expandedId,
   onToggleExpand,
   highlightId = null,
+  shipIntent = '',
+  onShipIntentConsumed,
   onUpdateStatus,
   onMarkPaid,
   onAssignRider,
@@ -191,6 +193,8 @@ export default function AdminOrdersTable({
                         <AdminOrderCard
                           order={o}
                           linkedReturns={isReturn ? undefined : o.linked_returns}
+                          shipIntent={isHit ? shipIntent : ''}
+                          onShipIntentConsumed={onShipIntentConsumed}
                           onUpdateStatus={channel === 'online' && !isReturn ? onUpdateStatus : undefined}
                           onMarkPaid={channel === 'online' && !isReturn ? onMarkPaid : undefined}
                           onAssignRider={channel === 'online' && !isReturn ? onAssignRider : undefined}

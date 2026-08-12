@@ -91,6 +91,7 @@ export default function Admin() {
   const [orderDateFilter, setOrderDateFilter] = useState('');
   const [orderSearch, setOrderSearch] = useState('');
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+  const [orderShipIntent, setOrderShipIntent] = useState(''); // postex | local | ''
   const [bulkLoading, setBulkLoading] = useState(false);
   const [noteDrafts, setNoteDrafts] = useState({});
   const [noteSaving, setNoteSaving] = useState({});
@@ -471,6 +472,8 @@ export default function Admin() {
       setOrderSearch(String(q).trim());
       if (next === 'orders' || !t) setTabState('orders');
     }
+    const ship = String(searchParams.get('ship') || '').trim().toLowerCase();
+    setOrderShipIntent(ship === 'postex' || ship === 'local' ? ship : '');
   }, [searchParams]);
 
   const updateStatus = async (id, status) => {
@@ -798,6 +801,13 @@ export default function Admin() {
                   expandedId={expandedOrderId}
                   onToggleExpand={setExpandedOrderId}
                   highlightId={highlightOrderId}
+                  shipIntent={orderShipIntent}
+                  onShipIntentConsumed={() => {
+                    setOrderShipIntent('');
+                    const next = new URLSearchParams(searchParams);
+                    next.delete('ship');
+                    setSearchParams(next, { replace: true });
+                  }}
                   onUpdateStatus={updateOrderStatus}
                   onMarkPaid={markOrderPaid}
                   onAssignRider={assignOrderRider}

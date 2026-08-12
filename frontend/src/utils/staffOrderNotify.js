@@ -38,9 +38,11 @@ export function markSeenOnlineOrderId(id) {
   if (n > prev) localStorage.setItem(SEEN_KEY, String(n));
 }
 
-export function adminOrderDeepLink(orderId) {
+export function adminOrderDeepLink(orderId, opts = {}) {
   const q = encodeURIComponent(String(orderId || '').trim());
-  return q ? `/admin?tab=orders&q=${q}` : '/admin?tab=orders';
+  const ship = String(opts.ship || '').trim().toLowerCase();
+  const shipParam = ship === 'postex' || ship === 'local' ? `&ship=${ship}` : '';
+  return q ? `/admin?tab=orders&q=${q}${shipParam}` : '/admin?tab=orders';
 }
 
 async function getLocalNotifications() {

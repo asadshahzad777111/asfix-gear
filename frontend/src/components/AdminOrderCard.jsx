@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { formatPrice } from '../api/client';
 import { useTranslation } from '../context/LanguageContext';
 import { useSmartThermalPrint } from '../hooks/useSmartThermalPrint';
@@ -158,6 +158,8 @@ function DeliveryLocationBlock({ addr, t }) {
 export default function AdminOrderCard({
   order: o,
   linkedReturns: linkedReturnsProp,
+  shipIntent = '',
+  onShipIntentConsumed,
   onUpdateStatus,
   onMarkPaid,
   onAssignRider,
@@ -170,6 +172,7 @@ export default function AdminOrderCard({
   const [showRiderForm, setShowRiderForm] = useState(false);
   const [receiptBusy, setReceiptBusy] = useState(false);
   const [postexBusy, setPostexBusy] = useState(false);
+  const shipIntentDoneRef = useRef('');
   const printInFlightRef = useRef(false);
   const { printSmart, chooser: printChooser } = useSmartThermalPrint();
   const customerStatus = getOrderCustomerStatus(o);
@@ -223,6 +226,20 @@ export default function AdminOrderCard({
       setPostexBusy(false);
     }
   };
+
+  // Deep-link from staff alert toast: ?ship=postex | ?ship=local
+  useEffect(() => {
+    const intent = String(shipIntent || '').trim().toLowerCase();
+    if (!intent || intent === shipIntentDoneRef.current) return;
+    shipIntentDoneRef.current = intent;
+    if (intent === 'postex' && canBookPostEx) {
+      void handleBookPostEx();
+    } else if (intent === 'local' && onAssignRider) {
+      setShowRiderForm(true);
+    }
+    onShipIntentConsumed?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- one-shot from URL intent
+  }, [shipIntent, canBookPostEx, onAssignRider]);
 
   const handleThermalPrint = async () => {
     if (receiptBusy) return;

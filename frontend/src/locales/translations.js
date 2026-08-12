@@ -1116,6 +1116,9 @@ export const translations = {
       staffBody: '#{orderId} from {name} — {total}',
       staffCancelRequest: 'Cancel / refund request',
       staffCancelBody: '#{orderId} — {name} wants to cancel{postex}',
+      openAdmin: 'Open Admin',
+      bookPostex: 'Book PostEx',
+      localDelivery: 'Local delivery',
     },
     cancelRequest: {
       button: 'Request cancel',
@@ -2786,6 +2789,9 @@ export const translations = {
       staffBody: '#{orderId} — {name} — {total}',
       staffCancelRequest: 'Cancel / refund request',
       staffCancelBody: '#{orderId} — {name} cancel chahta hai{postex}',
+      openAdmin: 'Admin kholo',
+      bookPostex: 'PostEx book',
+      localDelivery: 'Local delivery',
     },
     cancelRequest: {
       button: 'Cancel request',

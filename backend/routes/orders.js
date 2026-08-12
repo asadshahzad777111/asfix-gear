@@ -1062,6 +1062,43 @@ router.get('/', requireAuth, requireRole(...STAFF), (_req, res) => {
   res.json(store.getOrders());
 });
 
+/**
+ * Lightweight feed for staff + POS counter new-order alerts (no full order dump).
+ * Online customer orders only — newest first.
+ */
+router.get(
+  '/notify-feed',
+  requireAuth,
+  requireRole('super_admin', 'admin', 'editor', 'counter'),
+  (_req, res) => {
+    const all = store.getOrders() || [];
+    const online = all
+      .filter((o) => {
+        const src = String(o?.source || 'online');
+        return src !== 'counter_sale' && src !== 'counter_return' && src !== 'counter_draft';
+      })
+      .sort((a, b) => Number(b.id) - Number(a.id))
+      .slice(0, 40)
+      .map((o) => ({
+        id: o.id,
+        order_id: o.order_id,
+        customer_name: o.customer_name || '',
+        phone: o.phone || '',
+        total_amount: o.total_amount,
+        source: o.source || 'online',
+        payment_mode: o.payment_mode || '',
+        fulfillment_method: o.fulfillment_method || '',
+        payment_status: o.payment_status,
+        shipping_status: o.shipping_status,
+        delivery_status: o.delivery_status ?? null,
+        cancel_request_status: o.cancel_request_status || null,
+        postex_tracking: o.postex_tracking || o.tracking_number || null,
+        created_at: o.created_at,
+      }));
+    res.json(online);
+  }
+);
+
 /** Staff: is PostEx API token configured? (never returns the token) */
 router.get('/postex/status', requireAuth, requireRole(...STAFF), (_req, res) => {
   res.json(store.getPostExSettingsPublic());

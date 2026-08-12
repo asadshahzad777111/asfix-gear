@@ -49,7 +49,8 @@ class LiveEventBus {
   }
 
   shouldDeliver(client, event, data) {
-    const staffRoles = new Set(['super_admin', 'admin', 'editor']);
+    // Include POS counter so AsFix POS /pos gets live new-order alerts
+    const staffRoles = new Set(['super_admin', 'admin', 'editor', 'counter']);
     if (staffRoles.has(client.role)) return true;
 
     if (client.role !== 'customer') return false;

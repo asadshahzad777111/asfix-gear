@@ -28,9 +28,10 @@ import {
 import './order-notifications.css';
 
 const DISMISS_MS = 6500;
-const STAFF_DISMISS_MS = 12000;
+const STAFF_DISMISS_MS = 14000;
 const MAX_TOASTS = 4;
 const STAFF_POLL_MS = 40_000;
+const CUSTOMER_PERM_KEY = 'asfix_customer_notif_perm_asked';
 
 const OrderNotificationContext = createContext(null);
 
@@ -49,7 +50,46 @@ function formatRs(amount) {
   return `Rs ${n.toLocaleString('en-PK')}`;
 }
 
-function ToastStack({ toasts, onDismiss, onView }) {
+function showCustomerBrowserNotification(title, body, onClick) {
+  if (typeof Notification === 'undefined') return;
+  if (Notification.permission !== 'granted') return;
+  try {
+    const n = new Notification(title, {
+      body,
+      tag: `asfix-cust-${Date.now()}`,
+      renotify: true,
+    });
+    n.onclick = () => {
+      try {
+        window.focus();
+      } catch {
+        /* ignore */
+      }
+      onClick?.();
+      n.close();
+    };
+  } catch {
+    /* ignore */
+  }
+}
+
+async function ensureCustomerNotifyPermissions() {
+  if (typeof window === 'undefined' || typeof Notification === 'undefined') return false;
+  try {
+    if (Notification.permission === 'granted') return true;
+    if (Notification.permission === 'denied') return false;
+    if (localStorage.getItem(CUSTOMER_PERM_KEY)) {
+      return Notification.permission === 'granted';
+    }
+    localStorage.setItem(CUSTOMER_PERM_KEY, '1');
+    const result = await Notification.requestPermission();
+    return result === 'granted';
+  } catch {
+    return false;
+  }
+}
+
+function ToastStack({ toasts, onDismiss, onView, onStaffAction }) {
   const { t } = useTranslation();
   if (toasts.length === 0) return null;
 
@@ -102,6 +142,31 @@ function ToastStack({ toasts, onDismiss, onView }) {
                 <span>{body}</span>
               </span>
             </button>
+            {isStaffNew ? (
+              <div className="order-notif-actions">
+                <button
+                  type="button"
+                  className="order-notif-action"
+                  onClick={() => onStaffAction(toast, 'open')}
+                >
+                  {t('orderNotif.openAdmin')}
+                </button>
+                <button
+                  type="button"
+                  className="order-notif-action order-notif-action--primary"
+                  onClick={() => onStaffAction(toast, 'postex')}
+                >
+                  {t('orderNotif.bookPostex')}
+                </button>
+                <button
+                  type="button"
+                  className="order-notif-action"
+                  onClick={() => onStaffAction(toast, 'local')}
+                >
+                  {t('orderNotif.localDelivery')}
+                </button>
+              </div>
+            ) : null}
             <button
               type="button"
               className="order-notif-close"
@@ -120,6 +185,7 @@ function ToastStack({ toasts, onDismiss, onView }) {
 export function OrderNotificationProvider({ children }) {
   const { isCustomer, isStaff, user } = useAuth();
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const [toasts, setToasts] = useState([]);
   const timersRef = useMemo(() => new Map(), []);
   const alertingRef = useRef(new Set());
@@ -147,8 +213,8 @@ export function OrderNotificationProvider({ children }) {
   );
 
   const openStaffOrder = useCallback(
-    (orderId) => {
-      navigate(adminOrderDeepLink(orderId));
+    (orderId, ship) => {
+      navigate(adminOrderDeepLink(orderId, ship ? { ship } : {}));
     },
     [navigate]
   );
@@ -167,9 +233,11 @@ export function OrderNotificationProvider({ children }) {
         {
           kind: 'staff_new_order',
           orderId,
+          numericId: orderLike.id,
           customerName: orderLike.customer_name || 'Customer',
           totalLabel,
           status: 'pending',
+          fulfillment: orderLike.fulfillment_method || '',
         },
         STAFF_DISMISS_MS
       );
@@ -229,12 +297,34 @@ export function OrderNotificationProvider({ children }) {
     [dismiss, navigate, openStaffOrder, user?.phone]
   );
 
+  const staffAction = useCallback(
+    async (toast, action) => {
+      dismiss(toast.id);
+      if (action === 'postex') {
+        openStaffOrder(toast.orderId, 'postex');
+        return;
+      }
+      if (action === 'local') {
+        openStaffOrder(toast.orderId, 'local');
+        return;
+      }
+      openStaffOrder(toast.orderId);
+    },
+    [dismiss, openStaffOrder]
+  );
+
   useEffect(() => {
     if (!isStaff) return undefined;
     void ensureStaffNotifyPermissions();
     void attachLocalNotificationOpenHandler((path) => navigate(path));
     return undefined;
   }, [isStaff, navigate]);
+
+  useEffect(() => {
+    if (!isCustomer) return undefined;
+    void ensureCustomerNotifyPermissions();
+    return undefined;
+  }, [isCustomer]);
 
   useLiveUpdates({
     enabled: isCustomer || isStaff,
@@ -250,11 +340,26 @@ export function OrderNotificationProvider({ children }) {
       if (!isCustomer) return;
       if (event !== 'order_updated' && event !== 'order_created') return;
       if (!data?.order_id) return;
+      const status = customerStatusFromEvent(data);
+      const statusKey = `track.status_${status}`;
+      const statusLabel = t(statusKey);
+      const title =
+        event === 'order_created' ? t('orderNotif.orderPlaced') : t('orderNotif.orderUpdated');
+      const body = t('orderNotif.body', {
+        orderId: data.order_id,
+        status: statusLabel === statusKey ? status : statusLabel,
+      });
       pushToast({
         kind: event === 'order_created' ? 'order_created' : 'order_updated',
         orderId: data.order_id,
-        status: customerStatusFromEvent(data),
+        status,
         shipping_status: data.shipping_status,
+      });
+      showCustomerBrowserNotification(title, body, () => {
+        const phone = encodeURIComponent(user?.phone || '');
+        navigate(
+          `/track?orderId=${encodeURIComponent(data.order_id)}${phone ? `&phone=${phone}` : ''}`
+        );
       });
     },
   });
@@ -265,7 +370,7 @@ export function OrderNotificationProvider({ children }) {
 
     const scan = async () => {
       try {
-        const orders = await api.getOrders();
+        const orders = await (api.getOrderNotifyFeed?.() || api.getOrders());
         const seen = getSeenOnlineOrderId();
         const fresh = pickNewOnlineOrders(orders, seen);
         const maxId = maxOnlineOrderId(orders);
@@ -279,7 +384,7 @@ export function OrderNotificationProvider({ children }) {
         }
         if (maxId > seen) markSeenOnlineOrderId(maxId);
       } catch {
-        /* ignore */
+        /* ignore — counter may lack full /orders; notify-feed covers it */
       }
     };
 
@@ -296,7 +401,12 @@ export function OrderNotificationProvider({ children }) {
     <OrderNotificationContext.Provider value={value}>
       {children}
       {isCustomer || isStaff ? (
-        <ToastStack toasts={toasts} onDismiss={dismiss} onView={viewOrder} />
+        <ToastStack
+          toasts={toasts}
+          onDismiss={dismiss}
+          onView={viewOrder}
+          onStaffAction={staffAction}
+        />
       ) : null}
     </OrderNotificationContext.Provider>
   );
