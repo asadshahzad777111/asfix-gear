@@ -15,7 +15,6 @@ import {
 } from './auth/AuthUI';
 import PasswordField from './auth/PasswordField';
 import { AuthGoogleSection } from './auth/GoogleSignIn';
-import { getPostLoginPath } from '../utils/authRedirect';
 import { isStaff } from '../config/permissions';
 
 export default function CustomerLoginModal({ open, onClose }) {
@@ -67,7 +66,7 @@ export default function CustomerLoginModal({ open, onClose }) {
       setLoginValue('');
       setPassword('');
       handleClose();
-      navigate(getPostLoginPath(loggedIn, '/account'));
+      // Stay on the same shop page after customer login (do not dump to /account)
     } catch (err) {
       setError(err.message || t('account.loginFailed'));
     } finally {
@@ -121,7 +120,7 @@ export default function CustomerLoginModal({ open, onClose }) {
       setLoginValue('');
       setOtp('');
       handleClose();
-      navigate(getPostLoginPath(loggedIn, '/account'));
+      // Stay on the same shop page after customer login
     } catch (err) {
       setError(err.message || t('otp.verifyFailed'));
     } finally {
@@ -138,7 +137,7 @@ export default function CustomerLoginModal({ open, onClose }) {
       if (await rejectStaffSession(loggedIn)) return;
       setLoginValue('');
       handleClose();
-      navigate(getPostLoginPath(loggedIn, '/account'));
+      // Stay on the same shop page after customer login
     } catch (err) {
       setError(err.message || t('auth.googleSignInFailed'));
     } finally {

@@ -66,13 +66,15 @@ export const lightboxImage = {
   exit: { opacity: 0, scale: 0.98 },
 };
 
-/** Staff / POS / thermal — never animate route shell. */
+/** Staff / POS / thermal / touch — never animate route shell opacity (iOS can stick at 0). */
 export function shouldSkipPageMotion(pathname = '') {
   if (!pathname) return true;
   if (pathname.startsWith('/pos')) return true;
   if (pathname.startsWith('/admin')) return true;
   if (pathname.startsWith('/counter')) return true;
   if (pathname === '/login') return true;
+  // Coarse pointers (iPhone): opacity page fades can leave a blank main area after login
+  if (isCoarsePointer()) return true;
   return false;
 }
 

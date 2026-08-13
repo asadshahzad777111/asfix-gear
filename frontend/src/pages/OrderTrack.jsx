@@ -15,6 +15,8 @@ import useLiveUpdates from '../hooks/useLiveUpdates';
 import { startVisibilityPoll } from '../utils/visibilityPoll';
 import { getOrderCustomerStatus } from '../utils/orderStatus';
 import { filterOrders } from '../utils/orderSearch';
+import { whatsappLink } from '../config/shop';
+import './order-track.css';
 
 export default function OrderTrack() {
   const { t } = useTranslation();
@@ -41,6 +43,12 @@ export default function OrderTrack() {
   const [repairError, setRepairError] = useState('');
   const [repairLoading, setRepairLoading] = useState(false);
   const [chatRepair, setChatRepair] = useState(null);
+
+  const helpWhatsAppHref = whatsappLink(
+    activeTab === 'repair'
+      ? `Assalam o Alaikum AsFix! Repair track help chahiye. Booking: ${bookingId || '—'}`
+      : `Assalam o Alaikum AsFix! Order track help chahiye. Order: ${orderId || '—'}`,
+  );
 
   const loadMyOrders = useCallback(async () => {
     if (!isCustomer) return;
@@ -82,6 +90,7 @@ export default function OrderTrack() {
   }, [myOrders, selectedOrderId]);
 
   const displayOrder = selectedFromList || order;
+  const hasResult = (activeTab === 'order' && displayOrder) || (activeTab === 'repair' && repair);
 
   const switchTab = (tab) => {
     setActiveTab(tab);
@@ -101,7 +110,7 @@ export default function OrderTrack() {
 
   const lookupOrder = async (e) => {
     e?.preventDefault();
-    if (!orderId.trim() || !phone.trim()) {
+    if (!orderId.trim()) {
       setOrderError(t('track.errRequired'));
       return;
     }
@@ -112,7 +121,8 @@ export default function OrderTrack() {
     try {
       const data = await api.trackOrder(orderId.trim(), phone.trim());
       setOrder(data);
-      const next = new URLSearchParams({ orderId: orderId.trim(), phone: phone.trim() });
+      const next = new URLSearchParams({ orderId: orderId.trim() });
+      if (phone.trim()) next.set('phone', phone.trim());
       setParams(next, { replace: true });
     } catch (err) {
       setOrderError(err.message || t('track.notFound'));
@@ -122,7 +132,7 @@ export default function OrderTrack() {
   };
 
   const lookupRepairFromState = async () => {
-    if (!bookingId.trim() || !repairPhone.trim()) return;
+    if (!bookingId.trim()) return;
     setRepairLoading(true);
     setRepairError('');
     setRepair(null);
@@ -138,7 +148,7 @@ export default function OrderTrack() {
 
   const lookupRepair = async (e) => {
     e?.preventDefault();
-    if (!bookingId.trim() || !repairPhone.trim()) {
+    if (!bookingId.trim()) {
       setRepairError(t('track.repairErrRequired'));
       return;
     }
@@ -146,15 +156,15 @@ export default function OrderTrack() {
     const next = new URLSearchParams({
       tab: 'repair',
       bookingId: bookingId.trim(),
-      phone: repairPhone.trim(),
     });
+    if (repairPhone.trim()) next.set('phone', repairPhone.trim());
     setParams(next, { replace: true });
   };
 
   useEffect(() => {
-    if (initialTab === 'repair' && params.get('bookingId') && params.get('phone')) {
+    if (initialTab === 'repair' && params.get('bookingId')) {
       lookupRepairFromState();
-    } else if (params.get('orderId') && params.get('phone') && initialTab === 'order' && !isCustomer) {
+    } else if (params.get('orderId') && initialTab === 'order' && !isCustomer) {
       lookupOrder();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -184,270 +194,314 @@ export default function OrderTrack() {
   };
 
   return (
-    <main className="page order-track-page">
-      <div className="container" style={{ paddingTop: '1rem' }}>
-        <BackButton className="back-nav-btn--spaced" />
-      </div>
-      <section className="order-track-hero glass-card">
-        <span className="section-eyebrow">{t('track.pageEyebrow')}</span>
-        <h1>{t('track.pageTitle')}</h1>
-        <p>{t('track.pageSubtitle')}</p>
-
-        <div className="track-tabs" role="tablist">
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'order'}
-            className={activeTab === 'order' ? 'active' : ''}
-            onClick={() => switchTab('order')}
-          >
-            {t('track.ordersTab')}
-          </button>
-          <button
-            type="button"
-            role="tab"
-            aria-selected={activeTab === 'repair'}
-            className={activeTab === 'repair' ? 'active' : ''}
-            onClick={() => switchTab('repair')}
-          >
-            {t('track.repairsTab')}
-          </button>
+    <main className={`page order-track-page${hasResult ? ' order-track-page--has-result' : ''}`}>
+      <div className="order-track-page__inner">
+        <div className="order-track-page__back">
+          <BackButton className="back-nav-btn--spaced" />
         </div>
 
-        {activeTab === 'order' && isCustomer && (
-          <div className="order-track-my-orders glass-card">
-            <h3>{t('account.ordersTab')}</h3>
-            <p className="order-track-my-orders-hint">{t('account.ordersAutoLoad')}</p>
-            <input
-              type="search"
-              className="account-order-search"
-              placeholder={t('account.orderSearchPlaceholder')}
-              value={orderSearch}
-              onChange={(e) => setOrderSearch(e.target.value)}
-            />
-            {myOrdersLoading ? (
-              <p className="loading">{t('common.loading')}</p>
-            ) : myOrders.length === 0 ? (
-              <p>{t('account.noOrders')}</p>
-            ) : filteredMyOrders.length === 0 ? (
-              <p>{t('account.noOrderSearchMatch')}</p>
-            ) : (
-              <ul className="order-track-my-list">
-                {filteredMyOrders.map((entry) => {
-                  const clean = String(entry.order_id || entry.id).replace(/^#/, '');
-                  const active = selectedOrderId === entry.id;
-                  return (
-                    <li key={entry.id}>
-                      <button
-                        type="button"
-                        className={`order-track-my-item ${active ? 'is-active' : ''}`}
-                        onClick={() => selectMyOrder(entry)}
-                      >
-                        <strong>#{clean}</strong>
-                        <span>{entry.customer_name}</span>
-                        <span className={`order-status-pill status-${getOrderCustomerStatus(entry)}`}>
-                          {t(`track.status_${getOrderCustomerStatus(entry)}`) || getOrderCustomerStatus(entry)}
-                        </span>
-                        <span>{formatPrice(entry.total_amount)}</span>
-                      </button>
-                    </li>
-                  );
-                })}
-              </ul>
+        <header className="order-track-heading">
+          <h1>{t('track.pageTitle')}</h1>
+          <p>{t('track.pageSubtitle')}</p>
+        </header>
+
+        <div className="order-track-layout">
+          <section className="order-track-hero glass-card">
+            <div className="track-tabs" role="tablist">
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'order'}
+                className={activeTab === 'order' ? 'active' : ''}
+                onClick={() => switchTab('order')}
+              >
+                {t('track.ordersTab')}
+              </button>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={activeTab === 'repair'}
+                className={activeTab === 'repair' ? 'active' : ''}
+                onClick={() => switchTab('repair')}
+              >
+                {t('track.repairsTab')}
+              </button>
+            </div>
+
+            {activeTab === 'order' && isCustomer && (
+              <div className="order-track-my-orders">
+                <h3>{t('account.ordersTab')}</h3>
+                <p className="order-track-my-orders-hint">{t('account.ordersAutoLoad')}</p>
+                <input
+                  type="search"
+                  className="account-order-search"
+                  placeholder={t('account.orderSearchPlaceholder')}
+                  value={orderSearch}
+                  onChange={(e) => setOrderSearch(e.target.value)}
+                />
+                {myOrdersLoading ? (
+                  <p className="loading">{t('common.loading')}</p>
+                ) : myOrders.length === 0 ? (
+                  <p>{t('account.noOrders')}</p>
+                ) : filteredMyOrders.length === 0 ? (
+                  <p>{t('account.noOrderSearchMatch')}</p>
+                ) : (
+                  <ul className="order-track-my-list">
+                    {filteredMyOrders.map((entry) => {
+                      const clean = String(entry.order_id || entry.id).replace(/^#/, '');
+                      const active = selectedOrderId === entry.id;
+                      return (
+                        <li key={entry.id}>
+                          <button
+                            type="button"
+                            className={`order-track-my-item ${active ? 'is-active' : ''}`}
+                            onClick={() => selectMyOrder(entry)}
+                          >
+                            <strong>#{clean}</strong>
+                            <span>{entry.customer_name}</span>
+                            <span className={`order-status-pill status-${getOrderCustomerStatus(entry)}`}>
+                              {t(`track.status_${getOrderCustomerStatus(entry)}`) || getOrderCustomerStatus(entry)}
+                            </span>
+                            <span>{formatPrice(entry.total_amount)}</span>
+                          </button>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+                <p className="order-track-guest-divider">{t('track.guestLookupHint')}</p>
+              </div>
             )}
-            <p className="order-track-guest-divider">{t('track.guestLookupHint')}</p>
-          </div>
-        )}
 
-        {activeTab === 'order' ? (
-          <form className="order-track-form" onSubmit={lookupOrder}>
-            <input
-              placeholder={t('track.orderIdPh')}
-              value={orderId}
-              onChange={(e) => setOrderId(e.target.value)}
-            />
-            <input
-              type="tel"
-              placeholder={t('track.phonePh')}
-              value={phone}
-              onChange={(e) => {
-                setPhone(e.target.value);
-                setRepairPhone(e.target.value);
-              }}
-            />
-            <button type="submit" className="btn btn-primary premium-btn" disabled={orderLoading}>
-              {orderLoading ? t('track.searching') : t('track.search')}
-            </button>
-          </form>
-        ) : (
-          <form className="order-track-form" onSubmit={lookupRepair}>
-            <input
-              placeholder={t('track.repairIdPh')}
-              value={bookingId}
-              onChange={(e) => setBookingId(e.target.value)}
-            />
-            <input
-              type="tel"
-              placeholder={t('track.repairPhonePh')}
-              value={repairPhone}
-              onChange={(e) => {
-                setRepairPhone(e.target.value);
-                setPhone(e.target.value);
-              }}
-            />
-            <button type="submit" className="btn btn-primary premium-btn" disabled={repairLoading}>
-              {repairLoading ? t('track.searching') : t('track.repairSearch')}
-            </button>
-          </form>
-        )}
+            {activeTab === 'order' ? (
+              <form className="order-track-form" onSubmit={lookupOrder}>
+                <label className="order-track-field">
+                  <span>{t('track.orderIdLabelField')}</span>
+                  <input
+                    className="order-track-input order-track-input--mono"
+                    placeholder={t('track.orderIdPh')}
+                    value={orderId}
+                    onChange={(e) => setOrderId(e.target.value)}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                  />
+                </label>
+                <label className="order-track-field">
+                  <span>
+                    {t('track.phoneLabelField')}{' '}
+                    <em className="order-track-optional">({t('track.phoneOptional')})</em>
+                  </span>
+                  <input
+                    type="tel"
+                    className="order-track-input"
+                    placeholder={t('track.phonePh')}
+                    value={phone}
+                    onChange={(e) => {
+                      setPhone(e.target.value);
+                      setRepairPhone(e.target.value);
+                    }}
+                  />
+                </label>
+                <button type="submit" className="btn btn-primary premium-btn order-track-submit" disabled={orderLoading}>
+                  {orderLoading ? t('track.searching') : t('track.search')}
+                </button>
+              </form>
+            ) : (
+              <form className="order-track-form" onSubmit={lookupRepair}>
+                <label className="order-track-field">
+                  <span>{t('track.repairIdLabel')}</span>
+                  <input
+                    className="order-track-input order-track-input--mono"
+                    placeholder={t('track.repairIdPh')}
+                    value={bookingId}
+                    onChange={(e) => setBookingId(e.target.value)}
+                    autoComplete="off"
+                    autoCapitalize="characters"
+                  />
+                </label>
+                <label className="order-track-field">
+                  <span>
+                    {t('track.phoneLabelField')}{' '}
+                    <em className="order-track-optional">({t('track.phoneOptional')})</em>
+                  </span>
+                  <input
+                    type="tel"
+                    className="order-track-input"
+                    placeholder={t('track.repairPhonePh')}
+                    value={repairPhone}
+                    onChange={(e) => {
+                      setRepairPhone(e.target.value);
+                      setPhone(e.target.value);
+                    }}
+                  />
+                </label>
+                <button type="submit" className="btn btn-primary premium-btn order-track-submit" disabled={repairLoading}>
+                  {repairLoading ? t('track.searching') : t('track.repairSearch')}
+                </button>
+              </form>
+            )}
 
-        {activeTab === 'order' && orderError && <div className="alert alert-error">{orderError}</div>}
-        {activeTab === 'repair' && repairError && <div className="alert alert-error">{repairError}</div>}
-      </section>
+            {activeTab === 'order' && orderError && <div className="alert alert-error">{orderError}</div>}
+            {activeTab === 'repair' && repairError && <div className="alert alert-error">{repairError}</div>}
 
-      {activeTab === 'order' && displayOrder && (
-        <section className="order-track-result glass-card">
-          {isCustomer && selectedFromList ? (
-            <CustomerOrderCard
-              order={displayOrder}
-              userPhone={user?.phone || displayOrder.phone || ''}
-              showTrackLink={false}
-            />
-          ) : (
-            <>
-              <div className="order-success-id-card order-track-id-card">
-                <span className="order-success-id-label">{t('track.orderIdLabel')}</span>
-                <strong className="order-success-id-value">#{displayOrder.order_id}</strong>
-                <p className="order-success-save-id">{t('track.saveIdHint')}</p>
+            <a
+              className="order-track-whatsapp"
+              href={helpWhatsAppHref}
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              {t('track.needHelpWhatsApp')}
+            </a>
+          </section>
+
+          {activeTab === 'order' && displayOrder && (
+            <section className="order-track-result glass-card">
+              {isCustomer && selectedFromList ? (
+                <CustomerOrderCard
+                  order={displayOrder}
+                  userPhone={user?.phone || displayOrder.phone || ''}
+                  showTrackLink={false}
+                />
+              ) : (
+                <>
+                  <div className="order-track-result-top">
+                    <div>
+                      <span className="order-track-result-kicker">{t('track.orderDetails')}</span>
+                      <strong className="order-track-result-id">#{displayOrder.order_id}</strong>
+                    </div>
+                    <span className={`order-status-pill status-${customerStatus}`}>
+                      {t(`track.status_${customerStatus}`) || customerStatus}
+                    </span>
+                  </div>
+
+                  <div className="order-track-result-head">
+                    <div>
+                      <h2>{displayOrder.customer_name}</h2>
+                      <p>{displayOrder.city}</p>
+                    </div>
+                  </div>
+
+                  <OrderTimeline order={displayOrder} statusHistory={displayOrder.status_history} />
+
+                  {displayOrder.shipping_address?.text && (
+                    <p className="order-track-address">
+                      📍 {t('track.deliveryAddress')}: {displayOrder.shipping_address.text}
+                    </p>
+                  )}
+
+                  {displayOrder.rider_phone && (
+                    <div className="order-track-rider glass-card">
+                      <p><strong>{t('track.riderPhone')}:</strong> {displayOrder.rider_phone}</p>
+                      {Number(displayOrder.delivery_charge) > 0 && (
+                        <p><strong>{t('track.deliveryCharge')}:</strong> {formatPrice(displayOrder.delivery_charge)}</p>
+                      )}
+                    </div>
+                  )}
+
+                  <ul className="order-track-items">
+                    {displayOrder.items.map((item, idx) => (
+                      <li key={idx}>
+                        {item.name} ×{item.qty}
+                        <span>{formatPrice(item.price * item.qty)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="order-track-total">{t('track.total')}: <strong>{formatPrice(displayOrder.total_amount)}</strong></p>
+
+                  <OrderHelpActions orderId={displayOrder.order_id} phone={phone || displayOrder.phone} />
+
+                  {['delivered', 'shipped', 'out_for_delivery', 'payment_verified', 'rider_assigned', 'waiting_for_rider', 'paid'].includes(customerStatus) && (
+                    <OrderFeedbackForm
+                      orderId={displayOrder.order_id}
+                      phone={phone || displayOrder.phone}
+                      orderItems={displayOrder.items}
+                      existing={displayOrder.customer_feedback}
+                    />
+                  )}
+                </>
+              )}
+            </section>
+          )}
+
+          {activeTab === 'repair' && repair && (
+            <section className="order-track-result glass-card repair-track-result">
+              <div className="order-track-result-top">
+                <div>
+                  <span className="order-track-result-kicker">{t('track.repairIdLabel')}</span>
+                  <strong className="order-track-result-id">#{repair.booking_ref}</strong>
+                </div>
+                <span className={`order-status-pill status-${repair.status}`}>
+                  {t(`track.repair_status_${repair.status}`) || repair.status}
+                </span>
               </div>
 
               <div className="order-track-result-head">
                 <div>
-                  <h2>{displayOrder.customer_name}</h2>
-                  <p>{displayOrder.city}</p>
+                  <h2>{repair.customer_name}</h2>
+                  <p>{repair.device_brand} {repair.device_model}</p>
                 </div>
-                <span className={`order-status-pill status-${customerStatus}`}>
-                  {t(`track.status_${customerStatus}`) || customerStatus}
-                </span>
               </div>
 
-              <OrderTimeline order={displayOrder} statusHistory={displayOrder.status_history} />
+              <RepairTimeline status={repair.status} statusHistory={repair.status_history} />
 
-              {displayOrder.shipping_address?.text && (
-                <p className="order-track-address">
-                  📍 {t('track.deliveryAddress')}: {displayOrder.shipping_address.text}
+              {repair.issue && (
+                <p className="repair-track-issue">
+                  <strong>{t('track.repairIssue')}:</strong> {repair.issue}
                 </p>
               )}
 
-              {displayOrder.rider_phone && (
-                <div className="order-track-rider glass-card">
-                  <p><strong>{t('track.riderPhone')}:</strong> {displayOrder.rider_phone}</p>
-                  {Number(displayOrder.delivery_charge) > 0 && (
-                    <p><strong>{t('track.deliveryCharge')}:</strong> {formatPrice(displayOrder.delivery_charge)}</p>
-                  )}
+              {repair.estimated_repair_time && (
+                <p className="repair-track-meta">
+                  <strong>{t('track.repairEstTime')}:</strong> {repair.estimated_repair_time}
+                </p>
+              )}
+
+              {repair.estimated_cost != null && Number(repair.estimated_cost) > 0 && (
+                <p className="repair-track-cost">
+                  <strong>{t('track.repairEstCost')}:</strong> {formatPrice(repair.estimated_cost)}
+                  <small>{t('track.repairCostNote')}</small>
+                </p>
+              )}
+
+              <RepairPhotosGrid photosBefore={repair.photos_before} photosAfter={repair.photos_after} />
+
+              {isCustomer ? (
+                <RepairChatButton booking={repair} onClick={() => setChatRepair(repair)} />
+              ) : (
+                <RepairChatLoginPrompt />
+              )}
+
+              {(repair.status_history || []).length > 0 && (
+                <div className="repair-status-notifications glass-card">
+                  <h4>{t('track.repairNotifications')}</h4>
+                  <ul className="repair-status-notifications-list">
+                    {[...(repair.status_history || [])].reverse().map((entry, idx) => (
+                      <li key={`${entry.status}-${entry.at}-${idx}`}>
+                        <span className={`order-status-pill status-${entry.status}`}>
+                          {t(`track.repair_status_${entry.status}`) || entry.status}
+                        </span>
+                        <small>{entry.at ? new Date(entry.at).toLocaleString() : ''}</small>
+                      </li>
+                    ))}
+                  </ul>
                 </div>
               )}
-
-              <ul className="order-track-items">
-                {displayOrder.items.map((item, idx) => (
-                  <li key={idx}>
-                    {item.name} ×{item.qty}
-                    <span>{formatPrice(item.price * item.qty)}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="order-track-total">{t('track.total')}: <strong>{formatPrice(displayOrder.total_amount)}</strong></p>
-
-              <OrderHelpActions orderId={displayOrder.order_id} phone={phone || displayOrder.phone} />
-
-              {['delivered', 'shipped', 'out_for_delivery', 'payment_verified', 'rider_assigned', 'waiting_for_rider', 'paid'].includes(customerStatus) && (
-                <OrderFeedbackForm
-                  orderId={displayOrder.order_id}
-                  phone={phone || displayOrder.phone}
-                  orderItems={displayOrder.items}
-                  existing={displayOrder.customer_feedback}
-                />
-              )}
-            </>
+            </section>
           )}
-        </section>
-      )}
+        </div>
 
-      {activeTab === 'repair' && repair && (
-        <section className="order-track-result glass-card repair-track-result">
-          <div className="order-success-id-card order-track-id-card">
-            <span className="order-success-id-label">{t('track.repairIdLabel')}</span>
-            <strong className="order-success-id-value">#{repair.booking_ref}</strong>
-            <p className="order-success-save-id">{t('track.repairSaveIdHint')}</p>
-          </div>
-
-          <div className="order-track-result-head">
-            <div>
-              <h2>{repair.customer_name}</h2>
-              <p>{repair.device_brand} {repair.device_model}</p>
-            </div>
-            <span className={`order-status-pill status-${repair.status}`}>
-              {t(`track.repair_status_${repair.status}`) || repair.status}
-            </span>
-          </div>
-
-          <RepairTimeline status={repair.status} statusHistory={repair.status_history} />
-
-          {repair.issue && (
-            <p className="repair-track-issue">
-              <strong>{t('track.repairIssue')}:</strong> {repair.issue}
-            </p>
-          )}
-
-          {repair.estimated_repair_time && (
-            <p className="repair-track-meta">
-              <strong>{t('track.repairEstTime')}:</strong> {repair.estimated_repair_time}
-            </p>
-          )}
-
-          {repair.estimated_cost != null && Number(repair.estimated_cost) > 0 && (
-            <p className="repair-track-cost">
-              <strong>{t('track.repairEstCost')}:</strong> {formatPrice(repair.estimated_cost)}
-              <small>{t('track.repairCostNote')}</small>
-            </p>
-          )}
-
-          <RepairPhotosGrid photosBefore={repair.photos_before} photosAfter={repair.photos_after} />
-
+        <p className="order-track-back">
           {isCustomer ? (
-            <RepairChatButton booking={repair} onClick={() => setChatRepair(repair)} />
-          ) : (
-            <RepairChatLoginPrompt />
+            <Link to="/account">{t('nav.myOrders')} →</Link>
+          ) : null}
+          {isCustomer ? ' · ' : null}
+          <Link to="/shop">← {t('track.backShop')}</Link>
+          {activeTab === 'repair' && (
+            <> · <Link to="/repair">{t('track.newRepair')}</Link></>
           )}
+        </p>
+      </div>
 
-          {(repair.status_history || []).length > 0 && (
-            <div className="repair-status-notifications glass-card">
-              <h4>{t('track.repairNotifications')}</h4>
-              <ul className="repair-status-notifications-list">
-                {[...(repair.status_history || [])].reverse().map((entry, idx) => (
-                  <li key={`${entry.status}-${entry.at}-${idx}`}>
-                    <span className={`order-status-pill status-${entry.status}`}>
-                      {t(`track.repair_status_${entry.status}`) || entry.status}
-                    </span>
-                    <small>{entry.at ? new Date(entry.at).toLocaleString() : ''}</small>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-        </section>
-      )}
-
-      <p className="order-track-back">
-        {isCustomer ? (
-          <Link to="/account">{t('nav.myOrders')} →</Link>
-        ) : null}
-        {isCustomer ? ' · ' : null}
-        <Link to="/shop">← {t('track.backShop')}</Link>
-        {activeTab === 'repair' && (
-          <> · <Link to="/repair">{t('track.newRepair')}</Link></>
-        )}
-      </p>
       {chatRepair ? (
         <RepairChatModal
           booking={chatRepair}

@@ -1,21 +1,21 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import AmbientBackground from './components/AmbientBackground';
 import ErrorBoundary from './components/ErrorBoundary';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import ChatAssistant from './components/ChatAssistant';
-const GamingTransition = () => import('./components/gaming/GamingTransition').catch(() => null);
-const ExitGamingButton = () => import('./components/gaming/ExitGamingButton').catch(() => null);
+import GamingTransition from './components/gaming/GamingTransition';
+import ExitGamingButton from './components/gaming/ExitGamingButton';
 import ButtonEffects from './components/ButtonEffects';
-const FloatingCart = () => import('./components/premium/FloatingCart').catch(() => null);
-const FloatingRepairButton = () => import('./components/FloatingRepairButton').catch(() => null);
-const FlyToCart = () => import('./components/premium/FlyToCart').catch(() => null);
-const MobileBottomNav = () => import('./components/MobileBottomNav').catch(() => null);
-const FloatingNavRail = () => import('./components/FloatingNavRail').catch(() => null);
+import FloatingCart from './components/premium/FloatingCart';
+import FloatingRepairButton from './components/FloatingRepairButton';
+import FlyToCart from './components/premium/FlyToCart';
+import MobileBottomNav from './components/MobileBottomNav';
+import FloatingNavRail from './components/FloatingNavRail';
 import GuestWelcomeBanner from './components/GuestWelcomeBanner';
-const SectionScrollStrap = () => import('./components/SectionScrollStrap').catch(() => null);
+import SectionScrollStrap from './components/SectionScrollStrap';
 import AuthTopBar from './components/auth/AuthTopBar';
-const PageTransition = () => import('./components/premium/PageTransition').catch(() => null);
+import PageTransition from './components/premium/PageTransition';
 import Analytics from './components/seo/Analytics';
 import { useLocation } from 'react-router-dom';
 import { useGaming } from './context/GamingContext';
@@ -34,9 +34,21 @@ function AppContent() {
   const location = useLocation();
   const isAdminRoute = location.pathname.startsWith('/admin') || location.pathname.startsWith('/counter') || location.pathname.startsWith('/pos');
   const isAuthRoute = AUTH_PATHS.has(location.pathname);
+  const [secondaryChrome, setSecondaryChrome] = useState(false);
 
   useEffect(() => {
     wakeApiServer();
+  }, []);
+
+  // Mount chat / floating extras after first paint so home opens sooner
+  useEffect(() => {
+    const enable = () => setSecondaryChrome(true);
+    if (typeof window !== 'undefined' && typeof window.requestIdleCallback === 'function') {
+      const id = window.requestIdleCallback(enable, { timeout: 2000 });
+      return () => window.cancelIdleCallback(id);
+    }
+    const t = window.setTimeout(enable, 700);
+    return () => window.clearTimeout(t);
   }, []);
 
   useEffect(() => {
@@ -72,19 +84,15 @@ function AppContent() {
       </main>
 
       {showShopChrome && !isGamingPage && <Footer />}
-      {showShopChrome && !isGamingPage && <ChatAssistant />}
-      {showShopChrome && !isGamingPage && <FloatingRepairButton />}
       {showCart && <FloatingCart />}
       {showBottomNav && <MobileBottomNav />}
-      {showFloatingNav && <FloatingNavRail />}
-      {showShopChrome && <FlyToCart />}
-      <Suspense>
-        <ExitGamingButton />
-      </Suspense>
-      <Suspense>
-        <GamingTransition />
-      </Suspense>
-      <ButtonEffects />
+      {secondaryChrome && showShopChrome && !isGamingPage && <ChatAssistant />}
+      {secondaryChrome && showShopChrome && !isGamingPage && <FloatingRepairButton />}
+      {secondaryChrome && showFloatingNav && <FloatingNavRail />}
+      {secondaryChrome && showShopChrome && <FlyToCart />}
+      {secondaryChrome && <ExitGamingButton />}
+      {secondaryChrome && <GamingTransition />}
+      {secondaryChrome && <ButtonEffects />}
     </div>
   );
 }

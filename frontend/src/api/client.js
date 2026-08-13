@@ -482,8 +482,9 @@ export const api = {
   bookRepair: (body) => request('/repairs/book', { method: 'POST', body: JSON.stringify(body) }),
   getBookings: () => request('/repairs/bookings'),
   getMyRepairs: () => request('/repairs/my-bookings'),
-  trackRepair: (bookingId, phone) => {
-    const q = new URLSearchParams({ bookingId, phone }).toString();
+  trackRepair: (bookingId, phone = '') => {
+    const q = new URLSearchParams({ bookingId });
+    if (phone?.trim()) q.set('phone', phone.trim());
     return request(`/repairs/track?${q}`);
   },
   updateBookingStatus: (id, status) =>
@@ -566,8 +567,9 @@ export const api = {
   updateAddress: (id, body) =>
     request(`/auth/my-addresses/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteAddress: (id) => request(`/auth/my-addresses/${id}`, { method: 'DELETE' }),
-  trackOrder: (orderId, phone) => {
-    const q = new URLSearchParams({ orderId, phone }).toString();
+  trackOrder: (orderId, phone = '') => {
+    const q = new URLSearchParams({ orderId });
+    if (phone?.trim()) q.set('phone', phone.trim());
     return request(`/orders/track?${q}`);
   },
   saveOrderGmail: (id, body) =>
