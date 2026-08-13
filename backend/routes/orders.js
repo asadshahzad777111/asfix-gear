@@ -26,68 +26,6 @@ function findOrderById(id) {
   return store.getOrders().find((o) => o.id === Number(id)) || null;
 }
 
-/** Online delivery only — skip counter, pickup, cancelled, already booked. */
-function isEligibleForPostExBook(order) {
-  if (!order) return false;
-  if (order.source === 'counter_sale' || order.source === 'counter_return') return false;
-  if (String(order.fulfillment_method || '').toLowerCase() === 'pickup') return false;
-  if (order.shipping_status === 'cancelled') return false;
-  if (order.postex_tracking) return false;
-  return true;
-}
-
-/**
- * Auto-book on PostEx when safe. Never throws — order update already succeeded.
- * @returns {{ order: object, postex_error: string|null, booked: boolean }}
- */
-async function tryAutoBookPostEx(order, user) {
-  if (!order || !isPostExConfigured() || !isEligibleForPostExBook(order)) {
-    return { order, postex_error: null, booked: false };
-  }
-
-  try {
-    const payload = buildCreateOrderPayload(order);
-    const { trackingNumber, raw } = await postexCreateOrder(payload);
-    if (!trackingNumber) {
-      const msg = raw?.statusMessage || 'PostEx did not return a tracking number';
-      console.error('[PostEx] Auto-book failed:', msg);
-      const noted = store.appendOrderNote(order.id, `PostEx auto-book failed: ${msg}`, user, {
-        postex_last_error: String(msg).slice(0, 200),
-      });
-      return { order: noted || order, postex_error: msg, booked: false };
-    }
-
-    const updated = store.setOrderPostexBooking(
-      order.id,
-      {
-        trackingNumber,
-        rawStatus: raw?.statusMessage || 'Booked',
-        markShipped: true,
-      },
-      user
-    );
-    const finalOrder = updated || order;
-    notifyCustomerStatusChange(finalOrder, order.shipping_status);
-    publishOrderEvent('order_updated', finalOrder);
-    return { order: finalOrder, postex_error: null, booked: true };
-  } catch (err) {
-    const msg = err.message || 'PostEx booking failed';
-    console.error('[PostEx] Auto-book failed:', msg);
-    const noted = store.appendOrderNote(order.id, `PostEx auto-book failed: ${msg}`, user, {
-      postex_last_error: String(msg).slice(0, 200),
-    });
-    return { order: noted || order, postex_error: msg, booked: false };
-  }
-}
-
-function withPostExMeta(order, { postex_error, booked } = {}) {
-  if (!order) return order;
-  const out = { ...order };
-  if (postex_error) out.postex_error = postex_error;
-  if (booked) out.postex_auto_booked = true;
-  return out;
-}
-
 function notifyIfNewlyDelivered(order, previousStatus) {
   if (!order || order.shipping_status !== 'delivered') return;
   if (previousStatus === 'delivered') return;
@@ -981,7 +919,7 @@ router.patch('/:id/gmail', (req, res) => {
   res.json({ message: 'Gmail saved for invoice routing', order_id: order.order_id });
 });
 
-router.patch('/:id/status', requireAuth, requireRole(...STAFF), async (req, res) => {
+router.patch('/:id/status', requireAuth, requireRole(...STAFF), (req, res) => {
   const { shipping_status } = req.body;
   if (!VALID_STATUSES.includes(shipping_status)) {
     return res.status(400).json({ error: 'Invalid shipping status' });
@@ -992,20 +930,11 @@ router.patch('/:id/status', requireAuth, requireRole(...STAFF), async (req, res)
   notifyIfNewlyDelivered(order, previous?.shipping_status);
   notifyCustomerStatusChange(order, previous?.shipping_status);
   publishOrderEvent('order_updated', order);
-
-  // Auto-book when staff marks payment_verified (delivery online only)
-  if (
-    shipping_status === 'payment_verified' &&
-    previous?.shipping_status !== 'payment_verified'
-  ) {
-    const result = await tryAutoBookPostEx(order, req.auth.user);
-    return res.json(withPostExMeta(result.order, result));
-  }
-
+  // PostEx is manual only — staff clicks Book on PostEx after stock/pack
   res.json(order);
 });
 
-router.patch('/:id/mark-paid', requireAuth, requireRole(...STAFF), async (req, res) => {
+router.patch('/:id/mark-paid', requireAuth, requireRole(...STAFF), (req, res) => {
   try {
     const previous = findOrderById(req.params.id);
     const order = store.markOrderPaid(req.params.id, req.auth.user);
@@ -1013,10 +942,8 @@ router.patch('/:id/mark-paid', requireAuth, requireRole(...STAFF), async (req, r
     notifyShopWhatsApp(buildPaidOrderShopMessage(order)).catch(() => {});
     notifyCustomerStatusChange(order, previous?.shipping_status || 'pending');
     publishOrderEvent('order_updated', order);
-
-    // Auto-book: Mark Paid (prepaid) OR Confirm COD / Ready — delivery only
-    const result = await tryAutoBookPostEx(order, req.auth.user);
-    res.json(withPostExMeta(result.order, result));
+    // PostEx is manual only — staff clicks Book on PostEx after stock/pack
+    res.json(order);
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

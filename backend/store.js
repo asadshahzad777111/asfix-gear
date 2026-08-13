@@ -2229,7 +2229,7 @@ export function updateOrderGmail(id, gmail, phone) {
   });
 }
 
-/** Append a note to order activity (e.g. PostEx auto-book failure). */
+/** Append a note to order activity (e.g. staff notes / courier errors). */
 export function appendOrderNote(id, message, updatedBy = null, extra = {}) {
   return withData((data) => {
     const index = data.orders.findIndex((o) => o.id === Number(id));
