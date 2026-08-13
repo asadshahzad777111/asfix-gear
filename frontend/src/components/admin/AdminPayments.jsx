@@ -60,6 +60,7 @@ export default function AdminPayments() {
     enabled: true,
   });
   const [postexSecretOnce, setPostexSecretOnce] = useState('');
+  const [postexSecretCopied, setPostexSecretCopied] = useState(false);
   const [savingPostex, setSavingPostex] = useState(false);
   const [addressSettings, setAddressSettings] = useState(mergeAddressSettings());
   const [posSettings, setPosSettings] = useState(DEFAULT_POS_SETTINGS);
@@ -148,29 +149,58 @@ export default function AdminPayments() {
     }
   };
 
-  const savePostex = async () => {
+  const savePostex = async (opts = {}) => {
+    const forceNewSecret = Boolean(opts.forceNewSecret);
     setSavingPostex(true);
     setPostexMsg('');
     setPostexSecretOnce('');
+    setPostexSecretCopied(false);
     try {
       const body = {
         enabled: postexForm.enabled !== false,
         webhook_header: postexForm.webhook_header || 'x-postex-secret',
         pickup_address_code: postexForm.pickup_address_code || '',
-        generate_webhook_secret: !postexStatus?.webhook_secret_set && !postexForm.webhook_secret.trim(),
+        generate_webhook_secret:
+          forceNewSecret || (!postexStatus?.webhook_secret_set && !postexForm.webhook_secret.trim()),
       };
+      if (forceNewSecret) body.force_new_webhook_secret = true;
       if (postexForm.token.trim()) body.token = postexForm.token.trim();
-      if (postexForm.webhook_secret.trim()) body.webhook_secret = postexForm.webhook_secret.trim();
+      if (!forceNewSecret && postexForm.webhook_secret.trim()) {
+        body.webhook_secret = postexForm.webhook_secret.trim();
+      }
       const saved = await api.setPostExSettings(body);
       setPostexStatus(saved);
       setDelivery((d) => mergeDeliverySettings({ ...d, mode: saved.configured ? 'postex' : 'manual', postex_configured: saved.configured }));
-      if (saved.webhook_secret_once) setPostexSecretOnce(saved.webhook_secret_once);
+      if (saved.webhook_secret_once) {
+        setPostexSecretOnce(saved.webhook_secret_once);
+        // Scroll reveal into view on small screens
+        requestAnimationFrame(() => {
+          document.getElementById('postex-secret-once')?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        });
+      }
       setPostexForm((f) => ({ ...f, token: '', webhook_secret: '' }));
-      setPostexMsg(saved.configured ? 'PostEx saved — manual delivery fee is now off.' : 'PostEx settings saved.');
+      setPostexMsg(
+        forceNewSecret
+          ? 'New webhook secret generated — copy Header Value below into PostEx.'
+          : saved.configured
+            ? 'PostEx saved — manual delivery fee is now off.'
+            : 'PostEx settings saved.'
+      );
     } catch (err) {
       setPostexMsg(err.message || 'PostEx save failed');
     } finally {
       setSavingPostex(false);
+    }
+  };
+
+  const copyPostexSecret = async () => {
+    if (!postexSecretOnce) return;
+    try {
+      await navigator.clipboard.writeText(postexSecretOnce);
+      setPostexSecretCopied(true);
+      setTimeout(() => setPostexSecretCopied(false), 2500);
+    } catch {
+      setPostexMsg('Copy failed — secret select karke manually copy karo.');
     }
   };
 
@@ -405,10 +435,13 @@ export default function AdminPayments() {
               <input
                 type="password"
                 autoComplete="off"
-                placeholder="Blank = auto-generate on save"
+                placeholder="Blank chhoro = Save pe auto-generate (ek dafa dikhega)"
                 value={postexForm.webhook_secret}
                 onChange={(e) => setPostexForm((f) => ({ ...f, webhook_secret: e.target.value }))}
               />
+              <small style={{ display: 'block', marginTop: 4, color: '#646970' }}>
+                Is password box mein kuch paste karne ki zarurat nahi. Khali chhoro → Save → neeche plaintext + Copy button aayega.
+              </small>
             </label>
             <label className="wp-payments-field" style={{ gridColumn: '1 / -1' }}>
               <span>Pickup address code (optional)</span>
@@ -432,14 +465,32 @@ export default function AdminPayments() {
             </label>
           </div>
 
-          <div className="wp-payments-actions" style={{ marginTop: '1rem' }}>
-            <button type="button" className="wp-button" onClick={savePostex} disabled={savingPostex}>
+          <div className="wp-payments-actions" style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
+            <button type="button" className="wp-button" onClick={() => savePostex()} disabled={savingPostex}>
               {savingPostex ? 'Saving…' : 'Save PostEx settings'}
+            </button>
+            <button
+              type="button"
+              className="wp-button"
+              style={{ background: '#2271b1' }}
+              onClick={() => {
+                if (
+                  !window.confirm?.(
+                    'Naya webhook Header Value generate karein? Purana PostEx portal pe update karna hoga.'
+                  )
+                ) {
+                  return;
+                }
+                savePostex({ forceNewSecret: true });
+              }}
+              disabled={savingPostex}
+            >
+              Generate new Header Value
             </button>
           </div>
           {postexMsg ? <p className="wp-payments-msg">{postexMsg}</p> : null}
 
-          {(postexStatus?.configured || postexSecretOnce) && (
+          {(postexStatus?.configured || postexSecretOnce || postexStatus?.webhook_secret_set) && (
             <div style={{ marginTop: '1rem', padding: '0.85rem 1rem', background: '#f6f7f7', borderRadius: 8 }}>
               <p style={{ margin: '0 0 0.5rem', fontSize: '0.88rem', color: '#1a7f37' }}>
                 Status: {postexStatus?.configured ? 'Connected' : 'Not connected'}
@@ -452,16 +503,55 @@ export default function AdminPayments() {
                   {postexStatus?.webhook_url || 'https://asfixgear.com/api/webhooks/postex'}
                 </code>
               </p>
-              <p style={{ margin: '0 0 0.35rem', fontSize: '0.82rem', color: '#50575e' }}>
-                Header key: <code>{postexStatus?.webhook_header || 'x-postex-secret'}</code>
+              <p style={{ margin: '0 0 0.5rem', fontSize: '0.82rem', color: '#50575e' }}>
+                Header Key: <code>{postexStatus?.webhook_header || 'x-postex-secret'}</code>
               </p>
               {postexSecretOnce ? (
-                <p style={{ margin: 0, fontSize: '0.82rem', color: '#b32d2e' }}>
-                  Header value (copy now — ek dafa dikhega): <code>{postexSecretOnce}</code>
-                </p>
+                <div
+                  id="postex-secret-once"
+                  style={{
+                    marginTop: '0.5rem',
+                    padding: '0.75rem 0.85rem',
+                    background: '#fff8e5',
+                    border: '2px solid #dba617',
+                    borderRadius: 8,
+                  }}
+                >
+                  <p style={{ margin: '0 0 0.4rem', fontSize: '0.9rem', fontWeight: 700, color: '#1d2327' }}>
+                    Header Value — abhi copy karo (sirf ek dafa plaintext dikhega)
+                  </p>
+                  <p style={{ margin: '0 0 0.65rem', fontSize: '0.8rem', color: '#50575e' }}>
+                    Ye value PostEx portal ke <strong>Header Value</strong> field mein paste karo.
+                  </p>
+                  <code
+                    style={{
+                      display: 'block',
+                      wordBreak: 'break-all',
+                      fontSize: '0.95rem',
+                      padding: '0.5rem 0.6rem',
+                      background: '#fff',
+                      border: '1px solid #c3c4c7',
+                      borderRadius: 4,
+                      color: '#1d2327',
+                      userSelect: 'all',
+                    }}
+                  >
+                    {postexSecretOnce}
+                  </code>
+                  <div style={{ marginTop: '0.65rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem', alignItems: 'center' }}>
+                    <button type="button" className="wp-button" onClick={copyPostexSecret}>
+                      {postexSecretCopied ? 'Copied!' : 'Copy Header Value'}
+                    </button>
+                    <span style={{ fontSize: '0.78rem', color: '#b32d2e' }}>
+                      Page refresh ke baad ye phir nahi dikhega — pehle copy kar lo.
+                    </span>
+                  </div>
+                </div>
               ) : (
                 <p style={{ margin: 0, fontSize: '0.8rem', color: '#646970' }}>
-                  Webhook secret already saved ({postexStatus?.webhook_secret_masked || '••••'}). Naya chahiye to field mein likh ke Save dabao.
+                  Webhook secret already saved ({postexStatus?.webhook_secret_masked || '••••'} — dots only, full value
+                  nahi dikhti). Miss ho gaya tha? Upar <strong>Generate new Header Value</strong> dabao → copy → PostEx
+                  mein paste.
                 </p>
               )}
               <p style={{ margin: '0.65rem 0 0', fontSize: '0.8rem', color: '#646970' }}>

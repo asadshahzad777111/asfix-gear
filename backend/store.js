@@ -3816,7 +3816,10 @@ export function setPostExSettings(input, userId) {
       if (s) next.webhook_secret = s.slice(0, 200);
     }
     if (input?.clear_webhook_secret === true) next.webhook_secret = '';
-    if (input?.generate_webhook_secret === true && !next.webhook_secret) {
+    // generate_webhook_secret: create when missing; force_new_webhook_secret: always rotate
+    if (input?.force_new_webhook_secret === true) {
+      next.webhook_secret = createToken().slice(0, 48);
+    } else if (input?.generate_webhook_secret === true && !next.webhook_secret) {
       next.webhook_secret = createToken().slice(0, 48);
     }
 
@@ -3881,7 +3884,9 @@ export function setPostExSettings(input, userId) {
     const secretJustSet =
       (typeof input?.webhook_secret === 'string' && Boolean(input.webhook_secret.trim())) ||
       (input?.generate_webhook_secret === true && Boolean(payload.webhook_secret)) ||
-      (Boolean(input?.token) && Boolean(payload.webhook_secret) && !current.webhook_secret);
+      (input?.force_new_webhook_secret === true && Boolean(payload.webhook_secret)) ||
+      (Boolean(input?.token) && Boolean(payload.webhook_secret) && !current.webhook_secret) ||
+      (Boolean(payload.webhook_secret) && !current.webhook_secret);
     if (secretJustSet && payload.webhook_secret) {
       return { ...pub, webhook_secret_once: payload.webhook_secret };
     }
