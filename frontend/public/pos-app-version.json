@@ -1,11 +1,11 @@
 {
   "appId": "com.asfixgear.pos",
-  "versionCode": 2,
-  "versionName": "1.1.0",
+  "versionCode": 3,
+  "versionName": "1.1.1",
   "forceUpdate": false,
-  "downloadUrl": "https://asfixgear.com/downloads/AsFix-POS.apk",
+  "downloadUrl": "https://asfixgear.com/downloads/AsFix-POS-1.1.1.apk",
   "downloadPageUrl": "https://asfixgear.com/pos",
   "minSupportedVersionCode": 1,
-  "notes": "AsFix POS 1.1.0 — order alerts + notification toggles (Admin/POS → Notifications). Tap Update → download APK → Install. After install, reopen app; update prompt should stop.",
+  "notes": "AsFix POS 1.1.1 — download file name AsFix-POS-1.1.1.apk (not the old 1.0 file in Downloads). Install → reopen. Notifications: POS → Notifications.",
   "publishedAt": "2026-08-13"
 }

@@ -7,7 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { isNativePosApp } from './nativePosPrint.js';
 
 export const POS_APP_VERSION_URL = '/pos-app-version.json';
-export const POS_APK_DOWNLOAD_URL = 'https://asfixgear.com/downloads/AsFix-POS.apk';
+export const POS_APK_DOWNLOAD_URL = 'https://asfixgear.com/downloads/AsFix-POS-1.1.1.apk';
 export const POS_DOWNLOAD_PAGE_URL = 'https://asfixgear.com/pos';
 
 const DISMISS_KEY = 'asfix_pos_update_dismissed_vcode';
@@ -83,9 +83,21 @@ export function dismissUpdateForCode(versionCode) {
   }
 }
 
+/** Cache-bust so phones do not reuse an old AsFix-POS.apk from Downloads / CDN. */
 export function resolvePosDownloadUrl(remote) {
-  const url = String(remote?.downloadUrl || POS_APK_DOWNLOAD_URL).trim();
-  return url || POS_APK_DOWNLOAD_URL;
+  const base = String(remote?.downloadUrl || POS_APK_DOWNLOAD_URL).trim() || POS_APK_DOWNLOAD_URL;
+  const code = toInt(remote?.versionCode, 0);
+  const name = String(remote?.versionName || '').trim();
+  const sep = base.includes('?') ? '&' : '?';
+  const qs = [`v=${code || Date.now()}`];
+  if (name) qs.push(`n=${encodeURIComponent(name)}`);
+  return `${base}${sep}${qs.join('&')}`;
+}
+
+export function resolvePosApkFileName(remote) {
+  const name = String(remote?.versionName || '').trim();
+  if (name) return `AsFix-POS-${name}.apk`;
+  return 'AsFix-POS.apk';
 }
 
 export function resolvePosDownloadPageUrl(remote) {
@@ -109,7 +121,7 @@ export async function openPosUpdateOnWebsite(remote) {
     a.href = apk;
     a.target = '_blank';
     a.rel = 'noopener noreferrer';
-    a.setAttribute('download', 'AsFix-POS.apk');
+    a.setAttribute('download', resolvePosApkFileName(remote));
     document.body.appendChild(a);
     a.click();
     a.remove();

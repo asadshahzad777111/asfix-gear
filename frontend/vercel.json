@@ -12,19 +12,11 @@
       ]
     },
     {
-      "source": "/downloads/AsFix-POS.apk",
+      "source": "/downloads/(.*)\\.apk",
       "headers": [
         { "key": "Content-Type", "value": "application/vnd.android.package-archive" },
-        { "key": "Content-Disposition", "value": "attachment; filename=\"AsFix-POS.apk\"" },
-        { "key": "Cache-Control", "value": "public, max-age=3600" }
-      ]
-    },
-    {
-      "source": "/downloads/asfix-gear.apk",
-      "headers": [
-        { "key": "Content-Type", "value": "application/vnd.android.package-archive" },
-        { "key": "Content-Disposition", "value": "attachment; filename=\"asfix-gear.apk\"" },
-        { "key": "Cache-Control", "value": "public, max-age=3600" }
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Pragma", "value": "no-cache" }
       ]
     },
     {

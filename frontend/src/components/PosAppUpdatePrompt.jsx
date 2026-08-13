@@ -92,19 +92,20 @@ export default function PosAppUpdatePrompt() {
         <p className="pos-upd__kicker">AsFix POS</p>
         <h2 id="pos-upd-title">Update available</h2>
         <p className="pos-upd__body">
-          Nayi professional APK ready hai. <strong>Update</strong> dabao → website khulegi → APK
-          download → Install. Purani APK pe bhi yeh message website se aata hai.
+          Nayi APK <strong>{remote.versionName || 'latest'}</strong> ready hai. Purani Downloads
+          wali <strong>1.0</strong> file mat kholo — naya file{' '}
+          <strong>AsFix-POS-{remote.versionName || 'latest'}.apk</strong> download hoga.
         </p>
         <dl className="pos-upd__meta">
           <div>
-            <dt>Installed</dt>
+            <dt>Installed (purani)</dt>
             <dd>
               {local.versionName || 'old'}
               {local.versionCode > 0 ? ` (${local.versionCode})` : ' (legacy)'}
             </dd>
           </div>
           <div>
-            <dt>Latest</dt>
+            <dt>Download / install this</dt>
             <dd>
               {remote.versionName || '—'} ({remote.versionCode || '?'})
             </dd>
@@ -113,7 +114,7 @@ export default function PosAppUpdatePrompt() {
         {remote.notes ? <p className="pos-upd__notes">{String(remote.notes)}</p> : null}
         <div className="pos-upd__actions">
           <button type="button" className="pos-upd__primary" onClick={onUpdate} disabled={busy}>
-            {busy ? 'Opening…' : 'Update now'}
+            {busy ? 'Opening…' : `Download ${remote.versionName || 'update'}`}
           </button>
           {!forced ? (
             <button type="button" className="pos-upd__secondary" onClick={onLater} disabled={busy}>

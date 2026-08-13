@@ -45,8 +45,10 @@ const DEFAULT_POS_SETTINGS = {
   posDiscountMaxAmountWithoutPin: 500,
 };
 
-/** Hosted on Vercel from frontend/public/downloads/AsFix-POS.apk */
-const POS_APK_HREF = '/downloads/AsFix-POS.apk';
+/** Versioned filename so phones do not reuse an old AsFix-POS.apk from Downloads. */
+const POS_APK_VERSION = '1.1.1';
+const POS_APK_HREF = `/downloads/AsFix-POS-${POS_APK_VERSION}.apk?v=${POS_APK_VERSION}`;
+const POS_APK_FILENAME = `AsFix-POS-${POS_APK_VERSION}.apk`;
 
 export default function Counter() {
   const { user, logout } = useAuth();
@@ -619,16 +621,21 @@ export default function Counter() {
             aria-label={t('counter.downloadPosApk')}
           >
             <div className="counter-pos-download-bar__copy">
-              <strong>{t('counter.downloadPosApk')}</strong>
-              <small>{t('counter.downloadPosApkHint')}</small>
+              <strong>
+                {t('counter.downloadPosApk')} · v{POS_APK_VERSION}
+              </strong>
+              <small>
+                {t('counter.downloadPosApkHint')} File: {POS_APK_FILENAME} (purani 1.0 mat
+                kholo).
+              </small>
             </div>
             <a
               className="wp-button counter-pos-download-bar__cta"
               href={POS_APK_HREF}
-              download="AsFix-POS.apk"
+              download={POS_APK_FILENAME}
               type="application/vnd.android.package-archive"
             >
-              {t('counter.downloadPosApk')}
+              Download v{POS_APK_VERSION}
             </a>
           </div>
         ) : null}
