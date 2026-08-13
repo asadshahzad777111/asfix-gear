@@ -5,6 +5,13 @@
   "installCommand": "npm install",
   "headers": [
     {
+      "source": "/pos-app-version.json",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-cache, no-store, must-revalidate" },
+        { "key": "Content-Type", "value": "application/json" }
+      ]
+    },
+    {
       "source": "/downloads/AsFix-POS.apk",
       "headers": [
         { "key": "Content-Type", "value": "application/vnd.android.package-archive" },

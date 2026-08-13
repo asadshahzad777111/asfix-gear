@@ -237,6 +237,54 @@ export async function alertStaffNewOrder(order, opts = {}) {
   return orderId;
 }
 
+/**
+ * Staff alert when customer requests cancel/refund.
+ */
+export async function alertStaffCancelRequest(order, opts = {}) {
+  if (!isOnlineCustomerOrder(order)) return;
+  const orderId = order.order_id || order.id || '—';
+  const name = String(order.customer_name || 'Customer').trim() || 'Customer';
+  const postex = Boolean(order.cancel_postex_booked_at_request || order.postex_tracking);
+  const title = postex
+    ? `Cancel request #${orderId} · PostEx booked`
+    : `Cancel request #${orderId}`;
+  const body = `${name} wants to cancel — refund request${postex ? ' (PostEx already booked)' : ''}`;
+  playNewOrderChime();
+  await ensureStaffNotifyPermissions();
+  try {
+    const LN = await getLocalNotifications();
+    if (LN) {
+      const numericId = (Number(order.id) || Date.now()) % 2_000_000_000;
+      await LN.schedule({
+        notifications: [
+          {
+            id: numericId + 900_000,
+            title,
+            body,
+            channelId: CHANNEL_ID,
+            sound: 'default',
+            extra: { orderId: String(orderId), path: adminOrderDeepLink(orderId) },
+          },
+        ],
+      });
+    } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && !isNativePosApp()) {
+      const n = new Notification(title, { body, tag: `asfix-cancel-${orderId}`, renotify: true });
+      n.onclick = () => {
+        try {
+          window.focus();
+        } catch {
+          /* ignore */
+        }
+        opts.onOpen?.(orderId);
+        n.close();
+      };
+    }
+  } catch (err) {
+    console.warn('[StaffNotify] Cancel alert failed:', err?.message || err);
+  }
+  return orderId;
+}
+
 export function pickNewOnlineOrders(orders, sinceId) {
   const floor = Number(sinceId) || 0;
   return (orders || [])

@@ -49,6 +49,7 @@ export default function AdminOrdersTable({
   onAssignRider,
   onMarkDelivered,
   onBookPostEx,
+  onOrderUpdated,
   t,
 }) {
   const rows = useMemo(
@@ -195,6 +196,7 @@ export default function AdminOrdersTable({
                           onAssignRider={channel === 'online' && !isReturn ? onAssignRider : undefined}
                           onMarkDelivered={channel === 'online' && !isReturn ? onMarkDelivered : undefined}
                           onBookPostEx={channel === 'online' && !isReturn ? onBookPostEx : undefined}
+                          onOrderUpdated={onOrderUpdated}
                           className={`admin-float-card admin-order-card-full glass-card${
                             isReturn
                               ? ' admin-order-card--return'

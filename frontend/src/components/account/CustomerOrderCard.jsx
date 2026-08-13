@@ -3,6 +3,7 @@ import { formatPrice } from '../../api/client';
 import { useTranslation } from '../../context/LanguageContext';
 import OrderTimeline from '../OrderTimeline';
 import OrderHelpActions from '../OrderHelpActions';
+import OrderCancelRequest from '../OrderCancelRequest';
 import { getOrderCustomerStatus } from '../../utils/orderStatus';
 import { isPaymentVerified } from '../../utils/orderSearch';
 
@@ -111,6 +112,11 @@ export default function CustomerOrderCard({
       </div>
 
       <OrderTimeline order={order} statusHistory={order.status_history} />
+
+      <OrderCancelRequest
+        order={order}
+        phone={userPhone || order.phone || ''}
+      />
 
       {showTrackLink && (
         <Link

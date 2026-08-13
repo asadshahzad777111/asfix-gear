@@ -1,0 +1,166 @@
+.ocr-wrap {
+  margin-top: 0.75rem;
+}
+
+.ocr-btn {
+  width: 100%;
+}
+
+.ocr-msg {
+  margin: 0 0 0.5rem;
+  font-size: 0.85rem;
+  color: #057a55;
+}
+
+.ocr-banner {
+  margin-top: 0.75rem;
+  padding: 0.65rem 0.8rem;
+  border-radius: 0.55rem;
+  font-size: 0.86rem;
+  line-height: 1.4;
+}
+
+.ocr-banner--pending {
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fdba74;
+}
+
+.ocr-banner--done {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+}
+
+.ocr-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 11000;
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+  background: rgba(15, 23, 42, 0.55);
+}
+
+.ocr-modal__card {
+  width: min(100%, 22rem);
+  background: #fff;
+  border-radius: 0.85rem;
+  padding: 1.15rem 1.1rem 1rem;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.28);
+}
+
+.ocr-modal__card h3 {
+  margin: 0 0 0.45rem;
+  font-size: 1.1rem;
+}
+
+.ocr-modal__lead {
+  margin: 0 0 0.65rem;
+  font-size: 0.9rem;
+  color: #475569;
+  line-height: 1.45;
+}
+
+.ocr-modal__warn {
+  margin: 0 0 0.75rem;
+  padding: 0.55rem 0.65rem;
+  border-radius: 0.5rem;
+  font-size: 0.82rem;
+  line-height: 1.4;
+  background: #fff7ed;
+  color: #9a3412;
+  border: 1px solid #fed7aa;
+}
+
+.ocr-modal__warn--postex {
+  background: #fef2f2;
+  color: #991b1b;
+  border-color: #fecaca;
+}
+
+.ocr-modal__label {
+  display: block;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: #64748b;
+  margin-bottom: 0.3rem;
+}
+
+.ocr-modal__card textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #cbd5e1;
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.65rem;
+  font: inherit;
+  resize: vertical;
+  min-height: 4.5rem;
+}
+
+.ocr-modal__err {
+  margin: 0.5rem 0 0;
+  color: #b32d2e;
+  font-size: 0.84rem;
+}
+
+.ocr-modal__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.45rem;
+  margin-top: 0.85rem;
+}
+
+.admin-cancel-req {
+  margin: 0.55rem 0 0.35rem;
+  padding: 0.65rem 0.7rem;
+  border-radius: 0.55rem;
+  background: #fff7ed;
+  border: 1px solid #fdba74;
+}
+
+.admin-cancel-req--postex {
+  background: #fef2f2;
+  border-color: #f87171;
+}
+
+.admin-cancel-req__title {
+  margin: 0 0 0.25rem;
+  font-size: 0.86rem;
+  font-weight: 700;
+  color: #9a3412;
+}
+
+.admin-cancel-req--postex .admin-cancel-req__title {
+  color: #991b1b;
+}
+
+.admin-cancel-req__meta {
+  margin: 0 0 0.55rem;
+  font-size: 0.78rem;
+  color: #7c2d12;
+  line-height: 1.4;
+}
+
+.admin-cancel-req__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
+
+.admin-cancel-badge {
+  display: inline-block;
+  margin-left: 0.35rem;
+  padding: 0.12rem 0.45rem;
+  border-radius: 999px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: #ea580c;
+  color: #fff;
+  vertical-align: middle;
+}
+
+.admin-cancel-badge--postex {
+  background: #dc2626;
+}

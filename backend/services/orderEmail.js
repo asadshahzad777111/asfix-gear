@@ -347,6 +347,118 @@ export async function sendNewOrderShopEmail(order) {
   }
 }
 
+export function buildCancelRequestShopEmail(order) {
+  const orderId = order.order_id || order.id;
+  const name = String(order.customer_name || 'Customer').trim();
+  const phone = String(order.phone || '—').trim();
+  const postexBooked = Boolean(
+    order.cancel_postex_booked_at_request || order.postex_tracking || order.tracking_number
+  );
+  const tracking = order.postex_tracking || order.tracking_number || '';
+  const reason = String(order.cancel_request_reason || '').trim();
+  const adminUrl = `${SITE}/admin?tab=orders&q=${encodeURIComponent(String(orderId))}`;
+  const subject = postexBooked
+    ? `${BRAND} — CANCEL REQUEST #${orderId} · PostEx already booked`
+    : `${BRAND} — CANCEL / REFUND REQUEST #${orderId}`;
+
+  const text = [
+    `Customer wants to cancel #${orderId} — refund request`,
+    '',
+    `Customer: ${name}`,
+    `Phone: ${phone}`,
+    `Total: ${formatAmount(order.total_amount)}`,
+    postexBooked
+      ? `PostEx: ALREADY BOOKED${tracking ? ` (${tracking})` : ''} — do NOT auto-cancel; stop courier / refund manually if needed.`
+      : 'PostEx: not booked yet — easy Approve cancel in Admin.',
+    reason ? `Reason: ${reason}` : '',
+    '',
+    `Open Admin: ${adminUrl}`,
+    `— ${BRAND}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
+
+  const banner = postexBooked ? '#b91c1c' : '#c2410c';
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f172a;font-family:Segoe UI,system-ui,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#1e293b;border-radius:16px;overflow:hidden;border:1px solid #334155;">
+        <tr><td style="padding:28px 32px;background:${banner};">
+          <h1 style="margin:0;font-size:20px;color:#fff;">Customer wants to cancel</h1>
+          <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.95);">#${escapeHtml(String(orderId))} — refund request</p>
+        </td></tr>
+        <tr><td style="padding:28px 32px;color:#e2e8f0;">
+          <p style="margin:0 0 12px;font-size:15px;"><strong>${escapeHtml(name)}</strong> · ${escapeHtml(phone)}</p>
+          <p style="margin:0 0 8px;font-size:14px;">Total: ${escapeHtml(formatAmount(order.total_amount))}</p>
+          <p style="margin:0 0 12px;font-size:13px;color:${postexBooked ? '#fca5a5' : '#fdba74'};">
+            ${
+              postexBooked
+                ? `PostEx already booked${tracking ? ` (${escapeHtml(String(tracking))})` : ''} — staff must handle courier + refund manually. No auto PostEx cancel.`
+                : 'PostEx not booked — Approve cancel in Admin is safe.'
+            }
+          </p>
+          ${reason ? `<p style="margin:0 0 16px;font-size:13px;color:#94a3b8;">Reason: ${escapeHtml(reason)}</p>` : ''}
+          <a href="${adminUrl}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;">Open in Admin</a>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  return { subject, text, html };
+}
+
+export async function sendCancelRequestShopEmail(order) {
+  if (!order) return { sent: false, skipped: true };
+  const to = resolveShopNotifyEmail();
+  try {
+    const result = await deliverTransactionalEmail(to, buildCancelRequestShopEmail(order));
+    if (result.sent) {
+      console.log(`[OrderEmail] Cancel-request shop notify sent to ${to} for #${order.order_id}`);
+    }
+    return result;
+  } catch (err) {
+    console.error('[OrderEmail] Cancel-request shop notify failed:', err.message);
+    return { sent: false, error: err.message };
+  }
+}
+
+/** Soft customer email when staff marks refund sent — never includes PostEx fee/cut. */
+export function buildCancelRefundCustomerEmail(order) {
+  const orderId = order.order_id || order.id;
+  const prepaid = !(String(order.payment_mode || '').toLowerCase() === 'cod' && order.cancel_refund_status === 'not_needed');
+  const isCodNoRefund = order.cancel_refund_status === 'not_needed';
+  const subject = isCodNoRefund
+    ? `${BRAND} — Order #${orderId} cancelled`
+    : `${BRAND} — Refund update for #${orderId}`;
+
+  const apology = isCodNoRefund
+    ? `Order #${orderId} has been cancelled. No online payment was taken (COD), so no money return is needed. We're sorry for the inconvenience.`
+    : `We're sorry for the inconvenience with order #${orderId}. Your cancel request was approved. If payment was received, refund is being processed and may take 1–2 working days.`;
+
+  const text = [apology, '', `Track: ${SITE}/track`, '', `— Team ${BRAND}`].join('\n');
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:24px;background:#0f172a;font-family:Segoe UI,system-ui,sans-serif;color:#e2e8f0;">
+  <table width="100%" style="max-width:520px;margin:0 auto;background:#1e293b;border-radius:12px;padding:24px;">
+    <tr><td>
+      <h1 style="margin:0 0 12px;font-size:18px;color:#fff;">${isCodNoRefund ? 'Order cancelled' : 'Refund update'}</h1>
+      <p style="margin:0;line-height:1.5;font-size:14px;">${escapeHtml(apology)}</p>
+      <p style="margin:16px 0 0;font-size:12px;color:#94a3b8;">— Team ${escapeHtml(BRAND)}</p>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  return { subject, text, html, prepaid };
+}
+
+export async function sendCancelRefundCustomerEmail(order) {
+  if (!order) return { sent: false, skipped: true };
+  return sendToCustomer(order, buildCancelRefundCustomerEmail(order));
+}
+
 /** Status change emails (not delivered — that uses completion email). */
 export async function sendOrderStatusEmail(order, previousStatus) {
   const status = order?.shipping_status;

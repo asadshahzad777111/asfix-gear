@@ -9,6 +9,7 @@ import RepairPhotosGrid from '../components/RepairPhotosGrid';
 import { RepairChatButton, RepairChatModal, RepairChatLoginPrompt } from '../components/RepairChatPanel';
 import OrderFeedbackForm from '../components/OrderFeedbackForm';
 import OrderHelpActions from '../components/OrderHelpActions';
+import OrderCancelRequest from '../components/OrderCancelRequest';
 import BackButton from '../components/BackButton';
 import CustomerOrderCard from '../components/account/CustomerOrderCard';
 import useLiveUpdates from '../hooks/useLiveUpdates';
@@ -438,6 +439,25 @@ export default function OrderTrack() {
                     ))}
                   </ul>
                   <p className="order-track-total">{t('track.total')}: <strong>{formatPrice(displayOrder.total_amount)}</strong></p>
+
+                  <OrderCancelRequest
+                    order={displayOrder}
+                    phone={phone || displayOrder.phone || ''}
+                    onUpdated={(next) => {
+                      if (!next) return;
+                      if (selectedFromList) {
+                        setMyOrders((prev) =>
+                          prev.map((o) =>
+                            o.id === displayOrder.id || o.order_id === displayOrder.order_id
+                              ? { ...o, ...next }
+                              : o
+                          )
+                        );
+                      } else {
+                        setOrder((prev) => (prev ? { ...prev, ...next } : prev));
+                      }
+                    }}
+                  />
 
                   <OrderHelpActions orderId={displayOrder.order_id} phone={phone || displayOrder.phone} />
 

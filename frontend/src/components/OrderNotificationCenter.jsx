@@ -16,6 +16,7 @@ import { startVisibilityPoll } from '../utils/visibilityPoll';
 import {
   adminOrderDeepLink,
   alertStaffNewOrder,
+  alertStaffCancelRequest,
   attachLocalNotificationOpenHandler,
   ensureStaffNotifyPermissions,
   getSeenOnlineOrderId,
@@ -59,12 +60,21 @@ function ToastStack({ toasts, onDismiss, onView }) {
         let title;
         let body;
         if (isStaff) {
-          title = t('orderNotif.staffNewOrder');
-          body = t('orderNotif.staffBody', {
-            orderId: toast.orderId,
-            name: toast.customerName || 'Customer',
-            total: toast.totalLabel || '',
-          });
+          if (toast.kind === 'staff_cancel_request') {
+            title = t('orderNotif.staffCancelRequest');
+            body = t('orderNotif.staffCancelBody', {
+              orderId: toast.orderId,
+              name: toast.customerName || 'Customer',
+              postex: toast.postexBooked ? ' · PostEx booked' : '',
+            });
+          } else {
+            title = t('orderNotif.staffNewOrder');
+            body = t('orderNotif.staffBody', {
+              orderId: toast.orderId,
+              name: toast.customerName || 'Customer',
+              total: toast.totalLabel || '',
+            });
+          }
         } else {
           const statusKey = `track.status_${toast.status}`;
           const statusLabel = t(statusKey);
@@ -173,10 +183,38 @@ export function OrderNotificationProvider({ children }) {
     [isStaff, openStaffOrder, pushToast]
   );
 
+  const handleStaffCancelRequest = useCallback(
+    async (orderLike) => {
+      if (!isStaff || !isOnlineCustomerOrder(orderLike)) return;
+      const key = `cancel-${orderLike.id || orderLike.order_id || ''}`;
+      if (!key || alertingRef.current.has(key)) return;
+      alertingRef.current.add(key);
+      window.setTimeout(() => alertingRef.current.delete(key), 60_000);
+
+      const orderId = orderLike.order_id || orderLike.id;
+      pushToast(
+        {
+          kind: 'staff_cancel_request',
+          orderId,
+          customerName: orderLike.customer_name || 'Customer',
+          postexBooked: Boolean(orderLike.cancel_postex_booked_at_request || orderLike.postex_tracking),
+          status: 'cancelled',
+        },
+        STAFF_DISMISS_MS
+      );
+      try {
+        await alertStaffCancelRequest(orderLike, { onOpen: openStaffOrder });
+      } catch {
+        /* best-effort */
+      }
+    },
+    [isStaff, openStaffOrder, pushToast]
+  );
+
   const viewOrder = useCallback(
     (toast) => {
       dismiss(toast.id);
-      if (toast.kind === 'staff_new_order') {
+      if (toast.kind === 'staff_new_order' || toast.kind === 'staff_cancel_request') {
         openStaffOrder(toast.orderId);
         return;
       }
@@ -203,6 +241,10 @@ export function OrderNotificationProvider({ children }) {
     onEvent: (event, data) => {
       if (isStaff && event === 'order_created' && data) {
         void handleStaffNewOrder(data);
+        return;
+      }
+      if (isStaff && event === 'order_cancel_requested' && data) {
+        void handleStaffCancelRequest(data);
         return;
       }
       if (!isCustomer) return;

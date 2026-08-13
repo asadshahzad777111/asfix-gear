@@ -575,6 +575,48 @@ export const api = {
     if (phone?.trim()) q.set('phone', phone.trim());
     return request(`/orders/track?${q}`);
   },
+  requestOrderCancel: ({ orderId, phone = '', reason = '' } = {}) =>
+    request('/orders/cancel-request', {
+      method: 'POST',
+      body: JSON.stringify({ orderId, phone, reason }),
+    }),
+  approveOrderCancelRequest: (id, body = {}) =>
+    request(`/orders/${id}/cancel-request/approve`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  dismissOrderCancelRequest: (id, body = {}) =>
+    request(`/orders/${id}/cancel-request/dismiss`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  updateOrderCancelRefund: (id, body = {}) =>
+    request(`/orders/${id}/cancel-refund`, {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
+  uploadCancelRefundProof: async (id, file) => {
+    const token = getAuthToken();
+    if (!token) throw new Error('Staff login required');
+    const form = new FormData();
+    form.append('proof', file);
+    const res = await fetch(`${API_BASE}/orders/${id}/cancel-refund-proof`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+      body: form,
+    });
+    const text = await res.text();
+    let data = {};
+    if (text) {
+      try {
+        data = JSON.parse(text);
+      } catch {
+        /* ignore */
+      }
+    }
+    if (!res.ok) throw new Error(data.error || 'Refund proof upload failed');
+    return data;
+  },
   saveOrderGmail: (id, body) =>
     request(`/orders/${id}/gmail`, { method: 'PATCH', body: JSON.stringify(body) }),
   submitOrderFeedback: (orderId, body) =>
@@ -614,6 +656,12 @@ export const api = {
   updateCategory: (id, body) =>
     request(`/admin/categories/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteCategory: (id) => request(`/admin/categories/${id}`, { method: 'DELETE' }),
+  getEmailStatus: () => request('/admin/email-status'),
+  sendTestEmail: (to) =>
+    request('/admin/email-test', {
+      method: 'POST',
+      body: JSON.stringify(to ? { to } : {}),
+    }),
   downloadDataBackup: () => downloadDataBackup(),
 
   getStats: () => request('/stats'),

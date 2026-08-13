@@ -17,6 +17,7 @@ import SectionScrollStrap from './components/SectionScrollStrap';
 import AuthTopBar from './components/auth/AuthTopBar';
 import PageTransition from './components/premium/PageTransition';
 import Analytics from './components/seo/Analytics';
+import PosAppUpdatePrompt from './components/PosAppUpdatePrompt';
 import { useLocation } from 'react-router-dom';
 import { useGaming } from './context/GamingContext';
 import { wakeApiServer } from './api/client';
@@ -73,6 +74,7 @@ function AppContent() {
         .join(' ')}
     >
       <Analytics />
+      {isAdminRoute && <PosAppUpdatePrompt />}
       {!isGamingPage && !isAdminRoute && <AmbientBackground />}
       {isAuthRoute ? <AuthTopBar /> : !isAdminRoute && <Navbar />}
       {showShopChrome && !isGamingPage && <SectionScrollStrap />}

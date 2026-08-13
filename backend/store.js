@@ -2207,7 +2207,366 @@ export function updateOrderStatus(id, shipping_status, updatedBy = null) {
       status_history: history,
       activity_log,
       updated_at: at,
+      ...(isCancelled
+        ? {
+            cancel_request_status: existing.cancel_request_status === 'pending' ? 'approved' : existing.cancel_request_status || null,
+            cancel_resolved_at: existing.cancel_resolved_at || at,
+          }
+        : {}),
     };
+    return data.orders[index];
+  });
+}
+
+const CANCEL_BLOCKED_STATUSES = new Set(['cancelled', 'delivered', 'returned']);
+const VALID_CANCEL_REFUND_STATUSES = new Set(['not_needed', 'pending', 'sent', 'partial']);
+
+function orderHasPostExBooking(order) {
+  return Boolean(order?.postex_tracking || order?.tracking_number || order?.postex_booked_at);
+}
+
+function minutesSince(iso) {
+  const t = Date.parse(String(iso || ''));
+  if (!Number.isFinite(t)) return null;
+  return Math.max(0, Math.round((Date.now() - t) / 60000));
+}
+
+/** Prepaid = not COD, or already marked paid/verified. COD unpaid → no money return. */
+export function isOrderPrepaidForCancel(order) {
+  if (!order) return false;
+  const mode = String(order.payment_mode || '').trim().toLowerCase();
+  if (mode === 'cod') {
+    const ps = String(order.payment_status || '').toLowerCase();
+    return ps === 'paid' || ps === 'payment_verified' || ps === 'refunded';
+  }
+  const ps = String(order.payment_status || '').toLowerCase();
+  if (ps === 'paid' || ps === 'payment_verified') return true;
+  if (ps === 'pending_payment' || ps === 'unpaid') return false;
+  // JazzCash / EasyPaisa / bank — treat as prepaid intent once order exists
+  return mode === 'jazzcash' || mode === 'easypaisa' || mode === 'bank' || mode === 'card';
+}
+
+function countRecentCancelRequestsByPhone(data, phone, excludeOrderId = null, withinDays = 7) {
+  const key = normalizePhone(phone);
+  if (!key) return 0;
+  const cutoff = Date.now() - withinDays * 24 * 60 * 60 * 1000;
+  let n = 0;
+  for (const o of data.orders || []) {
+    if (excludeOrderId != null && Number(o.id) === Number(excludeOrderId)) continue;
+    if (normalizePhone(o.phone) !== key) continue;
+    if (!o.cancel_requested_at) continue;
+    const t = Date.parse(o.cancel_requested_at);
+    if (!Number.isFinite(t) || t < cutoff) continue;
+    n += 1;
+  }
+  return n;
+}
+
+/**
+ * Customer-safe cancel fields only — never expose PostEx fee/cut amounts.
+ * Staff sees full order object from /api/orders.
+ */
+export function cancelRequestPublicView(order) {
+  if (!order) return null;
+  const postexBooked = orderHasPostExBooking(order);
+  const mins = minutesSince(order.created_at);
+  const prepaid = isOrderPrepaidForCancel(order);
+  const refundStatus = order.cancel_refund_status || null;
+  return {
+    cancel_requested_at: order.cancel_requested_at || null,
+    cancel_request_reason: order.cancel_request_reason || '',
+    cancel_request_status: order.cancel_request_status || null,
+    cancel_resolved_at: order.cancel_resolved_at || null,
+    cancel_postex_booked_at_request: Boolean(order.cancel_postex_booked_at_request),
+    postex_booked: postexBooked,
+    // tracking number OK to show (already on track page) — not fee cuts
+    postex_tracking: order.postex_tracking || order.tracking_number || null,
+    soft_window_minutes: 15,
+    minutes_since_order: mins,
+    within_soft_window: mins != null && mins <= 15,
+    payment_mode: order.payment_mode || null,
+    is_prepaid: prepaid,
+    cancel_refund_status: refundStatus,
+    can_request_cancel:
+      !CANCEL_BLOCKED_STATUSES.has(String(order.shipping_status || '')) &&
+      order.cancel_request_status !== 'pending' &&
+      order.source !== 'counter_sale' &&
+      order.source !== 'counter_return',
+  };
+}
+
+/** Soft customer-facing copy (no PostEx fee language). */
+export function customerCancelRequestMessage(order) {
+  const prepaid = isOrderPrepaidForCancel(order);
+  if (!prepaid) {
+    return 'Cancel request received. Shop will confirm. No online payment was taken for COD — no money return needed.';
+  }
+  return 'Cancel request received. Shop will confirm cancel & refund if paid. May take 1–2 working days.';
+}
+
+/**
+ * Customer asks to cancel / refund. Does NOT auto-cancel PostEx or payment gateways.
+ */
+export function requestOrderCancel(orderRef, { phone = '', reason = '', customerUser = null } = {}) {
+  return withData((data) => {
+    const phoneKey = normalizePhone(phone);
+    const reasonText = String(reason || '').trim().slice(0, 400);
+    const uid = customerUser?.id != null ? Number(customerUser.id) : null;
+
+    const index = data.orders.findIndex((o) => {
+      if (!orderMatchesTrackRef(o, orderRef) && String(o.id) !== String(orderRef)) return false;
+      if (uid && Number(o.customer_user_id) === uid) return true;
+      if (uid) {
+        const userPhone = normalizePhone(customerUser.phone);
+        const userEmail = String(customerUser.email || '').trim().toLowerCase();
+        if (userPhone && normalizePhone(o.phone) === userPhone) return true;
+        if (userEmail && String(o.gmail || '').trim().toLowerCase() === userEmail) return true;
+      }
+      if (phoneKey && normalizePhone(o.phone) === phoneKey) return true;
+      return false;
+    });
+
+    if (index === -1) {
+      const err = new Error('Order not found or phone mismatch');
+      err.code = 'NOT_FOUND';
+      throw err;
+    }
+
+    const existing = data.orders[index];
+    if (existing.source === 'counter_sale' || existing.source === 'counter_return') {
+      const err = new Error('Counter bills cannot be cancelled online');
+      err.code = 'COUNTER';
+      throw err;
+    }
+    if (CANCEL_BLOCKED_STATUSES.has(String(existing.shipping_status || ''))) {
+      const err = new Error('This order can no longer be cancelled');
+      err.code = 'BLOCKED';
+      throw err;
+    }
+    if (existing.cancel_request_status === 'pending') {
+      const err = new Error('Cancel request already pending — shop will confirm soon');
+      err.code = 'ALREADY_PENDING';
+      throw err;
+    }
+
+    const at = now();
+    const postexBooked = orderHasPostExBooking(existing);
+    const prepaid = isOrderPrepaidForCancel(existing);
+    const recentCancels = countRecentCancelRequestsByPhone(data, existing.phone, existing.id, 7);
+    const repeatCancel = recentCancels >= 1; // this request will be 2nd+
+    const activity_log = [...(existing.activity_log || [])];
+    activity_log.push({
+      at,
+      message: postexBooked
+        ? `Customer requested cancel/refund (PostEx already booked${existing.postex_tracking ? `: ${existing.postex_tracking}` : ''}) — staff: possible courier fee cut; do not tell customer fee details`
+        : `Customer requested cancel/refund (${prepaid ? 'prepaid — refund may be owed' : 'COD — usually no refund'})`,
+      by: uid,
+    });
+
+    data.orders[index] = {
+      ...existing,
+      cancel_requested_at: at,
+      cancel_request_reason: reasonText,
+      cancel_request_status: 'pending',
+      cancel_postex_booked_at_request: postexBooked,
+      cancel_repeat_flag: repeatCancel || Boolean(existing.cancel_repeat_flag),
+      cancel_recent_count_7d: recentCancels + 1,
+      cancel_resolved_at: null,
+      cancel_resolved_by: null,
+      cancel_refund_note: '',
+      cancel_refund_status: prepaid ? 'pending' : 'not_needed',
+      cancel_refund_amount: null,
+      cancel_refund_proof_url: existing.cancel_refund_proof_url || '',
+      cancel_staff_note: existing.cancel_staff_note || '',
+      activity_log,
+      updated_at: at,
+    };
+    return data.orders[index];
+  });
+}
+
+/**
+ * Staff approve → mark cancelled (+ refund workflow fields). Does NOT call PostEx cancel API.
+ * Staff dismiss → clear pending request without cancelling.
+ */
+export function resolveOrderCancelRequest(
+  id,
+  {
+    action,
+    refund_note = '',
+    refund_status = null,
+    refund_amount = null,
+    staff_note = '',
+    updatedBy = null,
+  } = {}
+) {
+  return withData((data) => {
+    const index = data.orders.findIndex((o) => o.id === Number(id));
+    if (index === -1) return null;
+
+    const existing = data.orders[index];
+    if (existing.cancel_request_status !== 'pending') {
+      const err = new Error('No pending cancel request on this order');
+      err.code = 'NO_PENDING';
+      throw err;
+    }
+
+    const act = String(action || '').trim().toLowerCase();
+    if (act !== 'approve' && act !== 'dismiss') {
+      const err = new Error('action must be approve or dismiss');
+      err.code = 'BAD_ACTION';
+      throw err;
+    }
+
+    const at = now();
+    const note = String(refund_note || '').trim().slice(0, 400);
+    const internalNote = String(staff_note || '').trim().slice(0, 500);
+    const activity_log = [...(existing.activity_log || [])];
+    const who = updatedBy?.username || 'Staff';
+    const prepaid = isOrderPrepaidForCancel(existing);
+    const postexBooked = Boolean(existing.cancel_postex_booked_at_request || orderHasPostExBooking(existing));
+
+    if (act === 'dismiss') {
+      activity_log.push({
+        at,
+        message: `Cancel request dismissed by Staff: ${who}${note ? ` — ${note}` : ''}`,
+        by: updatedBy?.id ?? null,
+      });
+      data.orders[index] = {
+        ...existing,
+        cancel_request_status: 'dismissed',
+        cancel_resolved_at: at,
+        cancel_resolved_by: updatedBy?.id ?? null,
+        cancel_refund_note: note,
+        cancel_staff_note: internalNote || existing.cancel_staff_note || '',
+        activity_log,
+        updated_at: at,
+      };
+      return data.orders[index];
+    }
+
+    let nextRefundStatus = String(refund_status || '').trim().toLowerCase();
+    if (!VALID_CANCEL_REFUND_STATUSES.has(nextRefundStatus)) {
+      nextRefundStatus = prepaid ? 'pending' : 'not_needed';
+    }
+
+    let nextAmount = existing.cancel_refund_amount;
+    if (refund_amount != null && refund_amount !== '') {
+      const n = Number(refund_amount);
+      nextAmount = Number.isFinite(n) && n >= 0 ? Math.round(n) : null;
+    } else if (nextRefundStatus === 'not_needed') {
+      nextAmount = 0;
+    } else if (nextAmount == null && prepaid) {
+      nextAmount = Math.round(Number(existing.total_amount) || 0);
+    }
+
+    let stockDeducted = Boolean(existing.stock_deducted);
+    if (stockDeducted) {
+      restoreOrderStock(data, existing);
+      stockDeducted = false;
+    }
+    const history = [
+      ...(existing.status_history || []),
+      { status: 'cancelled', at, by: updatedBy?.id ?? null },
+    ];
+    activity_log.push({
+      at,
+      message: `Cancel approved by Staff: ${who} — refund=${nextRefundStatus}${
+        nextAmount != null ? ` Rs ${nextAmount}` : ''
+      }${postexBooked ? ' · PostEx booked (staff: fee cut possible; customer not shown fees)' : ''}${
+        note ? ` — ${note}` : ''
+      }`,
+      by: updatedBy?.id ?? null,
+    });
+
+    data.orders[index] = {
+      ...existing,
+      shipping_status: 'cancelled',
+      stock_deducted: stockDeducted,
+      status_history: history,
+      cancel_request_status: 'approved',
+      cancel_resolved_at: at,
+      cancel_resolved_by: updatedBy?.id ?? null,
+      cancel_refund_note: note,
+      cancel_staff_note: internalNote || existing.cancel_staff_note || '',
+      cancel_refund_status: nextRefundStatus,
+      cancel_refund_amount: nextAmount,
+      activity_log,
+      updated_at: at,
+    };
+    return data.orders[index];
+  });
+}
+
+/** Update refund workflow after cancel approved (or while pending). Staff-only fields. */
+export function updateOrderCancelRefund(
+  id,
+  {
+    refund_status = null,
+    refund_amount = null,
+    staff_note = null,
+    refund_note = null,
+    refund_proof_url = null,
+    updatedBy = null,
+  } = {}
+) {
+  return withData((data) => {
+    const index = data.orders.findIndex((o) => o.id === Number(id));
+    if (index === -1) return null;
+    const existing = data.orders[index];
+    if (!existing.cancel_requested_at && existing.cancel_request_status !== 'approved') {
+      const err = new Error('No cancel request on this order');
+      err.code = 'NO_CANCEL';
+      throw err;
+    }
+
+    const at = now();
+    const patch = { updated_at: at };
+    const activity_log = [...(existing.activity_log || [])];
+    const who = updatedBy?.username || 'Staff';
+
+    if (refund_status != null) {
+      const s = String(refund_status).trim().toLowerCase();
+      if (!VALID_CANCEL_REFUND_STATUSES.has(s)) {
+        const err = new Error('Invalid refund status');
+        err.code = 'BAD_STATUS';
+        throw err;
+      }
+      patch.cancel_refund_status = s;
+    }
+    if (refund_amount != null && refund_amount !== '') {
+      const n = Number(refund_amount);
+      if (!Number.isFinite(n) || n < 0) {
+        const err = new Error('Invalid refund amount');
+        err.code = 'BAD_AMOUNT';
+        throw err;
+      }
+      patch.cancel_refund_amount = Math.round(n);
+    }
+    if (staff_note != null) {
+      patch.cancel_staff_note = String(staff_note).trim().slice(0, 500);
+    }
+    if (refund_note != null) {
+      patch.cancel_refund_note = String(refund_note).trim().slice(0, 400);
+    }
+    if (refund_proof_url != null) {
+      patch.cancel_refund_proof_url = String(refund_proof_url).trim().slice(0, 500);
+    }
+
+    const bits = [];
+    if (patch.cancel_refund_status) bits.push(`status=${patch.cancel_refund_status}`);
+    if (patch.cancel_refund_amount != null) bits.push(`amount=Rs ${patch.cancel_refund_amount}`);
+    if (patch.cancel_refund_proof_url) bits.push('proof attached');
+    if (bits.length) {
+      activity_log.push({
+        at,
+        message: `Cancel refund updated by Staff: ${who} — ${bits.join(', ')}`,
+        by: updatedBy?.id ?? null,
+      });
+      patch.activity_log = activity_log;
+    }
+
+    data.orders[index] = { ...existing, ...patch };
     return data.orders[index];
   });
 }
@@ -2449,7 +2808,9 @@ export function trackOrder(orderId, phone) {
 
   return {
     order_id: order.order_id,
+    id: order.id,
     customer_name: order.customer_name,
+    phone: order.phone,
     city: order.city,
     payment_mode: order.payment_mode,
     items: order.items,
@@ -2465,6 +2826,8 @@ export function trackOrder(orderId, phone) {
     customer_feedback: order.customer_feedback || null,
     created_at: order.created_at,
     updated_at: order.updated_at,
+    postex_tracking: order.postex_tracking || order.tracking_number || null,
+    ...cancelRequestPublicView(order),
   };
 }
 

@@ -5,6 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTranslation } from '../context/LanguageContext';
 import PaymentInstructions from './PaymentInstructions';
 import OrderHelpActions from './OrderHelpActions';
+import OrderCancelRequest from './OrderCancelRequest';
 import { mergePaymentSettings, isCodPayment } from '../config/payments';
 import { buildOrderReceipt } from '../utils/receipts';
 import { compressImageForUpload } from '../utils/compressImage';
@@ -208,6 +209,8 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
       </a>
 
       <OrderHelpActions orderId={order.order_id} phone={phone} />
+
+      <OrderCancelRequest order={order} phone={phone || order.phone || ''} />
 
       <div className="order-success-gmail glass-card">
         <p>{t('orderSuccess.gmailPrompt')}</p>

@@ -357,6 +357,10 @@ export default function AdminFloatingDashboard() {
                         onAssignRider={assignOrderRider}
                         onMarkDelivered={markOrderDelivered}
                         onBookPostEx={bookOrderPostEx}
+                        onOrderUpdated={(updated) => {
+                          if (!updated?.id) return;
+                          setOrders((prev) => prev.map((row) => (row.id === updated.id ? { ...row, ...updated } : row)));
+                        }}
                       />
 
                     ))

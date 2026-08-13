@@ -42,8 +42,24 @@ function getResendFrom() {
   return `"${BRAND_NAME}" <onboarding@resend.dev>`;
 }
 
-function emailDeliveryConfigured() {
+export function emailDeliveryConfigured() {
   return resendConfigured() || smtpConfigured();
+}
+
+/** Safe status for staff UI / health — never includes secrets. */
+export function getEmailDeliveryStatus() {
+  if (resendConfigured()) {
+    return { configured: true, provider: 'resend', from: getResendFrom() };
+  }
+  if (smtpConfigured()) {
+    const { user } = normalizeSmtpCredentials();
+    return {
+      configured: true,
+      provider: 'smtp',
+      user: user ? `${user.slice(0, 2)}…${user.includes('@') ? user.slice(user.indexOf('@')) : ''}` : '',
+    };
+  }
+  return { configured: false, provider: null };
 }
 
 function twilioConfigured() {

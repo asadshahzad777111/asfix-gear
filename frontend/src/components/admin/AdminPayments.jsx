@@ -466,6 +466,11 @@ export default function AdminPayments() {
                 <small>Off = temporary fall back to manual Lahore fee.</small>
               </span>
             </label>
+            <p style={{ gridColumn: '1 / -1', fontSize: '0.82rem', color: '#646970', margin: '0 0 0.75rem' }}>
+              <strong>Settlements (staff):</strong> PostEx/COD settlement aksar 1–7 din cuts ke baad aati hai.
+              Cancel ke baad courier fee cut ho sakti hai — customer ko sirf soft refund message; fee details sirf Admin
+              cancel panel / apni books mein. Full accounting app mein nahi.
+            </p>
             <label className="wp-address-setting-row" style={{ gridColumn: '1 / -1' }}>
               <input
                 type="checkbox"

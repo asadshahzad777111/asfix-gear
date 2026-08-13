@@ -93,6 +93,10 @@ export function publishOrderEvent(event, order) {
     payment_status: order.payment_status,
     shipping_status: order.shipping_status,
     delivery_status: order.delivery_status ?? null,
+    cancel_request_status: order.cancel_request_status || null,
+    cancel_postex_booked_at_request: Boolean(order.cancel_postex_booked_at_request),
+    postex_tracking: order.postex_tracking || order.tracking_number || null,
+    cancel_repeat_flag: Boolean(order.cancel_repeat_flag),
   });
 }
 

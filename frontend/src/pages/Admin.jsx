@@ -430,6 +430,11 @@ export default function Admin() {
     return updated;
   };
 
+  const onOrderUpdated = (updated) => {
+    if (!updated?.id) return;
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? { ...o, ...updated } : o)));
+  };
+
   const onLiveEvent = useCallback((event) => {
     if (event.startsWith('order_') || event.startsWith('repair_') || event.startsWith('product_')) {
       loadData();
@@ -798,6 +803,7 @@ export default function Admin() {
                   onAssignRider={assignOrderRider}
                   onMarkDelivered={markOrderDelivered}
                   onBookPostEx={bookOrderPostEx}
+                  onOrderUpdated={onOrderUpdated}
                   t={t}
                 />
               )}

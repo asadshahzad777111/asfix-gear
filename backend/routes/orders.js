@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import multer from 'multer';
 import * as store from '../store.js';
-import { requireAuth, requireRole } from '../middleware/auth.js';
+import { requireAuth, requireRole, optionalAuth } from '../middleware/auth.js';
 import { notifyShopWhatsApp, notifyCustomerWhatsApp } from '../services/otpDelivery.js';
 import {
   buildNewOrderShopMessage,
@@ -13,6 +13,8 @@ import {
   sendOrderPlacedEmail,
   sendOrderStatusEmail,
   sendNewOrderShopEmail,
+  sendCancelRequestShopEmail,
+  sendCancelRefundCustomerEmail,
 } from '../services/orderEmail.js';
 import { publishOrderEvent } from '../services/liveEvents.js';
 import { notifyN8nOrderCreated } from '../services/n8n.js';
@@ -426,6 +428,168 @@ router.get('/track', (req, res) => {
   if (!order) return res.status(404).json({ error: 'Order not found — check the ID' });
   res.json(order);
 });
+
+/**
+ * Customer cancel/refund request. Verified by order phone (guest) or logged-in customer ownership.
+ * Does NOT cancel PostEx or auto-refund — staff must Approve/Dismiss in Admin.
+ */
+router.post('/cancel-request', optionalAuth, (req, res) => {
+  const orderId = String(req.body?.orderId || req.body?.order_id || '').trim();
+  const phone = String(req.body?.phone || '').trim();
+  const reason = String(req.body?.reason || '').trim().slice(0, 400);
+  if (!orderId) {
+    return res.status(400).json({ error: 'Order ID is required' });
+  }
+
+  const customerUser = req.auth?.user?.role === 'customer' ? req.auth.user : null;
+  if (!customerUser && !phone) {
+    return res.status(400).json({ error: 'Phone number is required to verify this order' });
+  }
+
+  try {
+    const order = store.requestOrderCancel(orderId, { phone, reason, customerUser });
+    publishOrderEvent('order_cancel_requested', order);
+    sendCancelRequestShopEmail(order).catch((err) => {
+      console.error('[OrderEmail] Cancel-request shop notify failed:', err.message);
+    });
+    res.json({
+      ok: true,
+      // Soft customer copy — never mention PostEx fee/cut
+      message: store.customerCancelRequestMessage(order),
+      order: {
+        order_id: order.order_id,
+        id: order.id,
+        shipping_status: order.shipping_status,
+        payment_mode: order.payment_mode,
+        ...store.cancelRequestPublicView(order),
+      },
+    });
+  } catch (err) {
+    const code = err.code || '';
+    const status =
+      code === 'NOT_FOUND' ? 404 : code === 'ALREADY_PENDING' ? 409 : code === 'BLOCKED' || code === 'COUNTER' ? 400 : 400;
+    res.status(status).json({ error: err.message || 'Could not submit cancel request' });
+  }
+});
+
+router.post('/:id/cancel-request/approve', requireAuth, requireRole(...STAFF), (req, res) => {
+  const refund_note = String(req.body?.refund_note || '').trim().slice(0, 400);
+  const staff_note = String(req.body?.staff_note || '').trim().slice(0, 500);
+  const refund_status = req.body?.refund_status;
+  const refund_amount = req.body?.refund_amount;
+  try {
+    const previous = findOrderById(req.params.id);
+    const order = store.resolveOrderCancelRequest(req.params.id, {
+      action: 'approve',
+      refund_note,
+      staff_note,
+      refund_status,
+      refund_amount,
+      updatedBy: req.auth.user,
+    });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    notifyCustomerStatusChange(order, previous?.shipping_status);
+    publishOrderEvent('order_updated', order);
+    const prepaid = store.isOrderPrepaidForCancel(order);
+    res.json({
+      ok: true,
+      order,
+      staff_tips: {
+        prepaid,
+        postex_booked: Boolean(order.cancel_postex_booked_at_request || order.postex_tracking),
+        postex_note:
+          order.cancel_postex_booked_at_request || order.postex_tracking
+            ? 'PostEx booked — stop/return courier manually. Fee/cut staff-only; return remaining to customer. Never show cut to customer.'
+            : null,
+        refund_hint: prepaid
+          ? 'Prepaid — set refund status pending/sent/partial and attach proof when done.'
+          : 'COD — refund status not_needed (no money return).',
+        settlements:
+          'PostEx/COD settlement often 1–7 days after cuts — manage books manually; no auto accounting here.',
+      },
+    });
+  } catch (err) {
+    const status = err.code === 'NO_PENDING' ? 409 : 400;
+    res.status(status).json({ error: err.message || 'Could not approve cancel' });
+  }
+});
+
+router.post('/:id/cancel-request/dismiss', requireAuth, requireRole(...STAFF), (req, res) => {
+  const refund_note = String(req.body?.refund_note || '').trim().slice(0, 400);
+  const staff_note = String(req.body?.staff_note || '').trim().slice(0, 500);
+  try {
+    const order = store.resolveOrderCancelRequest(req.params.id, {
+      action: 'dismiss',
+      refund_note,
+      staff_note,
+      updatedBy: req.auth.user,
+    });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    publishOrderEvent('order_updated', order);
+    res.json({ ok: true, order });
+  } catch (err) {
+    const status = err.code === 'NO_PENDING' ? 409 : 400;
+    res.status(status).json({ error: err.message || 'Could not dismiss cancel request' });
+  }
+});
+
+router.patch('/:id/cancel-refund', requireAuth, requireRole(...STAFF), async (req, res) => {
+  const body = req.body && typeof req.body === 'object' ? req.body : {};
+  try {
+    const order = store.updateOrderCancelRefund(req.params.id, {
+      refund_status: body.refund_status,
+      refund_amount: body.refund_amount,
+      staff_note: body.staff_note,
+      refund_note: body.refund_note,
+      refund_proof_url: body.refund_proof_url,
+      updatedBy: req.auth.user,
+    });
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+    publishOrderEvent('order_updated', order);
+
+    let customer_email = null;
+    if (body.notify_customer) {
+      customer_email = await sendCancelRefundCustomerEmail(order);
+    }
+
+    res.json({ ok: true, order, customer_email });
+  } catch (err) {
+    const status = err.code === 'NO_CANCEL' || err.code === 'BAD_STATUS' || err.code === 'BAD_AMOUNT' ? 400 : 400;
+    res.status(status).json({ error: err.message || 'Could not update refund' });
+  }
+});
+
+router.post(
+  '/:id/cancel-refund-proof',
+  requireAuth,
+  requireRole(...STAFF),
+  (req, res, next) => {
+    proofUpload.single('proof')(req, res, (err) => {
+      if (err) return res.status(400).json({ error: err.message || 'Upload failed' });
+      next();
+    });
+  },
+  async (req, res) => {
+    try {
+      if (!isR2Configured()) {
+        return res.status(503).json({ error: 'Image storage (R2) is not configured' });
+      }
+      if (!req.file?.buffer) {
+        return res.status(400).json({ error: 'Proof image required' });
+      }
+      const url = await uploadPaymentProof(req.file.buffer, req.file.originalname, req.file.mimetype);
+      const order = store.updateOrderCancelRefund(req.params.id, {
+        refund_proof_url: url,
+        updatedBy: req.auth.user,
+      });
+      if (!order) return res.status(404).json({ error: 'Order not found' });
+      publishOrderEvent('order_updated', order);
+      res.json({ ok: true, refund_proof_url: url, order });
+    } catch (err) {
+      res.status(400).json({ error: err.message || 'Could not save refund proof' });
+    }
+  }
+);
 
 router.post('/', requireAuth, (req, res) => {
   const user = req.auth.user;

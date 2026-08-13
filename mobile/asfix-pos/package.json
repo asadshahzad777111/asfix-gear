@@ -13,6 +13,7 @@
   "dependencies": {
     "@asfixgear/asfix-thermal-print": "file:./plugins/asfix-thermal-print",
     "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.3",
     "@capacitor/core": "^6.2.0",
     "@capacitor/local-notifications": "^6.1.3",
     "@capacitor/preferences": "^6.0.3"

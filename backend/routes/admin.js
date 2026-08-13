@@ -2,14 +2,22 @@ import { Router } from 'express';
 import * as store from '../store.js';
 import { requireAuth, requireRole } from '../middleware/auth.js';
 import { writeLimiter } from '../middleware/rateLimit.js';
+import {
+  deliverTransactionalEmail,
+  emailDeliveryConfigured,
+  getEmailDeliveryStatus,
+  verifySmtpConnection,
+} from '../services/otpDelivery.js';
 
 const router = Router();
 const SALES_VIEWERS = ['super_admin', 'admin', 'editor'];
 const CATEGORY_EDITORS = ['super_admin', 'admin', 'editor'];
 const BACKUP_EXPORTERS = ['super_admin', 'admin'];
 const AUDIT_VIEWERS = ['super_admin', 'admin'];
+const EMAIL_TESTERS = ['super_admin', 'admin'];
 const VALID_PERIODS = ['day', 'week', 'range'];
 const MAX_CATEGORY_NAME_LEN = 80;
+const MAX_TEST_EMAIL_LEN = 120;
 
 // TODO: REMOVE AFTER MONGODB MIGRATION COMPLETE — temporary full-store export for Render free tier (no shell).
 router.get('/export-data', requireAuth, requireRole(...BACKUP_EXPORTERS), (_req, res) => {
@@ -145,6 +153,63 @@ router.delete('/feedback/:orderId', writeLimiter, requireAuth, requireRole(...CA
   const ok = store.deleteOrderFeedback(orderId);
   if (!ok) return res.status(404).json({ error: 'Review not found' });
   res.json({ ok: true });
+});
+
+router.get('/email-status', requireAuth, requireRole(...EMAIL_TESTERS), async (_req, res) => {
+  const status = getEmailDeliveryStatus();
+  const verify = await verifySmtpConnection();
+  res.json({
+    ...status,
+    verify_ok: Boolean(verify?.ok),
+    verify_reason: verify?.reason || null,
+    verify_provider: verify?.provider || null,
+  });
+});
+
+router.post('/email-test', writeLimiter, requireAuth, requireRole(...EMAIL_TESTERS), async (req, res) => {
+  if (!emailDeliveryConfigured()) {
+    return res.status(503).json({
+      error:
+        'Email not configured. Set RESEND_API_KEY (+ RESEND_FROM) on Render free tier, or GMAIL_USER + GMAIL_APP_PASSWORD on paid/local.',
+      configured: false,
+    });
+  }
+
+  const fallback =
+    process.env.ORDER_NOTIFY_EMAIL ||
+    process.env.SHOP_NOTIFY_EMAIL ||
+    process.env.SHOP_EMAIL ||
+    'asadshahzad777111@gmail.com';
+  const rawTo = String(req.body?.to || fallback).trim().toLowerCase().slice(0, MAX_TEST_EMAIL_LEN);
+  if (!rawTo || !rawTo.includes('@') || rawTo.includes(' ')) {
+    return res.status(400).json({ error: 'Valid to email required' });
+  }
+
+  const stamp = new Date().toISOString();
+  const result = await deliverTransactionalEmail(rawTo, {
+    subject: 'AsFix & Gear — test email',
+    text: `Test email from AsFix admin at ${stamp}. Agar yeh inbox mein aa gaya to SMTP/Resend OK hai.`,
+    html: `<p><strong>AsFix &amp; Gear</strong> test email</p><p>Time: ${stamp}</p><p>Agar yeh inbox mein aa gaya to email delivery OK hai.</p>`,
+  });
+
+  if (result.sent) {
+    return res.json({ ok: true, sent: true, to: rawTo, provider: getEmailDeliveryStatus().provider });
+  }
+  if (result.skipped) {
+    return res.status(503).json({
+      ok: false,
+      sent: false,
+      to: rawTo,
+      error: result.reason || 'Email skipped',
+      configured: emailDeliveryConfigured(),
+    });
+  }
+  return res.status(502).json({
+    ok: false,
+    sent: false,
+    to: rawTo,
+    error: result.error || 'Send failed',
+  });
 });
 
 export default router;

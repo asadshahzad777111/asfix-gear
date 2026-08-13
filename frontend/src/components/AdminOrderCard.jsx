@@ -17,6 +17,7 @@ import {
   orderProfitTotals,
   returnRefundAmount,
 } from '../utils/orderReturns';
+import AdminCancelRefundPanel from './AdminCancelRefundPanel';
 
 export const ORDER_STATUSES = ['pending', 'payment_verified', 'shipped', 'out_for_delivery', 'delivered', 'returned', 'cancelled'];
 
@@ -162,6 +163,7 @@ export default function AdminOrderCard({
   onAssignRider,
   onMarkDelivered,
   onBookPostEx,
+  onOrderUpdated,
   className = 'admin-float-card',
 }) {
   const { t } = useTranslation();
@@ -275,6 +277,14 @@ export default function AdminOrderCard({
           <span className={`admin-order-channel-pill ${isReturn ? 'is-return' : isCounter ? 'is-pos' : 'is-online'}`}>
             {isReturn ? t('admin.orderChannelReturn') : isCounter ? t('admin.orderChannelPos') : t('admin.orderChannelOnline')}
           </span>
+          {o.cancel_request_status === 'pending' ? (
+            <span className={`admin-cancel-badge${o.cancel_postex_booked_at_request || o.postex_tracking ? ' admin-cancel-badge--postex' : ''}`}>
+              {t('admin.cancelRequestBadge')}
+            </span>
+          ) : null}
+          {o.cancel_repeat_flag || Number(o.cancel_recent_count_7d) >= 2 ? (
+            <span className="admin-cancel-badge">{t('admin.cancelRepeatBadge')}</span>
+          ) : null}
         </strong>
         <span>{isReturn ? `−${formatPrice(refundAmount)}` : formatPrice(o.total_amount)}</span>
       </div>
@@ -283,6 +293,10 @@ export default function AdminOrderCard({
         <strong>{customerLabel}</strong>
         {o.phone && !walkInName ? <span> · {o.phone}</span> : null}
       </p>
+
+      {!isCounter && (o.cancel_request_status === 'pending' || o.cancel_requested_at) ? (
+        <AdminCancelRefundPanel order={o} onUpdated={onOrderUpdated} />
+      ) : null}
 
       {isReturn && (o.original_order_ref || o.original_order_id) ? (
         <p className="admin-float-sub admin-order-return-link">
