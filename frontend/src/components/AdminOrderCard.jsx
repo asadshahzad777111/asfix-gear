@@ -361,6 +361,11 @@ export default function AdminOrderCard({
           {o.postex_status ? ` · ${o.postex_status}` : ''}
         </p>
       ) : null}
+      {!isCounter && !o.postex_tracking && o.postex_last_error ? (
+        <p className="admin-float-sub" style={{ color: 'var(--danger, #b91c1c)' }}>
+          {t('admin.postexLastError')}: {o.postex_last_error}
+        </p>
+      ) : null}
 
       {!isCounter && o.rider_phone ? (
         <p className="admin-float-sub">

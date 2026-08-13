@@ -136,6 +136,9 @@ export default function AdminFloatingDashboard() {
       const updated = await api.updateOrderStatus(id, shipping_status);
 
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      if (updated?.postex_error) {
+        alert(`${t('admin.postexAutoFailed')}: ${updated.postex_error}`);
+      }
 
     } catch (err) {
 
@@ -149,6 +152,9 @@ export default function AdminFloatingDashboard() {
     try {
       const updated = await api.markOrderPaid(id);
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      if (updated?.postex_error) {
+        alert(`${t('admin.postexAutoFailed')}: ${updated.postex_error}`);
+      }
     } catch (err) {
       alert(err.message);
     }

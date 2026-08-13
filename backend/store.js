@@ -2229,6 +2229,25 @@ export function updateOrderGmail(id, gmail, phone) {
   });
 }
 
+/** Append a note to order activity (e.g. PostEx auto-book failure). */
+export function appendOrderNote(id, message, updatedBy = null, extra = {}) {
+  return withData((data) => {
+    const index = data.orders.findIndex((o) => o.id === Number(id));
+    if (index === -1) return null;
+    const existing = data.orders[index];
+    const at = now();
+    const msg = String(message || '').trim().slice(0, 240);
+    if (!msg) return existing;
+    data.orders[index] = {
+      ...existing,
+      ...extra,
+      activity_log: appendOrderActivity(existing, msg, updatedBy, at),
+      updated_at: at,
+    };
+    return data.orders[index];
+  });
+}
+
 /** Save PostEx booking fields; optionally move shipping_status to shipped. */
 export function setOrderPostexBooking(id, { trackingNumber, rawStatus, markShipped = true }, updatedBy = null) {
   return withData((data) => {
@@ -2272,6 +2291,7 @@ export function setOrderPostexBooking(id, { trackingNumber, rawStatus, markShipp
       tracking_number: tracking,
       postex_status: rawStatus ? String(rawStatus).slice(0, 80) : existing.postex_status || null,
       postex_booked_at: existing.postex_booked_at || at,
+      postex_last_error: null,
       shipping_status,
       delivery_status,
       status_history,
