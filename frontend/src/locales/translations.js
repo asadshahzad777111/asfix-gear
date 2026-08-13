@@ -735,6 +735,19 @@ export const translations = {
       cancelBeforePostexNote: 'PostEx not booked yet — easy approve. COD → refund not_needed; prepaid → full refund when payment received.',
       cancelSettlementNote:
         'Settlements tip: PostEx/COD settlement often 1–7 days after cuts — manage books manually (no full accounting in app).',
+      cancelPaymentMode: 'Payment',
+      cancelPayCodBadge: 'COD',
+      cancelPaySafepayBadge: 'SafePay / card',
+      cancelPayPrepaidBadge: 'Prepaid',
+      cancelCodHint: 'COD — refund not needed; just approve cancel',
+      cancelPrepaidHint: 'Prepaid — refund via SafePay dashboard (card) or manual wallet/bank transfer',
+      cancelSafepayTitle: 'SafePay refund (dashboard only — no API keys in AsFix)',
+      cancelSafepaySteps:
+        'Open SafePay → Payments → All Payments → find this order/transaction → Refund → enter amount → Refund Transaction. Then mark Refund sent here + upload proof.',
+      cancelManualPrepaidSteps:
+        'If paid JazzCash/EasyPaisa/bank (not SafePay card): transfer back manually, then mark Refund sent + upload proof. SafePay dashboard link below is only for SafePay-captured payments.',
+      cancelSafepayOpen: 'Open SafePay dashboard',
+      cancelSafepayHelp: 'SafePay refund help',
       cancelRefundStatus: 'Refund status',
       cancelRefundNotNeeded: 'Not needed (COD)',
       cancelRefundPending: 'Pending',
@@ -2392,6 +2405,19 @@ export const translations = {
       cancelBeforePostexNote: 'PostEx abhi book nahi — asani se Approve. COD → refund not_needed; prepaid → full refund jab payment mili ho.',
       cancelSettlementNote:
         'Settlement tip: PostEx/COD settlement aksar 1–7 din cuts ke baad — books manually; app mein full accounting nahi.',
+      cancelPaymentMode: 'Payment',
+      cancelPayCodBadge: 'COD',
+      cancelPaySafepayBadge: 'SafePay / card',
+      cancelPayPrepaidBadge: 'Prepaid',
+      cancelCodHint: 'COD — refund zaroori nahi; sirf cancel approve',
+      cancelPrepaidHint: 'Prepaid — SafePay dashboard (card) ya manual wallet/bank se wapas',
+      cancelSafepayTitle: 'SafePay refund (sirf dashboard — AsFix mein API keys nahi)',
+      cancelSafepaySteps:
+        'SafePay kholo → Payments → All Payments → yeh transaction → Refund → amount → Refund Transaction. Phir yahan Refund sent + proof upload.',
+      cancelManualPrepaidSteps:
+        'Agar JazzCash/EasyPaisa/bank (SafePay card nahi): khud transfer karke Refund sent + proof. Neeche SafePay link sirf SafePay payments ke liye.',
+      cancelSafepayOpen: 'SafePay dashboard kholo',
+      cancelSafepayHelp: 'SafePay refund help',
       cancelRefundStatus: 'Refund status',
       cancelRefundNotNeeded: 'Zaroori nahi (COD)',
       cancelRefundPending: 'Pending',

@@ -31,6 +31,11 @@ export default function AdminCancelRefundPanel({ order, onUpdated }) {
   const postexBooked = Boolean(
     order.cancel_postex_booked_at_request || order.postex_tracking || order.tracking_number
   );
+  const payMode = String(order.payment_mode || '').toLowerCase();
+  const isCod = payMode === 'cod' || payMode === 'cash';
+  const isSafepay =
+    payMode === 'safepay' || payMode === 'safe_pay' || payMode === 'card' || payMode === 'online';
+  const isPrepaid = !isCod;
   const repeat = Boolean(order.cancel_repeat_flag) || Number(order.cancel_recent_count_7d) >= 2;
   const pending = order.cancel_request_status === 'pending';
   const approved = order.cancel_request_status === 'approved' || order.shipping_status === 'cancelled';
@@ -125,11 +130,21 @@ export default function AdminCancelRefundPanel({ order, onUpdated }) {
         {postexBooked ? (
           <span className="admin-cancel-badge admin-cancel-badge--postex">{t('admin.cancelPostexBadge')}</span>
         ) : null}
+        {isCod ? (
+          <span className="admin-cancel-badge">{t('admin.cancelPayCodBadge')}</span>
+        ) : isSafepay ? (
+          <span className="admin-cancel-badge admin-cancel-badge--postex">{t('admin.cancelPaySafepayBadge')}</span>
+        ) : (
+          <span className="admin-cancel-badge admin-cancel-badge--postex">{t('admin.cancelPayPrepaidBadge')}</span>
+        )}
       </p>
       <p className="admin-cancel-req__meta">
         {order.cancel_request_reason
           ? `${t('admin.cancelReason')}: ${order.cancel_request_reason}`
           : t('admin.cancelNoReason')}
+        <br />
+        {t('admin.cancelPaymentMode')}: <strong>{order.payment_mode || '—'}</strong>
+        {isPrepaid ? ` · ${t('admin.cancelPrepaidHint')}` : ` · ${t('admin.cancelCodHint')}`}
         {postexBooked ? (
           <>
             <br />
@@ -144,6 +159,30 @@ export default function AdminCancelRefundPanel({ order, onUpdated }) {
         <br />
         {t('admin.cancelSettlementNote')}
       </p>
+
+      {isPrepaid ? (
+        <div className="admin-cancel-req__meta" style={{ marginBottom: 10 }}>
+          <strong>{t('admin.cancelSafepayTitle')}</strong>
+          <br />
+          {isSafepay ? t('admin.cancelSafepaySteps') : t('admin.cancelManualPrepaidSteps')}
+          <br />
+          <a
+            href="https://getsafepay.com/dashboard/login"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t('admin.cancelSafepayOpen')}
+          </a>
+          {' · '}
+          <a
+            href="https://safepay.helpscoutdocs.com/article/141-how-to-refund-car-new"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            {t('admin.cancelSafepayHelp')}
+          </a>
+        </div>
+      ) : null}
 
       <label className="ocr-modal__label" htmlFor={`cr-status-${order.id}`}>
         {t('admin.cancelRefundStatus')}

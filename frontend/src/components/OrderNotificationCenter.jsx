@@ -56,25 +56,25 @@ function ToastStack({ toasts, onDismiss, onView }) {
   return (
     <div className="order-notif-stack" aria-live="polite" aria-relevant="additions">
       {toasts.map((toast) => {
-        const isStaff = toast.kind === 'staff_new_order';
+        const isStaffCancel = toast.kind === 'staff_cancel_request';
+        const isStaffNew = toast.kind === 'staff_new_order';
+        const isStaff = isStaffNew || isStaffCancel;
         let title;
         let body;
-        if (isStaff) {
-          if (toast.kind === 'staff_cancel_request') {
-            title = t('orderNotif.staffCancelRequest');
-            body = t('orderNotif.staffCancelBody', {
-              orderId: toast.orderId,
-              name: toast.customerName || 'Customer',
-              postex: toast.postexBooked ? ' · PostEx booked' : '',
-            });
-          } else {
-            title = t('orderNotif.staffNewOrder');
-            body = t('orderNotif.staffBody', {
-              orderId: toast.orderId,
-              name: toast.customerName || 'Customer',
-              total: toast.totalLabel || '',
-            });
-          }
+        if (isStaffCancel) {
+          title = t('orderNotif.staffCancelRequest');
+          body = t('orderNotif.staffCancelBody', {
+            orderId: toast.orderId,
+            name: toast.customerName || 'Customer',
+            postex: toast.postexBooked ? ' · PostEx booked' : '',
+          });
+        } else if (isStaffNew) {
+          title = t('orderNotif.staffNewOrder');
+          body = t('orderNotif.staffBody', {
+            orderId: toast.orderId,
+            name: toast.customerName || 'Customer',
+            total: toast.totalLabel || '',
+          });
         } else {
           const statusKey = `track.status_${toast.status}`;
           const statusLabel = t(statusKey);
