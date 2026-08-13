@@ -161,11 +161,13 @@ export default function AdminOrderCard({
   onMarkPaid,
   onAssignRider,
   onMarkDelivered,
+  onBookPostEx,
   className = 'admin-float-card',
 }) {
   const { t } = useTranslation();
   const [showRiderForm, setShowRiderForm] = useState(false);
   const [receiptBusy, setReceiptBusy] = useState(false);
+  const [postexBusy, setPostexBusy] = useState(false);
   const printInFlightRef = useRef(false);
   const { printSmart, chooser: printChooser } = useSmartThermalPrint();
   const customerStatus = getOrderCustomerStatus(o);
@@ -194,10 +196,30 @@ export default function AdminOrderCard({
     : o.customer_name;
   const thermalWidth = readThermalReceiptWidth();
   const isAndroid = typeof navigator !== 'undefined' && /Android/i.test(navigator.userAgent || '');
+  const canBookPostEx =
+    Boolean(onBookPostEx) &&
+    !isCounter &&
+    !isReturn &&
+    String(o.fulfillment_method || '').toLowerCase() !== 'pickup' &&
+    o.shipping_status !== 'cancelled' &&
+    !o.postex_tracking;
 
   const handleAssignRider = async (payload) => {
     await onAssignRider(o.id, payload);
     setShowRiderForm(false);
+  };
+
+  const handleBookPostEx = async () => {
+    if (!canBookPostEx || postexBusy) return;
+    if (!window.confirm?.(t('admin.postexBookConfirm'))) return;
+    setPostexBusy(true);
+    try {
+      await onBookPostEx(o.id);
+    } catch (err) {
+      window.alert?.(err?.message || t('admin.postexBookFailed'));
+    } finally {
+      setPostexBusy(false);
+    }
   };
 
   const handleThermalPrint = async () => {
@@ -333,6 +355,13 @@ export default function AdminOrderCard({
         </p>
       ) : null}
 
+      {!isCounter && (o.postex_tracking || o.tracking_number) ? (
+        <p className="admin-float-sub">
+          {t('admin.postexTracking')}: {o.postex_tracking || o.tracking_number}
+          {o.postex_status ? ` · ${o.postex_status}` : ''}
+        </p>
+      ) : null}
+
       {!isCounter && o.rider_phone ? (
         <p className="admin-float-sub">
           {t('admin.riderPhone')}: {o.rider_phone}
@@ -434,6 +463,16 @@ export default function AdminOrderCard({
           {o.payment_status === 'pending_payment' && onMarkPaid && (
             <button type="button" className="btn btn-primary btn-sm" onClick={() => onMarkPaid(o.id)}>
               {o.payment_mode === 'cod' ? t('admin.confirmCod') : t('admin.markPaid')}
+            </button>
+          )}
+          {canBookPostEx && (
+            <button
+              type="button"
+              className="btn btn-outline btn-sm"
+              disabled={postexBusy}
+              onClick={handleBookPostEx}
+            >
+              {postexBusy ? t('common.saving') : t('admin.postexBook')}
             </button>
           )}
           {o.delivery_status === 'waiting_for_rider' && onAssignRider && !showRiderForm && (

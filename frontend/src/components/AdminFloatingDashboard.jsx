@@ -169,6 +169,12 @@ export default function AdminFloatingDashboard() {
     }
   };
 
+  const bookOrderPostEx = async (id) => {
+    const updated = await api.bookOrderPostEx(id);
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    return updated;
+  };
+
 
 
   const updateBooking = async (id, status) => {
@@ -344,6 +350,7 @@ export default function AdminFloatingDashboard() {
                         onMarkPaid={markOrderPaid}
                         onAssignRider={assignOrderRider}
                         onMarkDelivered={markOrderDelivered}
+                        onBookPostEx={bookOrderPostEx}
                       />
 
                     ))

@@ -418,6 +418,12 @@ export default function Admin() {
     }
   };
 
+  const bookOrderPostEx = async (id) => {
+    const updated = await api.bookOrderPostEx(id);
+    setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+    return updated;
+  };
+
   const onLiveEvent = useCallback((event) => {
     if (event.startsWith('order_') || event.startsWith('repair_') || event.startsWith('product_')) {
       loadData();
@@ -780,6 +786,7 @@ export default function Admin() {
                   onMarkPaid={markOrderPaid}
                   onAssignRider={assignOrderRider}
                   onMarkDelivered={markOrderDelivered}
+                  onBookPostEx={bookOrderPostEx}
                   t={t}
                 />
               )}

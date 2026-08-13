@@ -16,6 +16,11 @@ import {
 import { publishOrderEvent } from '../services/liveEvents.js';
 import { notifyN8nOrderCreated } from '../services/n8n.js';
 import { isR2Configured, uploadPaymentProof } from '../services/r2.js';
+import {
+  isPostExConfigured,
+  createOrder as postexCreateOrder,
+  buildCreateOrderPayload,
+} from '../services/postex.js';
 
 function findOrderById(id) {
   return store.getOrders().find((o) => o.id === Number(id)) || null;
@@ -821,6 +826,83 @@ router.post('/:id/payment-proof', requireAuth, (req, res, next) => {
 
 router.get('/', requireAuth, requireRole(...STAFF), (_req, res) => {
   res.json(store.getOrders());
+});
+
+/** Staff: is PostEx API token configured? (never returns the token) */
+router.get('/postex/status', requireAuth, requireRole(...STAFF), (_req, res) => {
+  res.json({
+    configured: isPostExConfigured(),
+    pickup_code_set: Boolean(String(process.env.POSTEX_PICKUP_ADDRESS_CODE || '').trim()),
+    webhook_secret_set: Boolean(String(process.env.POSTEX_WEBHOOK_SECRET || '').trim()),
+  });
+});
+
+/**
+ * Book this order on PostEx COD API and save tracking number.
+ * Online delivery orders only (not counter / shop pickup).
+ */
+router.post('/:id/postex-book', requireAuth, requireRole(...STAFF), async (req, res) => {
+  if (!isPostExConfigured()) {
+    return res.status(503).json({
+      error: 'PostEx not configured. Set POSTEX_TOKEN on the server (Render env).',
+    });
+  }
+
+  const order = findOrderById(req.params.id);
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+
+  if (order.source === 'counter_sale' || order.source === 'counter_return') {
+    return res.status(400).json({ error: 'Counter sales are not booked on PostEx' });
+  }
+  if (String(order.fulfillment_method || '').toLowerCase() === 'pickup') {
+    return res.status(400).json({ error: 'Shop pickup orders are not booked on PostEx' });
+  }
+  if (order.shipping_status === 'cancelled') {
+    return res.status(400).json({ error: 'Cancelled orders cannot be booked' });
+  }
+  if (order.postex_tracking) {
+    return res.status(409).json({
+      error: 'Already booked on PostEx',
+      tracking_number: order.postex_tracking,
+      order,
+    });
+  }
+
+  try {
+    const payload = buildCreateOrderPayload(order, {
+      pickupAddressCode: req.body?.pickupAddressCode,
+    });
+    const { trackingNumber, raw } = await postexCreateOrder(payload);
+    if (!trackingNumber) {
+      return res.status(502).json({
+        error: 'PostEx did not return a tracking number',
+        detail: raw?.statusMessage || null,
+      });
+    }
+
+    const updated = store.setOrderPostexBooking(
+      order.id,
+      {
+        trackingNumber,
+        rawStatus: raw?.statusMessage || 'Booked',
+        markShipped: true,
+      },
+      req.auth.user
+    );
+    if (!updated) return res.status(404).json({ error: 'Order not found after booking' });
+
+    notifyCustomerStatusChange(updated, order.shipping_status);
+    publishOrderEvent('order_updated', updated);
+    res.json(updated);
+  } catch (err) {
+    const status =
+      err.code === 'POSTEX_NOT_CONFIGURED'
+        ? 503
+        : err.code === 'POSTEX_BAD_PHONE' || err.code === 'POSTEX_BAD_ADDRESS'
+          ? 400
+          : 502;
+    res.status(status).json({ error: err.message || 'PostEx booking failed' });
+  }
 });
 
 router.patch('/:id/gmail', (req, res) => {

@@ -2193,6 +2193,124 @@ export function updateOrderGmail(id, gmail, phone) {
   });
 }
 
+/** Save PostEx booking fields; optionally move shipping_status to shipped. */
+export function setOrderPostexBooking(id, { trackingNumber, rawStatus, markShipped = true }, updatedBy = null) {
+  return withData((data) => {
+    const index = data.orders.findIndex((o) => o.id === Number(id));
+    if (index === -1) return null;
+
+    const existing = data.orders[index];
+    const at = now();
+    const tracking = String(trackingNumber || '').trim();
+    if (!tracking) return null;
+
+    const activity_log = [...(existing.activity_log || [])];
+    activity_log.push({
+      at,
+      message: `PostEx booked · tracking ${tracking}${updatedBy?.username ? ` by ${updatedBy.username}` : ''}`,
+      by: updatedBy?.id ?? null,
+    });
+
+    let shipping_status = existing.shipping_status;
+    let status_history = existing.status_history || [];
+    let delivery_status = existing.delivery_status;
+
+    if (
+      markShipped &&
+      shipping_status !== 'shipped' &&
+      shipping_status !== 'out_for_delivery' &&
+      shipping_status !== 'delivered' &&
+      shipping_status !== 'cancelled'
+    ) {
+      shipping_status = 'shipped';
+      status_history = [...status_history, { status: 'shipped', at, by: updatedBy?.id ?? null }];
+      if (!delivery_status || delivery_status === 'waiting_for_rider') {
+        delivery_status = 'waiting_for_rider';
+      }
+    }
+
+    data.orders[index] = {
+      ...existing,
+      courier: 'postex',
+      postex_tracking: tracking,
+      tracking_number: tracking,
+      postex_status: rawStatus ? String(rawStatus).slice(0, 80) : existing.postex_status || null,
+      postex_booked_at: existing.postex_booked_at || at,
+      shipping_status,
+      delivery_status,
+      status_history,
+      activity_log,
+      updated_at: at,
+    };
+    return data.orders[index];
+  });
+}
+
+/** Apply PostEx webhook / track status onto an order by tracking or order ref. */
+export function applyPostexStatusUpdate({ trackingNumber, orderRefNumber, transactionStatus }) {
+  return withData((data) => {
+    const tracking = String(trackingNumber || '').trim();
+    const ref = String(orderRefNumber || '').trim();
+    const statusRaw = String(transactionStatus || '').trim();
+    if (!tracking && !ref) return null;
+
+    const index = data.orders.findIndex((o) => {
+      if (tracking && (o.postex_tracking === tracking || o.tracking_number === tracking)) return true;
+      if (ref && (String(o.order_id) === ref || String(o.id) === ref)) return true;
+      return false;
+    });
+    if (index === -1) return null;
+
+    const existing = data.orders[index];
+    const at = now();
+    const mapped = mapPostexToShipping(statusRaw);
+    const activity_log = [...(existing.activity_log || [])];
+    activity_log.push({
+      at,
+      message: `PostEx status: ${statusRaw || 'update'}${mapped ? ` → ${mapped}` : ''}`,
+      by: null,
+    });
+
+    const patch = {
+      ...existing,
+      postex_status: statusRaw ? statusRaw.slice(0, 80) : existing.postex_status,
+      postex_tracking: tracking || existing.postex_tracking,
+      tracking_number: tracking || existing.tracking_number,
+      activity_log,
+      updated_at: at,
+    };
+
+    if (mapped && mapped !== existing.shipping_status) {
+      patch.shipping_status = mapped;
+      patch.status_history = [
+        ...(existing.status_history || []),
+        { status: mapped, at, by: null },
+      ];
+      if (mapped === 'delivered') patch.delivery_status = 'delivered';
+      else if (mapped === 'out_for_delivery') patch.delivery_status = 'rider_assigned';
+      else if (mapped === 'shipped') patch.delivery_status = existing.delivery_status || 'waiting_for_rider';
+    }
+
+    data.orders[index] = patch;
+    return data.orders[index];
+  });
+}
+
+function mapPostexToShipping(statusRaw) {
+  const s = String(statusRaw || '').toLowerCase();
+  if (!s) return null;
+  if (s.includes('deliver') && !s.includes('undeliver')) return 'delivered';
+  if (s.includes('out for') || s.includes('out-for') || s.includes('ofo') || s.includes('rider')) {
+    return 'out_for_delivery';
+  }
+  if (s.includes('cancel')) return 'cancelled';
+  if (s.includes('return')) return 'cancelled';
+  if (s.includes('pick') || s.includes('book') || s.includes('transit') || s.includes('warehouse')) {
+    return 'shipped';
+  }
+  return null;
+}
+
 const PROFIT_STATUSES = new Set([
   'pending',
   'payment_verified',

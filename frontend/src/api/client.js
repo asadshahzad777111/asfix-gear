@@ -555,6 +555,12 @@ export const api = {
   assignOrderRider: (id, body) =>
     request(`/orders/${id}/assign-rider`, { method: 'PATCH', body: JSON.stringify(body) }),
   markOrderDelivered: (id) => request(`/orders/${id}/mark-delivered`, { method: 'PATCH' }),
+  getPostExStatus: () => request('/orders/postex/status'),
+  bookOrderPostEx: (id, body = {}) =>
+    request(`/orders/${id}/postex-book`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   getMyAddresses: () => request('/auth/my-addresses'),
   addAddress: (body) => request('/auth/my-addresses', { method: 'POST', body: JSON.stringify(body) }),
   updateAddress: (id, body) =>

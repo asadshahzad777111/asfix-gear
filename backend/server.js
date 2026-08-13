@@ -16,6 +16,7 @@ import adminRouter from './routes/admin.js';
 import adsRouter from './routes/ads.js';
 import printJobsRouter from './routes/print-jobs.js';
 import asfinBillsRouter from './routes/asfin-bills.js';
+import webhooksRouter from './routes/webhooks.js';
 import { securityHeaders, getCorsOptions } from './middleware/security.js';
 import { requireStorageReady } from './middleware/storageReady.js';
 import { apiLimiter, writeLimiter } from './middleware/rateLimit.js';
@@ -116,6 +117,7 @@ app.use('/api/admin', requireStorageReady, adminRouter);
 app.use('/api/admin/ads', requireStorageReady, adsRouter);
 app.use('/api/print-jobs', requireStorageReady, printJobsRouter);
 app.use('/api/asfin-bills', writeLimiter, requireStorageReady, asfinBillsRouter);
+app.use('/api/webhooks', requireStorageReady, webhooksRouter);
 
 /** Dynamic sitemap — static pages + published product URLs (overrides dist copy in prod). */
 app.get('/sitemap.xml', (req, res) => {
