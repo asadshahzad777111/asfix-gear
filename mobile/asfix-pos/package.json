@@ -1,6 +1,6 @@
 {
   "name": "asfix-pos",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "private": true,
   "type": "module",
   "description": "AsFix POS — Capacitor Android shell with Bluetooth ESC/POS thermal print",

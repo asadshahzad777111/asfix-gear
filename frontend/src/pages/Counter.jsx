@@ -9,6 +9,7 @@ import AdminCounterBill, {
 } from '../components/admin/AdminCounterBill';
 import PosCustomBill from '../components/admin/PosCustomBill';
 import PosPaymentQrPanel from '../components/admin/PosPaymentQrPanel';
+import NotificationSettingsPanel from '../components/NotificationSettingsPanel';
 import { SHOP } from '../config/shop';
 import ThemeToggle from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
@@ -73,6 +74,7 @@ export default function Counter() {
   const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
   const [nativePickerOpen, setNativePickerOpen] = useState(false);
   const [paymentQrOpen, setPaymentQrOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [posMode, setPosMode] = useState('sale'); // 'sale' | 'custom'
   const printInFlightRef = useRef(false);
   const salesSectionRef = useRef(null);
@@ -662,11 +664,36 @@ export default function Counter() {
           <button
             type="button"
             className="wp-button counter-pos-tools__pay-qr"
-            onClick={() => navigate('/admin?tab=settings')}
+            onClick={() => setNotifOpen(true)}
           >
             {t('counter.notifications')}
           </button>
         </div>
+
+        {notifOpen
+          ? createPortal(
+              <div
+                className="counter-notif-overlay"
+                role="dialog"
+                aria-modal="true"
+                aria-label={t('counter.notifications')}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setNotifOpen(false);
+                }}
+              >
+                <div className="counter-notif-sheet">
+                  <div className="counter-notif-sheet__bar">
+                    <strong>{t('counter.notifications')}</strong>
+                    <button type="button" className="wp-button" onClick={() => setNotifOpen(false)}>
+                      {t('common.close')}
+                    </button>
+                  </div>
+                  <NotificationSettingsPanel mode="staff" />
+                </div>
+              </div>,
+              document.body,
+            )
+          : null}
 
         {bootstrapping && products.length === 0 && posMode === 'sale' ? (
           <div className="counter-boot">{t('common.loading')}</div>

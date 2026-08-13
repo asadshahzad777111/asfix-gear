@@ -6,6 +6,6 @@
   "downloadUrl": "https://asfixgear.com/downloads/AsFix-POS.apk",
   "downloadPageUrl": "https://asfixgear.com/pos",
   "minSupportedVersionCode": 1,
-  "notes": "Order alerts + update prompt. Tap Update → website → download APK → Install. Gmail alert settings live in Admin → Settings (not inside APK).",
-  "publishedAt": "2026-08-12"
+  "notes": "AsFix POS 1.1.0 — order alerts + notification toggles (Admin/POS → Notifications). Tap Update → download APK → Install. After install, reopen app; update prompt should stop.",
+  "publishedAt": "2026-08-13"
 }
