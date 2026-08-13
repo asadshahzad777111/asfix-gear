@@ -16,6 +16,11 @@
     "allowMixedContent": false
   },
   "plugins": {
-    "Preferences": {}
+    "Preferences": {},
+    "LocalNotifications": {
+      "smallIcon": "ic_launcher",
+      "sound": "default",
+      "iconColor": "#0ea5e9"
+    }
   }
 }

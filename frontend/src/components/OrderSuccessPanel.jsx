@@ -11,6 +11,7 @@ import { compressImageForUpload } from '../utils/compressImage';
 
 const MOBILE_WALLETS = new Set(['jazzcash', 'easypaisa']);
 const BANK_MODE = 'bank';
+const LAST_ORDER_KEY = 'asfix_last_track_order';
 
 const TRUST_BADGES = [
   { key: 'trustSecure', icon: '🔒' },
@@ -19,6 +20,21 @@ const TRUST_BADGES = [
 ];
 
 const NEXT_STEPS = ['step1', 'step2', 'step3'];
+
+function rememberOrderForTrack(order, phone) {
+  try {
+    localStorage.setItem(
+      LAST_ORDER_KEY,
+      JSON.stringify({
+        orderId: order.order_id,
+        phone: phone || order.phone || '',
+        at: Date.now(),
+      })
+    );
+  } catch {
+    /* ignore */
+  }
+}
 
 export default function OrderSuccessPanel({ order, phone, onDone }) {
   const { t } = useTranslation();
@@ -34,12 +50,14 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
   const [proofUploading, setProofUploading] = useState(false);
 
   const needsProof = MOBILE_WALLETS.has(order.payment_mode) || order.payment_mode === BANK_MODE;
+  const trackHref = `/track?orderId=${encodeURIComponent(order.order_id)}&phone=${encodeURIComponent(phone || '')}`;
 
   useEffect(() => {
+    rememberOrderForTrack(order, phone);
     api.getPaymentSettings()
       .then((data) => setPaymentSettings(mergePaymentSettings(data)))
       .catch(() => setPaymentSettings(mergePaymentSettings()));
-  }, []);
+  }, [order, phone]);
 
   const saveGmail = async (e) => {
     e.preventDefault();
@@ -86,7 +104,7 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
   };
 
   return (
-    <div className="order-success-panel order-success-panel--daraz">
+    <div className="order-success-panel order-success-panel--daraz" role="status">
       <div className="order-success-hero">
         <div className="order-success-icon-ring">
           <span className="order-success-icon">✓</span>
@@ -109,6 +127,13 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
             ? t('orderSuccess.estimatedPickup')
             : t('orderSuccess.estimatedDelivery')}
         </p>
+      </div>
+
+      <div className="order-success-primary-cta">
+        <Link to={trackHref} className="btn btn-primary order-success-track-btn" onClick={onDone}>
+          {t('orderSuccess.trackOrder')}
+        </Link>
+        <p className="order-success-whats-next">{t('orderSuccess.whatsNext')}</p>
       </div>
 
       {needsProof && (
@@ -203,11 +228,11 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
 
       <div className="order-success-actions">
         {isCustomer ? (
-          <Link to="/account" className="btn btn-primary btn-sm">
+          <Link to="/account" className="btn btn-outline btn-sm" onClick={onDone}>
             {t('nav.myOrders')}
           </Link>
         ) : null}
-        <Link to={`/track?orderId=${encodeURIComponent(order.order_id)}&phone=${encodeURIComponent(phone)}`} className="btn btn-outline btn-sm">
+        <Link to={trackHref} className="btn btn-outline btn-sm" onClick={onDone}>
           {t('orderSuccess.trackOrder')}
         </Link>
         {onDone && (
@@ -215,6 +240,12 @@ export default function OrderSuccessPanel({ order, phone, onDone }) {
             {t('orderSuccess.done')}
           </button>
         )}
+      </div>
+
+      <div className="order-success-sticky-cta" aria-hidden={false}>
+        <Link to={trackHref} className="btn btn-primary order-success-track-btn" onClick={onDone}>
+          {t('orderSuccess.trackOrder')}
+        </Link>
       </div>
     </div>
   );

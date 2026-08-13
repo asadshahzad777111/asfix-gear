@@ -12,6 +12,7 @@ import {
   sendOrderCompleteEmail,
   sendOrderPlacedEmail,
   sendOrderStatusEmail,
+  sendNewOrderShopEmail,
 } from '../services/orderEmail.js';
 import { publishOrderEvent } from '../services/liveEvents.js';
 import { notifyN8nOrderCreated } from '../services/n8n.js';
@@ -24,6 +25,72 @@ import {
 
 function findOrderById(id) {
   return store.getOrders().find((o) => o.id === Number(id)) || null;
+}
+
+/** Online delivery only — skip counter, pickup, cancelled, already booked. */
+function isEligibleForPostExBook(order) {
+  if (!order) return false;
+  if (order.source === 'counter_sale' || order.source === 'counter_return') return false;
+  if (String(order.fulfillment_method || '').toLowerCase() === 'pickup') return false;
+  if (order.shipping_status === 'cancelled') return false;
+  if (order.postex_tracking) return false;
+  return true;
+}
+
+/**
+ * Optional auto-book when Admin Payments toggle is ON. Never throws — order update already succeeded.
+ * @returns {{ order: object, postex_error: string|null, booked: boolean }}
+ */
+async function tryAutoBookPostEx(order, user) {
+  const settings = store.getPostExSecrets();
+  if (!settings?.auto_book_on_paid) {
+    return { order, postex_error: null, booked: false };
+  }
+  if (!order || !isPostExConfigured() || !isEligibleForPostExBook(order)) {
+    return { order, postex_error: null, booked: false };
+  }
+
+  try {
+    const payload = buildCreateOrderPayload(order);
+    const { trackingNumber, raw } = await postexCreateOrder(payload);
+    if (!trackingNumber) {
+      const msg = raw?.statusMessage || 'PostEx did not return a tracking number';
+      console.error('[PostEx] Auto-book failed:', msg);
+      const noted = store.appendOrderNote(order.id, `PostEx auto-book failed: ${msg}`, user, {
+        postex_last_error: String(msg).slice(0, 200),
+      });
+      return { order: noted || order, postex_error: msg, booked: false };
+    }
+
+    const updated = store.setOrderPostexBooking(
+      order.id,
+      {
+        trackingNumber,
+        rawStatus: raw?.statusMessage || 'Booked',
+        markShipped: true,
+      },
+      user
+    );
+    const finalOrder = updated || order;
+    notifyCustomerStatusChange(finalOrder, order.shipping_status);
+    publishOrderEvent('order_updated', finalOrder);
+    return { order: finalOrder, postex_error: null, booked: true };
+  } catch (err) {
+    const msg = err.message || 'PostEx booking failed';
+    console.error('[PostEx] Auto-book failed:', msg);
+    const noted = store.appendOrderNote(order.id, `PostEx auto-book failed: ${msg}`, user, {
+      postex_last_error: String(msg).slice(0, 200),
+    });
+    return { order: noted || order, postex_error: msg, booked: false };
+  }
+}
+
+function withPostExMeta(order, { postex_error, booked } = {}) {
+  if (!order) return order;
+  const out = { ...order };
+  if (postex_error) out.postex_error = postex_error;
+  if (booked) out.postex_auto_booked = true;
+  return out;
 }
 
 function notifyIfNewlyDelivered(order, previousStatus) {
@@ -456,6 +523,9 @@ router.post('/', requireAuth, (req, res) => {
     notifyShopWhatsApp(buildNewOrderShopMessage(order)).catch(() => {});
     sendOrderPlacedEmail(order).catch((err) => {
       console.error('[OrderEmail] Place email failed:', err.message);
+    });
+    sendNewOrderShopEmail(order).catch((err) => {
+      console.error('[OrderEmail] Shop notify failed:', err.message);
     });
     const placedWa = buildOrderStatusCustomerMessage(order, 'placed');
     if (placedWa) {
@@ -919,7 +989,7 @@ router.patch('/:id/gmail', (req, res) => {
   res.json({ message: 'Gmail saved for invoice routing', order_id: order.order_id });
 });
 
-router.patch('/:id/status', requireAuth, requireRole(...STAFF), (req, res) => {
+router.patch('/:id/status', requireAuth, requireRole(...STAFF), async (req, res) => {
   const { shipping_status } = req.body;
   if (!VALID_STATUSES.includes(shipping_status)) {
     return res.status(400).json({ error: 'Invalid shipping status' });
@@ -930,11 +1000,20 @@ router.patch('/:id/status', requireAuth, requireRole(...STAFF), (req, res) => {
   notifyIfNewlyDelivered(order, previous?.shipping_status);
   notifyCustomerStatusChange(order, previous?.shipping_status);
   publishOrderEvent('order_updated', order);
-  // PostEx is manual only — staff clicks Book on PostEx after stock/pack
+
+  // Optional auto-book (Admin → Payments → PostEx toggle; default OFF)
+  if (
+    shipping_status === 'payment_verified' &&
+    previous?.shipping_status !== 'payment_verified'
+  ) {
+    const result = await tryAutoBookPostEx(order, req.auth.user);
+    return res.json(withPostExMeta(result.order, result));
+  }
+
   res.json(order);
 });
 
-router.patch('/:id/mark-paid', requireAuth, requireRole(...STAFF), (req, res) => {
+router.patch('/:id/mark-paid', requireAuth, requireRole(...STAFF), async (req, res) => {
   try {
     const previous = findOrderById(req.params.id);
     const order = store.markOrderPaid(req.params.id, req.auth.user);
@@ -942,8 +1021,10 @@ router.patch('/:id/mark-paid', requireAuth, requireRole(...STAFF), (req, res) =>
     notifyShopWhatsApp(buildPaidOrderShopMessage(order)).catch(() => {});
     notifyCustomerStatusChange(order, previous?.shipping_status || 'pending');
     publishOrderEvent('order_updated', order);
-    // PostEx is manual only — staff clicks Book on PostEx after stock/pack
-    res.json(order);
+
+    // Optional auto-book when toggle ON (manual Book on PostEx always available)
+    const result = await tryAutoBookPostEx(order, req.auth.user);
+    res.json(withPostExMeta(result.order, result));
   } catch (err) {
     res.status(400).json({ error: err.message });
   }

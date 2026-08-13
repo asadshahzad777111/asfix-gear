@@ -389,6 +389,9 @@ export default function Admin() {
     try {
       const updated = await api.updateOrderStatus(id, shipping_status);
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      if (updated?.postex_error) {
+        alert(`${t('admin.postexAutoFailed')}: ${updated.postex_error}`);
+      }
     } catch (err) {
       alert(err.message);
     }
@@ -398,6 +401,9 @@ export default function Admin() {
     try {
       const updated = await api.markOrderPaid(id);
       setOrders((prev) => prev.map((o) => (o.id === updated.id ? updated : o)));
+      if (updated?.postex_error) {
+        alert(`${t('admin.postexAutoFailed')}: ${updated.postex_error}`);
+      }
     } catch (err) {
       alert(err.message);
     }
@@ -454,6 +460,11 @@ export default function Admin() {
       setStockFilter(f);
     } else if (next !== 'stock') {
       setStockFilter('all');
+    }
+    const q = searchParams.get('q');
+    if (q && String(q).trim()) {
+      setOrderSearch(String(q).trim());
+      if (next === 'orders' || !t) setTabState('orders');
     }
   }, [searchParams]);
 

@@ -26,8 +26,26 @@ export default function OrderTrack() {
 
   const [activeTab, setActiveTab] = useState(initialTab);
 
-  const [orderId, setOrderId] = useState(params.get('orderId') || '');
-  const [phone, setPhone] = useState(params.get('phone') || '');
+  const [orderId, setOrderId] = useState(() => {
+    const fromUrl = params.get('orderId');
+    if (fromUrl) return fromUrl;
+    try {
+      const saved = JSON.parse(localStorage.getItem('asfix_last_track_order') || 'null');
+      return saved?.orderId || '';
+    } catch {
+      return '';
+    }
+  });
+  const [phone, setPhone] = useState(() => {
+    const fromUrl = params.get('phone');
+    if (fromUrl) return fromUrl;
+    try {
+      const saved = JSON.parse(localStorage.getItem('asfix_last_track_order') || 'null');
+      return saved?.phone || '';
+    } catch {
+      return '';
+    }
+  });
   const [order, setOrder] = useState(null);
   const [orderError, setOrderError] = useState('');
   const [orderLoading, setOrderLoading] = useState(false);
@@ -372,6 +390,19 @@ export default function OrderTrack() {
                     <span className={`order-status-pill status-${customerStatus}`}>
                       {t(`track.status_${customerStatus}`) || customerStatus}
                     </span>
+                  </div>
+
+                  <div className="order-track-status-banner" role="status">
+                    <div>
+                      <span className="order-track-result-kicker">{t('track.liveStatus') || 'Live status'}</span>
+                      <strong>{t(`track.status_${customerStatus}`) || customerStatus}</strong>
+                    </div>
+                    {(displayOrder.postex_tracking || displayOrder.tracking_number) && (
+                      <p className="order-track-tracking">
+                        {t('track.courierTracking') || 'Courier tracking'}:{' '}
+                        <strong>{displayOrder.postex_tracking || displayOrder.tracking_number}</strong>
+                      </p>
+                    )}
                   </div>
 
                   <div className="order-track-result-head">

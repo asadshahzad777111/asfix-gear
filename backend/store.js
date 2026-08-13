@@ -3732,6 +3732,8 @@ const DEFAULT_POSTEX_SETTINGS = {
   pickup_address_code: '',
   base_url: '',
   enabled: true,
+  /** When true, Mark Paid / Confirm COD / payment_verified auto-books PostEx. Default OFF. */
+  auto_book_on_paid: false,
 };
 
 function maskSecret(value) {
@@ -3750,6 +3752,7 @@ function readPostExRaw() {
     pickup_address_code: String(saved.pickup_address_code || '').trim(),
     base_url: String(saved.base_url || '').trim(),
     enabled: saved.enabled !== false,
+    auto_book_on_paid: saved.auto_book_on_paid === true,
     updated_at: saved.updated_at ?? null,
     updated_by: saved.updated_by ?? null,
   };
@@ -3770,6 +3773,7 @@ export function getPostExSecrets() {
     pickup_address_code: envPickup || raw.pickup_address_code,
     base_url: envBase || raw.base_url,
     enabled: raw.enabled !== false,
+    auto_book_on_paid: raw.auto_book_on_paid === true,
     token_source: envToken ? 'env' : raw.token ? 'admin' : null,
   };
 }
@@ -3781,6 +3785,7 @@ export function getPostExSettingsPublic() {
   return {
     configured,
     enabled: secrets.enabled !== false,
+    auto_book_on_paid: secrets.auto_book_on_paid === true,
     token_masked: maskSecret(secrets.token),
     token_source: secrets.token_source,
     webhook_secret_set: Boolean(secrets.webhook_secret),
@@ -3803,6 +3808,7 @@ export function setPostExSettings(input, userId) {
     const next = { ...current };
 
     if (input?.enabled != null) next.enabled = Boolean(input.enabled);
+    if (input?.auto_book_on_paid != null) next.auto_book_on_paid = Boolean(input.auto_book_on_paid);
 
     if (typeof input?.token === 'string') {
       const t = input.token.trim();
@@ -3846,6 +3852,7 @@ export function setPostExSettings(input, userId) {
       pickup_address_code: next.pickup_address_code,
       base_url: next.base_url,
       enabled: next.enabled !== false,
+      auto_book_on_paid: next.auto_book_on_paid === true,
       updated_at: now(),
       updated_by: userId ?? null,
     };
@@ -3866,6 +3873,7 @@ export function setPostExSettings(input, userId) {
     const pub = {
       configured: Boolean(effectiveToken) && payload.enabled !== false,
       enabled: payload.enabled !== false,
+      auto_book_on_paid: payload.auto_book_on_paid === true,
       token_masked: maskSecret(effectiveToken),
       token_source: envToken ? 'env' : payload.token ? 'admin' : null,
       webhook_secret_set: Boolean(effectiveSecret),

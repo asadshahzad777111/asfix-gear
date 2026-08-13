@@ -2,6 +2,7 @@ import { Router } from 'express';
 import * as store from '../store.js';
 import { publishOrderEvent } from '../services/liveEvents.js';
 import { isPostExConfigured } from '../services/postex.js';
+import { sendOrderCompleteEmail, sendOrderStatusEmail } from '../services/orderEmail.js';
 
 const router = Router();
 
@@ -84,7 +85,21 @@ router.post('/postex', (req, res) => {
     return res.status(404).json({ error: 'Order not found' });
   }
 
+  const hist = order.status_history || [];
+  const last = hist[hist.length - 1];
+  const statusJustChanged = Boolean(last && last.at === order.updated_at && last.status);
+
   publishOrderEvent('order_updated', order);
+
+  if (statusJustChanged) {
+    if (order.shipping_status === 'delivered') {
+      sendOrderCompleteEmail(order).catch(() => {});
+    } else {
+      // Force customer email: previous sentinel ≠ current status
+      sendOrderStatusEmail(order, '__postex_prior__').catch(() => {});
+    }
+  }
+
   res.json({ ok: true, order_id: order.order_id || order.id });
 });
 

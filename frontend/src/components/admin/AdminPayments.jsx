@@ -58,6 +58,7 @@ export default function AdminPayments() {
     webhook_header: 'x-postex-secret',
     pickup_address_code: '',
     enabled: true,
+    auto_book_on_paid: false,
   });
   const [postexSecretOnce, setPostexSecretOnce] = useState('');
   const [postexSecretCopied, setPostexSecretCopied] = useState(false);
@@ -96,6 +97,7 @@ export default function AdminPayments() {
             webhook_header: postex.webhook_header || 'x-postex-secret',
             pickup_address_code: postex.pickup_address_code || '',
             enabled: postex.enabled !== false,
+            auto_book_on_paid: postex.auto_book_on_paid === true,
           }));
         }
         setPosSettings({
@@ -158,6 +160,7 @@ export default function AdminPayments() {
     try {
       const body = {
         enabled: postexForm.enabled !== false,
+        auto_book_on_paid: postexForm.auto_book_on_paid === true,
         webhook_header: postexForm.webhook_header || 'x-postex-secret',
         pickup_address_code: postexForm.pickup_address_code || '',
         generate_webhook_secret:
@@ -463,6 +466,20 @@ export default function AdminPayments() {
                 <small>Off = temporary fall back to manual Lahore fee.</small>
               </span>
             </label>
+            <label className="wp-address-setting-row" style={{ gridColumn: '1 / -1' }}>
+              <input
+                type="checkbox"
+                checked={postexForm.auto_book_on_paid === true}
+                onChange={(e) => setPostexForm((f) => ({ ...f, auto_book_on_paid: e.target.checked }))}
+              />
+              <span>
+                <strong>Auto-book when paid / COD confirmed</strong>
+                <small>
+                  Default OFF. When ON, Mark Paid / Confirm COD also books PostEx. Manual{' '}
+                  <strong>Book on PostEx</strong> always stays available — verify stock/pack first if you keep this off.
+                </small>
+              </span>
+            </label>
           </div>
 
           <div className="wp-payments-actions" style={{ marginTop: '1rem', display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
@@ -556,6 +573,9 @@ export default function AdminPayments() {
               )}
               <p style={{ margin: '0.65rem 0 0', fontSize: '0.8rem', color: '#646970' }}>
                 Orders book: <strong>Admin → Orders → Book on PostEx</strong>
+                {postexStatus?.auto_book_on_paid
+                  ? ' · Auto-book ON (paid/COD)'
+                  : ' · Auto-book OFF (manual only)'}
               </p>
             </div>
           )}

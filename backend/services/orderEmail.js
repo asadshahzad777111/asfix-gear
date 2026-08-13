@@ -149,13 +149,24 @@ export function buildOrderStatusEmail(order, status) {
     cancelled: 'Order cancelled',
   };
   const title = labels[status] || `Order update: ${status}`;
-  const bodyText = `Aapka order #${orderId} ka naya status: ${title}. Track page se details dekhein.`;
+  const tracking = order.postex_tracking || order.tracking_number || '';
+  const trackUrl = `${SITE}/track?orderId=${encodeURIComponent(String(orderId))}`;
+  const trackingLine = tracking ? `Courier tracking: ${tracking}` : '';
+  const bodyText = [
+    `Aapka order #${orderId} ka naya status: ${title}.`,
+    trackingLine,
+    `Track: ${trackUrl}`,
+  ]
+    .filter(Boolean)
+    .join('\n');
   const bodyHtml = `
     <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#cbd5e1;">
       Aapka order <strong style="color:#38bdf8;">#${escapeHtml(orderId)}</strong> update:
       <strong>${escapeHtml(title)}</strong>
     </p>
-    <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;">Track page ya account se live status dekhein.</p>`;
+    ${tracking ? `<p style="margin:0 0 12px;font-size:14px;color:#94a3b8;">Courier tracking: <strong style="color:#e2e8f0;">${escapeHtml(tracking)}</strong></p>` : ''}
+    <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;">Track page ya account se live status dekhein.</p>
+    <a href="${trackUrl}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;margin-top:4px;">Track Order</a>`;
 
   return wrapEmail({
     title,
@@ -245,6 +256,95 @@ async function sendToCustomer(order, built) {
 /** Warm confirmation when order is placed. */
 export async function sendOrderPlacedEmail(order) {
   return sendToCustomer(order, buildOrderPlacedEmail(order));
+}
+
+/** Shop inbox alert for new online orders (best-effort; does not block checkout). */
+export function resolveShopNotifyEmail() {
+  const fromEnv = String(
+    process.env.ORDER_NOTIFY_EMAIL || process.env.SHOP_NOTIFY_EMAIL || process.env.SHOP_EMAIL || ''
+  )
+    .trim()
+    .toLowerCase();
+  if (fromEnv && fromEnv.includes('@')) return fromEnv;
+  // Matches frontend/src/config/shop.js — override via ORDER_NOTIFY_EMAIL on Render
+  return 'asadshahzad777111@gmail.com';
+}
+
+export function buildNewOrderShopEmail(order) {
+  const orderId = order.order_id || order.id;
+  const name = String(order.customer_name || 'Customer').trim();
+  const phone = String(order.phone || '—').trim();
+  const isPickup = String(order.fulfillment_method || '').toLowerCase() === 'pickup';
+  const fulfill = isPickup ? 'Shop pickup' : 'Home delivery';
+  const pay = paymentLabel(order.payment_mode);
+  const adminUrl = `${SITE}/admin?tab=orders&q=${encodeURIComponent(String(orderId))}`;
+  const subject = `${BRAND} — NEW ORDER #${orderId} · ${formatAmount(order.total_amount)}`;
+
+  const text = [
+    `NEW ONLINE ORDER #${orderId}`,
+    '',
+    `Customer: ${name}`,
+    `Phone: ${phone}`,
+    `Payment: ${pay}`,
+    `Fulfillment: ${fulfill}`,
+    `City: ${order.city || '—'}`,
+    '',
+    'Items:',
+    itemLines(order.items),
+    '',
+    `Total: ${formatAmount(order.total_amount)}`,
+    '',
+    `Open Admin: ${adminUrl}`,
+    '',
+    'Note: This email does not book PostEx. Verify stock/pack, then Book on PostEx in Admin (or enable optional auto-book later).',
+    `— ${BRAND}`,
+  ].join('\n');
+
+  const html = `<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#0f172a;font-family:Segoe UI,system-ui,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:32px 16px;">
+    <tr><td align="center">
+      <table width="100%" style="max-width:520px;background:#1e293b;border-radius:16px;overflow:hidden;border:1px solid #334155;">
+        <tr><td style="padding:28px 32px;background:linear-gradient(135deg,#f59e0b,#b45309);">
+          <h1 style="margin:0;font-size:22px;color:#fff;">New online order</h1>
+          <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.95);">#${escapeHtml(orderId)} · ${escapeHtml(formatAmount(order.total_amount))}</p>
+        </td></tr>
+        <tr><td style="padding:28px 32px;color:#e2e8f0;">
+          <p style="margin:0 0 12px;font-size:15px;"><strong>${escapeHtml(name)}</strong> · ${escapeHtml(phone)}</p>
+          <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;">Payment: ${escapeHtml(pay)} · ${escapeHtml(fulfill)}</p>
+          <div style="background:#0f172a;border-radius:10px;padding:16px;margin:16px 0;border:1px solid #334155;">
+            <pre style="margin:0;font-size:13px;color:#e2e8f0;white-space:pre-wrap;font-family:inherit;line-height:1.5;">${escapeHtml(itemLines(order.items))}</pre>
+            <p style="margin:12px 0 0;font-size:16px;font-weight:700;color:#4ade80;">Total: ${formatAmount(order.total_amount)}</p>
+          </div>
+          <a href="${adminUrl}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;">Open in Admin</a>
+          <p style="margin:16px 0 0;font-size:12px;color:#64748b;line-height:1.45;">Gmail se Admin auto-login nahi hota. Link kholo → stock/pack check → Book on PostEx. Email PostEx book nahi karti.</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+  return { subject, text, html };
+}
+
+export async function sendNewOrderShopEmail(order) {
+  if (!order) return { sent: false, skipped: true };
+  const src = String(order.source || 'online');
+  if (src === 'counter_sale' || src === 'counter_return' || src === 'counter_draft') {
+    return { sent: false, skipped: true, reason: 'counter' };
+  }
+  const to = resolveShopNotifyEmail();
+  try {
+    const result = await deliverTransactionalEmail(to, buildNewOrderShopEmail(order));
+    if (result.sent) {
+      console.log(`[OrderEmail] Shop notify sent to ${to} for #${order.order_id}`);
+    }
+    return result;
+  } catch (err) {
+    console.error('[OrderEmail] Shop notify failed:', err.message);
+    return { sent: false, error: err.message };
+  }
 }
 
 /** Status change emails (not delivered — that uses completion email). */

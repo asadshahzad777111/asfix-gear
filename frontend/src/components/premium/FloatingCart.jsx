@@ -568,13 +568,16 @@ export default function FloatingCart() {
 
               transition={{ duration: 0.18, ease: 'easeOut' }}
 
-              onClick={() => setOpen(false)}
+              onClick={() => {
+                if (orderSuccess) return;
+                setOpen(false);
+              }}
 
             />
 
             <motion.aside
 
-              className="floating-cart-panel"
+              className={`floating-cart-panel${orderSuccess ? ' floating-cart-panel--order-success' : ''}`}
 
               initial={{ x: '100%' }}
 
@@ -590,10 +593,19 @@ export default function FloatingCart() {
 
                 <h2>{orderSuccess ? t('orderSuccess.title') : checkoutOpen ? t('cart.checkoutTitle') : t('cart.yourCart')}</h2>
 
-                <button type="button" className="floating-cart-close" onClick={() => setOpen(false)} aria-label={t('cart.closeCart')}>
-
+                <button
+                  type="button"
+                  className="floating-cart-close"
+                  onClick={() => {
+                    if (orderSuccess) {
+                      dismissSuccess();
+                      return;
+                    }
+                    setOpen(false);
+                  }}
+                  aria-label={t('cart.closeCart')}
+                >
                   ✕
-
                 </button>
 
               </div>
@@ -1195,7 +1207,7 @@ export default function FloatingCart() {
 
                       >
 
-                        <img src={item.image} alt={item.name} />
+                        <img src={item.image} alt={item.name} loading="lazy" />
 
                         <div className="floating-cart-item-body">
 
