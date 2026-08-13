@@ -4,6 +4,13 @@
  */
 import { Capacitor } from '@capacitor/core';
 import { isNativePosApp } from './nativePosPrint.js';
+import {
+  staffAllowsCancelAlert,
+  staffAllowsCancelSound,
+  staffAllowsOrderAlert,
+  staffAllowsOrderPhone,
+  staffAllowsOrderSound,
+} from './notificationPrefs.js';
 
 const CHANNEL_ID = 'asfix_new_orders';
 const SEEN_KEY = 'asfix_staff_seen_online_order_id';
@@ -226,15 +233,21 @@ export async function attachLocalNotificationOpenHandler(navigateFn) {
  */
 export async function alertStaffNewOrder(order, opts = {}) {
   if (!isOnlineCustomerOrder(order)) return;
+  if (!staffAllowsOrderAlert()) {
+    if (order.id != null) markSeenOnlineOrderId(order.id);
+    return null;
+  }
   const { orderId } = buildAlertCopy(order);
-  playNewOrderChime();
-  await ensureStaffNotifyPermissions();
-  await Promise.all([
-    showNativeLocalNotification(order),
-    showBrowserNotification(order, {
-      onClick: (id) => opts.onOpen?.(id),
-    }),
-  ]);
+  if (staffAllowsOrderSound()) playNewOrderChime();
+  if (staffAllowsOrderPhone()) {
+    await ensureStaffNotifyPermissions();
+    await Promise.all([
+      showNativeLocalNotification(order),
+      showBrowserNotification(order, {
+        onClick: (id) => opts.onOpen?.(id),
+      }),
+    ]);
+  }
   if (order.id != null) markSeenOnlineOrderId(order.id);
   return orderId;
 }
@@ -244,6 +257,7 @@ export async function alertStaffNewOrder(order, opts = {}) {
  */
 export async function alertStaffCancelRequest(order, opts = {}) {
   if (!isOnlineCustomerOrder(order)) return;
+  if (!staffAllowsCancelAlert()) return null;
   const orderId = order.order_id || order.id || '—';
   const name = String(order.customer_name || 'Customer').trim() || 'Customer';
   const postex = Boolean(order.cancel_postex_booked_at_request || order.postex_tracking);
@@ -251,7 +265,7 @@ export async function alertStaffCancelRequest(order, opts = {}) {
     ? `Cancel request #${orderId} · PostEx booked`
     : `Cancel request #${orderId}`;
   const body = `${name} wants to cancel — refund request${postex ? ' (PostEx already booked)' : ''}`;
-  playNewOrderChime();
+  if (staffAllowsCancelSound()) playNewOrderChime();
   await ensureStaffNotifyPermissions();
   try {
     const LN = await getLocalNotifications();

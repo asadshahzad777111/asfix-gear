@@ -6,6 +6,7 @@ import { useTranslation } from '../context/LanguageContext';
 import PageHeader from '../components/PageHeader';
 import BackButton from '../components/BackButton';
 import PasswordField from '../components/auth/PasswordField';
+import NotificationSettingsPanel from '../components/NotificationSettingsPanel';
 
 export default function AccountSettings() {
   const { user, logout, refreshUser } = useAuth();
@@ -163,6 +164,12 @@ export default function AccountSettings() {
                   {pwSaving ? t('settings.saving') : t('settings.changePassword')}
                 </button>
               </form>
+            </div>
+
+            <div className="settings-divider" />
+
+            <div className="settings-section">
+              <NotificationSettingsPanel mode="customer" />
             </div>
 
             <div className="settings-divider" />

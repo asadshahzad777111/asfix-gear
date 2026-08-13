@@ -25,6 +25,13 @@ import {
   maxOnlineOrderId,
   pickNewOnlineOrders,
 } from '../utils/staffOrderNotify';
+import {
+  customerAllowsOrderUpdates,
+  staffAllowsCancelAlert,
+  staffAllowsOrderAlert,
+  staffAllowsOrderToast,
+} from '../utils/notificationPrefs';
+import { maybeAlertCustomerShopUpdates } from '../utils/customerShopNotify';
 import './order-notifications.css';
 
 const DISMISS_MS = 6500;
@@ -215,6 +222,10 @@ export function OrderNotificationProvider({ children }) {
   const handleStaffNewOrder = useCallback(
     async (orderLike) => {
       if (!isStaff || !isOnlineCustomerOrder(orderLike)) return;
+      if (!staffAllowsOrderAlert()) {
+        if (orderLike.id != null) markSeenOnlineOrderId(orderLike.id);
+        return;
+      }
       const key = String(orderLike.id || orderLike.order_id || '');
       if (!key || alertingRef.current.has(key)) return;
       alertingRef.current.add(key);
@@ -222,18 +233,20 @@ export function OrderNotificationProvider({ children }) {
 
       const orderId = orderLike.order_id || orderLike.id;
       const totalLabel = formatRs(orderLike.total_amount);
-      pushToast(
-        {
-          kind: 'staff_new_order',
-          orderId,
-          numericId: orderLike.id,
-          customerName: orderLike.customer_name || 'Customer',
-          totalLabel,
-          status: 'pending',
-          fulfillment: orderLike.fulfillment_method || '',
-        },
-        STAFF_DISMISS_MS
-      );
+      if (staffAllowsOrderToast()) {
+        pushToast(
+          {
+            kind: 'staff_new_order',
+            orderId,
+            numericId: orderLike.id,
+            customerName: orderLike.customer_name || 'Customer',
+            totalLabel,
+            status: 'pending',
+            fulfillment: orderLike.fulfillment_method || '',
+          },
+          STAFF_DISMISS_MS
+        );
+      }
       try {
         await alertStaffNewOrder(orderLike, { onOpen: openStaffOrder });
       } catch {
@@ -247,6 +260,7 @@ export function OrderNotificationProvider({ children }) {
   const handleStaffCancelRequest = useCallback(
     async (orderLike) => {
       if (!isStaff || !isOnlineCustomerOrder(orderLike)) return;
+      if (!staffAllowsCancelAlert()) return;
       const key = `cancel-${orderLike.id || orderLike.order_id || ''}`;
       if (!key || alertingRef.current.has(key)) return;
       alertingRef.current.add(key);
@@ -312,8 +326,9 @@ export function OrderNotificationProvider({ children }) {
   useEffect(() => {
     if (!isCustomer) return undefined;
     void ensureCustomerNotifyPermissions();
+    void maybeAlertCustomerShopUpdates({ navigate });
     return undefined;
-  }, [isCustomer]);
+  }, [isCustomer, navigate]);
 
   useLiveUpdates({
     enabled: isCustomer || isStaff,
@@ -327,6 +342,7 @@ export function OrderNotificationProvider({ children }) {
         return;
       }
       if (!isCustomer) return;
+      if (!customerAllowsOrderUpdates()) return;
       if (event !== 'order_updated' && event !== 'order_created') return;
       if (!data?.order_id) return;
       const status = customerStatusFromEvent(data);

@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import ShopStatusControl from '../ShopStatusControl';
 import AdminPayments from './AdminPayments';
 import AdminStorefrontImages from './AdminStorefrontImages';
+import NotificationSettingsPanel from '../NotificationSettingsPanel';
 import { api } from '../../api/client';
 
 function EmailTestPanel() {
@@ -157,6 +158,12 @@ export default function AdminSettings({ onDownloadBackup, backupLoading, showBac
 
   return (
     <div className="wp-settings">
+      <div className="wp-postbox">
+        <div className="wp-postbox-head">Notifications</div>
+        <div className="wp-postbox-body">
+          <NotificationSettingsPanel mode="staff" />
+        </div>
+      </div>
       <div className="wp-postbox">
         <div className="wp-postbox-head">Shop status</div>
         <div className="wp-postbox-body">

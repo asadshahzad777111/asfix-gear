@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { api, formatPrice } from '../api/client';
 import AdminCounterBill, {
   downloadCounterInvoicePdf,
@@ -49,6 +50,7 @@ const POS_APK_HREF = '/downloads/AsFix-POS.apk';
 export default function Counter() {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { resolved: themeResolved } = useTheme();
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState([]);
@@ -656,6 +658,13 @@ export default function Counter() {
             onClick={() => setPaymentQrOpen(true)}
           >
             {t('counter.paymentQrSlips')}
+          </button>
+          <button
+            type="button"
+            className="wp-button counter-pos-tools__pay-qr"
+            onClick={() => navigate('/admin?tab=settings')}
+          >
+            {t('counter.notifications')}
           </button>
         </div>
 
