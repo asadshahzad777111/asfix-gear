@@ -63,18 +63,69 @@ async function getLocalNotifications() {
   }
 }
 
-export async function ensureStaffNotifyPermissions() {
-  if (typeof window === 'undefined') return { native: false, browser: false };
+/**
+ * Read-only permission status (no system dialog).
+ * @returns {Promise<{ native: boolean, browser: boolean, display: string }>}
+ */
+export async function checkStaffNotifyPermissions() {
+  if (typeof window === 'undefined') {
+    return { native: false, browser: false, display: 'unavailable' };
+  }
 
+  let display = 'unavailable';
+  let native = false;
+  const LN = await getLocalNotifications();
+  if (LN) {
+    try {
+      const perm = await LN.checkPermissions();
+      display = String(perm?.display || 'prompt');
+      native = display === 'granted';
+    } catch (err) {
+      console.warn('[StaffNotify] Native check failed:', err?.message || err);
+      display = 'error';
+    }
+  } else if (isNativePosApp()) {
+    display = 'plugin_missing';
+  }
+
+  let browser = false;
+  if (typeof Notification !== 'undefined') {
+    browser = Notification.permission === 'granted';
+    if (!LN) display = Notification.permission || 'prompt';
+  }
+
+  return { native, browser, display };
+}
+
+/**
+ * Ask for notification permission.
+ * On Android 13+, call this from a button tap (`forceAsk: true`) — silent mount
+ * requests are often ignored by the OS.
+ * @param {{ forceAsk?: boolean }} [opts]
+ */
+export async function ensureStaffNotifyPermissions(opts = {}) {
+  if (typeof window === 'undefined') {
+    return { native: false, browser: false, display: 'unavailable' };
+  }
+  const forceAsk = Boolean(opts.forceAsk);
+
+  let display = 'unavailable';
   let native = false;
   const LN = await getLocalNotifications();
   if (LN) {
     try {
       let perm = await LN.checkPermissions();
-      if (perm.display !== 'granted') {
+      display = String(perm?.display || 'prompt');
+      if (display !== 'granted' && (forceAsk || display === 'prompt')) {
         perm = await LN.requestPermissions();
+        display = String(perm?.display || display);
+        try {
+          localStorage.setItem(PERM_ASKED_KEY, '1');
+        } catch {
+          /* ignore */
+        }
       }
-      native = perm.display === 'granted';
+      native = display === 'granted';
       if (native && !channelReady) {
         await LN.createChannel({
           id: CHANNEL_ID,
@@ -89,6 +140,7 @@ export async function ensureStaffNotifyPermissions() {
       }
     } catch (err) {
       console.warn('[StaffNotify] Native permission failed:', err?.message || err);
+      display = 'error';
     }
   }
 
@@ -96,19 +148,24 @@ export async function ensureStaffNotifyPermissions() {
   if (typeof Notification !== 'undefined') {
     try {
       if (Notification.permission === 'granted') browser = true;
-      else if (Notification.permission !== 'denied' && !localStorage.getItem(PERM_ASKED_KEY)) {
+      else if (
+        Notification.permission !== 'denied' &&
+        (forceAsk || !localStorage.getItem(PERM_ASKED_KEY))
+      ) {
         localStorage.setItem(PERM_ASKED_KEY, '1');
         const result = await Notification.requestPermission();
         browser = result === 'granted';
+        if (!LN) display = result;
       } else {
         browser = Notification.permission === 'granted';
+        if (!LN) display = Notification.permission;
       }
     } catch {
       /* ignore */
     }
   }
 
-  return { native, browser };
+  return { native, browser, display };
 }
 
 /** Short beep — works in foreground WebView / browser without native plugin. */

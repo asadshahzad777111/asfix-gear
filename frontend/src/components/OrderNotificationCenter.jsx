@@ -318,7 +318,9 @@ export function OrderNotificationProvider({ children }) {
 
   useEffect(() => {
     if (!isStaff) return undefined;
-    void ensureStaffNotifyPermissions();
+    // Do not force the Android dialog here — silent asks are ignored on Android 13+.
+    // POS Counter shows PosNotifyPermissionBanner; Settings has "Enable phone permission".
+    void ensureStaffNotifyPermissions({ forceAsk: false });
     void attachLocalNotificationOpenHandler((path) => navigate(path));
     return undefined;
   }, [isStaff, navigate]);

@@ -83,12 +83,17 @@ export default function NotificationSettingsPanel({ mode = 'staff' }) {
   const enablePhonePermission = async () => {
     setPermHint('');
     try {
-      const r = await ensureStaffNotifyPermissions();
+      // Must be from this button tap — Android 13+ ignores silent permission asks.
+      const r = await ensureStaffNotifyPermissions({ forceAsk: true });
       if (r.native || r.browser) {
         patchStaff({ orderPhone: true, orderShow: true });
         setPermHint(isCapacitorNative() ? 'Phone notifications allowed.' : 'Browser notifications allowed.');
+      } else if (r.display === 'denied') {
+        setPermHint(
+          'Blocked — Phone Settings → Apps → AsFix POS → Notifications → Allow, then tap again.',
+        );
       } else {
-        setPermHint('Permission denied — enable notifications in phone Settings → Apps → AsFix POS.');
+        setPermHint('Permission not granted — Allow dabao jab Android dialog aaye.');
       }
     } catch {
       setPermHint('Could not request permission.');
@@ -102,6 +107,8 @@ export default function NotificationSettingsPanel({ mode = 'staff' }) {
           <h2 className="asfix-notif-panel__title">Notifications</h2>
           <p className="asfix-notif-panel__lead">
             Order alerts, cancel requests, aur customer marketing — is phone / APK ke liye.
+            Phone alert ke liye pehle <strong>Enable phone permission</strong> dabao (Android
+            Allow dialog).
           </p>
         </header>
 

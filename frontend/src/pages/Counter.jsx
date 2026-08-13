@@ -10,6 +10,7 @@ import AdminCounterBill, {
 import PosCustomBill from '../components/admin/PosCustomBill';
 import PosPaymentQrPanel from '../components/admin/PosPaymentQrPanel';
 import NotificationSettingsPanel from '../components/NotificationSettingsPanel';
+import PosNotifyPermissionBanner from '../components/PosNotifyPermissionBanner';
 import { SHOP } from '../config/shop';
 import ThemeToggle from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
@@ -613,6 +614,8 @@ export default function Counter() {
             </div>
           </div>
         </div>
+
+        {nativePos ? <PosNotifyPermissionBanner /> : null}
 
         {!nativePos && isAndroid ? (
           <div
