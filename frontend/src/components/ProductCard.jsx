@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import PremiumButton from '../components/premium/PremiumButton';
 import { useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { orderProductContactPath, restockInquiryContactPath } from '../config/shop';
+import { restockInquiryContactPath } from '../config/shop';
 import { getDefaultImage } from '../config/products';
 import { useCart } from '../context/CartContext';
 import { getProductAnimKind } from '../utils/productAnimation';
@@ -37,9 +37,9 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
     setLoginOpen,
   } = useShopGate();
   const inStock = isInStock(product.stock);
-  const contactTo = inStock ? orderProductContactPath(product) : restockInquiryContactPath(product);
+  const restockTo = restockInquiryContactPath(product);
   const onSale = hasDiscount(product);
-  const { addItem } = useCart();
+  const { addItem, buyNow } = useCart();
   const addRef = useRef(null);
   const [hovered, setHovered] = useState(false);
   const [selected, setSelected] = useState(false);
@@ -82,6 +82,14 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
       if (rect) addItem(product, rect);
       setSelected(true);
       setTimeout(() => setSelected(false), 600);
+    });
+  };
+
+  const handleOrderNow = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    requireCustomer(() => {
+      buyNow(product, 1);
     });
   };
 
@@ -182,13 +190,23 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
         >
           {t('product.addCartShort')}
         </PremiumButton>
-        <Link
-          to={contactTo}
-          className={`product-wa-btn ${!inStock ? 'product-wa-btn--restock' : ''}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {inStock ? t('product.orderShort') : t('product.requestItem')}
-        </Link>
+        {inStock ? (
+          <button
+            type="button"
+            className="product-order-now-btn product-order-now-btn--card"
+            onClick={handleOrderNow}
+          >
+            {t('product.orderShort')}
+          </button>
+        ) : (
+          <Link
+            to={restockTo}
+            className="product-wa-btn product-wa-btn--restock"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {t('product.requestItem')}
+          </Link>
+        )}
       </div>
     </>
   ) : (
@@ -246,13 +264,23 @@ export default function ProductCard({ product, inGrid = false, revealIndex = 0 }
         >
           {t('product.addCartShort')}
         </PremiumButton>
-        <Link
-          to={contactTo}
-          className={`product-wa-btn ${!inStock ? 'product-wa-btn--restock' : ''}`}
-          onClick={(e) => e.stopPropagation()}
-        >
-          {inStock ? t('product.orderShort') : t('product.requestItem')}
-        </Link>
+        {inStock ? (
+          <button
+            type="button"
+            className="product-order-now-btn product-order-now-btn--card"
+            onClick={handleOrderNow}
+          >
+            {t('product.orderShort')}
+          </button>
+        ) : (
+          <Link
+            to={restockTo}
+            className="product-wa-btn product-wa-btn--restock"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {t('product.requestItem')}
+          </Link>
+        )}
       </div>
     </>
   );

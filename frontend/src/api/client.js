@@ -547,6 +547,7 @@ export const api = {
     return request(`/orders/counter-sales${query ? `?${query}` : ''}`);
   },
   getOrders: () => request('/orders'),
+  getOrderNotifyFeed: () => request('/orders/notify-feed'),
   updateOrderStatus: (id, shipping_status) =>
     request(`/orders/${id}/status`, {
       method: 'PATCH',
@@ -657,6 +658,8 @@ export const api = {
     request(`/admin/categories/${id}`, { method: 'PATCH', body: JSON.stringify(body) }),
   deleteCategory: (id) => request(`/admin/categories/${id}`, { method: 'DELETE' }),
   getEmailStatus: () => request('/admin/email-status'),
+  setEmailSettings: (body) =>
+    request('/admin/email-settings', { method: 'PATCH', body: JSON.stringify(body) }),
   sendTestEmail: (to) =>
     request('/admin/email-test', {
       method: 'POST',

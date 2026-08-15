@@ -1,8 +1,10 @@
 import { deliverTransactionalEmail } from './otpDelivery.js';
-import { getUserById } from '../store.js';
+import { getUserById, getEmailNotifySettings } from '../store.js';
 
 const BRAND = 'AsFix & Gear';
 const SITE = 'https://asfixgear.com';
+/** Square logo for email clients (Gmail body). Gmail list avatar = Google account photo / BIMI. */
+const LOGO_URL = `${SITE}/logo-192.png`;
 
 function formatAmount(amount) {
   return `Rs. ${Number(amount).toLocaleString('en-PK')}`;
@@ -14,6 +16,21 @@ function escapeHtml(str) {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;');
+}
+
+function emailBrandHeader(titleHtml, subtitleHtml, gradient = 'linear-gradient(135deg,#0ea5e9,#0369a1)') {
+  return `<tr><td style="padding:24px 28px;background:${gradient};">
+          <table width="100%" cellpadding="0" cellspacing="0"><tr>
+            <td width="56" valign="middle" style="padding-right:14px;">
+              <img src="${LOGO_URL}" width="48" height="48" alt="${escapeHtml(BRAND)}" style="display:block;border-radius:12px;border:2px solid rgba(255,255,255,0.35);background:#fff;" />
+            </td>
+            <td valign="middle">
+              <p style="margin:0 0 4px;font-size:12px;font-weight:700;letter-spacing:0.04em;text-transform:uppercase;color:rgba(255,255,255,0.85);">${escapeHtml(BRAND)}</p>
+              <h1 style="margin:0;font-size:20px;line-height:1.25;color:#fff;">${titleHtml}</h1>
+              ${subtitleHtml ? `<p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.95);">${subtitleHtml}</p>` : ''}
+            </td>
+          </tr></table>
+        </td></tr>`;
 }
 
 export function resolveOrderCustomerEmail(order) {
@@ -44,21 +61,30 @@ function paymentLabel(mode) {
   if (m === 'easypaisa') return 'EasyPaisa';
   if (m === 'bank') return 'Bank Transfer';
   if (m === 'jazzcash') return 'JazzCash';
+  if (m === 'safepay') return 'Safepay';
+  if (m === 'payfast') return 'PayFast';
   return mode || '—';
 }
 
-function wrapEmail({ title, greeting, bodyHtml, bodyText, orderId }) {
+function wrapEmail({ title, greeting, bodyHtml, bodyText, orderId, trackCta = true }) {
   const subject = `${BRAND} — ${title} (#${orderId})`;
+  const trackUrl = orderId
+    ? `${SITE}/track?orderId=${encodeURIComponent(String(orderId))}`
+    : `${SITE}/track`;
   const text = [
     greeting,
     '',
     bodyText,
     '',
-    `Track: ${SITE}/track`,
+    `Track: ${trackUrl}`,
     `Account: ${SITE}/account`,
     '',
     `— Team ${BRAND}`,
   ].join('\n');
+
+  const ctaHtml = trackCta
+    ? `<a href="${trackUrl}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;margin-top:8px;">Track Order</a>`
+    : '';
 
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -67,14 +93,11 @@ function wrapEmail({ title, greeting, bodyHtml, bodyText, orderId }) {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" style="max-width:520px;background:#1e293b;border-radius:16px;overflow:hidden;border:1px solid #334155;">
-        <tr><td style="padding:28px 32px;background:linear-gradient(135deg,#0ea5e9,#0369a1);">
-          <h1 style="margin:0;font-size:22px;color:#fff;">${escapeHtml(title)}</h1>
-          <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.9);">AsFix &amp; Gear — Lahore</p>
-        </td></tr>
+        ${emailBrandHeader(escapeHtml(title), 'AsFix &amp; Gear — Lahore')}
         <tr><td style="padding:28px 32px;color:#e2e8f0;">
           <p style="margin:0 0 16px;font-size:16px;">${escapeHtml(greeting)}</p>
           ${bodyHtml}
-          <a href="${SITE}/track" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;margin-top:8px;">Track Order</a>
+          ${ctaHtml}
         </td></tr>
         <tr><td style="padding:16px 32px;background:#0f172a;text-align:center;border-top:1px solid #334155;">
           <p style="margin:0;font-size:11px;color:#64748b;">&copy; ${new Date().getFullYear()} ${BRAND} · asfixgear.com · WhatsApp 03039227000</p>
@@ -165,8 +188,7 @@ export function buildOrderStatusEmail(order, status) {
       <strong>${escapeHtml(title)}</strong>
     </p>
     ${tracking ? `<p style="margin:0 0 12px;font-size:14px;color:#94a3b8;">Courier tracking: <strong style="color:#e2e8f0;">${escapeHtml(tracking)}</strong></p>` : ''}
-    <p style="margin:0 0 20px;font-size:14px;color:#94a3b8;">Track page ya account se live status dekhein.</p>
-    <a href="${trackUrl}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;margin-top:4px;">Track Order</a>`;
+    <p style="margin:0 0 8px;font-size:14px;color:#94a3b8;">Track page ya account se live status dekhein.</p>`;
 
   return wrapEmail({
     title,
@@ -206,10 +228,7 @@ export function buildOrderCompleteEmail(order) {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" style="max-width:520px;background:#1e293b;border-radius:16px;overflow:hidden;border:1px solid #334155;">
-        <tr><td style="padding:28px 32px;background:linear-gradient(135deg,#0ea5e9,#0369a1);">
-          <h1 style="margin:0;font-size:22px;color:#fff;">Order Complete!</h1>
-          <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.9);">AsFix &amp; Gear — Lahore</p>
-        </td></tr>
+        ${emailBrandHeader('Order Complete!', 'AsFix &amp; Gear — Lahore')}
         <tr><td style="padding:28px 32px;color:#e2e8f0;">
           <p style="margin:0 0 16px;font-size:16px;">Assalam o Alaikum <strong>${escapeHtml(name)}</strong>,</p>
           <p style="margin:0 0 20px;font-size:15px;line-height:1.6;color:#cbd5e1;">
@@ -260,13 +279,22 @@ export async function sendOrderPlacedEmail(order) {
 
 /** Shop inbox alert for new online orders (best-effort; does not block checkout). */
 export function resolveShopNotifyEmail() {
+  // Admin → Settings (DB) — survives APK reinstall
+  try {
+    const saved = getEmailNotifySettings();
+    if (saved?.notify_email && saved.notify_email.includes('@')) {
+      return saved.notify_email;
+    }
+  } catch {
+    /* ignore */
+  }
   const fromEnv = String(
     process.env.ORDER_NOTIFY_EMAIL || process.env.SHOP_NOTIFY_EMAIL || process.env.SHOP_EMAIL || ''
   )
     .trim()
     .toLowerCase();
   if (fromEnv && fromEnv.includes('@')) return fromEnv;
-  // Matches frontend/src/config/shop.js — override via ORDER_NOTIFY_EMAIL on Render
+  // Matches frontend/src/config/shop.js — override via Admin Settings or ORDER_NOTIFY_EMAIL
   return 'asadshahzad777111@gmail.com';
 }
 
@@ -296,7 +324,7 @@ export function buildNewOrderShopEmail(order) {
     '',
     `Open Admin: ${adminUrl}`,
     '',
-    'Note: This email does not book PostEx. Verify stock/pack, then Book on PostEx in Admin (or enable optional auto-book later).',
+    'Note: Email does not book courier. In Admin → Orders: Book on PostEx OR Assign rider (local delivery).',
     `— ${BRAND}`,
   ].join('\n');
 
@@ -306,10 +334,11 @@ export function buildNewOrderShopEmail(order) {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" style="max-width:520px;background:#1e293b;border-radius:16px;overflow:hidden;border:1px solid #334155;">
-        <tr><td style="padding:28px 32px;background:linear-gradient(135deg,#f59e0b,#b45309);">
-          <h1 style="margin:0;font-size:22px;color:#fff;">New online order</h1>
-          <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.95);">#${escapeHtml(orderId)} · ${escapeHtml(formatAmount(order.total_amount))}</p>
-        </td></tr>
+        ${emailBrandHeader(
+          'New online order',
+          `#${escapeHtml(orderId)} · ${escapeHtml(formatAmount(order.total_amount))}`,
+          'linear-gradient(135deg,#f59e0b,#b45309)'
+        )}
         <tr><td style="padding:28px 32px;color:#e2e8f0;">
           <p style="margin:0 0 12px;font-size:15px;"><strong>${escapeHtml(name)}</strong> · ${escapeHtml(phone)}</p>
           <p style="margin:0 0 8px;font-size:13px;color:#94a3b8;">Payment: ${escapeHtml(pay)} · ${escapeHtml(fulfill)}</p>
@@ -318,7 +347,7 @@ export function buildNewOrderShopEmail(order) {
             <p style="margin:12px 0 0;font-size:16px;font-weight:700;color:#4ade80;">Total: ${formatAmount(order.total_amount)}</p>
           </div>
           <a href="${adminUrl}" style="display:inline-block;background:linear-gradient(135deg,#0ea5e9,#0369a1);color:#fff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;">Open in Admin</a>
-          <p style="margin:16px 0 0;font-size:12px;color:#64748b;line-height:1.45;">Gmail se Admin auto-login nahi hota. Link kholo → stock/pack check → Book on PostEx. Email PostEx book nahi karti.</p>
+          <p style="margin:16px 0 0;font-size:12px;color:#64748b;line-height:1.45;">Gmail se Admin auto-login nahi hota. Link kholo → pack check → <strong>Book on PostEx</strong> ya <strong>Assign rider</strong> (local delivery). Email khud book nahi karti.</p>
         </td></tr>
       </table>
     </td></tr>
@@ -385,10 +414,11 @@ export function buildCancelRequestShopEmail(order) {
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#0f172a;padding:32px 16px;">
     <tr><td align="center">
       <table width="100%" style="max-width:520px;background:#1e293b;border-radius:16px;overflow:hidden;border:1px solid #334155;">
-        <tr><td style="padding:28px 32px;background:${banner};">
-          <h1 style="margin:0;font-size:20px;color:#fff;">Customer wants to cancel</h1>
-          <p style="margin:8px 0 0;font-size:14px;color:rgba(255,255,255,0.95);">#${escapeHtml(String(orderId))} — refund request</p>
-        </td></tr>
+        ${emailBrandHeader(
+          'Customer wants to cancel',
+          `#${escapeHtml(String(orderId))} — refund request`,
+          banner
+        )}
         <tr><td style="padding:28px 32px;color:#e2e8f0;">
           <p style="margin:0 0 12px;font-size:15px;"><strong>${escapeHtml(name)}</strong> · ${escapeHtml(phone)}</p>
           <p style="margin:0 0 8px;font-size:14px;">Total: ${escapeHtml(formatAmount(order.total_amount))}</p>

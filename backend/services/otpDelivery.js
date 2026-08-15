@@ -1,6 +1,6 @@
 import nodemailer from 'nodemailer';
 
-const BRAND_NAME = 'AsFix Gear';
+const BRAND_NAME = 'AsFix & Gear';
 const SHOP_WHATSAPP_INTL = process.env.SHOP_WHATSAPP_INTL || '923039227000';
 
 export class OtpDeliveryError extends Error {

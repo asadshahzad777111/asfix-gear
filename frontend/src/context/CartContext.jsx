@@ -110,6 +110,31 @@ export function CartProvider({ children }) {
 
   const clearCart = useCallback(() => setItems([]), []);
 
+  /** Add item and open cart checkout (website order — not WhatsApp). */
+  const [checkoutIntent, setCheckoutIntent] = useState(false);
+  const clearCheckoutIntent = useCallback(() => setCheckoutIntent(false), []);
+
+  const buyNow = useCallback((product, qty = 1) => {
+    if (!product || !isPublishedProduct(product) || !isInStock(product.stock)) return;
+    const limit = maxCartQty(product);
+    if (limit <= 0) return;
+    const addQty = Math.max(1, Math.min(Number(qty) || 1, limit));
+    setItems((prev) => {
+      const idx = prev.findIndex((i) => i.id === product.id);
+      if (idx >= 0) {
+        const next = [...prev];
+        next[idx] = {
+          ...next[idx],
+          qty: Math.min(next[idx].qty + addQty, limit),
+          stock: product.stock,
+        };
+        return next;
+      }
+      return [...prev, { ...product, qty: addQty }];
+    });
+    setCheckoutIntent(true);
+  }, []);
+
   const count = useMemo(() => items.reduce((sum, i) => sum + i.qty, 0), [items]);
 
   const value = useMemo(
@@ -124,8 +149,24 @@ export function CartProvider({ children }) {
       removeItem,
       updateQty,
       clearCart,
+      buyNow,
+      checkoutIntent,
+      clearCheckoutIntent,
     }),
-    [items, count, open, fly, addItem, completeFly, removeItem, updateQty, clearCart]
+    [
+      items,
+      count,
+      open,
+      fly,
+      addItem,
+      completeFly,
+      removeItem,
+      updateQty,
+      clearCart,
+      buyNow,
+      checkoutIntent,
+      clearCheckoutIntent,
+    ]
   );
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;

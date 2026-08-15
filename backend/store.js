@@ -315,13 +315,15 @@ function validateShippingAddress(raw) {
     country,
   });
   const text = textValue(raw.text, 500) || composed;
-  const lat = Number(raw.lat);
-  const lng = Number(raw.lng);
+  let lat = Number(raw.lat);
+  let lng = Number(raw.lng);
   if (!name || !phone || !text) {
     throw new Error('Delivery address requires name, phone, and address details');
   }
+  // Map pin optional — default to shop coords when customer skips map
   if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    throw new Error('Drop a map pin for delivery location');
+    lat = 31.59375;
+    lng = 74.46745;
   }
   if (lat < -90 || lat > 90 || lng < -180 || lng > 180) {
     throw new Error('Invalid map coordinates');
@@ -4100,6 +4102,8 @@ const DEFAULT_PAYMENT_SETTINGS = {
   cod: { enabled: true },
   /** Premier PayFast — disabled until merchant credentials are configured. */
   payfast: { enabled: false },
+  /** Safepay advance / card — toggle in Admin Payments. */
+  safepay: { enabled: true },
   /** POS thermal Scan & Pay slips (JazzCash / EasyPaisa / Meezan). */
   posQrCards: DEFAULT_POS_QR_CARDS,
 };
@@ -4627,10 +4631,44 @@ export function getPaymentSettings() {
     bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
     cod: { ...DEFAULT_PAYMENT_SETTINGS.cod, ...(saved.cod || {}) },
     payfast: { ...DEFAULT_PAYMENT_SETTINGS.payfast, ...(saved.payfast || {}) },
+    safepay: { ...DEFAULT_PAYMENT_SETTINGS.safepay, ...(saved.safepay || {}) },
     posQrCards: normalizePosQrCards(saved.posQrCards),
     updated_at: saved.updated_at ?? null,
     updated_by: saved.updated_by ?? null,
   };
+}
+
+/** Shop inbox for new-order alerts — survives APK reinstall (Mongo/JSON settings). */
+export function getEmailNotifySettings() {
+  const saved = readData().settings?.email_notify || {};
+  const notify = String(saved.notify_email || '').trim().toLowerCase();
+  return {
+    notify_email: notify && notify.includes('@') ? notify.slice(0, 120) : '',
+    updated_at: saved.updated_at ?? null,
+    updated_by: saved.updated_by ?? null,
+  };
+}
+
+export function setEmailNotifySettings(input, userId) {
+  return withData((data) => {
+    if (!data.settings) data.settings = {};
+    const current = data.settings.email_notify || {};
+    let notify = current.notify_email || '';
+    if (typeof input?.notify_email === 'string') {
+      notify = input.notify_email.trim().toLowerCase().slice(0, 120);
+    }
+    if (input?.clear_notify_email === true) notify = '';
+    if (notify && (!notify.includes('@') || notify.includes(' '))) {
+      throw new Error('Valid notify email required (e.g. your@gmail.com)');
+    }
+    const payload = {
+      notify_email: notify,
+      updated_at: now(),
+      updated_by: userId ?? null,
+    };
+    data.settings.email_notify = payload;
+    return { ...payload };
+  });
 }
 
 export function setPaymentSettings(input, userId) {
@@ -4643,10 +4681,11 @@ export function setPaymentSettings(input, userId) {
       bank: { ...DEFAULT_PAYMENT_SETTINGS.bank, ...(saved.bank || {}) },
       cod: { ...DEFAULT_PAYMENT_SETTINGS.cod, ...(saved.cod || {}) },
       payfast: { ...DEFAULT_PAYMENT_SETTINGS.payfast, ...(saved.payfast || {}) },
+      safepay: { ...DEFAULT_PAYMENT_SETTINGS.safepay, ...(saved.safepay || {}) },
       posQrCards: normalizePosQrCards(saved.posQrCards),
     };
 
-    for (const key of ['jazzcash', 'easypaisa', 'bank', 'cod', 'payfast']) {
+    for (const key of ['jazzcash', 'easypaisa', 'bank', 'cod', 'payfast', 'safepay']) {
       if (!input[key]) continue;
       const patch = input[key];
       next[key] = {

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useParams, Navigate, Link } from 'react-router-dom';
 import { api, formatPrice } from '../api/client';
-import { orderProductContactPath, restockInquiryContactPath } from '../config/shop';
+import { restockInquiryContactPath } from '../config/shop';
 import { useCart } from '../context/CartContext';
 import { useTranslation } from '../context/LanguageContext';
 import { useShopGate } from '../hooks/useShopGate';
@@ -34,7 +34,7 @@ export default function ProductDetail() {
   const [related, setRelated] = useState([]);
   const [qty, setQty] = useState(1);
   const addBtnRef = useRef(null);
-  const { addItem } = useCart();
+  const { addItem, buyNow } = useCart();
   const { isWishlisted, toggle: toggleWishlist } = useWishlist(product?.id);
   const {
     requireCustomer,
@@ -146,6 +146,12 @@ export default function ProductDetail() {
     });
   };
 
+  const handleOrderNow = () => {
+    requireCustomer(() => {
+      buyNow(product, qty);
+    });
+  };
+
   return (
     <>
       <DocumentHead
@@ -242,11 +248,11 @@ export default function ProductDetail() {
               </div>
               <div className="product-actions">
                 {inStock ? (
-                  <PremiumLink to={orderProductContactPath(product)} className="btn btn-whatsapp">
-                    {t('product.orderWhatsApp')}
-                  </PremiumLink>
+                  <button type="button" className="btn btn-primary product-order-now-btn" onClick={handleOrderNow}>
+                    {t('product.orderNow')}
+                  </button>
                 ) : (
-                  <PremiumLink to={restockInquiryContactPath(product)} className="btn btn-whatsapp">
+                  <PremiumLink to={restockInquiryContactPath(product)} className="btn btn-outline">
                     {t('product.requestItem')}
                   </PremiumLink>
                 )}

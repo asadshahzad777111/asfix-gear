@@ -43,7 +43,15 @@ export default function useLiveUpdates({ onEvent, enabled = true } = {}) {
       const url = `${API_BASE}/events/stream?token=${encodeURIComponent(token)}`;
       es = new EventSource(url);
 
-      const events = ['order_created', 'order_updated', 'repair_created', 'repair_updated', 'repair_message', 'product_updated'];
+      const events = [
+        'order_created',
+        'order_updated',
+        'order_cancel_requested',
+        'repair_created',
+        'repair_updated',
+        'repair_message',
+        'product_updated',
+      ];
       for (const name of events) {
         es.addEventListener(name, (e) => handlePayload(e.data));
       }

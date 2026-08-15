@@ -35,12 +35,19 @@ export const DEFAULT_PAYMENTS = {
   payfast: {
     enabled: false,
   },
+  /**
+   * Safepay (card / advance online) — enable in Admin → Payments when merchant is live.
+   * Checkout shows “Proceed to Pay”; gateway redirect can be wired when API keys exist.
+   */
+  safepay: {
+    enabled: true,
+  },
   /** Extra POS thermal QR slips (JazzCash / EasyPaisa / Meezan). */
   posQrCards: DEFAULT_POS_PAYMENT_QR_CARDS,
 };
 
-export const PAYMENT_METHOD_IDS = ['jazzcash', 'easypaisa', 'bank', 'cod', 'payfast'];
-export const ADVANCE_PAYMENT_MODES = new Set(['jazzcash', 'easypaisa', 'bank', 'payfast']);
+export const PAYMENT_METHOD_IDS = ['jazzcash', 'easypaisa', 'bank', 'cod', 'safepay', 'payfast'];
+export const ADVANCE_PAYMENT_MODES = new Set(['jazzcash', 'easypaisa', 'bank', 'safepay', 'payfast']);
 
 function normalizeSavedPayments(saved) {
   return saved && typeof saved === 'object' ? saved : {};
@@ -54,6 +61,7 @@ export function mergePaymentSettings(saved) {
     bank: { ...DEFAULT_PAYMENTS.bank, ...(s.bank || {}) },
     cod: { ...DEFAULT_PAYMENTS.cod, ...(s.cod || {}) },
     payfast: { ...DEFAULT_PAYMENTS.payfast, ...(s.payfast || {}) },
+    safepay: { ...DEFAULT_PAYMENTS.safepay, ...(s.safepay || {}) },
     posQrCards: mergePosPaymentQrCards(s.posQrCards),
   };
 }

@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { useNavigate } from 'react-router-dom';
 import { api, formatPrice } from '../api/client';
 import AdminCounterBill, {
   downloadCounterInvoicePdf,
@@ -8,6 +9,8 @@ import AdminCounterBill, {
 } from '../components/admin/AdminCounterBill';
 import PosCustomBill from '../components/admin/PosCustomBill';
 import PosPaymentQrPanel from '../components/admin/PosPaymentQrPanel';
+import NotificationSettingsPanel from '../components/NotificationSettingsPanel';
+import PosNotifyPermissionBanner from '../components/PosNotifyPermissionBanner';
 import { SHOP } from '../config/shop';
 import ThemeToggle from '../components/ThemeToggle';
 import { useAuth } from '../context/AuthContext';
@@ -100,12 +103,15 @@ const DEFAULT_POS_SETTINGS = {
   posDiscountMaxAmountWithoutPin: 500,
 };
 
-/** Hosted on Vercel from frontend/public/downloads/AsFix-POS.apk */
-const POS_APK_HREF = '/downloads/AsFix-POS.apk';
+/** Versioned filename so phones do not reuse an old AsFix-POS.apk from Downloads. */
+const POS_APK_VERSION = '1.1.1';
+const POS_APK_HREF = `/downloads/AsFix-POS-${POS_APK_VERSION}.apk?v=${POS_APK_VERSION}`;
+const POS_APK_FILENAME = `AsFix-POS-${POS_APK_VERSION}.apk`;
 
 export default function Counter() {
   const { user, logout } = useAuth();
   const { t } = useTranslation();
+  const navigate = useNavigate();
   const { resolved: themeResolved } = useTheme();
   const [products, setProducts] = useState([]);
   const [sales, setSales] = useState([]);
@@ -128,6 +134,7 @@ export default function Counter() {
   const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
   const [nativePickerOpen, setNativePickerOpen] = useState(false);
   const [paymentQrOpen, setPaymentQrOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
   const [posMode, setPosMode] = useState('sale'); // 'sale' | 'custom'
   const [dayCloseOpen, setDayCloseOpen] = useState(false);
   const [expectedCash, setExpectedCash] = useState(() => loadExpectedCash(new Date().toISOString().slice(0, 10)));
@@ -741,6 +748,8 @@ export default function Counter() {
           ) : null}
         </div>
 
+        {nativePos ? <PosNotifyPermissionBanner /> : null}
+
         {!nativePos && isAndroid ? (
           <div
             className="counter-pos-download-bar counter-pos-download-bar--android"
@@ -748,16 +757,21 @@ export default function Counter() {
             aria-label={t('counter.downloadPosApk')}
           >
             <div className="counter-pos-download-bar__copy">
-              <strong>{t('counter.downloadPosApk')}</strong>
-              <small>{t('counter.downloadPosApkHint')}</small>
+              <strong>
+                {t('counter.downloadPosApk')} · v{POS_APK_VERSION}
+              </strong>
+              <small>
+                {t('counter.downloadPosApkHint')} File: {POS_APK_FILENAME} (purani 1.0 mat
+                kholo).
+              </small>
             </div>
             <a
               className="wp-button counter-pos-download-bar__cta"
               href={POS_APK_HREF}
-              download="AsFix-POS.apk"
+              download={POS_APK_FILENAME}
               type="application/vnd.android.package-archive"
             >
-              {t('counter.downloadPosApk')}
+              Download v{POS_APK_VERSION}
             </a>
           </div>
         ) : null}
@@ -790,7 +804,39 @@ export default function Counter() {
           >
             {t('counter.paymentQrSlips')}
           </button>
+          <button
+            type="button"
+            className="wp-button counter-pos-tools__pay-qr"
+            onClick={() => setNotifOpen(true)}
+          >
+            {t('counter.notifications')}
+          </button>
         </div>
+
+        {notifOpen
+          ? createPortal(
+              <div
+                className="counter-notif-overlay"
+                role="dialog"
+                aria-modal="true"
+                aria-label={t('counter.notifications')}
+                onClick={(e) => {
+                  if (e.target === e.currentTarget) setNotifOpen(false);
+                }}
+              >
+                <div className="counter-notif-sheet">
+                  <div className="counter-notif-sheet__bar">
+                    <strong>{t('counter.notifications')}</strong>
+                    <button type="button" className="wp-button" onClick={() => setNotifOpen(false)}>
+                      {t('common.close')}
+                    </button>
+                  </div>
+                  <NotificationSettingsPanel mode="staff" />
+                </div>
+              </div>,
+              document.body,
+            )
+          : null}
 
         {bootstrapping && products.length === 0 && posMode === 'sale' ? (
           <div className="counter-boot">{t('common.loading')}</div>

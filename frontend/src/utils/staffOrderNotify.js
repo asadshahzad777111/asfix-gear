@@ -4,6 +4,13 @@
  */
 import { Capacitor } from '@capacitor/core';
 import { isNativePosApp } from './nativePosPrint.js';
+import {
+  staffAllowsCancelAlert,
+  staffAllowsCancelSound,
+  staffAllowsOrderAlert,
+  staffAllowsOrderPhone,
+  staffAllowsOrderSound,
+} from './notificationPrefs.js';
 
 const CHANNEL_ID = 'asfix_new_orders';
 const SEEN_KEY = 'asfix_staff_seen_online_order_id';
@@ -38,9 +45,11 @@ export function markSeenOnlineOrderId(id) {
   if (n > prev) localStorage.setItem(SEEN_KEY, String(n));
 }
 
-export function adminOrderDeepLink(orderId) {
+export function adminOrderDeepLink(orderId, opts = {}) {
   const q = encodeURIComponent(String(orderId || '').trim());
-  return q ? `/admin?tab=orders&q=${q}` : '/admin?tab=orders';
+  const ship = String(opts.ship || '').trim().toLowerCase();
+  const shipParam = ship === 'postex' ? `&ship=${ship}` : '';
+  return q ? `/admin?tab=orders&q=${q}${shipParam}` : '/admin?tab=orders';
 }
 
 async function getLocalNotifications() {
@@ -54,18 +63,69 @@ async function getLocalNotifications() {
   }
 }
 
-export async function ensureStaffNotifyPermissions() {
-  if (typeof window === 'undefined') return { native: false, browser: false };
+/**
+ * Read-only permission status (no system dialog).
+ * @returns {Promise<{ native: boolean, browser: boolean, display: string }>}
+ */
+export async function checkStaffNotifyPermissions() {
+  if (typeof window === 'undefined') {
+    return { native: false, browser: false, display: 'unavailable' };
+  }
 
+  let display = 'unavailable';
+  let native = false;
+  const LN = await getLocalNotifications();
+  if (LN) {
+    try {
+      const perm = await LN.checkPermissions();
+      display = String(perm?.display || 'prompt');
+      native = display === 'granted';
+    } catch (err) {
+      console.warn('[StaffNotify] Native check failed:', err?.message || err);
+      display = 'error';
+    }
+  } else if (isNativePosApp()) {
+    display = 'plugin_missing';
+  }
+
+  let browser = false;
+  if (typeof Notification !== 'undefined') {
+    browser = Notification.permission === 'granted';
+    if (!LN) display = Notification.permission || 'prompt';
+  }
+
+  return { native, browser, display };
+}
+
+/**
+ * Ask for notification permission.
+ * On Android 13+, call this from a button tap (`forceAsk: true`) — silent mount
+ * requests are often ignored by the OS.
+ * @param {{ forceAsk?: boolean }} [opts]
+ */
+export async function ensureStaffNotifyPermissions(opts = {}) {
+  if (typeof window === 'undefined') {
+    return { native: false, browser: false, display: 'unavailable' };
+  }
+  const forceAsk = Boolean(opts.forceAsk);
+
+  let display = 'unavailable';
   let native = false;
   const LN = await getLocalNotifications();
   if (LN) {
     try {
       let perm = await LN.checkPermissions();
-      if (perm.display !== 'granted') {
+      display = String(perm?.display || 'prompt');
+      if (display !== 'granted' && (forceAsk || display === 'prompt')) {
         perm = await LN.requestPermissions();
+        display = String(perm?.display || display);
+        try {
+          localStorage.setItem(PERM_ASKED_KEY, '1');
+        } catch {
+          /* ignore */
+        }
       }
-      native = perm.display === 'granted';
+      native = display === 'granted';
       if (native && !channelReady) {
         await LN.createChannel({
           id: CHANNEL_ID,
@@ -80,6 +140,7 @@ export async function ensureStaffNotifyPermissions() {
       }
     } catch (err) {
       console.warn('[StaffNotify] Native permission failed:', err?.message || err);
+      display = 'error';
     }
   }
 
@@ -87,19 +148,24 @@ export async function ensureStaffNotifyPermissions() {
   if (typeof Notification !== 'undefined') {
     try {
       if (Notification.permission === 'granted') browser = true;
-      else if (Notification.permission !== 'denied' && !localStorage.getItem(PERM_ASKED_KEY)) {
+      else if (
+        Notification.permission !== 'denied' &&
+        (forceAsk || !localStorage.getItem(PERM_ASKED_KEY))
+      ) {
         localStorage.setItem(PERM_ASKED_KEY, '1');
         const result = await Notification.requestPermission();
         browser = result === 'granted';
+        if (!LN) display = result;
       } else {
         browser = Notification.permission === 'granted';
+        if (!LN) display = Notification.permission;
       }
     } catch {
       /* ignore */
     }
   }
 
-  return { native, browser };
+  return { native, browser, display };
 }
 
 /** Short beep — works in foreground WebView / browser without native plugin. */
@@ -224,15 +290,21 @@ export async function attachLocalNotificationOpenHandler(navigateFn) {
  */
 export async function alertStaffNewOrder(order, opts = {}) {
   if (!isOnlineCustomerOrder(order)) return;
+  if (!staffAllowsOrderAlert()) {
+    if (order.id != null) markSeenOnlineOrderId(order.id);
+    return null;
+  }
   const { orderId } = buildAlertCopy(order);
-  playNewOrderChime();
-  await ensureStaffNotifyPermissions();
-  await Promise.all([
-    showNativeLocalNotification(order),
-    showBrowserNotification(order, {
-      onClick: (id) => opts.onOpen?.(id),
-    }),
-  ]);
+  if (staffAllowsOrderSound()) playNewOrderChime();
+  if (staffAllowsOrderPhone()) {
+    await ensureStaffNotifyPermissions();
+    await Promise.all([
+      showNativeLocalNotification(order),
+      showBrowserNotification(order, {
+        onClick: (id) => opts.onOpen?.(id),
+      }),
+    ]);
+  }
   if (order.id != null) markSeenOnlineOrderId(order.id);
   return orderId;
 }
@@ -242,6 +314,7 @@ export async function alertStaffNewOrder(order, opts = {}) {
  */
 export async function alertStaffCancelRequest(order, opts = {}) {
   if (!isOnlineCustomerOrder(order)) return;
+  if (!staffAllowsCancelAlert()) return null;
   const orderId = order.order_id || order.id || '—';
   const name = String(order.customer_name || 'Customer').trim() || 'Customer';
   const postex = Boolean(order.cancel_postex_booked_at_request || order.postex_tracking);
@@ -249,7 +322,7 @@ export async function alertStaffCancelRequest(order, opts = {}) {
     ? `Cancel request #${orderId} · PostEx booked`
     : `Cancel request #${orderId}`;
   const body = `${name} wants to cancel — refund request${postex ? ' (PostEx already booked)' : ''}`;
-  playNewOrderChime();
+  if (staffAllowsCancelSound()) playNewOrderChime();
   await ensureStaffNotifyPermissions();
   try {
     const LN = await getLocalNotifications();

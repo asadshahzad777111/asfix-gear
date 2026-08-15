@@ -4,8 +4,9 @@ import { useTranslation } from '../context/LanguageContext';
 import './download-app.css';
 
 /** Public storefront APK (loads asfixgear.com — not POS / cashier). */
-const STORE_APK_HREF = '/downloads/asfix-gear.apk';
-const STORE_APK_FILENAME = 'asfix-gear.apk';
+const STORE_APK_VERSION = '1.1.0';
+const STORE_APK_FILENAME = `asfix-gear-${STORE_APK_VERSION}.apk`;
+const STORE_APK_HREF = `/downloads/${STORE_APK_FILENAME}?v=${STORE_APK_VERSION}`;
 
 function detectPlatform() {
   if (typeof navigator === 'undefined') return 'other';
@@ -45,8 +46,11 @@ export default function DownloadApp() {
             download={STORE_APK_FILENAME}
             type="application/vnd.android.package-archive"
           >
-            {t('downloadApp.downloadCta')}
+            {t('downloadApp.downloadCta')} · v{STORE_APK_VERSION}
           </a>
+          <p className="download-app__platform-note">
+            File: {STORE_APK_FILENAME} — shopping app (not POS). POS cashiers: open /pos.
+          </p>
           {platform === 'ios' ? (
             <p className="download-app__platform-note">{t('downloadApp.androidOnIosNote')}</p>
           ) : null}

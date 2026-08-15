@@ -158,12 +158,48 @@ router.delete('/feedback/:orderId', writeLimiter, requireAuth, requireRole(...CA
 router.get('/email-status', requireAuth, requireRole(...EMAIL_TESTERS), async (_req, res) => {
   const status = getEmailDeliveryStatus();
   const verify = await verifySmtpConnection();
+  const notify = store.getEmailNotifySettings();
+  const resolvedTo =
+    notify.notify_email ||
+    String(process.env.ORDER_NOTIFY_EMAIL || process.env.SHOP_NOTIFY_EMAIL || process.env.SHOP_EMAIL || '')
+      .trim()
+      .toLowerCase() ||
+    'asadshahzad777111@gmail.com';
   res.json({
     ...status,
     verify_ok: Boolean(verify?.ok),
     verify_reason: verify?.reason || null,
     verify_provider: verify?.provider || null,
+    notify_email: notify.notify_email || '',
+    notify_email_resolved: resolvedTo,
+    notify_source: notify.notify_email
+      ? 'admin'
+      : process.env.ORDER_NOTIFY_EMAIL || process.env.SHOP_NOTIFY_EMAIL || process.env.SHOP_EMAIL
+        ? 'env'
+        : 'default',
+    smtp_password_on_server: Boolean(
+      process.env.GMAIL_APP_PASSWORD || process.env.SMTP_PASS || process.env.RESEND_API_KEY
+    ),
   });
+});
+
+router.patch('/email-settings', writeLimiter, requireAuth, requireRole(...EMAIL_TESTERS), (req, res) => {
+  try {
+    const body = req.body && typeof req.body === 'object' ? req.body : {};
+    const saved = store.setEmailNotifySettings(body, req.auth.user.id);
+    res.json({
+      ok: true,
+      ...saved,
+      notify_email_resolved:
+        saved.notify_email ||
+        String(process.env.ORDER_NOTIFY_EMAIL || process.env.SHOP_NOTIFY_EMAIL || process.env.SHOP_EMAIL || '')
+          .trim()
+          .toLowerCase() ||
+        'asadshahzad777111@gmail.com',
+    });
+  } catch (err) {
+    res.status(400).json({ error: err.message || 'Could not save email settings' });
+  }
 });
 
 router.post('/email-test', writeLimiter, requireAuth, requireRole(...EMAIL_TESTERS), async (req, res) => {
@@ -175,7 +211,9 @@ router.post('/email-test', writeLimiter, requireAuth, requireRole(...EMAIL_TESTE
     });
   }
 
+  const notify = store.getEmailNotifySettings();
   const fallback =
+    notify.notify_email ||
     process.env.ORDER_NOTIFY_EMAIL ||
     process.env.SHOP_NOTIFY_EMAIL ||
     process.env.SHOP_EMAIL ||
