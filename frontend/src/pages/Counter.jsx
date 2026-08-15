@@ -104,7 +104,7 @@ const DEFAULT_POS_SETTINGS = {
 };
 
 /** Versioned filename so phones do not reuse an old AsFix-POS.apk from Downloads. */
-const POS_APK_VERSION = '1.1.1';
+const POS_APK_VERSION = '1.1.2';
 const POS_APK_HREF = `/downloads/AsFix-POS-${POS_APK_VERSION}.apk?v=${POS_APK_VERSION}`;
 const POS_APK_FILENAME = `AsFix-POS-${POS_APK_VERSION}.apk`;
 
