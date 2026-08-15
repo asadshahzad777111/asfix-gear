@@ -4602,6 +4602,7 @@ export default function AdminCounterBill({
         closeLabel={t('common.close')}
         scanningLabel={t('admin.counterBillScanLooking')}
         permissionLabel={t('admin.counterBillScanPermission')}
+        deniedHint={t('admin.counterBillScanDenied')}
       />
     </div>
   );

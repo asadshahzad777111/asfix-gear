@@ -60,11 +60,22 @@
   touch-action: manipulation;
 }
 
+.pos-cam-scan__actions {
+  display: grid;
+  gap: 0.45rem;
+}
+
 .pos-cam-scan__done {
   width: 100%;
   background: var(--pos-accent, #2563eb);
   border-color: transparent;
   color: #fff;
+}
+
+.pos-cam-scan__done--secondary {
+  background: var(--pos-bg, #0b0f14);
+  border-color: var(--pos-border-strong, rgba(255, 255, 255, 0.2));
+  color: inherit;
 }
 
 .pos-cam-scan__stage {

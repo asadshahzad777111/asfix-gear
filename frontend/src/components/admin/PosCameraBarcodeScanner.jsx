@@ -39,6 +39,7 @@ export default function PosCameraBarcodeScanner({
   closeLabel = 'Close',
   scanningLabel = 'Looking for barcode…',
   permissionLabel = 'Allow camera to scan barcodes',
+  deniedHint = 'Camera blocked. Close, allow Camera in App Info (or install the latest AsFix POS APK), then try Scan again.',
 }) {
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -49,6 +50,7 @@ export default function PosCameraBarcodeScanner({
   const onDetectedRef = useRef(onDetected);
   const [status, setStatus] = useState('idle'); /* idle | starting | ready | unsupported | denied | error */
   const [statusText, setStatusText] = useState('');
+  const [retryToken, setRetryToken] = useState(0);
 
   useEffect(() => {
     onDetectedRef.current = onDetected;
@@ -117,6 +119,7 @@ export default function PosCameraBarcodeScanner({
     }
 
     let cancelled = false;
+    let permissionTimer = 0;
 
     const tick = async () => {
       if (cancelled) return;
@@ -140,6 +143,13 @@ export default function PosCameraBarcodeScanner({
       }
     };
 
+    const failDenied = () => {
+      if (cancelled) return;
+      setStatus('denied');
+      setStatusText(deniedHint);
+      stopCamera();
+    };
+
     const start = async () => {
       if (!supportsCamera() || !supportsBarcodeDetector()) {
         setStatus('unsupported');
@@ -148,6 +158,10 @@ export default function PosCameraBarcodeScanner({
       }
       setStatus('starting');
       setStatusText(permissionLabel);
+      // Old APKs without CAMERA never show a system prompt — don't soft-lock on "Allow…"
+      permissionTimer = window.setTimeout(() => {
+        if (!cancelled) failDenied();
+      }, 12000);
       try {
         let formats = SCAN_FORMATS;
         try {
@@ -168,6 +182,8 @@ export default function PosCameraBarcodeScanner({
             height: { ideal: 720 },
           },
         });
+        window.clearTimeout(permissionTimer);
+        permissionTimer = 0;
         if (cancelled) {
           stream.getTracks().forEach((t) => t.stop());
           return;
@@ -189,19 +205,21 @@ export default function PosCameraBarcodeScanner({
           void tick();
         });
       } catch (err) {
+        window.clearTimeout(permissionTimer);
+        permissionTimer = 0;
         if (cancelled) return;
         const name = String(err?.name || '');
         if (name === 'NotAllowedError' || name === 'PermissionDeniedError') {
-          setStatus('denied');
-          setStatusText(permissionLabel);
+          failDenied();
         } else if (name === 'NotFoundError' || name === 'DevicesNotFoundError') {
           setStatus('unsupported');
           setStatusText(unsupportedHint);
+          stopCamera();
         } else {
           setStatus('error');
           setStatusText(unsupportedHint);
+          stopCamera();
         }
-        stopCamera();
       }
     };
 
@@ -209,13 +227,24 @@ export default function PosCameraBarcodeScanner({
 
     return () => {
       cancelled = true;
+      if (permissionTimer) window.clearTimeout(permissionTimer);
       stopCamera();
     };
-  }, [open, handleDetected, permissionLabel, scanningLabel, stopCamera, unsupportedHint]);
+  }, [
+    open,
+    retryToken,
+    deniedHint,
+    handleDetected,
+    permissionLabel,
+    scanningLabel,
+    stopCamera,
+    unsupportedHint,
+  ]);
 
   if (!open || typeof document === 'undefined') return null;
 
   const showVideo = status === 'starting' || status === 'ready';
+  const canRetry = status === 'denied' || status === 'error' || status === 'unsupported';
 
   return createPortal(
     <div
@@ -242,10 +271,12 @@ export default function PosCameraBarcodeScanner({
           {showVideo ? (
             <>
               <video ref={videoRef} className="pos-cam-scan__video" playsInline muted autoPlay />
-              <div className="pos-cam-scan__frame" aria-hidden="true" />
+              {status === 'ready' ? <div className="pos-cam-scan__frame" aria-hidden="true" /> : null}
             </>
           ) : (
-            <p className="pos-cam-scan__message">{statusText || unsupportedHint}</p>
+            <p className="pos-cam-scan__message">
+              {statusText || unsupportedHint}
+            </p>
           )}
         </div>
 
@@ -253,11 +284,20 @@ export default function PosCameraBarcodeScanner({
           <p className="pos-cam-scan__status">{statusText}</p>
         ) : null}
 
-        {!showVideo ? (
-          <button type="button" className="pos-cam-scan__done" onClick={onClose}>
+        <div className="pos-cam-scan__actions">
+          {canRetry ? (
+            <button
+              type="button"
+              className="pos-cam-scan__done"
+              onClick={() => setRetryToken((n) => n + 1)}
+            >
+              Retry
+            </button>
+          ) : null}
+          <button type="button" className="pos-cam-scan__done pos-cam-scan__done--secondary" onClick={onClose}>
             {closeLabel}
           </button>
-        ) : null}
+        </div>
       </div>
     </div>,
     document.body

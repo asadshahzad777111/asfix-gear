@@ -1,11 +1,11 @@
 {
   "appId": "com.asfixgear.pos",
-  "versionCode": 3,
-  "versionName": "1.1.1",
+  "versionCode": 4,
+  "versionName": "1.1.2",
   "forceUpdate": false,
-  "downloadUrl": "https://asfixgear.com/downloads/AsFix-POS-1.1.1.apk",
+  "downloadUrl": "https://asfixgear.com/downloads/AsFix-POS-1.1.2.apk",
   "downloadPageUrl": "https://asfixgear.com/pos",
   "minSupportedVersionCode": 1,
-  "notes": "AsFix POS 1.1.1 — download file name AsFix-POS-1.1.1.apk (not the old 1.0 file in Downloads). Install → reopen. Notifications: POS → Notifications.",
-  "publishedAt": "2026-08-13"
+  "notes": "AsFix POS 1.1.2 — camera barcode scan on Sale bill (CAMERA permission). Install → reopen → Allow camera when prompted → Sale bill → Scan.",
+  "publishedAt": "2026-08-15"
 }

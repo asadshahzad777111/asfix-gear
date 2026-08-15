@@ -7,7 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { isNativePosApp } from './nativePosPrint.js';
 
 export const POS_APP_VERSION_URL = '/pos-app-version.json';
-export const POS_APK_DOWNLOAD_URL = 'https://asfixgear.com/downloads/AsFix-POS-1.1.1.apk';
+export const POS_APK_DOWNLOAD_URL = 'https://asfixgear.com/downloads/AsFix-POS-1.1.2.apk';
 export const POS_DOWNLOAD_PAGE_URL = 'https://asfixgear.com/pos';
 
 const DISMISS_KEY = 'asfix_pos_update_dismissed_vcode';
