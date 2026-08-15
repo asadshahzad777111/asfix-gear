@@ -33,6 +33,7 @@ import {
   receiptLogoTargetDots,
   RECEIPT_LOGO_PATH,
 } from '../../utils/receiptLogo';
+import PosCameraBarcodeScanner from './PosCameraBarcodeScanner';
 import './admin-counter-bill.css';
 
 const COUNTER_BILL_DRAFT_KEY = 'asfix_counter_bill_draft_v1';
@@ -2512,6 +2513,7 @@ export default function AdminCounterBill({
   const [nativePrinters, setNativePrinters] = useState([]);
   const [nativePrinterBusy, setNativePrinterBusy] = useState(false);
   const [query, setQuery] = useState('');
+  const [cameraScanOpen, setCameraScanOpen] = useState(false);
   const [searchFocused, setSearchFocused] = useState(false);
   /** Spacer height while search is fixed-lifted (keeps layout from collapsing). */
   const [searchSlotH, setSearchSlotH] = useState(0);
@@ -3215,6 +3217,22 @@ export default function AdminCounterBill({
     addProduct(autocompleteProducts[0]);
   };
 
+  const handleCameraBarcode = (code) => {
+    const exact = findExactBarcodeProduct(availableProducts, code);
+    if (!exact) {
+      setFeedback({
+        type: 'error',
+        text: t('admin.counterBillScanNotFound', { code }),
+      });
+      return;
+    }
+    addProduct(exact, { keepSearchFocus: false, scanFeedback: true });
+    setFeedback({
+      type: 'success',
+      text: t('admin.counterBillScanAdded', { name: exact.name || code }),
+    });
+  };
+
   const adjustQty = (productId, delta) => {
     const line = lines.find((item) => item.product.id === productId);
     if (!line) return;
@@ -3773,40 +3791,60 @@ export default function AdminCounterBill({
               className={`counter-bill__search-wrap${searchFocused && searchLiftOnFocus ? ' counter-bill__search-wrap--lifted' : ''}`}
               id="counter-bill-search"
             >
-              <label className="counter-bill__search">
-                <span>{t('admin.counterBillSearch')}</span>
-                <input
-                  ref={searchRef}
-                  type="search"
-                  value={query}
-                  onChange={(e) => setQuery(e.target.value)}
-                  onFocus={() => {
-                    const lift = typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
-                    if (lift) {
-                      const wrap = document.getElementById('counter-bill-search');
-                      if (wrap && !wrap.classList.contains('counter-bill__search-wrap--lifted')) {
-                        const h = Math.ceil(wrap.getBoundingClientRect().height);
-                        if (h > 0) setSearchSlotH(h);
+              <div className="counter-bill__search-row">
+                <label className="counter-bill__search">
+                  <span>{t('admin.counterBillSearch')}</span>
+                  <input
+                    ref={searchRef}
+                    type="search"
+                    value={query}
+                    onChange={(e) => setQuery(e.target.value)}
+                    onFocus={() => {
+                      const lift = typeof window !== 'undefined' && window.matchMedia('(max-width: 900px)').matches;
+                      if (lift) {
+                        const wrap = document.getElementById('counter-bill-search');
+                        if (wrap && !wrap.classList.contains('counter-bill__search-wrap--lifted')) {
+                          const h = Math.ceil(wrap.getBoundingClientRect().height);
+                          if (h > 0) setSearchSlotH(h);
+                        }
+                      } else {
+                        setSearchSlotH(0);
                       }
-                    } else {
-                      setSearchSlotH(0);
-                    }
-                    setSearchFocused(true);
-                    setDockFocus('search');
+                      setSearchFocused(true);
+                      setDockFocus('search');
+                    }}
+                    onBlur={() => {
+                      setSearchFocused(false);
+                      setDockFocus((cur) => (cur === 'search' ? null : cur));
+                    }}
+                    onKeyDown={handleSearchKeyDown}
+                    placeholder={t('admin.counterBillSearchPh')}
+                    autoComplete="off"
+                    aria-autocomplete="list"
+                    aria-expanded={showSearchDropdown}
+                    aria-controls="counter-bill-search-results"
+                  />
+                  <small>{t('admin.counterBillSearchHint')}</small>
+                </label>
+                <button
+                  type="button"
+                  className="counter-bill__scan-btn"
+                  onClick={() => {
+                    blurSearchKeyboard();
+                    setCameraScanOpen(true);
                   }}
-                  onBlur={() => {
-                    setSearchFocused(false);
-                    setDockFocus((cur) => (cur === 'search' ? null : cur));
-                  }}
-                  onKeyDown={handleSearchKeyDown}
-                  placeholder={t('admin.counterBillSearchPh')}
-                  autoComplete="off"
-                  aria-autocomplete="list"
-                  aria-expanded={showSearchDropdown}
-                  aria-controls="counter-bill-search-results"
-                />
-                <small>{t('admin.counterBillSearchHint')}</small>
-              </label>
+                  aria-label={t('admin.counterBillScan')}
+                  title={t('admin.counterBillScan')}
+                >
+                  <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true" focusable="false">
+                    <path
+                      fill="currentColor"
+                      d="M3 5h3V3H3a2 2 0 0 0-2 2v3h2V5zm16-2v2h3v3h2V5a2 2 0 0 0-2-2h-3zM3 19v-3H1v3a2 2 0 0 0 2 2h3v-2H3zm18-3v3h-3v2h3a2 2 0 0 0 2-2v-3h-2zM7 7h2v10H7V7zm4 0h1v10h-1V7zm3 0h3v10h-3V7z"
+                    />
+                  </svg>
+                  <span>{t('admin.counterBillScan')}</span>
+                </button>
+              </div>
               {showSearchDropdown ? (
                 <div className="counter-bill__search-results" id="counter-bill-search-results" role="listbox">
                   {autocompleteProducts.length === 0 ? (
@@ -4553,6 +4591,18 @@ export default function AdminCounterBill({
         : null}
 
       {!onPrintOrder ? printChooser : null}
+
+      <PosCameraBarcodeScanner
+        open={cameraScanOpen}
+        onClose={() => setCameraScanOpen(false)}
+        onDetected={handleCameraBarcode}
+        title={t('admin.counterBillScanTitle')}
+        hint={t('admin.counterBillScanHint')}
+        unsupportedHint={t('admin.counterBillScanUnsupported')}
+        closeLabel={t('common.close')}
+        scanningLabel={t('admin.counterBillScanLooking')}
+        permissionLabel={t('admin.counterBillScanPermission')}
+      />
     </div>
   );
 }

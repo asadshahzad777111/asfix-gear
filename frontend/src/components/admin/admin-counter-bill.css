@@ -2077,6 +2077,57 @@
   color: var(--pos-muted);
 }
 
+.counter-bill__search-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.55rem;
+  align-items: start;
+}
+
+.counter-bill__scan-btn {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.15rem;
+  align-self: stretch;
+  min-width: 72px;
+  min-height: 72px;
+  margin-top: 1.15rem;
+  padding: 0.45rem 0.55rem;
+  border: 1px solid var(--pos-border-strong);
+  border-radius: var(--pos-radius-sm);
+  background: var(--pos-accent);
+  color: #fff;
+  font: inherit;
+  font-size: 0.78rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  touch-action: manipulation;
+  box-shadow: none;
+}
+
+.counter-bill__scan-btn:hover {
+  filter: brightness(1.06);
+}
+
+.counter-bill__scan-btn:active {
+  transform: scale(0.98);
+}
+
+@media (max-width: 900px) {
+  .counter-bill__scan-btn {
+    min-width: 68px;
+    min-height: 68px;
+    margin-top: 1.05rem;
+  }
+}
+
+[data-theme='light'] .counter-bill__scan-btn {
+  color: #fff;
+}
+
 .counter-bill__search small {
   color: var(--pos-muted);
   font-weight: 500;
