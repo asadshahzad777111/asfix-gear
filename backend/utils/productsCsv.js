@@ -9,6 +9,8 @@ export const PRODUCT_CSV_HEADERS = [
   'discount_percent',
   'sale_price',
   'stock',
+  'barcode',
+  'sku',
   'compatible_models',
   'status',
   'sale_count',
@@ -41,6 +43,8 @@ export function productToCsvRecord(product) {
     discount_percent: product.discount_percent ?? 0,
     sale_price: salePrice(product.price, product.discount_percent),
     stock: product.stock ?? 0,
+    barcode: product.barcode ?? '',
+    sku: product.sku ?? product.barcode ?? '',
     compatible_models: product.compatible_models ?? '',
     status: product.status || 'published',
     sale_count: Math.max(0, Number(product.sale_count) || 0),
@@ -129,6 +133,12 @@ export function csvRecordToPatch(record) {
   if (record.brand != null && record.brand !== '') patch.brand = String(record.brand).slice(0, 80);
   if (record.compatible_models != null) {
     patch.compatible_models = String(record.compatible_models).slice(0, 300);
+  }
+  if (record.barcode != null && record.barcode !== '') {
+    patch.barcode = String(record.barcode).slice(0, 64);
+  }
+  if (record.sku != null && record.sku !== '') {
+    patch.sku = String(record.sku).slice(0, 64);
   }
   if (record.price !== '' && record.price != null) {
     const price = Number(record.price);

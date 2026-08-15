@@ -28,11 +28,17 @@ import {
 } from '../../config/asfinCatalog';
 import { SHOP } from '../../config/shop';
 import { useTranslation } from '../../context/LanguageContext';
-import { normalizePrintResult } from './AdminCounterBill';
+import { normalizePrintResult, PAYMENT_OPTIONS } from './AdminCounterBill';
 
 const STORAGE_KEY = 'asfix_pos_custom_bill_v3';
 const WORK_TYPE_MOBILE = 'mobile';
 const WORK_TYPE_OTHER = 'other';
+const CUSTOM_PAYMENT_IDS = new Set(PAYMENT_OPTIONS.map((opt) => opt.id));
+
+function normalizeCustomPaymentMode(value) {
+  const mode = String(value || 'cash').trim().toLowerCase();
+  return CUSTOM_PAYMENT_IDS.has(mode) ? mode : 'cash';
+}
 
 /** Draft text/settings only — logo/QR PIC stay in media localStorage (never sale-bill path). */
 function draftForStorage(draft) {
@@ -316,6 +322,7 @@ function buildDefaults(profileId = CUSTOM_BILL_PROFILE_OTHER, settings = null) {
     mobileName: workType === WORK_TYPE_MOBILE ? 'Infinix Smart 5' : '',
     customerName: '',
     customerPhone: '',
+    paymentMode: 'cash',
     lessAmount: '',
     notes: '',
     saveToDbOnPrint: false,
@@ -377,7 +384,7 @@ export function buildCustomBillOrder(draft) {
     receipt_time: timeLabel,
     customer_name: String(draft.customerName || '').trim() || 'Walk-in',
     phone: String(draft.customerPhone || '').trim(),
-    payment_mode: 'cash',
+    payment_mode: normalizeCustomPaymentMode(draft.paymentMode),
     device_name: deviceName,
     notes: String(draft.notes || '').trim(),
     custom_receipt: true,
@@ -435,6 +442,7 @@ export default function PosCustomBill({
       profileId,
       workType: normalizeWorkType(saved.workType, workTypeFallback),
       customerPhone: saved.customerPhone ?? '',
+      paymentMode: normalizeCustomPaymentMode(saved.paymentMode),
       lessAmount: saved.lessAmount ?? '',
       saveToDbOnPrint: Boolean(saved.saveToDbOnPrint),
     });
@@ -684,7 +692,7 @@ export default function PosCustomBill({
       const result = await api.saveCustomBillToStock({
         customer_name: String(draft.customerName || '').trim() || 'Walk-in',
         phone: String(draft.customerPhone || '').trim(),
-        payment_mode: 'cash',
+        payment_mode: normalizeCustomPaymentMode(draft.paymentMode),
         discount_amount: discountAmount,
         notes: String(draft.notes || '').trim(),
         items: checked.items.map((row) => ({
@@ -1370,6 +1378,25 @@ export default function PosCustomBill({
           placeholder={t('counter.customBillNotesPh')}
         />
       </label>
+
+      <div className="pos-custom-bill__payment counter-bill__payment">
+        <span>{t('admin.counterBillPayment')}</span>
+        <div className="counter-bill__payment-grid">
+          {PAYMENT_OPTIONS.map((option) => {
+            const active = normalizeCustomPaymentMode(draft.paymentMode) === option.id;
+            return (
+              <button
+                key={option.id}
+                type="button"
+                className={`counter-bill__pay counter-bill__pay--${option.id}${active ? ' counter-bill__pay--active' : ''}`}
+                onClick={() => updateField('paymentMode', option.id)}
+              >
+                {option.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       <div className="pos-custom-bill__totals">
         <label className="pos-custom-bill__less">

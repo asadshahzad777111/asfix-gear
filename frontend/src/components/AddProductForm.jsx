@@ -52,6 +52,7 @@ function productToForm(editProduct) {
     discount_enabled: Number(editProduct.discount_percent) > 0,
     discount_percent: Number(editProduct.discount_percent) || 0,
     warranty: editProduct.warranty || '',
+    barcode: editProduct.barcode || editProduct.sku || '',
     status: editProduct.status || 'published',
   };
 }
@@ -145,6 +146,8 @@ export default function AddProductForm({
       featured: product.featured,
       discount_percent: product.discount_enabled ? Number(product.discount_percent) || 0 : 0,
       warranty: product.warranty.trim(),
+      barcode: String(product.barcode || '').trim(),
+      sku: String(product.barcode || '').trim(),
       status: statusOverride || product.status || 'published',
     };
   };
@@ -367,6 +370,18 @@ export default function AddProductForm({
           <input type="number" min="0" value={product.stock} onChange={(e) => setField('stock', e.target.value)} required />
           <button type="button" onClick={() => setField('stock', String(Number(product.stock || 0) + 1))}>+</button>
         </div>
+      </div>
+
+      <div className="form-group">
+        <label>{t('sales.barcode')}</label>
+        <input
+          value={product.barcode}
+          onChange={(e) => setField('barcode', e.target.value)}
+          placeholder={t('sales.barcodePh')}
+          autoComplete="off"
+          inputMode="text"
+        />
+        <p className="field-hint">{t('sales.barcodeHint')}</p>
       </div>
 
       {descriptionField}

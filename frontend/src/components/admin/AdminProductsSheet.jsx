@@ -19,6 +19,8 @@ function matchesQuery(product, query) {
     product.brand,
     product.category,
     product.compatible_models,
+    product.barcode,
+    product.sku,
     String(product.id),
   ]
     .filter(Boolean)

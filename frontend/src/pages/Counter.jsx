@@ -27,6 +27,63 @@ import { enrichOrdersWithReturns, isReturnOrder } from '../utils/orderReturns';
 import '../components/admin/admin-wp.css';
 import '../components/admin/admin-counter-bill.css';
 
+const DAY_CLOSE_METHODS = [
+  { id: 'cash', labelKey: 'counter.payCash' },
+  { id: 'card', labelKey: 'counter.payCard' },
+  { id: 'easypaisa', labelKey: 'counter.payEasypaisa' },
+  { id: 'jazzcash', labelKey: 'counter.payJazzcash' },
+  { id: 'bank', labelKey: 'counter.payBank' },
+];
+
+const EXPECTED_CASH_KEY = 'asfix_pos_expected_cash_v1';
+
+function loadExpectedCash(dateKey) {
+  try {
+    const raw = localStorage.getItem(EXPECTED_CASH_KEY);
+    if (!raw) return '';
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed === 'object' && parsed.date === dateKey) {
+      return String(parsed.amount ?? '');
+    }
+  } catch {
+    /* ignore */
+  }
+  return '';
+}
+
+function saveExpectedCash(dateKey, amount) {
+  try {
+    localStorage.setItem(EXPECTED_CASH_KEY, JSON.stringify({ date: dateKey, amount: String(amount || '') }));
+  } catch {
+    /* ignore */
+  }
+}
+
+function summarizeDayClose(salesList) {
+  const byPayment = {
+    cash: { total: 0, bills: 0 },
+    card: { total: 0, bills: 0 },
+    easypaisa: { total: 0, bills: 0 },
+    jazzcash: { total: 0, bills: 0 },
+    bank: { total: 0, bills: 0 },
+    other: { total: 0, bills: 0 },
+  };
+  let bills = 0;
+  let netTotal = 0;
+  for (const sale of salesList || []) {
+    const amount = Number(sale.total_amount || 0);
+    netTotal += amount;
+    const modeRaw = String(sale.payment_mode || 'other').trim().toLowerCase();
+    const mode = byPayment[modeRaw] ? modeRaw : 'other';
+    byPayment[mode].total += amount;
+    if (!isReturnOrder(sale) && sale.source !== 'counter_return') {
+      bills += 1;
+      byPayment[mode].bills += 1;
+    }
+  }
+  return { byPayment, bills, netTotal, cashTotal: byPayment.cash.total };
+}
+
 function saleHasReceiptItems(sale) {
   return Array.isArray(sale?.items) && sale.items.length > 0;
 }
@@ -72,6 +129,8 @@ export default function Counter() {
   const [nativePickerOpen, setNativePickerOpen] = useState(false);
   const [paymentQrOpen, setPaymentQrOpen] = useState(false);
   const [posMode, setPosMode] = useState('sale'); // 'sale' | 'custom'
+  const [dayCloseOpen, setDayCloseOpen] = useState(false);
+  const [expectedCash, setExpectedCash] = useState(() => loadExpectedCash(new Date().toISOString().slice(0, 10)));
   const printInFlightRef = useRef(false);
   const salesSectionRef = useRef(null);
   const { printSmart, openPrintSetup, chooser: printChooser } = useSmartThermalPrint({
@@ -85,6 +144,22 @@ export default function Counter() {
     () => (posMode === 'sale' ? getLowStockProducts(products, { excludePosCustom: true }).length : 0),
     [posMode, products],
   );
+
+  const dayClose = useMemo(() => summarizeDayClose(sales), [sales]);
+  const expectedCashValue = Number(String(expectedCash).replace(/,/g, ''));
+  const cashVariance = Number.isFinite(expectedCashValue) && expectedCash !== ''
+    ? expectedCashValue - dayClose.cashTotal
+    : null;
+
+  useEffect(() => {
+    setExpectedCash(loadExpectedCash(today));
+  }, [today]);
+
+  const onExpectedCashChange = useCallback((value) => {
+    const next = String(value || '').replace(/[^\d.,]/g, '');
+    setExpectedCash(next);
+    saveExpectedCash(today, next);
+  }, [today]);
 
   const matchedBills = useMemo(() => {
     const q = billSearch.trim();
@@ -604,8 +679,66 @@ export default function Counter() {
                 <span>{t('counter.billsToday')}</span>
                 <strong>{Number(stats.bills_today || 0).toLocaleString('en-PK')}</strong>
               </div>
+              <button
+                type="button"
+                className={`counter-today-card counter-today-card--action${dayCloseOpen ? ' is-open' : ''}`}
+                onClick={() => setDayCloseOpen((open) => !open)}
+                aria-expanded={dayCloseOpen}
+              >
+                <span>{t('counter.dayClose')}</span>
+                <strong>{dayCloseOpen ? '▲' : '▼'}</strong>
+              </button>
             </div>
           </div>
+          {dayCloseOpen ? (
+            <div className="counter-day-close" role="region" aria-label={t('counter.dayClose')}>
+              <div className="counter-day-close__meta">
+                <span>{t('counter.dayCloseBills', { count: dayClose.bills })}</span>
+                <strong>{formatPrice(dayClose.netTotal)}</strong>
+              </div>
+              <ul className="counter-day-close__methods">
+                {DAY_CLOSE_METHODS.map((method) => {
+                  const row = dayClose.byPayment[method.id] || { total: 0, bills: 0 };
+                  return (
+                    <li key={method.id}>
+                      <span>{t(method.labelKey)}</span>
+                      <small>{row.bills}</small>
+                      <strong>{formatPrice(row.total)}</strong>
+                    </li>
+                  );
+                })}
+                {dayClose.byPayment.other.total !== 0 || dayClose.byPayment.other.bills > 0 ? (
+                  <li>
+                    <span>{t('counter.payOther')}</span>
+                    <small>{dayClose.byPayment.other.bills}</small>
+                    <strong>{formatPrice(dayClose.byPayment.other.total)}</strong>
+                  </li>
+                ) : null}
+              </ul>
+              <label className="counter-day-close__expected">
+                <span>{t('counter.expectedCash')}</span>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={expectedCash}
+                  onChange={(e) => onExpectedCashChange(e.target.value)}
+                  placeholder={formatPrice(dayClose.cashTotal)}
+                  autoComplete="off"
+                />
+              </label>
+              {cashVariance != null ? (
+                <p className={`counter-day-close__variance${cashVariance === 0 ? ' is-ok' : cashVariance > 0 ? ' is-over' : ' is-short'}`}>
+                  {cashVariance === 0
+                    ? t('counter.cashMatch')
+                    : cashVariance > 0
+                      ? t('counter.cashOver', { amount: formatPrice(cashVariance) })
+                      : t('counter.cashShort', { amount: formatPrice(Math.abs(cashVariance)) })}
+                </p>
+              ) : (
+                <p className="counter-day-close__hint">{t('counter.expectedCashHint')}</p>
+              )}
+            </div>
+          ) : null}
         </div>
 
         {!nativePos && isAndroid ? (

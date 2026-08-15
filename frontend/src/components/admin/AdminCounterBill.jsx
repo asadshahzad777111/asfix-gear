@@ -39,11 +39,12 @@ const COUNTER_BILL_DRAFT_KEY = 'asfix_counter_bill_draft_v1';
 const HELD_BILLS_KEY = 'asfix_counter_held_bills_v1';
 export const THERMAL_RECEIPT_WIDTH_KEY = 'asfix_counter_thermal_width_v1';
 const ALL_CATEGORIES = 'all';
-const PAYMENT_OPTIONS = [
+export const PAYMENT_OPTIONS = [
   { id: 'cash', label: 'Cash' },
   { id: 'card', label: 'Card' },
   { id: 'easypaisa', label: 'EasyPaisa' },
   { id: 'jazzcash', label: 'JazzCash' },
+  { id: 'bank', label: 'Bank' },
 ];
 const THERMAL_WIDTH_OPTIONS = ['58mm', '80mm'];
 const RECEIPT_SITE = 'asfixgear.com';
@@ -160,6 +161,25 @@ function lineUnitPrice(line) {
   return salePrice(line?.product);
 }
 
+function normalizeCode(value) {
+  return String(value || '').trim().toLowerCase();
+}
+
+/** Exact barcode / SKU / id hit for USB wedge scanners (Enter after scan). */
+export function findExactBarcodeProduct(products, query) {
+  const term = normalizeCode(query);
+  if (!term) return null;
+  const list = Array.isArray(products) ? products : [];
+  return (
+    list.find((product) => {
+      const barcode = normalizeCode(product.barcode);
+      const sku = normalizeCode(product.sku);
+      const id = normalizeCode(product.id);
+      return (barcode && barcode === term) || (sku && sku === term) || id === term;
+    }) || null
+  );
+}
+
 function matchesQuery(product, query) {
   const term = query.trim().toLowerCase();
   if (!term) return false;
@@ -169,12 +189,50 @@ function matchesQuery(product, query) {
     product.model,
     product.model_name,
     product.compatible_models,
+    product.barcode,
+    product.sku,
     String(product.id),
   ]
     .filter(Boolean)
     .join(' ')
     .toLowerCase()
     .includes(term);
+}
+
+/** Short POS beep / vibrate when a scan adds to cart. */
+function playScanFeedback() {
+  try {
+    if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+      navigator.vibrate(40);
+    }
+  } catch {
+    /* ignore */
+  }
+  try {
+    const Ctx = typeof window !== 'undefined'
+      && (window.AudioContext || window.webkitAudioContext);
+    if (!Ctx) return;
+    const ctx = new Ctx();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = 880;
+    gain.gain.value = 0.08;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    gain.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 0.08);
+    osc.stop(ctx.currentTime + 0.09);
+    window.setTimeout(() => {
+      try {
+        ctx.close();
+      } catch {
+        /* ignore */
+      }
+    }, 120);
+  } catch {
+    /* ignore — silent devices / blocked audio */
+  }
 }
 
 function paymentLabel(mode) {
@@ -3112,7 +3170,8 @@ export default function AdminCounterBill({
     }
   }, []);
 
-  const addProduct = (product) => {
+  const addProduct = (product, { keepSearchFocus = false, scanFeedback = false } = {}) => {
+    if (!product) return;
     setReceiptOrder(null);
     setFeedback(null);
     setCartFlashKey(Date.now());
@@ -3128,13 +3187,31 @@ export default function AdminCounterBill({
       return [...prev, { product, qty: 1, unitPrice: salePrice(product) }];
     });
     setQuery('');
-    /* Never re-focus search after add — that opens the mobile keyboard on every tap */
+    if (scanFeedback) playScanFeedback();
+    if (keepSearchFocus) {
+      /* USB wedge: clear field but keep focus for the next scan */
+      window.requestAnimationFrame(() => {
+        try {
+          searchRef.current?.focus({ preventScroll: true });
+        } catch {
+          searchRef.current?.focus?.();
+        }
+      });
+      return;
+    }
+    /* Never re-focus search after tap-add — that opens the mobile keyboard on every tap */
     blurSearchKeyboard();
   };
 
   const handleSearchKeyDown = (e) => {
-    if (e.key !== 'Enter' || !query.trim() || !autocompleteProducts[0]) return;
+    if (e.key !== 'Enter' || !query.trim()) return;
     e.preventDefault();
+    const exact = findExactBarcodeProduct(availableProducts, query);
+    if (exact) {
+      addProduct(exact, { keepSearchFocus: true, scanFeedback: true });
+      return;
+    }
+    if (!autocompleteProducts[0]) return;
     addProduct(autocompleteProducts[0]);
   };
 

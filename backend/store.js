@@ -448,6 +448,8 @@ export function createProduct(input) {
       category: input.category,
       brand: String(input.brand || '').trim(),
       compatible_models: String(input.compatible_models || '').trim(),
+      barcode: String(input.barcode || '').trim().slice(0, 64),
+      sku: String(input.sku || input.barcode || '').trim().slice(0, 64),
       price: Number(input.price),
       cost_price: Math.max(0, Number(input.cost_price) || 0),
       description: String(input.description || '').trim(),
@@ -496,6 +498,16 @@ export function updateProduct(id, input) {
         input.compatible_models != null
           ? String(input.compatible_models).trim()
           : existing.compatible_models ?? '',
+      barcode:
+        input.barcode != null
+          ? String(input.barcode).trim().slice(0, 64)
+          : existing.barcode ?? '',
+      sku:
+        input.sku != null
+          ? String(input.sku).trim().slice(0, 64)
+          : input.barcode != null
+            ? String(input.barcode).trim().slice(0, 64)
+            : existing.sku ?? existing.barcode ?? '',
       price: input.price != null ? Number(input.price) : existing.price,
       cost_price:
         input.cost_price != null ? Math.max(0, Number(input.cost_price) || 0) : existing.cost_price ?? 0,
@@ -1743,8 +1755,17 @@ export function getCounterTodayStats({ user = null, date = new Date() } = {}) {
 
   return orders.reduce((stats, order) => {
     const isReturn = isReturnOrder(order);
+    const amount = Number(order.total_amount || 0);
+    const mode = String(order.payment_mode || 'other').trim().toLowerCase() || 'other';
     if (order.source === 'counter_sale') stats.bills_today += 1;
-    stats.today_sales += Number(order.total_amount || 0);
+    stats.today_sales += amount;
+    if (!stats.by_payment[mode]) {
+      stats.by_payment[mode] = { total: 0, bills: 0 };
+    }
+    stats.by_payment[mode].total += amount;
+    if (!isReturn && order.source === 'counter_sale') {
+      stats.by_payment[mode].bills += 1;
+    }
     for (const item of order.items || []) {
       const qty = Number(item.qty) || 0;
       stats.items_sold_today += isReturn ? -qty : qty;
@@ -1754,6 +1775,7 @@ export function getCounterTodayStats({ user = null, date = new Date() } = {}) {
     today_sales: 0,
     bills_today: 0,
     items_sold_today: 0,
+    by_payment: {},
   });
 }
 
