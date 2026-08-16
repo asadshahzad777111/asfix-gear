@@ -2,6 +2,7 @@ import { createToken, hashPassword, sessionExpiry, verifyPassword } from './auth
 import { formatOrderId, formatBookingRef } from './store/data-migration.js';
 import { readData, withData, getStorageBackend, initStorage, isStorageReady } from './store/storage.js';
 import { productMatchesSearch } from './utils/product-search.js';
+import { normalizeBarcode } from './utils/barcode.js';
 import { slugify, ensureUniqueSlug, isValidSlug } from './utils/slug.js';
 
 export { slugify, ensureUniqueSlug, isValidSlug };
@@ -450,8 +451,8 @@ export function createProduct(input) {
       category: input.category,
       brand: String(input.brand || '').trim(),
       compatible_models: String(input.compatible_models || '').trim(),
-      barcode: String(input.barcode || '').trim().slice(0, 64),
-      sku: String(input.sku || input.barcode || '').trim().slice(0, 64),
+      barcode: normalizeBarcode(input.barcode),
+      sku: normalizeBarcode(input.sku || input.barcode),
       price: Number(input.price),
       cost_price: Math.max(0, Number(input.cost_price) || 0),
       description: String(input.description || '').trim(),
@@ -502,13 +503,13 @@ export function updateProduct(id, input) {
           : existing.compatible_models ?? '',
       barcode:
         input.barcode != null
-          ? String(input.barcode).trim().slice(0, 64)
+          ? normalizeBarcode(input.barcode)
           : existing.barcode ?? '',
       sku:
         input.sku != null
-          ? String(input.sku).trim().slice(0, 64)
+          ? normalizeBarcode(input.sku)
           : input.barcode != null
-            ? String(input.barcode).trim().slice(0, 64)
+            ? normalizeBarcode(input.barcode)
             : existing.sku ?? existing.barcode ?? '',
       price: input.price != null ? Number(input.price) : existing.price,
       cost_price:

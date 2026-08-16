@@ -1,5 +1,7 @@
 /** CSV helpers for staff Products Sheet export / import (Google Sheets compatible). */
 
+import { normalizeBarcode } from './barcode.js';
+
 export const PRODUCT_CSV_HEADERS = [
   'id',
   'name',
@@ -135,10 +137,10 @@ export function csvRecordToPatch(record) {
     patch.compatible_models = String(record.compatible_models).slice(0, 300);
   }
   if (record.barcode != null && record.barcode !== '') {
-    patch.barcode = String(record.barcode).slice(0, 64);
+    patch.barcode = normalizeBarcode(record.barcode);
   }
   if (record.sku != null && record.sku !== '') {
-    patch.sku = String(record.sku).slice(0, 64);
+    patch.sku = normalizeBarcode(record.sku);
   }
   if (record.price !== '' && record.price != null) {
     const price = Number(record.price);

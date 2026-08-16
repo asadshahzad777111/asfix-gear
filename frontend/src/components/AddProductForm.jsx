@@ -12,6 +12,7 @@ import ProductTagsPanel from './admin/product-editor/ProductTagsPanel';
 import ProductPermalinkPanel from './admin/product-editor/ProductPermalinkPanel';
 import ProductBrandPanel from './admin/product-editor/ProductBrandPanel';
 import RichTextEditor from './admin/product-editor/RichTextEditor';
+import { normalizeBarcode } from '../utils/barcode.js';
 import PosCameraBarcodeScanner from './admin/PosCameraBarcodeScanner';
 import { uploadProductImageFile } from '../utils/productImageUpload';
 import { resolveProductImagesForSave } from '../utils/productImages';
@@ -53,7 +54,7 @@ function productToForm(editProduct) {
     discount_enabled: Number(editProduct.discount_percent) > 0,
     discount_percent: Number(editProduct.discount_percent) || 0,
     warranty: editProduct.warranty || '',
-    barcode: editProduct.barcode || editProduct.sku || '',
+    barcode: normalizeBarcode(editProduct.barcode || editProduct.sku || ''),
     status: editProduct.status || 'published',
   };
 }
@@ -148,8 +149,8 @@ export default function AddProductForm({
       featured: product.featured,
       discount_percent: product.discount_enabled ? Number(product.discount_percent) || 0 : 0,
       warranty: product.warranty.trim(),
-      barcode: String(product.barcode || '').trim(),
-      sku: String(product.barcode || '').trim(),
+      barcode: normalizeBarcode(product.barcode),
+      sku: normalizeBarcode(product.barcode),
       status: statusOverride || product.status || 'published',
     };
   };
@@ -374,15 +375,21 @@ export default function AddProductForm({
         </div>
       </div>
 
-      <div className="form-group">
-        <label>{t('sales.barcode')}</label>
+      <div className="form-group barcode-link-panel">
+        <div className="barcode-link-head">
+          <label htmlFor="product-barcode">{t('sales.barcode')}</label>
+          <span className="barcode-link-badge">{t('sales.barcodeOptional')}</span>
+        </div>
         <div className="barcode-field-row">
           <input
+            id="product-barcode"
             value={product.barcode}
             onChange={(e) => setField('barcode', e.target.value)}
+            onBlur={(e) => setField('barcode', normalizeBarcode(e.target.value))}
             placeholder={t('sales.barcodePh')}
             autoComplete="off"
             inputMode="text"
+            spellCheck={false}
           />
           <button
             type="button"
@@ -393,7 +400,7 @@ export default function AddProductForm({
             {t('sales.barcodeScan')}
           </button>
         </div>
-        <p className="field-hint">{t('sales.barcodeHint')}</p>
+        <p className="field-hint barcode-link-hint">{t('sales.barcodeHint')}</p>
       </div>
 
       <PosCameraBarcodeScanner
@@ -412,7 +419,7 @@ export default function AddProductForm({
         addedFlashLabel={t('sales.barcodeScanSaved', { code: '…' })}
         notFoundFlashLabel={t('admin.counterBillScanFlashNotFound')}
         onDetected={(code) => {
-          const value = String(code || '').trim();
+          const value = normalizeBarcode(code);
           if (!value) return { ok: false };
           setField('barcode', value);
           setMessage({ type: 'success', text: t('sales.barcodeScanSaved', { code: value }) });

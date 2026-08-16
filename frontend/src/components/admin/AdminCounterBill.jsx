@@ -34,6 +34,7 @@ import {
   RECEIPT_LOGO_PATH,
 } from '../../utils/receiptLogo';
 import PosCameraBarcodeScanner from './PosCameraBarcodeScanner';
+import { normalizeBarcode } from '../../utils/barcode';
 import './admin-counter-bill.css';
 
 const COUNTER_BILL_DRAFT_KEY = 'asfix_counter_bill_draft_v1';
@@ -163,7 +164,7 @@ function lineUnitPrice(line) {
 }
 
 function normalizeCode(value) {
-  return String(value || '').trim().toLowerCase();
+  return normalizeBarcode(value);
 }
 
 /** Exact barcode / SKU / id hit for USB wedge scanners (Enter after scan). */
