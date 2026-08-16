@@ -2,6 +2,23 @@
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
+.skip-link {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #ff6b2c;
+  color: white;
+  padding: 8px 16px;
+  border-radius: 8px;
+  z-index: 10001;
+  text-decoration: none;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: top 0.3s;
+}
+.skip-link:focus {
+  top: 0;
+}
 
 body {
   font-family: var(--font);
@@ -4324,6 +4341,36 @@ body.modal-open .guest-welcome-banner {
   background: transparent !important;
   box-shadow: none !important;
   flex: 1;
+}
+
+.barcode-field-row {
+  display: flex;
+  align-items: stretch;
+  gap: 0.5rem;
+}
+
+.barcode-field-row input {
+  flex: 1;
+  min-width: 0;
+}
+
+.barcode-scan-btn {
+  flex-shrink: 0;
+  min-height: 44px;
+  padding: 0.45rem 0.9rem;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.18));
+  border-radius: 12px;
+  background: var(--primary, #2563eb);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+  touch-action: manipulation;
+  white-space: nowrap;
+}
+
+.barcode-scan-btn:hover {
+  filter: brightness(1.06);
 }
 
 .stock-stepper {

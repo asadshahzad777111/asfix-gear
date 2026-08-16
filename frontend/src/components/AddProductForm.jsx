@@ -12,6 +12,7 @@ import ProductTagsPanel from './admin/product-editor/ProductTagsPanel';
 import ProductPermalinkPanel from './admin/product-editor/ProductPermalinkPanel';
 import ProductBrandPanel from './admin/product-editor/ProductBrandPanel';
 import RichTextEditor from './admin/product-editor/RichTextEditor';
+import PosCameraBarcodeScanner from './admin/PosCameraBarcodeScanner';
 import { uploadProductImageFile } from '../utils/productImageUpload';
 import { resolveProductImagesForSave } from '../utils/productImages';
 import { slugify } from '../utils/slug';
@@ -71,6 +72,7 @@ export default function AddProductForm({
   const [uploadingImage, setUploadingImage] = useState(false);
   const [imageUploadHint, setImageUploadHint] = useState('');
   const [message, setMessage] = useState({ type: '', text: '' });
+  const [barcodeScanOpen, setBarcodeScanOpen] = useState(false);
   const slugTouchedRef = useRef(Boolean(editProduct?.slug));
 
   useEffect(() => {
@@ -374,15 +376,49 @@ export default function AddProductForm({
 
       <div className="form-group">
         <label>{t('sales.barcode')}</label>
-        <input
-          value={product.barcode}
-          onChange={(e) => setField('barcode', e.target.value)}
-          placeholder={t('sales.barcodePh')}
-          autoComplete="off"
-          inputMode="text"
-        />
+        <div className="barcode-field-row">
+          <input
+            value={product.barcode}
+            onChange={(e) => setField('barcode', e.target.value)}
+            placeholder={t('sales.barcodePh')}
+            autoComplete="off"
+            inputMode="text"
+          />
+          <button
+            type="button"
+            className="barcode-scan-btn"
+            onClick={() => setBarcodeScanOpen(true)}
+            title={t('sales.barcodeScan')}
+          >
+            {t('sales.barcodeScan')}
+          </button>
+        </div>
         <p className="field-hint">{t('sales.barcodeHint')}</p>
       </div>
+
+      <PosCameraBarcodeScanner
+        open={barcodeScanOpen}
+        onClose={() => setBarcodeScanOpen(false)}
+        continuous={false}
+        title={t('sales.barcodeScanTitle')}
+        hint={t('sales.barcodeScanHint')}
+        unsupportedHint={t('admin.counterBillScanUnsupported')}
+        closeLabel={t('common.close')}
+        scanningLabel={t('admin.counterBillScanLooking')}
+        permissionLabel={t('admin.counterBillScanPermission')}
+        deniedHint={t('admin.counterBillScanDenied')}
+        torchOnLabel={t('admin.counterBillScanTorchOn')}
+        torchOffLabel={t('admin.counterBillScanTorchOff')}
+        addedFlashLabel={t('sales.barcodeScanSaved', { code: '…' })}
+        notFoundFlashLabel={t('admin.counterBillScanFlashNotFound')}
+        onDetected={(code) => {
+          const value = String(code || '').trim();
+          if (!value) return { ok: false };
+          setField('barcode', value);
+          setMessage({ type: 'success', text: t('sales.barcodeScanSaved', { code: value }) });
+          return { ok: true, message: t('sales.barcodeScanSaved', { code: value }), close: true };
+        }}
+      />
 
       {descriptionField}
 

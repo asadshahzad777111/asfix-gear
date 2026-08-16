@@ -3220,17 +3220,15 @@ export default function AdminCounterBill({
   const handleCameraBarcode = (code) => {
     const exact = findExactBarcodeProduct(availableProducts, code);
     if (!exact) {
-      setFeedback({
-        type: 'error',
-        text: t('admin.counterBillScanNotFound', { code }),
-      });
-      return;
+      const text = t('admin.counterBillScanNotFound', { code });
+      setFeedback({ type: 'error', text });
+      /* Overlay shows flash; skip duplicate beep from addProduct path */
+      return { ok: false, message: text };
     }
-    addProduct(exact, { keepSearchFocus: false, scanFeedback: true });
-    setFeedback({
-      type: 'success',
-      text: t('admin.counterBillScanAdded', { name: exact.name || code }),
-    });
+    addProduct(exact, { keepSearchFocus: false, scanFeedback: false });
+    const text = t('admin.counterBillScanAdded', { name: exact.name || code });
+    setFeedback({ type: 'success', text });
+    return { ok: true, message: text };
   };
 
   const adjustQty = (productId, delta) => {
@@ -4596,6 +4594,7 @@ export default function AdminCounterBill({
         open={cameraScanOpen}
         onClose={() => setCameraScanOpen(false)}
         onDetected={handleCameraBarcode}
+        continuous
         title={t('admin.counterBillScanTitle')}
         hint={t('admin.counterBillScanHint')}
         unsupportedHint={t('admin.counterBillScanUnsupported')}
@@ -4603,6 +4602,10 @@ export default function AdminCounterBill({
         scanningLabel={t('admin.counterBillScanLooking')}
         permissionLabel={t('admin.counterBillScanPermission')}
         deniedHint={t('admin.counterBillScanDenied')}
+        torchOnLabel={t('admin.counterBillScanTorchOn')}
+        torchOffLabel={t('admin.counterBillScanTorchOff')}
+        addedFlashLabel={t('admin.counterBillScanFlashAdded')}
+        notFoundFlashLabel={t('admin.counterBillScanFlashNotFound')}
       />
     </div>
   );
