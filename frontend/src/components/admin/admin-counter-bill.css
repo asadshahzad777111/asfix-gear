@@ -1,9 +1,10 @@
-/* Professional mart-style POS — charcoal UI, restrained brand accent */
+/* Professional mart-style POS — charcoal UI, restrained brand accent
+   Shell atmosphere shares --asfix-bg with Admin (themes.css). */
 :root {
   --pos-bg: #0e1116;
   --pos-surface: #161b22;
   --pos-surface-2: #1c222c;
-  --pos-shell-bg: #0a0c10;
+  --pos-shell-bg: var(--asfix-bg, var(--bg, #0a0c10));
   --pos-media-bg: #0c0f14;
   --pos-tile-hover: #222833;
   --pos-footer-bg: rgba(14, 17, 22, 0.97);
@@ -33,7 +34,7 @@
   --pos-bg: #f4f5f7;
   --pos-surface: #ffffff;
   --pos-surface-2: #eef0f3;
-  --pos-shell-bg: #e8eaed;
+  --pos-shell-bg: var(--asfix-bg, var(--bg, #e8eaed));
   --pos-media-bg: #e4e7eb;
   --pos-tile-hover: #fff4ee;
   --pos-footer-bg: rgba(255, 255, 255, 0.97);
@@ -301,7 +302,9 @@
   max-width: 100%;
   min-height: 100dvh;
   overflow-x: clip;
-  background: var(--pos-shell-bg);
+  background-color: var(--pos-shell-bg, var(--asfix-bg, var(--bg)));
+  background-image: var(--asfix-bg-gradient, var(--bg-gradient, none));
+  background-attachment: fixed;
   color: var(--pos-text);
   display: flex;
   flex-direction: column;
@@ -498,6 +501,11 @@
   max-height: 100dvh;
   /* visible so APK WebView does not clip fixed grand-total dock */
   overflow: visible;
+  /* Same atmosphere as Admin root — do not fall back to flat WP gray */
+  background-color: var(--pos-shell-bg, var(--asfix-bg, var(--bg)));
+  background-image: var(--asfix-bg-gradient, var(--bg-gradient, none));
+  background-attachment: fixed;
+  color: var(--pos-text);
 }
 
 .counter-shell .wp-admin-bar {
