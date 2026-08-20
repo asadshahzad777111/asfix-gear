@@ -1,0 +1,11 @@
+{
+  "name": "thermal-print-kit",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Portable POS thermal printing (Capacitor Bluetooth SPP + ESC/POS + cross-device print queue) extracted from AsFix & Gear.",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "express": "^5.2.1"
+  }
+}
