@@ -1,0 +1,52 @@
+{
+  "name": "@asfixgear/asfix-thermal-print",
+  "version": "1.0.0",
+  "description": "Classic Bluetooth SPP ESC/POS print for AsFix POS (Android)",
+  "main": "dist/plugin.cjs.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "unpkg": "dist/plugin.js",
+  "files": [
+    "android/src/main/",
+    "android/build.gradle",
+    "dist/",
+    "AsfixThermalPrint.podspec"
+  ],
+  "author": "AsFix & Gear",
+  "license": "UNLICENSED",
+  "private": true,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/asfix/asfix-gear.git"
+  },
+  "bugs": {
+    "url": "https://github.com/asfix/asfix-gear/issues"
+  },
+  "keywords": [
+    "capacitor",
+    "plugin",
+    "bluetooth",
+    "escpos",
+    "thermal"
+  ],
+  "scripts": {
+    "build": "npm run clean && tsc && rollup -c rollup.config.mjs",
+    "clean": "rimraf ./dist",
+    "prepublishOnly": "npm run build"
+  },
+  "peerDependencies": {
+    "@capacitor/core": "^6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/core": "^6.2.0",
+    "rimraf": "^6.0.1",
+    "rollup": "^4.34.8",
+    "typescript": "^5.7.3"
+  },
+  "capacitor": {
+    "android": {
+      "src": "android"
+    }
+  }
+}
